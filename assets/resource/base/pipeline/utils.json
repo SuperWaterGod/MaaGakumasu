@@ -1,0 +1,26 @@
+{
+  "ReturnHome":{
+    "recognition":"TemplateMatch",
+    "template":"homeflag_black.png",
+    "action":"Click"
+  },
+  "BackHome":{
+    "recognition":"TemplateMatch",
+    "template":"homeflag_grey.png",
+    "action":"Click"
+  },
+  "CloseMenu":{
+    "recognition":"TemplateMatch",
+    "template":"close_menu.png",
+    "action":"Click"
+  },
+  "ClickCenter":{
+    "action":"Click",
+    "target":[
+      12,
+      237,
+      698,
+      788
+    ]
+  }
+}
