@@ -3,30 +3,22 @@
     "post_wait_freezes":300,
     "next":[
       "StartGame"
-    ],
-    "interrupt":[
-      "Download"
     ]
   },
   "StartGame":{
     "action":"StartApp",
     "package":"com.bandainamcoent.idolmaster_gakuen",
-    "next":"ClickToStart",
+    "next":"HomeFlag",
     "interrupt":[
+      "Download",
+      "LoginBonus",
+      "GetFriendPoints",
       "ClickCenter"
     ]
   },
-  "ClickToStart":{
-    "recognition":"OCR",
-    "expected":[
-      "TAP",
-      "TO",
-      "START"
-    ],
-    "action":"Click",
-    "next":[
-      "HomeFlag"
-    ]
+  "HomeFlag":{
+    "recognition":"TemplateMatch",
+    "template":"home.png"
   },
   "Download":{
     "recognition":"OCR",
@@ -35,10 +27,6 @@
       "重试"
     ],
     "action":"Click"
-  },
-  "HomeFlag":{
-    "recognition":"TemplateMatch",
-    "template":"home.png"
   },
   "LoginBonus":{
     "recognition":"OCR",

@@ -16,11 +16,6 @@
   },
   "ClickCenter":{
     "action":"Click",
-    "target":[
-      12,
-      237,
-      698,
-      788
-    ]
+    "target":[120,542,447,214]
   }
 }

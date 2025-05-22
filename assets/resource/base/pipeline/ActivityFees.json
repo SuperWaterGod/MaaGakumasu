@@ -5,7 +5,8 @@
       "ActivityFeeHomeFlag"
     ],
     "interrupt":[
-      "ReturnHome"
+      "ReturnHome",
+      "BackHome"
     ]
   },
   "ActivityFeeHomeFlag":{

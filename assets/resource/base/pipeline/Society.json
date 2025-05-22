@@ -40,8 +40,11 @@
     "recognition":"TemplateMatch",
     "template":"society_confirm.png",
     "action":"Click",
+    "pre_wait_freezes": 1000,
     "next":[
-      "SocietyNext"
+      "SocietyNext",
+      "SocietyCommit",
+      "SocietyCommitAlready"
     ]
   },
   "SocietyCommitRunout":{
@@ -55,13 +58,10 @@
   "SocietyNext":{
     "recognition":"TemplateMatch",
     "template":"society_next.png",
-    "action":"Click",
-    "target_offset":[
-      0,
-      90,
-      0,
-      -90
-    ],
+    "action":"Swipe",
+    "begin" : [491,853,1,1],
+    "end" : [182,855,1,1],
+    "post_wait_freezes":1000,
     "next":[
       "SocietyCommit",
       "SocietyCommitAlready"
@@ -104,8 +104,10 @@
   "SocietyRequestsAlready":{
     "recognition":"TemplateMatch",
     "template":"society_requests_already.png",
+    "action":"Click",
     "next":[
-      "BackHome"
+      "SocietyRequestsGet",
+      "SocietyRequestsClose"
     ]
   },
   "SocietyRequestsGet":{
@@ -118,6 +120,7 @@
   "SocietyRequestsClose":{
     "recognition":"TemplateMatch",
     "template":"close.png",
+    "action":"Click",
     "next":[
       "BackHome"
     ]

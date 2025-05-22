@@ -5,7 +5,8 @@
       "ChallengeHomeFlag"
     ],
     "interrupt":[
-      "ReturnHome"
+      "ReturnHome",
+      "BackHome"
     ]
   },
   "ChallengeHomeFlag":{
@@ -53,19 +54,12 @@
     "recognition":"TemplateMatch",
     "template":"challenge_skip.png",
     "action":"Click",
-    "pre_delay":1000,
     "next":[
-      "ChallengeTAP"
-    ]
-  },
-  "ChallengeTAP":{
-    "recognition":"OCR",
-    "expected":[
-      "TAP"
-    ],
-    "action":"Click",
-    "next":[
+      "ChallengeSkip",
       "ChallengeNext"
+    ],
+    "interrupt":[
+      "ClickCenter"
     ]
   },
   "ChallengeNext":{
@@ -81,7 +75,11 @@
     "template":"challenge_finish.png",
     "action":"Click",
     "next":[
-      "ChallengeClick"
+      "ChallengeChoose"
+    ],
+    "interrupt":[
+      "ChallengeRunOut",
+      "ChallengeAward"
     ]
   },
   "ChallengeRunOut":{
@@ -90,5 +88,10 @@
     "next":[
       "BackHome"
     ]
+  },
+  "ChallengeAward": {
+    "recognition":"TemplateMatch",
+    "template":"challenge_award.png",
+    "action":"Click"
   }
 }
