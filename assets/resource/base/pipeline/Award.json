@@ -1,0 +1,102 @@
+{
+  "Award":{
+    "post_wait_freezes":300,
+    "next":[
+      "AwardHomeFlag"
+    ],
+    "interrupt":[
+      "ReturnHome",
+      "BackHome"
+    ]
+  },
+  "AwardHomeFlag":{
+    "recognition":"TemplateMatch",
+    "template":"home.png",
+    "next":[
+      "AwardGiftClick"
+    ]
+  },
+  "AwardGiftClick":{
+    "recognition":"TemplateMatch",
+    "template":"gift.png",
+    "action":"Click",
+    "next":[
+      "AwardGiftRunout"
+    ],
+    "interrupt": [
+      "AwardGiftGet"
+    ]
+  },
+  "AwardGiftRunout":{
+    "recognition":"TemplateMatch",
+    "template":"gift_runout.png",
+    "next":[
+      "BackHome",
+      "AwardMissionClick"
+    ]
+  },
+  "AwardGiftGet":{
+    "recognition":"TemplateMatch",
+    "template":"gift_get.png",
+    "action":"Click",
+    "next":[
+      "AwardGiftClose"
+    ]
+  },
+  "AwardGiftClose": {
+    "recognition":"TemplateMatch",
+    "template":"close.png",
+    "action":"Click"
+  },
+  "AwardMissionClick":{
+    "recognition":"TemplateMatch",
+    "template":"mission.png",
+    "action":"Click",
+    "post_wait_freezes": 1000,
+    "next":[
+      "AwardMissionChoose",
+      "BackHome"
+    ]
+  },
+  "AwardMissionChoose":{
+    "recognition":"TemplateMatch",
+    "template":"mission_point.png",
+    "action":"Click",
+    "next":[
+      "AwardMissionGet"
+    ]
+  },
+  "AwardMissionGet":{
+    "recognition":"TemplateMatch",
+    "template":"gift_get.png",
+    "action":"Click",
+    "next":[
+      "AwardMissionClose",
+      "AwardMissionChoose",
+      "BackHome"
+    ]
+  },
+  "AwardMissionClose": {
+    "recognition":"TemplateMatch",
+    "template":"close.png",
+    "action":"Click",
+    "next":[
+      "AwardMissionChoose"
+    ],
+    "interrupt": [
+      "AwardMissionUp"
+    ]
+  },
+  "AwardMissionRunout": {
+    "recognition":"TemplateMatch",
+    "template":"gift_runout.png",
+    "next":[
+      "BackHome"
+    ]
+  },
+  "AwardMissionUp": {
+    "recognition":"TemplateMatch",
+    "template":"close_icon.png",
+    "action":"Click"
+  }
+}
