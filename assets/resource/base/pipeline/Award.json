@@ -56,6 +56,7 @@
   "AwardGiftClose": {
     "recognition":"TemplateMatch",
     "template":"close.png",
+    "post_wait_freezes": 500,
     "action":"Click"
   },
   "AwardMissionClick":{
@@ -80,6 +81,7 @@
     "recognition":"TemplateMatch",
     "template":"gift_get.png",
     "action":"Click",
+    "post_wait_freezes": 500,
     "next":[
       "AwardMissionClose",
       "AwardMissionChoose",
@@ -92,7 +94,8 @@
     "action":"Click",
     "post_wait_freezes": 200,
     "next":[
-      "AwardMissionChoose"
+      "AwardMissionChoose",
+      "BackHome"
     ],
     "interrupt": [
       "AwardMissionUp"

@@ -25,6 +25,9 @@
     "next":[
       "SocietyCommit",
       "SocietyCommitAlready"
+    ],
+    "interrupt": [
+      "CloseButton"
     ]
   },
   "SocietyCommit":{
@@ -40,7 +43,7 @@
     "recognition":"TemplateMatch",
     "template":"society_confirm.png",
     "action":"Click",
-    "pre_wait_freezes": 1000,
+    "post_wait_freezes": 500,
     "next":[
       "SocietyNext",
       "SocietyCommit",
@@ -61,7 +64,6 @@
     "action":"Swipe",
     "begin" : [491,853,1,1],
     "end" : [182,855,1,1],
-    "post_wait_freezes":1000,
     "next":[
       "SocietyCommit",
       "SocietyCommitAlready"

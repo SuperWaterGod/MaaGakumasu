@@ -75,10 +75,10 @@
     "template":"challenge_finish.png",
     "action":"Click",
     "next":[
-      "ChallengeChoose"
+      "ChallengeChoose",
+      "ChallengeRunOut"
     ],
     "interrupt":[
-      "ChallengeRunOut",
       "ChallengeAward"
     ]
   },

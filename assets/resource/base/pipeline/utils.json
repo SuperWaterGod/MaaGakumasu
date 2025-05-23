@@ -14,6 +14,11 @@
     "template":"close_menu.png",
     "action":"Click"
   },
+  "CloseButton":{
+    "recognition":"TemplateMatch",
+    "template":"close.png",
+    "action":"Click"
+  },
   "ClickCenter":{
     "action":"Click",
     "target":[

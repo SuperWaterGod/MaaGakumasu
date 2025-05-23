@@ -43,12 +43,7 @@
     "recognition":"TemplateMatch",
     "template":"friend_points.png",
     "next":[
-      "CloseFriendPoints"
+      "CloseButton"
     ]
-  },
-  "CloseFriendPoints":{
-    "recognition":"TemplateMatch",
-    "template":"close.png",
-    "action":"Click"
   }
 }
