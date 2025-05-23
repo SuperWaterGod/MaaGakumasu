@@ -18,7 +18,10 @@
   },
   "HomeFlag":{
     "recognition":"TemplateMatch",
-    "template":"home.png"
+    "template":[
+      "home.png",
+      "home_1.png"
+    ]
   },
   "Download":{
     "recognition":"OCR",

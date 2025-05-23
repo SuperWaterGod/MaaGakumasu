@@ -11,7 +11,10 @@
   },
   "ActivityFeeHomeFlag":{
     "recognition":"TemplateMatch",
-    "template":"home.png",
+    "template":[
+      "home.png",
+      "home_1.png"
+    ],
     "next":[
       "ActivityFeeClick"
     ]
