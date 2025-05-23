@@ -18,7 +18,10 @@
   },
   "ActivityFeeClick":{
     "recognition":"TemplateMatch",
-    "template":"activity_fee.png",
+    "template": [
+      "activity_fee.png",
+      "activity_fee_1.png"
+    ],
     "action":"Click",
     "next":[
       "ActivityFeeClose",
