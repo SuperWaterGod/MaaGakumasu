@@ -31,7 +31,14 @@
     "recognition":"TemplateMatch",
     "template":"gift_runout.png",
     "next":[
-      "BackHome",
+      "AwardBackHome"
+    ]
+  },
+  "AwardBackHome":{
+    "recognition":"TemplateMatch",
+    "template":"homeflag_grey.png",
+    "action":"Click",
+    "next":[
       "AwardMissionClick"
     ]
   },
@@ -52,7 +59,7 @@
     "recognition":"TemplateMatch",
     "template":"mission.png",
     "action":"Click",
-    "post_wait_freezes": 1000,
+    "post_wait_freezes": 200,
     "next":[
       "AwardMissionChoose",
       "BackHome"
@@ -80,6 +87,7 @@
     "recognition":"TemplateMatch",
     "template":"close.png",
     "action":"Click",
+    "post_wait_freezes": 200,
     "next":[
       "AwardMissionChoose"
     ],
