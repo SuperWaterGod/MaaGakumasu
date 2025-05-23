@@ -14,4 +14,6 @@ class MyCustomAction(CustomAction):
 
         print("my_action_111 is running!")
 
+        print(argv.reco_detail)
+
         return True

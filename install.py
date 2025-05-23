@@ -6,7 +6,6 @@ import json
 
 from configure import configure_ocr_model
 
-
 working_dir = Path(__file__).parent
 install_path = working_dir / Path("install")
 version = len(sys.argv) > 1 and sys.argv[1] or "v0.0.1"
@@ -37,7 +36,6 @@ def install_deps():
 
 
 def install_resource():
-
     configure_ocr_model()
 
     shutil.copytree(
@@ -69,12 +67,14 @@ def install_chores():
         install_path,
     )
 
+
 def install_agent():
     shutil.copytree(
         working_dir / "agent",
         install_path / "agent",
         dirs_exist_ok=True,
     )
+
 
 if __name__ == "__main__":
     install_deps()
