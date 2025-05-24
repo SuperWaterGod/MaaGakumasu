@@ -41,7 +41,7 @@
   },
   "SocietyConfirm":{
     "recognition":"TemplateMatch",
-    "template":"society_confirm.png",
+    "template":"decide.png",
     "action":"Click",
     "post_wait_freezes": 500,
     "next":[
@@ -96,7 +96,7 @@
   },
   "SocietyRequestsConfirm":{
     "recognition":"TemplateMatch",
-    "template":"society_confirm.png",
+    "template":"decide.png",
     "action":"Click",
     "next":[
       "SocietyRequestsConfirm",
