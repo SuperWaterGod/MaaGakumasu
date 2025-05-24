@@ -1,4 +1,5 @@
-<!-- markdownlint-disable MD033 MD041 -->
+- [ ] <!-- markdownlint-disable MD033 MD041 -->
+
 <p align="center">
   <img alt="LOGO" src="https://cdn.jsdelivr.net/gh/MaaAssistantArknights/design@main/logo/maa-logo_512x512.png" width="256" height="256" />
 </p>
@@ -16,20 +17,25 @@
 
 ## 功能
 
-目前已实现
-
-- 启动游戏
-- 领取活动费
-- 竞赛挑战
-- 社团互动
-- 领取工作奖励并重新安排工作
+- 目前已实现
 
 
-等待实现
+- [x] 启动游戏
+- [x] 领取活动费
+- [x] 竞赛挑战
+  - [ ] 指定挑战
+- [x] 社团互动
+  - [ ] 指定请求
+- [x] 领取工作奖励并重新安排工作
+  - [ ] 指定偶像
+- [x] 领取邮件和礼物
+- [x] 领取任务奖励
 
-- 领取邮件和礼物
-- 领取任务奖励
-- 商店购买
+- 
+  等待实现
+
+
+- [ ] 商店购买
 
 ## 鸣谢
 
