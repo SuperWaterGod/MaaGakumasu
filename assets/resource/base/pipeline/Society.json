@@ -21,7 +21,7 @@
     "recognition":"TemplateMatch",
     "template":"society.png",
     "action":"Click",
-    "post_wait_freezes":200,
+    "post_wait_freezes":500,
     "next":[
       "SocietyCommit",
       "SocietyCommitAlready"

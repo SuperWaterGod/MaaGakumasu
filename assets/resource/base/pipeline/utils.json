@@ -19,6 +19,11 @@
     "template":"close.png",
     "action":"Click"
   },
+  "CloseButtonRound":{
+    "recognition":"TemplateMatch",
+    "template":"close_icon.png",
+    "action":"Click"
+  },
   "ClickCenter":{
     "action":"Click",
     "target":[

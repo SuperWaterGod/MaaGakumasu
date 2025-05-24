@@ -13,6 +13,7 @@
       "Download",
       "LoginBonus",
       "GetFriendPoints",
+      "CloseButtonRound",
       "ClickCenter"
     ]
   },
