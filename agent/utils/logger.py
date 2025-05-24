@@ -1,6 +1,5 @@
 import os
 import sys
-
 from loguru import logger
 
 
@@ -18,7 +17,7 @@ def setup_logger(log_dir="debug/custom"):
 
     logger.add(
         f"{log_dir}/{{time:YYYY-MM-DD}}.log",
-        rotation="00:00",  # midnight
+        rotation="00:00",
         retention="2 weeks",
         compression="zip",
         level="DEBUG",
