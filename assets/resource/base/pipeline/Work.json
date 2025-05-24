@@ -5,12 +5,16 @@
       "WorkHomeFlag"
     ],
     "interrupt":[
+      "ReturnHome",
       "BackHome"
     ]
   },
   "WorkHomeFlag":{
     "recognition":"TemplateMatch",
-    "template":"home.png",
+    "template":[
+      "home.png",
+      "home_1.png"
+    ],
     "next":[
       "WorkClick"
     ]
@@ -23,10 +27,14 @@
       "work_2.png"
     ],
     "action":"Click",
+    "post_wait_freezes":1000,
     "next":[
       "WorkFinished",
-      "WorkChoose",
+      "WorkStartChoose",
       "BackHome"
+    ],
+    "interrupt":[
+      "ClickCenter"
     ]
   },
   "WorkFinished":{
@@ -35,71 +43,45 @@
     "action":"Click",
     "next":[
       "WorkFinished",
-      "WorkChoose"
-    ],
-    "interrupt":[
-      "ClickCenter"
+      "WorkStartChoose"
     ]
   },
-  "WorkChoose":{
+  "WorkStartChoose":{
     "recognition":"TemplateMatch",
     "template":"work_choose.png",
     "action":"Click",
     "next":[
-      "WorkChooseGoodFlag",
-      "WorkChooseIdol"
-    ],
-    "post_wait_freezes":200
+      "WorkChooseGoodFlag"
+    ]
   },
   "WorkChooseGoodFlag":{
     "recognition":"TemplateMatch",
-    "template":"work_good.png",
-    "next":[
-      "WorkChooseGood"
+    "template":[
+      "work_good.png"
     ],
-    "interrupt":[
-      "WorkChooseSwipe"
-    ]
-  },
-  "WorkChooseGood":{
-    "recognition":"TemplateMatch",
-    "template":"work_good.png",
-    "roi":[
-      0,
-      695,
-      717,
-      346
-    ],
-    "action":"Click",
-    "next":[
-      "WorkChooseIdolConfirm"
-    ]
-  },
-  "WorkChooseSwipe":{
     "begin":[
-      604,
-      871,
+      200,
+      864,
       1,
       1
     ],
     "end":[
-      163,
+      400,
       864,
       1,
       1
     ],
     "action":"Swipe",
-    "next":[
-      "WorkChooseGood"
-    ]
+    "post_wait_freezes":500,
+    "next":"WorkChoose"
   },
-  "WorkChooseIdol":{
-    "recognition":"TemplateMatch",
-    "template":"idols/hanami_saki.png",
+  "WorkChoose":{
+    "recognition":"Custom",
+    "custom_recognition":"WorkChooseAuto",
     "action":"Click",
+    "custom_action_param":{ },
     "next":[
-      "WorkChooseGoodFlag",
-      "WorkChooseSwipe"
+      "WorkChooseIdolConfirm"
     ]
   },
   "WorkChooseIdolConfirm":{
@@ -110,17 +92,9 @@
       "WorkChooseTime"
     ]
   },
-  "WorkChooseConfirm":{
-    "recognition":"TemplateMatch",
-    "template":"work_confirm.png",
-    "action":"Click",
-    "next":[
-      "WorkChooseConfirm"
-    ]
-  },
   "WorkChooseTime":{
     "recognition":"OCR",
-    "expected":"12時間",
+    "expected":"4時間",
     "action":"Click",
     "next":[
       "WorkSure"
@@ -139,8 +113,36 @@
     "template":"work_start.png",
     "action":"Click",
     "next":[
-      "WorkChoose",
+      "WorkStartChoose",
       "BackHome"
     ]
+  },
+  "AAAAAAAAA":{
+    "recognition":"Custom",
+    "custom_recognition":"WorkChooseAuto",
+    "action":"Click",
+    "custom_action_param":{ }
+  },
+  "WorkChooseGood":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "work_good.png",
+      "work_good_1.png"
+    ],
+    "roi":[
+      8,
+      709,
+      621,
+      317
+    ]
+  },
+  "WorkAlready":{
+    "recognition":"FeatureMatch",
+    "template":"work_already.png"
+  },
+  "WorkChooseIdol":{
+    "recognition":"TemplateMatch",
+    "template":"idols/hanami_saki.png",
+    "action":"Click"
   }
 }
