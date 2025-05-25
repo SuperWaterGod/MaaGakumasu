@@ -148,7 +148,7 @@ class WorkChooseAuto(CustomRecognition):
 
 
 @AgentServer.custom_recognition("WorkChooseIdol")
-class WorkChooseAuto(CustomRecognition):
+class WorkChooseIdol(CustomRecognition):
     """
         选择指定Idol
     """

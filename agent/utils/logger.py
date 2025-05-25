@@ -10,7 +10,7 @@ def setup_logger(log_dir="debug/custom"):
 
     logger.add(
         sys.stderr,
-        format="[{time:YYYY-MM-DD HH:mm:ss}][{name}] - <level>{level}</level> - <level>{message}</level>",
+        format="[<level>{level}</level>] <level>{message}</level>",
         colorize=True,
         level="INFO",
     )
