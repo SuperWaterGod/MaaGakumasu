@@ -35,8 +35,7 @@
     {
       "name":"收取活动费",
       "entry":"ActivityFee",
-      "check":true,
-      "doc":""
+      "check":true
     },
     {
       "name":"每日挑战",
@@ -44,8 +43,7 @@
       "option":[
         "选择挑战第几位"
       ],
-      "check":true,
-      "doc":""
+      "check":true
     },
     {
       "name":"安排工作",
@@ -58,14 +56,25 @@
         "指定直播活动Idol"
       ],
       "check":true,
-      "doc":""
+      "doc":"自动安排工作将优先选择笑脸然后按照最高好感排序"
     },
     {
       "name":"社团活动",
       "entry":"Society",
       "option":[
-        "请求物品",
-        "捐赠"
+        "启用捐赠物品",
+        "启用请求物品",
+        "请求物品种类"
+      ],
+      "check":true,
+      "doc":"自动选择物品将选择数量最少的物品"
+    },
+    {
+      "name":"领取奖励",
+      "entry":"Award",
+      "option":[
+        "启用领取礼物",
+        "启用领取任务"
       ],
       "check":true,
       "doc":""
@@ -449,6 +458,171 @@
               "custom_recognition_param":{
                 "idol":"idols/hanami_saki.png"
               }
+            }
+          }
+        }
+      ]
+    },
+    "请求物品种类":{
+      "cases":[
+        {
+          "name":"自动",
+          "pipeline_override":{
+            "SocietyRequestChoose":{
+              "recognition":"Custom",
+              "custom_recognition":"WorkChooseAuto"
+            }
+          }
+        },
+        {
+          "name":"感性笔记(声乐)",
+          "pipeline_override":{
+            "SocietyRequestChoose":{
+              "template":"items/sense_red.png"
+            }
+          }
+        },
+        {
+          "name":"感性笔记(舞蹈)",
+          "pipeline_override":{
+            "SocietyRequestChoose":{
+              "template":"items/sense_blue.png"
+            }
+          }
+        },
+        {
+          "name":"感性笔记(形象)",
+          "pipeline_override":{
+            "SocietyRequestChoose":{
+              "template":"items/sense_yellow.png"
+            }
+          }
+        },
+        {
+          "name":"理性笔记(声乐)",
+          "pipeline_override":{
+            "SocietyRequestChoose":{
+              "template":"items/logic_red.png"
+            }
+          }
+        },
+        {
+          "name":"理性笔记(舞蹈)",
+          "pipeline_override":{
+            "SocietyRequestChoose":{
+              "template":"items/logic_blue.png"
+            }
+          }
+        },
+        {
+          "name":"理性笔记(形象)",
+          "pipeline_override":{
+            "SocietyRequestChoose":{
+              "template":"items/logic_yellow.png"
+            }
+          }
+        },
+        {
+          "name":"非凡笔记(声乐)",
+          "pipeline_override":{
+            "SocietyRequestChoose":{
+              "template":"items/anomaly_red.png"
+            }
+          }
+        },
+        {
+          "name":"非凡笔记(舞蹈)",
+          "pipeline_override":{
+            "SocietyRequestChoose":{
+              "template":"items/anomaly_blue.png"
+            }
+          }
+        },
+        {
+          "name":"非凡笔记(形象)",
+          "pipeline_override":{
+            "SocietyRequestChoose":{
+              "template":"items/anomaly_yellow.png"
+            }
+          }
+        }
+      ]
+    },
+    "启用捐赠物品":{
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "SocietyDonation":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "SocietyDonation":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "启用请求物品":{
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "SocietyRequest":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "SocietyRequest":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "启用领取礼物":{
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "AwardGift":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "AwardGift":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "启用领取任务":{
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "AwardMission":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "AwardMission":{
+              "enabled":false
             }
           }
         }
