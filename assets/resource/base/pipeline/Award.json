@@ -26,7 +26,7 @@
     "next":[
       "AwardGiftRunout"
     ],
-    "interrupt": [
+    "interrupt":[
       "AwardGiftGet"
     ]
   },
@@ -53,17 +53,17 @@
       "AwardGiftClose"
     ]
   },
-  "AwardGiftClose": {
+  "AwardGiftClose":{
     "recognition":"TemplateMatch",
     "template":"close.png",
-    "post_wait_freezes": 500,
+    "post_wait_freezes":500,
     "action":"Click"
   },
   "AwardMissionClick":{
     "recognition":"TemplateMatch",
     "template":"mission.png",
     "action":"Click",
-    "post_wait_freezes": 200,
+    "post_wait_freezes":200,
     "next":[
       "AwardMissionChoose",
       "BackHome"
@@ -75,40 +75,43 @@
     "action":"Click",
     "next":[
       "AwardMissionGet"
+    ],
+    "interrupt":[
+      "AwardMissionUp"
     ]
   },
   "AwardMissionGet":{
     "recognition":"TemplateMatch",
     "template":"gift_get.png",
     "action":"Click",
-    "post_wait_freezes": 1000,
+    "post_wait_freezes":1000,
     "next":[
       "AwardMissionClose",
       "AwardMissionChoose",
       "BackHome"
     ]
   },
-  "AwardMissionClose": {
+  "AwardMissionClose":{
     "recognition":"TemplateMatch",
     "template":"close.png",
     "action":"Click",
-    "post_wait_freezes": 200,
+    "post_wait_freezes":200,
     "next":[
       "AwardMissionChoose",
       "BackHome"
     ],
-    "interrupt": [
+    "interrupt":[
       "AwardMissionUp"
     ]
   },
-  "AwardMissionRunout": {
+  "AwardMissionRunout":{
     "recognition":"TemplateMatch",
     "template":"gift_runout.png",
     "next":[
       "BackHome"
     ]
   },
-  "AwardMissionUp": {
+  "AwardMissionUp":{
     "recognition":"TemplateMatch",
     "template":"close_icon.png",
     "action":"Click"
