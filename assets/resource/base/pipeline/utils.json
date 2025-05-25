@@ -19,6 +19,11 @@
     "template":"close.png",
     "action":"Click"
   },
+  "DecideButton":{
+    "recognition":"TemplateMatch",
+    "template":"decide.png",
+    "action":"Click"
+  },
   "CloseButtonRound":{
     "recognition":"TemplateMatch",
     "template":"close_icon.png",

@@ -27,10 +27,11 @@
       "work_2.png"
     ],
     "action":"Click",
-    "post_wait_freezes":1000,
+    "post_wait_freezes":500,
     "next":[
       "WorkFinished",
-      "WorkStartChoose",
+      "WorkStartChooseShow",
+      "WorkStartChooseLive",
       "BackHome"
     ],
     "interrupt":[
@@ -43,56 +44,85 @@
     "action":"Click",
     "next":[
       "WorkFinished",
-      "WorkStartChoose"
+      "WorkStartChooseShow",
+      "WorkStartChooseLive"
     ]
   },
-  "WorkStartChoose":{
+  "WorkStartChooseShow":{
     "recognition":"TemplateMatch",
-    "template":"work_choose.png",
+    "template":"work_choose_show.png",
     "action":"Click",
     "next":[
-      "WorkChooseGoodFlag"
+      "WorkChooseShowGoodFlag"
     ]
   },
-  "WorkChooseGoodFlag":{
+  "WorkStartChooseLive":{
+    "recognition":"TemplateMatch",
+    "template":"work_choose_live.png",
+    "action":"Click",
+    "next":[
+      "WorkChooseLiveGoodFlag"
+    ]
+  },
+  "WorkChooseShowGoodFlag":{
     "recognition":"TemplateMatch",
     "template":[
       "work_good.png"
     ],
-    "begin":[
-      200,
-      864,
-      1,
-      1
-    ],
-    "end":[
-      400,
-      864,
-      1,
-      1
-    ],
-    "action":"Swipe",
-    "post_wait_freezes":500,
-    "next":"WorkChoose"
+    "next":"WorkChooseShow"
   },
-  "WorkChoose":{
+  "WorkChooseLiveGoodFlag":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "work_good.png"
+    ],
+    "next":"WorkChooseLive"
+  },
+  "WorkChooseShow":{
     "recognition":"Custom",
     "custom_recognition":"WorkChooseAuto",
     "action":"Click",
-    "custom_action_param":{ },
+    "custom_recognition_param":{ },
     "next":[
-      "WorkChooseIdolConfirm"
+      "WorkChooseShowConfirm"
     ]
   },
-  "WorkChooseIdolConfirm":{
+  "WorkChooseLive":{
+    "recognition":"Custom",
+    "custom_recognition":"WorkChooseAuto",
+    "action":"Click",
+    "custom_recognition_param":{ },
+    "next":[
+      "WorkChooseLiveConfirm"
+    ]
+  },
+  "WorkChooseShowConfirm":{
     "recognition":"TemplateMatch",
     "template":"work_choose_idol.png",
     "action":"Click",
     "next":[
-      "WorkChooseTime"
+      "WorkChooseShowTime"
+    ],
+    "interrupt": "DecideButton"
+  },
+  "WorkChooseLiveConfirm":{
+    "recognition":"TemplateMatch",
+    "template":"work_choose_idol.png",
+    "action":"Click",
+    "next":[
+      "WorkChooseLiveTime"
+    ],
+    "interrupt": "DecideButton"
+  },
+  "WorkChooseShowTime":{
+    "recognition":"OCR",
+    "expected":"4時間",
+    "action":"Click",
+    "next":[
+      "WorkSure"
     ]
   },
-  "WorkChooseTime":{
+  "WorkChooseLiveTime":{
     "recognition":"OCR",
     "expected":"4時間",
     "action":"Click",
@@ -113,15 +143,10 @@
     "template":"work_start.png",
     "action":"Click",
     "next":[
-      "WorkStartChoose",
+      "WorkStartChooseShow",
+      "WorkStartChooseLive",
       "BackHome"
     ]
-  },
-  "AAAAAAAAA":{
-    "recognition":"Custom",
-    "custom_recognition":"WorkChooseAuto",
-    "action":"Click",
-    "custom_action_param":{ }
   },
   "WorkChooseGood":{
     "recognition":"TemplateMatch",
@@ -139,10 +164,5 @@
   "WorkAlready":{
     "recognition":"FeatureMatch",
     "template":"work_already.png"
-  },
-  "WorkChooseIdol":{
-    "recognition":"TemplateMatch",
-    "template":"idols/hanami_saki.png",
-    "action":"Click"
   }
 }

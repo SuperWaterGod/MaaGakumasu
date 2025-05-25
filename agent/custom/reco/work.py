@@ -1,3 +1,4 @@
+import json
 import time
 from utils import logger
 from typing import Union, Optional
@@ -36,7 +37,7 @@ class WorkChooseAuto(CustomRecognition):
             reco_detail = context.run_recognition(
                 "WorkAlready", image,
                 pipeline_override={"WorkAlready": {
-                    "roi": [good_list[0][0], good_list[0][1], 150, 150]
+                    "roi": [good_list[0][0] - 90, good_list[0][1] - 110, 150, 150]
                 }})
 
             if reco_detail:
@@ -71,7 +72,7 @@ class WorkChooseAuto(CustomRecognition):
             reco_detail = context.run_recognition(
                 "WorkAlready", image,
                 pipeline_override={"WorkAlready": {
-                    "roi": [good_list[0][0], good_list[0][1], 150, 150]
+                    "roi": [good_list[0][0] - 90, good_list[0][1] - 110, 150, 150]
                 }})
             if reco_detail:
                 if len(good_list) > 1:
@@ -144,3 +145,45 @@ class WorkChooseAuto(CustomRecognition):
 
         context.override_next(argv.node_name, ["TaskA", "TaskB"])
 """
+
+
+@AgentServer.custom_recognition("WorkChooseIdol")
+class WorkChooseAuto(CustomRecognition):
+    """
+        选择指定Idol
+    """
+
+    def analyze(
+            self,
+            context: Context,
+            argv: CustomRecognition.AnalyzeArg,
+    ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
+
+        idol = json.loads(argv.custom_recognition_param)["idol"]
+
+        reco_detail = context.run_recognition(
+            "WorkChooseIdol", argv.image,
+            pipeline_override={"WorkChooseIdol": {
+                "recognition": "TemplateMatch",
+                "template": idol
+            }})
+        if reco_detail:
+            box = reco_detail.filterd_results[0].box
+            return CustomRecognition.AnalyzeResult(box=box, detail="已选中")
+        else:
+            context.tasker.controller.post_swipe(400, 864, 200, 864, duration=200).wait()
+            time.sleep(0.5)
+            image = context.tasker.controller.post_screencap().wait().get()
+
+            reco_detail = context.run_recognition(
+                "WorkChooseIdol", image,
+                pipeline_override={"WorkChooseIdol": {
+                    "recognition": "TemplateMatch",
+                    "template": idol
+                }})
+            if reco_detail:
+                box = reco_detail.filterd_results[0].box
+                return CustomRecognition.AnalyzeResult(box=box, detail="已选中")
+
+        logger.info("未能找到指定Idol")
+        return CustomRecognition.AnalyzeResult(box=[0, 0, 0, 0], detail="无文字")
