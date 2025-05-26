@@ -23,49 +23,73 @@
     "action":"Click",
     "post_wait_freezes":500,
     "next":[
-      "SocietyCommit",
-      "SocietyCommitAlready"
+      "SocietyDonation",
+      "SocietyRequest",
+      "BackHome"
     ],
-    "interrupt": [
+    "interrupt":[
       "CloseButton"
     ]
   },
-  "SocietyCommit":{
+  "SocietyDonation":{
+    "next":[
+      "SocietyDonationCommit",
+      "SocietyCommitAlready"
+    ],
+    "interrupt":[
+      "CloseButton"
+    ]
+  },
+  "SocietyDonationCommit":{
     "recognition":"TemplateMatch",
     "template":"society_commit.png",
     "action":"Click",
     "next":[
-      "SocietyConfirm",
-      "SocietyCommitRunout"
+      "SocietyDonationConfirm",
+      "SocietyDonationCommitRunout",
+      "SocietyDonationCommit"
+    ],
+    "interrupt":[
+      "CloseButton"
     ]
   },
-  "SocietyConfirm":{
+  "SocietyDonationConfirm":{
     "recognition":"TemplateMatch",
     "template":"decide.png",
     "action":"Click",
-    "post_wait_freezes": 500,
+    "post_wait_freezes":500,
     "next":[
-      "SocietyNext",
-      "SocietyCommit",
+      "SocietyDonationNext",
+      "SocietyDonationCommit",
       "SocietyCommitAlready"
     ]
   },
-  "SocietyCommitRunout":{
+  "SocietyDonationCommitRunout":{
     "recognition":"TemplateMatch",
     "template":"society_commit_runout.png",
     "next":[
-      "SocietyRequests",
-      "SocietyRequestsAlready"
+      "SocietyRequest",
+      "BackHome"
     ]
   },
-  "SocietyNext":{
+  "SocietyDonationNext":{
     "recognition":"TemplateMatch",
     "template":"society_next.png",
     "action":"Swipe",
-    "begin" : [491,853,1,1],
-    "end" : [182,855,1,1],
+    "begin":[
+      491,
+      853,
+      1,
+      1
+    ],
+    "end":[
+      182,
+      855,
+      1,
+      1
+    ],
     "next":[
-      "SocietyCommit",
+      "SocietyDonationCommit",
       "SocietyCommitAlready"
     ]
   },
@@ -73,33 +97,40 @@
     "recognition":"TemplateMatch",
     "template":"society_commit_already.png",
     "next":[
-      "SocietyRequests",
+      "SocietyRequest",
+      "BackHome"
+    ]
+  },
+  "SocietyRequest":{
+    "next":[
+      "SocietyRequestItem",
       "SocietyRequestsAlready"
     ]
   },
-  "SocietyRequests":{
+  "SocietyRequestItem":{
     "recognition":"TemplateMatch",
     "template":"society_requests.png",
     "action":"Click",
+    "post_wait_freezes":500,
     "next":[
-      "SocietyChoose",
-      "SocietyRequestsGet"
+      "SocietyRequestChoose",
+      "SocietyRequestGet"
     ]
   },
-  "SocietyChoose":{
-    "recognition":"TemplateMatch",
-    "template":"items/anomaly_yellow.png",
+  "SocietyRequestChoose":{
+    "recognition":"Custom",
+    "custom_recognition":"SocietyRequestAuto",
     "action":"Click",
     "next":[
-      "SocietyRequestsConfirm"
+      "SocietyRequestConfirm"
     ]
   },
-  "SocietyRequestsConfirm":{
+  "SocietyRequestConfirm":{
     "recognition":"TemplateMatch",
     "template":"decide.png",
     "action":"Click",
     "next":[
-      "SocietyRequestsConfirm",
+      "SocietyRequestConfirm",
       "BackHome"
     ]
   },
@@ -108,23 +139,28 @@
     "template":"society_requests_already.png",
     "action":"Click",
     "next":[
-      "SocietyRequestsGet",
-      "SocietyRequestsClose"
+      "SocietyRequestGet",
+      "SocietyRequestClose"
     ]
   },
-  "SocietyRequestsGet":{
+  "SocietyRequestGet":{
     "recognition":"TemplateMatch",
     "template":"society_requests_get.png",
     "next":[
-      "SocietyRequestsClose"
+      "SocietyRequestClose"
     ]
   },
-  "SocietyRequestsClose":{
+  "SocietyRequestClose":{
     "recognition":"TemplateMatch",
     "template":"close.png",
     "action":"Click",
     "next":[
       "BackHome"
     ]
+  },
+  "AAAAAAA":{
+    "recognition":"OCR",
+    "expected":"^\\d{1,3}(,\\d{3})*$",
+    "roi":[25, 401, 667, 494]
   }
 }

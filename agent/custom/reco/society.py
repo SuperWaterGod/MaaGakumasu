@@ -1,0 +1,46 @@
+from utils import logger
+from typing import Union, Optional
+
+from maa.define import RectType
+from maa.context import Context
+from maa.agent.agent_server import AgentServer
+from maa.custom_recognition import CustomRecognition
+
+
+@AgentServer.custom_recognition("SocietyRequestAuto")
+class SocietyRequestAuto(CustomRecognition):
+    """
+        自动选择社团请求物品
+        选择数量最少的物品
+    """
+
+    def analyze(
+            self,
+            context: Context,
+            argv: CustomRecognition.AnalyzeArg,
+    ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
+
+        reco_detail = context.run_recognition(
+            "SocietyRequestChooseItem", argv.image,
+            pipeline_override={"SocietyRequestChooseItem": {
+                "recognition": "OCR",
+                "expected": "^\\d{1,3}(,\\d{3})*$",
+                "roi": [25, 401, 667, 494]
+            }})
+        if reco_detail:
+            items_list = []
+            for result in reco_detail.filterd_results:
+                items_list.append({
+                    "box": result.box,
+                    "text": int(result.text.replace(",", ""))
+                })
+            sorted_list = sorted(items_list, key=lambda item: item['text'])
+            min_item = sorted_list[0]
+            logger.info(f"已选择最少数量:{min_item['text']}")
+            return CustomRecognition.AnalyzeResult(box=min_item["box"], detail="选择数量最少的物品")
+
+        logger.warning("OCR识别失败!")
+        reco_detail = context.run_recognition("SocietyRequestChoose", argv.image)
+        best_result = reco_detail.best_result
+        logger.info("使用默认选项")
+        return CustomRecognition.AnalyzeResult(box=best_result.box, detail="OCR识别失败!")

@@ -470,7 +470,7 @@
           "pipeline_override":{
             "SocietyRequestChoose":{
               "recognition":"Custom",
-              "custom_recognition":"WorkChooseAuto"
+              "custom_recognition":"SocietyRequestAuto"
             }
           }
         },
@@ -478,6 +478,7 @@
           "name":"感性笔记(声乐)",
           "pipeline_override":{
             "SocietyRequestChoose":{
+              "recognition":"FeatureMatch",
               "template":"items/sense_red.png"
             }
           }
@@ -486,6 +487,7 @@
           "name":"感性笔记(舞蹈)",
           "pipeline_override":{
             "SocietyRequestChoose":{
+              "recognition":"FeatureMatch",
               "template":"items/sense_blue.png"
             }
           }
@@ -494,6 +496,7 @@
           "name":"感性笔记(形象)",
           "pipeline_override":{
             "SocietyRequestChoose":{
+              "recognition":"FeatureMatch",
               "template":"items/sense_yellow.png"
             }
           }
@@ -502,6 +505,7 @@
           "name":"理性笔记(声乐)",
           "pipeline_override":{
             "SocietyRequestChoose":{
+              "recognition":"FeatureMatch",
               "template":"items/logic_red.png"
             }
           }
@@ -510,6 +514,7 @@
           "name":"理性笔记(舞蹈)",
           "pipeline_override":{
             "SocietyRequestChoose":{
+              "recognition":"FeatureMatch",
               "template":"items/logic_blue.png"
             }
           }
@@ -518,6 +523,7 @@
           "name":"理性笔记(形象)",
           "pipeline_override":{
             "SocietyRequestChoose":{
+              "recognition":"FeatureMatch",
               "template":"items/logic_yellow.png"
             }
           }
@@ -526,6 +532,7 @@
           "name":"非凡笔记(声乐)",
           "pipeline_override":{
             "SocietyRequestChoose":{
+              "recognition":"FeatureMatch",
               "template":"items/anomaly_red.png"
             }
           }
@@ -534,6 +541,7 @@
           "name":"非凡笔记(舞蹈)",
           "pipeline_override":{
             "SocietyRequestChoose":{
+              "recognition":"FeatureMatch",
               "template":"items/anomaly_blue.png"
             }
           }
@@ -542,6 +550,7 @@
           "name":"非凡笔记(形象)",
           "pipeline_override":{
             "SocietyRequestChoose":{
+              "recognition":"FeatureMatch",
               "template":"items/anomaly_yellow.png"
             }
           }
