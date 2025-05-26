@@ -49,14 +49,13 @@
       "name":"安排工作",
       "entry":"Work",
       "option":[
-        "自动安排工作",
+        "迷你演唱会Idol",
         "迷你演唱会工作时长",
-        "直播活动工作时长",
-        "指定迷你演唱会Idol",
-        "指定直播活动Idol"
+        "直播活动Idol",
+        "直播活动工作时长"
       ],
       "check":true,
-      "doc":"自动安排工作将优先选择笑脸然后按照最高好感排序"
+      "doc":"自动:优先选择笑脸，其次按照好感高低选择"
     },
     {
       "name":"社团活动",
@@ -109,39 +108,13 @@
         }
       ]
     },
-    "自动安排工作":{
-      "cases":[
-        {
-          "name":"Yes",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseAuto"
-            },
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseAuto"
-            }
-          }
-        },
-        {
-          "name":"No",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol"
-            },
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol"
-            }
-          }
-        }
-      ]
-    },
     "迷你演唱会工作时长":{
       "cases":[
         {
           "name":"4 小时",
           "pipeline_override":{
             "WorkChooseShowTime":{
-              "expected":"4時間"
+              "expected":"4"
             }
           }
         },
@@ -149,7 +122,7 @@
           "name":"8 小时",
           "pipeline_override":{
             "WorkChooseShowTime":{
-              "expected":"8時間"
+              "expected":"8"
             }
           }
         },
@@ -157,7 +130,7 @@
           "name":"12 小时",
           "pipeline_override":{
             "WorkChooseShowTime":{
-              "expected":"12時間"
+              "expected":"12"
             }
           }
         }
@@ -169,7 +142,7 @@
           "name":"4 小时",
           "pipeline_override":{
             "WorkChooseLiveTime":{
-              "expected":"4時間"
+              "expected":"4"
             }
           }
         },
@@ -177,7 +150,7 @@
           "name":"8 小时",
           "pipeline_override":{
             "WorkChooseLiveTime":{
-              "expected":"8時間"
+              "expected":"8"
             }
           }
         },
@@ -185,14 +158,22 @@
           "name":"12 小时",
           "pipeline_override":{
             "WorkChooseLiveTime":{
-              "expected":"12時間"
+              "expected":"12"
             }
           }
         }
       ]
     },
-    "指定迷你演唱会Idol":{
+    "迷你演唱会Idol":{
       "cases":[
+        {
+          "name":"自动",
+          "pipeline_override":{
+            "WorkChooseShow":{
+              "custom_recognition":"WorkChooseAuto"
+            }
+          }
+        },
         {
           "name":"花海咲季",
           "pipeline_override":{
@@ -265,7 +246,7 @@
             "WorkChooseShow":{
               "custom_recognition":"WorkChooseIdol",
               "custom_recognition_param":{
-                "idol":"idols/hanami_saki.png"
+                "idol":"idols/katuragi_ririya.png"
               }
             }
           }
@@ -320,15 +301,23 @@
             "WorkChooseShow":{
               "custom_recognition":"WorkChooseIdol",
               "custom_recognition_param":{
-                "idol":"idols/hanami_saki.png"
+                "idol":"idols/zyuuou_sena.png"
               }
             }
           }
         }
       ]
     },
-    "指定直播活动Idol":{
+    "直播活动Idol":{
       "cases":[
+        {
+          "name":"自动",
+          "pipeline_override":{
+            "WorkChooseShow":{
+              "custom_recognition":"WorkChooseAuto"
+            }
+          }
+        },
         {
           "name":"花海咲季",
           "pipeline_override":{
@@ -401,7 +390,7 @@
             "WorkChooseLive":{
               "custom_recognition":"WorkChooseIdol",
               "custom_recognition_param":{
-                "idol":"idols/hanami_saki.png"
+                "idol":"idols/katuragi_ririya.png"
               }
             }
           }
@@ -456,7 +445,7 @@
             "WorkChooseLive":{
               "custom_recognition":"WorkChooseIdol",
               "custom_recognition_param":{
-                "idol":"idols/hanami_saki.png"
+                "idol":"idols/zyuuou_sena.png"
               }
             }
           }
