@@ -124,7 +124,7 @@
   },
   "WorkChooseLiveTime":{
     "recognition":"OCR",
-    "expected":"4時間",
+    "expected":"12",
     "action":"Click",
     "next":[
       "WorkSure"
@@ -151,8 +151,7 @@
   "WorkChooseGood":{
     "recognition":"TemplateMatch",
     "template":[
-      "work_good.png",
-      "work_good_1.png"
+      "work_good.png"
     ],
     "roi":[
       8,

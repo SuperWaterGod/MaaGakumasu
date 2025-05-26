@@ -40,7 +40,11 @@ class SocietyRequestAuto(CustomRecognition):
             return CustomRecognition.AnalyzeResult(box=min_item["box"], detail="选择数量最少的物品")
 
         logger.warning("OCR识别失败!")
-        reco_detail = context.run_recognition("SocietyRequestChoose", argv.image)
+        reco_detail = context.run_recognition("SocietyRequestChoose", argv.image,
+                                              pipeline_override={"SocietyRequestChooseItem": {
+                                                  "recognition": "FeatureMatch",
+                                                  "template": "items/logic_yellow.png"
+                                              }})
         best_result = reco_detail.best_result
         logger.info("使用默认选项")
         return CustomRecognition.AnalyzeResult(box=best_result.box, detail="OCR识别失败!")

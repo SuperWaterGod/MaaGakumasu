@@ -24,7 +24,7 @@ class WorkChooseAuto(CustomRecognition):
 
         reco_detail = context.run_recognition("WorkChooseGood", argv.image,
                                               pipeline_override={"WorkChooseGood": {
-                                                  "roi": [8, 709, 621, 317]
+                                                  "roi": [8, 700, 621, 317]
                                               }})
         if reco_detail:
             logger.info("第一页有笑脸")
@@ -60,7 +60,7 @@ class WorkChooseAuto(CustomRecognition):
         image = context.tasker.controller.post_screencap().wait().get()
         reco_detail = context.run_recognition("WorkChooseGood", image,
                                               pipeline_override={"WorkChooseGood": {
-                                                  "roi": [104, 719, 615, 309]
+                                                  "roi": [104, 700, 615, 309]
                                               }})
         if reco_detail:
             logger.info("第二页有笑脸")
