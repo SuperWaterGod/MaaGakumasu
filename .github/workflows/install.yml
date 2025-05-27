@@ -19,6 +19,10 @@ on:
       - "**.py"
   workflow_dispatch:
 
+permissions:
+  contents: write
+  actions: write
+
 jobs:
   meta:
     runs-on: ubuntu-latest
@@ -42,19 +46,80 @@ jobs:
             suffix=${tag#$prefix-}
             tag="$prefix-ci.$suffix"
           fi
+          is_prerelease=false
+          if [[ $tag =~ .*alpha.* || $tag =~ .*beta.* || $tag =~ .*rc.* || $tag =~ .*dev.* || $tag =~ .*-ci.* ]]; then
+            is_prerelease=true
+          fi
 
           echo tag=$tag | tee -a $GITHUB_OUTPUT
           echo is_release=$is_release | tee -a $GITHUB_OUTPUT
+          echo is_prerelease=$is_prerelease | tee -a $GITHUB_OUTPUT
     outputs:
       tag: ${{ steps.set_tag.outputs.tag }}
       is_release: ${{ steps.set_tag.outputs.is_release }}
+      is_prerelease: ${{ steps.set_tag.outputs.is_prerelease }}
 
-  install:
+  windows:
     needs: meta
-    runs-on: macos-latest
+    runs-on: windows-latest
     strategy:
       matrix:
-        os: [win, macos, linux, android]
+        arch: [x86_64]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Download MaaFramework
+        uses: robinraju/release-downloader@v1
+        with:
+          repository: MaaXYZ/MaaFramework
+          fileName: "MAA-win-${{ matrix.arch }}*"
+          latest: true
+          preRelease: true
+          out-file-path: "deps"
+          extract: true
+
+      - name: Download MFAAvalonia  
+        uses: robinraju/release-downloader@v1  
+        with:
+          repository: SweetSmellFox/MFAAvalonia
+          fileName: "MFAAvalonia-*-win-x64*"
+          latest: true
+          out-file-path: "MFA"
+          extract: true
+
+      - name: Setup Embed Python
+        shell: powershell
+        run: |
+          ./tools/ci/setup_embed_python.ps1
+
+      - name: Install
+        shell: bash
+        run: |
+          python ./tools/install.py ${{ needs.meta.outputs.tag }}
+
+          if [ -d "MFA" ]; then
+            echo "Copying MFA files to install directory..."
+            mkdir -p install
+            cp -rpvn MFA/. install/
+          else
+            echo "MFA directory not found, skipping copy."
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MaaGakumasu-win-${{ matrix.arch }}
+          path: "install"
+
+  unix:
+    needs: meta
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
         arch: [aarch64, x86_64]
       fail-fast: false
 
@@ -67,17 +132,17 @@ jobs:
         uses: robinraju/release-downloader@v1
         with:
           repository: MaaXYZ/MaaFramework
-          fileName: "MAA-${{ matrix.os }}-${{ matrix.arch }}*"
+          fileName: "MAA-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'macos' }}-${{ matrix.arch }}*"
           latest: true
+          preRelease: true
           out-file-path: "deps"
           extract: true
 
-      - name: Download MFAAvalonia
-        if: matrix.os != 'android'
-        uses: robinraju/release-downloader@v1
+      - name: Download MFAAvalonia  
+        uses: robinraju/release-downloader@v1  
         with:
           repository: SweetSmellFox/MFAAvalonia
-          fileName: "MFAAvalonia-*-${{ (matrix.os == 'win' && 'win') || (matrix.os == 'macos' && 'osx') || (matrix.os == 'linux' && 'linux') }}-${{ (matrix.arch == 'x86_64' && 'x64') || (matrix.arch == 'aarch64' && 'arm64') }}*"
+          fileName: "MFAAvalonia-*-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'osx' }}-${{ matrix.arch == 'x86_64' && 'x64' || 'arm64' }}*"
           latest: true
           out-file-path: "MFA"
           extract: true
@@ -85,7 +150,7 @@ jobs:
       - name: Install
         shell: bash
         run: |
-          python ./install.py ${{ needs.meta.outputs.tag }}
+          python ./tools/install.py ${{ needs.meta.outputs.tag }}
 
           if [[ "${{ matrix.os }}" != "android" ]]; then
             if [ -d "MFA" ]; then
@@ -101,26 +166,77 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MaaXXX-${{ matrix.os }}-${{ matrix.arch }}
+          name: MaaGakumasu-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'macos' }}-${{ matrix.arch }}
           path: "install"
+
+  changelog:
+    name: Generate changelog
+    runs-on: ubuntu-latest
+    outputs:
+      release_body: ${{ steps.git-cliff.outputs.content }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff
+        with:
+          config: .github/cliff.toml
+          args: -vv --latest --strip header
+        env:
+          OUTPUT: CHANGES.md
+          GITHUB_REPO: ${{ github.repository }}
 
   release:
     if: ${{ needs.meta.outputs.is_release == 'true' }}
-    needs: install
+    needs: [meta, windows, unix, changelog]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: assets
 
-      - run: |
+      - name: Check assets directory
+        run: |
+          ls -la assets
+          if [ -z "$(ls -A assets)" ]; then
+            echo "assets directory is empty"
+            exit 1
+          fi
+
+      - name: Compress and generate checksums
+        run: |
           cd assets
+          echo "Generating checksums for all zip files..."
+          checksum_file="checksums.sha256"
+          touch "$checksum_file"
+
           for f in *; do
-            (cd $f && zip -r ../$f-${{ needs.meta.outputs.tag }}.zip .)
+            if [ -d "$f" ]; then
+              echo "Processing directory: $f"
+              zip_file="$f-${{ needs.meta.outputs.tag }}.zip"
+              (cd "$f" && zip -r "../$zip_file" .)
+              if [ $? -eq 0 ]; then
+                echo "ZIP file created: ../$zip_file"
+                echo "Processing directory: $f"
+                sha256sum "$zip_file" >> "$checksum_file"
+                echo "" >> "$checksum_file"
+              else
+                echo "Failed to create ZIP file: ../$zip_file"
+                exit 1
+              fi
+            else
+              echo "Skipping non-directory: $f"
+            fi
           done
 
       - uses: softprops/action-gh-release@v2
         with:
           files: assets/*
           tag_name: ${{ needs.meta.outputs.tag }}
-          generate_release_notes: true
+          body: ${{ needs.changelog.outputs.release_body }}
+          draft: false
+          prerelease: ${{ needs.meta.outputs.is_prerelease == 'true' }}
