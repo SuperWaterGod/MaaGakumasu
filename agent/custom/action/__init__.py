@@ -1,5 +1,7 @@
-from .work import *
+from .shop import *
 
 __all__ = [
-    "MyCustomAction"
+    "ShoppingCoinAuto",
+    "ShoppingExchangeMoneyAuto",
+    "ShoppingExchangeAPAuto"
 ]
