@@ -1,4 +1,4 @@
-- [ ] <!-- markdownlint-disable MD033 MD041 -->
+<!-- markdownlint-disable MD033 MD041 -->
 
 <p align="center">
   <img alt="LOGO" src="https://github.com/user-attachments/assets/d22b9752-5b71-4423-95c7-30f9eb0b2923" width="256" height="256" />
