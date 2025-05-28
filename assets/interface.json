@@ -17,12 +17,20 @@
       "path":[
         "{PROJECT_DIR}/resource/base"
       ]
+    },
+    {
+      "name":"kuyo",
+      "path":[
+        "{PROJECT_DIR}/resource/base",
+        "{PROJECT_DIR}/resource/kuyo"
+      ]
     }
   ],
   "agent":{
     "child_exec":"python",
     "child_args":[
-      "{PROJECT_DIR}/agent/main.py"
+      "{PROJECT_DIR}/agent/main.py",
+        "-u"
     ]
   },
   "task":[
@@ -77,7 +85,7 @@
         "启用AP兑换所"
       ],
       "check":true,
-      "doc":"默认仅购买推荐物品\n可能无法处理金币不足导致的卡顿\n因MAF框架限制，指定购买物品需要修改config.jsonc文件"
+      "doc":"默认仅购买推荐物品\n[size:15][color:tomato]因MAF框架限制，指定购买物品需要修改config.jsonc文件[/color][/size]"
     },
     {
       "name":"领取奖励",
@@ -88,6 +96,11 @@
       ],
       "check":true,
       "doc":""
+    },
+    {
+      "name":"关闭游戏",
+      "entry":"Shutdown",
+      "check":true
     }
   ],
   "option":{

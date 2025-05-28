@@ -9,6 +9,7 @@
     "action":"StartApp",
     "package":"com.bandainamcoent.idolmaster_gakuen",
     "next":"HomeFlag",
+    "timeout": 600000,
     "interrupt":[
       "Download",
       "LoginBonus",
@@ -25,11 +26,8 @@
     ]
   },
   "Download":{
-    "recognition":"OCR",
-    "expected":[
-      "下载",
-      "重试"
-    ],
+    "recognition":"TemplateMatch",
+    "template":"decide.png",
     "action":"Click"
   },
   "LoginBonus":{
