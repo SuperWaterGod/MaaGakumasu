@@ -1,0 +1,40 @@
+{
+  "StartUp":{
+    "post_wait_freezes":300,
+    "next":[
+      "StartKuyo"
+    ]
+  },
+  "StartKuyo":{
+    "action":"StartApp",
+    "package":"org.kuyo.game",
+    "next":"StartKuyoSpeedup"
+  },
+  "StartKuyoSpeedup":{
+    "recognition":"TemplateMatch",
+    "template":"kuyo_speedup.png",
+    "threshold": 0.9,
+    "action":"Click",
+    "next":"StartKuyoClick"
+  },
+  "StartKuyoClick":{
+    "recognition":"TemplateMatch",
+    "template":"kuyo_game.png",
+    "action":"Click",
+    "next":"StartKuyoStart"
+  },
+  "StartKuyoStart":{
+    "recognition":"TemplateMatch",
+    "template":"kuyo_start.png",
+    "action":"Click",
+    "next":"HomeFlag",
+    "timeout": 600000,
+    "interrupt":[
+      "Download",
+      "LoginBonus",
+      "GetFriendPoints",
+      "CloseButtonRound",
+      "ClickCenter"
+    ]
+  }
+}
