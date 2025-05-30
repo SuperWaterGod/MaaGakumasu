@@ -45,24 +45,30 @@
     "template":"society_commit.png",
     "action":"Click",
     "next":[
-      "SocietyDonationConfirm",
+      "SocietyDonationSubmit",
       "SocietyDonationCommitRunout",
       "SocietyDonationCommit"
     ],
     "interrupt":[
+      "SocietyDonationConfirm",
       "CloseButton"
     ]
   },
-  "SocietyDonationConfirm":{
+  "SocietyDonationSubmit":{
     "recognition":"TemplateMatch",
-    "template":"decide.png",
-    "action":"Click",
+    "template":"society_submit.png",
     "post_wait_freezes":500,
     "next":[
       "SocietyDonationNext",
       "SocietyDonationCommit",
       "SocietyCommitAlready"
     ]
+  },
+  "SocietyDonationConfirm":{
+    "recognition":"TemplateMatch",
+    "template":"decide.png",
+    "action":"Click",
+    "post_wait_freezes":500
   },
   "SocietyDonationCommitRunout":{
     "recognition":"TemplateMatch",
