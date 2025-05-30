@@ -6,7 +6,8 @@
     ],
     "interrupt":[
       "ReturnHome",
-      "BackHome"
+      "BackHome",
+      "CloseButtonRound"
     ]
   },
   "ActivityFeeHomeFlag":{
