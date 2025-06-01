@@ -22,96 +22,67 @@ class WorkChooseAuto(CustomRecognition):
             argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
 
-        reco_detail = context.run_recognition("WorkChooseGood", argv.image,
-                                              pipeline_override={"WorkChooseGood": {
-                                                  "roi": [8, 700, 621, 317]
-                                              }})
-        if reco_detail:
-            logger.info("第一页有笑脸")
+        def recognize_smile(image, roi):
+            return context.run_recognition("WorkChooseGood", image, pipeline_override={"WorkChooseGood": {"roi": roi}})
 
-            good_list = []
-            for result in reco_detail.filterd_results:
-                good_list.append(result.box)
-            image = context.tasker.controller.post_screencap().wait().get()
-            reco_detail = context.run_recognition(
-                "WorkAlready", image,
-                pipeline_override={"WorkAlready": {"roi": [good_list[0][0] - 90, good_list[0][1] - 110, 150, 150], "recognition": "FeatureMatch"}})
-            if reco_detail:
-                if len(good_list) > 1:
-                    logger.info("笑脸存在且被选中, 选择第二个笑脸")
-                    return CustomRecognition.AnalyzeResult(box=good_list[1], detail="笑脸存在且被选中, 选择第二个笑脸")
-                else:
-                    logger.info("笑脸存在且被选中")
-                    context.tasker.controller.post_swipe(400, 864, 200, 864, duration=200).wait()
-                    time.sleep(0.5)
-            else:
-                logger.info("笑脸存在且未被选中")
-                return CustomRecognition.AnalyzeResult(box=good_list[0], detail="笑脸存在且未被选中")
-
-        else:
-            logger.info("第一页无笑脸")
-            context.tasker.controller.post_swipe(400, 864, 200, 864, duration=200).wait()
-            time.sleep(0.5)
-
-        image = context.tasker.controller.post_screencap().wait().get()
-        reco_detail = context.run_recognition("WorkChooseGood", image,
-                                              pipeline_override={"WorkChooseGood": {
-                                                  "roi": [104, 700, 615, 309]
-                                              }})
-        if reco_detail:
-            logger.info("第二页有笑脸")
-
-            good_list = []
-            for result in reco_detail.filterd_results:
-                good_list.append(result.box)
-            image = context.tasker.controller.post_screencap().wait().get()
-            reco_detail = context.run_recognition(
-                "WorkAlready", image,
-                pipeline_override={"WorkAlready": {"roi": [good_list[0][0] - 90, good_list[0][1] - 110, 150, 150]}})
-            if reco_detail:
-                if len(good_list) > 1:
-                    logger.info("笑脸存在且被选中, 选择第二个笑脸")
-                    return CustomRecognition.AnalyzeResult(box=good_list[1], detail="笑脸存在且被选中, 选择第二个笑脸")
-                else:
-                    logger.info("笑脸存在且被选中")
-                    context.tasker.controller.post_swipe(200, 864, 400, 864, duration=200).wait()
-                    time.sleep(0.5)
-            else:
-                logger.info("笑脸存在且未被选中")
-                return CustomRecognition.AnalyzeResult(box=good_list[0], detail="笑脸存在且未被选中")
-        else:
-            logger.info("第二页无笑脸")
-            context.tasker.controller.post_swipe(200, 864, 400, 864, duration=200).wait()
-            time.sleep(0.5)
-        image = context.tasker.controller.post_screencap().wait().get()
-        reco_detail = context.run_recognition(
-            "WorkIdolAffinity", image,
-            pipeline_override={"WorkIdolAffinity": {
+        def recognize_affinity(image):
+            return context.run_recognition("WorkIdolAffinity", image, pipeline_override={"WorkIdolAffinity": {
                 "recognition": "OCR",
                 "expected": "^(0|[1-9]|1[0-9]|20)\\/20$",
-                "roi": [70, 788, 558, 240]}
-            })
+                "roi": [70, 788, 558, 240]
+            }})
 
-        if reco_detail:
-            affinity_list = []
-            for result in reco_detail.filterd_results:
-                affinity_list.append({
-                    "box": result.box,
-                    "text": int(result.text.replace("/20", ""))
-                })
+        def recognize_work(image, box):
+            return context.run_recognition("WorkAlready", image, pipeline_override={"WorkAlready": {
+                "roi": [box[0] - 100, box[1] - 10, 150, 150]
+            }})
+
+        def handle_smile_page(page_image, roi, swipe_coords):
+            smile_reco_detail = recognize_smile(page_image, roi)
+            if smile_reco_detail:
+                logger.info("有笑脸")
+                good_list = [result.box for result in smile_reco_detail.filterd_results]
+                new_page_image = context.tasker.controller.post_screencap().wait().get()
+                work_reco_detail = recognize_work(new_page_image, good_list[0])
+                if work_reco_detail:
+                    if len(good_list) > 1:
+                        logger.info("笑脸存在且被选中, 选择第二个笑脸")
+                        return CustomRecognition.AnalyzeResult(box=good_list[1], detail="笑脸存在且被选中, 选择第二个笑脸")
+                    else:
+                        logger.info("笑脸存在且被选中")
+                        context.tasker.controller.post_swipe(*swipe_coords, duration=200).wait()
+                        time.sleep(0.5)
+                else:
+                    logger.info("笑脸存在且未被选中")
+                    return CustomRecognition.AnalyzeResult(box=good_list[0], detail="笑脸存在且未被选中")
+            else:
+                logger.info("无笑脸")
+                context.tasker.controller.post_swipe(*swipe_coords, duration=200).wait()
+                time.sleep(0.5)
+            return None
+
+        # 处理第一页笑脸
+        first_result = handle_smile_page(argv.image, [8, 700, 621, 317], (400, 864, 200, 864))
+        if first_result:
+            return first_result
+
+        # 处理第二页笑脸
+        new_image = context.tasker.controller.post_screencap().wait().get()
+        second_result = handle_smile_page(new_image, [104, 700, 615, 309], (200, 864, 400, 864))
+        if second_result:
+            return second_result
+
+        # 处理好感度
+        affinity_image = context.tasker.controller.post_screencap().wait().get()
+        affinity_reco_detail = recognize_affinity(affinity_image)
+        if affinity_reco_detail:
+            affinity_list = [{"box": result.box, "text": int(result.text.replace("/20", ""))} for result in affinity_reco_detail.filterd_results]
             sorted_list = sorted(affinity_list, key=lambda item: item['text'])
             max_affinity = sorted_list[-1]
             second_affinity = sorted_list[-2]
-            max_affinity_box = max_affinity["box"]
-
-            image = context.tasker.controller.post_screencap().wait().get()
-            reco_detail = context.run_recognition(
-                "WorkAlready", image,
-                pipeline_override={"WorkAlready": {
-                    "roi": [max_affinity_box[0] - 90, max_affinity_box[1] - 110, 150, 150]
-                }})
-
-            if reco_detail:
+            new_affinity_image = context.tasker.controller.post_screencap().wait().get()
+            work_reco_detail_ocr = recognize_work(new_affinity_image, max_affinity["box"])
+            if work_reco_detail_ocr:
                 logger.info("最高好感已工作")
                 return CustomRecognition.AnalyzeResult(box=second_affinity["box"], detail="第二高好感度")
             else:
