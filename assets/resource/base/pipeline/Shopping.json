@@ -29,6 +29,7 @@
     ]
   },
   "ShoppingCoin":{
+    "enabled":true,
     "recognition":"TemplateMatch",
     "template":"shopping_coin.png",
     "action":"Click",
@@ -52,7 +53,8 @@
     "recognition":"TemplateMatch",
     "template":"decide.png",
     "action":"Click",
-    "post_wait_freezes":200,
+    "pre_wait_freezes":200,
+    "post_wait_freezes":500,
     "next":[
       "ShoppingCoinButton"
     ],
@@ -110,6 +112,7 @@
     ]
   },
   "ShoppingExchangeMoney":{
+    "enabled":true,
     "recognition":"TemplateMatch",
     "template":"shopping_money.png",
     "action":"Custom",
@@ -132,11 +135,28 @@
       "record_key":false,
       "hanami_ume_shards":false,
       "katuragi_ririya_shards":false,
-      "sasazawa_hiro_shards":false
+      "sasazawa_hiro_shards":false,
+      "sion_sumika_shards":false,
+      "tukimura_temari_shards":false,
+      "huzita_kotone_shards":false,
+      "kuramoto_tina_shards":false,
+      "hanami_saki_shards":false,
+      "arimura_mao_shards":false,
+      "himezaki_rinami_shards":false
     },
     "next":[
+      "ShoppingFreeRefresh",
       "ShoppingExchangeAPStart",
       "BackHome"
+    ]
+  },
+  "ShoppingFreeRefresh":{
+    "enabled":true,
+    "recognition":"TemplateMatch",
+    "template":"shopping_refresh.png",
+    "action":"Click",
+    "next":[
+      "ShoppingExchangeMoney"
     ]
   },
   "ShoppingExchangeBuy":{
@@ -151,6 +171,7 @@
     ]
   },
   "ShoppingExchangeAPStart":{
+    "enabled":true,
     "recognition":"TemplateMatch",
     "template":"shopping_ap.png",
     "action":"Click",
@@ -172,5 +193,11 @@
     "next":[
       "BackHome"
     ]
+  },
+  "ShoppingPlus":{
+    "recognition":"TemplateMatch",
+    "template":"shopping_plus.png",
+    "action":"Click",
+    "threshold":0.95
   }
 }

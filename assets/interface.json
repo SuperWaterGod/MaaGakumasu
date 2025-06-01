@@ -4,7 +4,6 @@
   "mirrorchyan_rid":null,
   "mirrorchyan_multiplatform":false,
   "url":"https://github.com/SuperWaterGod/MaaGakumasu",
-  "custom_title":"MaaGakumasu",
   "controller":[
     {
       "name":"官服",
@@ -82,6 +81,7 @@
       "option":[
         "启用购买扭蛋",
         "启用金币兑换所",
+        "金币兑换所免费刷新",
         "启用AP兑换所"
       ],
       "check":true,
@@ -708,6 +708,26 @@
           "name":"No",
           "pipeline_override":{
             "ShoppingExchangeAPStart":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "金币兑换所免费刷新":{
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingFreeRefresh":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingFreeRefresh":{
               "enabled":false
             }
           }
