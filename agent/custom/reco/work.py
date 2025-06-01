@@ -32,20 +32,16 @@ class WorkChooseAuto(CustomRecognition):
             good_list = []
             for result in reco_detail.filterd_results:
                 good_list.append(result.box)
-
             image = context.tasker.controller.post_screencap().wait().get()
             reco_detail = context.run_recognition(
                 "WorkAlready", image,
-                pipeline_override={"WorkAlready": {
-                    "roi": [good_list[0][0] - 90, good_list[0][1] - 110, 150, 150]
-                }})
-
+                pipeline_override={"WorkAlready": {"roi": [good_list[0][0] - 90, good_list[0][1] - 110, 150, 150], "recognition": "FeatureMatch"}})
             if reco_detail:
                 if len(good_list) > 1:
                     logger.info("笑脸存在且被选中, 选择第二个笑脸")
                     return CustomRecognition.AnalyzeResult(box=good_list[1], detail="笑脸存在且被选中, 选择第二个笑脸")
                 else:
-                    logger.info("笑脸存在且被选中, 左滑动")
+                    logger.info("笑脸存在且被选中")
                     context.tasker.controller.post_swipe(400, 864, 200, 864, duration=200).wait()
                     time.sleep(0.5)
             else:
@@ -53,7 +49,7 @@ class WorkChooseAuto(CustomRecognition):
                 return CustomRecognition.AnalyzeResult(box=good_list[0], detail="笑脸存在且未被选中")
 
         else:
-            logger.info("第一页无笑脸, 左滑动")
+            logger.info("第一页无笑脸")
             context.tasker.controller.post_swipe(400, 864, 200, 864, duration=200).wait()
             time.sleep(0.5)
 
@@ -71,23 +67,20 @@ class WorkChooseAuto(CustomRecognition):
             image = context.tasker.controller.post_screencap().wait().get()
             reco_detail = context.run_recognition(
                 "WorkAlready", image,
-                pipeline_override={"WorkAlready": {
-                    "roi": [good_list[0][0] - 90, good_list[0][1] - 110, 150, 150]
-                }})
+                pipeline_override={"WorkAlready": {"roi": [good_list[0][0] - 90, good_list[0][1] - 110, 150, 150]}})
             if reco_detail:
                 if len(good_list) > 1:
                     logger.info("笑脸存在且被选中, 选择第二个笑脸")
                     return CustomRecognition.AnalyzeResult(box=good_list[1], detail="笑脸存在且被选中, 选择第二个笑脸")
                 else:
-                    logger.info("笑脸存在且被选中, 右滑动")
+                    logger.info("笑脸存在且被选中")
                     context.tasker.controller.post_swipe(200, 864, 400, 864, duration=200).wait()
                     time.sleep(0.5)
             else:
                 logger.info("笑脸存在且未被选中")
                 return CustomRecognition.AnalyzeResult(box=good_list[0], detail="笑脸存在且未被选中")
-
         else:
-            logger.info("第二页无笑脸，右滑动")
+            logger.info("第二页无笑脸")
             context.tasker.controller.post_swipe(200, 864, 400, 864, duration=200).wait()
             time.sleep(0.5)
         image = context.tasker.controller.post_screencap().wait().get()
