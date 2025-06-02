@@ -23,7 +23,8 @@
     "action":"Click",
     "next":[
       "ChallengeChoose",
-      "ChallengeRunOut"
+      "ChallengeRunOut",
+      "ChallengeReadyPeriod"
     ]
   },
   "ChallengeChoose":{
@@ -93,5 +94,12 @@
     "recognition":"TemplateMatch",
     "template":"challenge_award.png",
     "action":"Click"
+  },
+  "ChallengeReadyPeriod":{
+    "recognition":"TemplateMatch",
+    "template":"challenge_ready_period.png",
+    "next":[
+      "BackHome"
+    ]
   }
 }
