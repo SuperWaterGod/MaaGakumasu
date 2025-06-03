@@ -21,13 +21,17 @@
       "sasazawa_hiro_shards":false, //[光景]篠泽广
       "sion_sumika_shards":false, //[Tame-Lie-One-Step]紫云清夏
       "tukimura_temari_shards":false, //[Luna say maybe]月村手毬
-      "huzita_kotone_shards":false //[世界一可愛い私]藤田琴音
+      "huzita_kotone_shards":false, //[世界一可愛い私]藤田琴音
+      "hanami_saki_shards":false, //[Fighting My Way]花海咲季
+      "kuramoto_tina_shards":false, //[Wonder Scale]仓本千柰
+      "arimura_mao_shards":false, //[Fluorite]有村麻央
+      "himezaki_rinami_shards":false //[clumsy trick]姬崎莉波
     },
     "AP":{
       "support_point_increased":false, //支援强化Pt提升
       "note_increased":false, //笔记数量提升
       "challenge_ticket":false, //再挑战卷
-      "memory_ticket":false //回忆生成卷
+      "memory_ticket":true //回忆生成卷
     }
   }
 }

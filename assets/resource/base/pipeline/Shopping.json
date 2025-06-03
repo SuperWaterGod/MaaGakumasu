@@ -94,7 +94,9 @@
     "recognition":"TemplateMatch",
     "template":"back.png",
     "action":"Click",
+    "pre_wait_freezes":500,
     "post_wait_freezes":500,
+    "post_delay":1000,
     "next":[
       "ShoppingExchange",
       "BackHome"
@@ -104,7 +106,9 @@
     "recognition":"TemplateMatch",
     "template":"shopping_exchange.png",
     "action":"Click",
-    "post_wait_freezes":800,
+    "post_delay":500,
+    "pre_wait_freezes":500,
+    "post_wait_freezes":500,
     "next":[
       "ShoppingExchangeMoney",
       "ShoppingExchangeAPStart",
@@ -115,6 +119,7 @@
     "enabled":true,
     "recognition":"TemplateMatch",
     "template":"shopping_money.png",
+    "pre_wait_freezes":500,
     "action":"Custom",
     "custom_action":"ShoppingExchangeMoneyAuto",
     "custom_action_param":{
