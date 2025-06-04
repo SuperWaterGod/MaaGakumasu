@@ -192,7 +192,13 @@ class ShoppingExchangeMoneyAuto(CustomAction):
                         box = result.box
                         context.tasker.controller.post_click(box[0] + 70, box[1] + 70).wait()
                         time.sleep(0.5)
-                        context.run_task("ShoppingPlus")
+
+                        image = context.tasker.controller.post_screencap().wait().get()
+                        reco_detail = context.run_recognition("ShoppingPlus", image)
+                        if reco_detail:
+                            box = reco_detail.best_result.box
+                            context.tasker.controller.post_click(box[0], box[1]).wait()
+
                         context.run_task("ShoppingExchangeBuy")
                         time.sleep(0.5)
                         logger.info("购买成功")
@@ -239,7 +245,7 @@ class ShoppingExchangeAPAuto(CustomAction):
                         "recognition": "TemplateMatch",
                         "template": file_name,
                         "roi": [27, 311, 669, 230],
-                        "threshold": 1
+                        "threshold": 0.999
                     }})
 
             if context.tasker.stopping:
@@ -249,10 +255,16 @@ class ShoppingExchangeAPAuto(CustomAction):
             if reco_detail:
                 box = reco_detail.best_result.box
                 context.tasker.controller.post_click(box[0] + 80, box[1] + 80).wait()
-                time.sleep(0.5)
-                context.run_task("ShoppingPlus")
+                time.sleep(0.6)
+
+                image = context.tasker.controller.post_screencap().wait().get()
+                reco_detail = context.run_recognition("ShoppingPlus", image)
+                if reco_detail:
+                    box = reco_detail.best_result.box
+                    context.tasker.controller.post_click(box[0], box[1]).wait()
+
                 context.run_task("ShoppingExchangeBuy")
-                time.sleep(0.5)
+                time.sleep(0.4)
                 logger.info("购买成功")
             else:
                 logger.info("未找到该物品")

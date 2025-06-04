@@ -119,7 +119,9 @@
     "enabled":true,
     "recognition":"TemplateMatch",
     "template":"shopping_money.png",
+    "post_delay":500,
     "pre_wait_freezes":500,
+    "post_wait_freezes":500,
     "action":"Custom",
     "custom_action":"ShoppingExchangeMoneyAuto",
     "custom_action_param":{
@@ -203,6 +205,6 @@
     "recognition":"TemplateMatch",
     "template":"shopping_plus.png",
     "action":"Click",
-    "threshold":0.95
+    "threshold":0.99
   }
 }

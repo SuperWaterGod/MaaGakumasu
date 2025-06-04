@@ -4,7 +4,7 @@ import sys
 from PIL import Image
 
 # --- 配置参数 ---
-INPUT_FOLDER = "idols"
+INPUT_FOLDER = "input_idols"
 OUTPUT_FOLDER = "output_idols"  # 处理后的图片将保存到这个新文件夹
 TARGET_SIZE = (140, 190)        # 目标宽度和高度 (像素)
 TARGET_DPI = (96, 96)           # 水平DPI, 垂直DPI

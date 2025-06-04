@@ -25,7 +25,8 @@ class SocietyRequestAuto(CustomRecognition):
             pipeline_override={"SocietyRequestChooseItem": {
                 "recognition": "OCR",
                 "expected": "^\\d{1,3}(,\\d{3})*$",
-                "roi": [25, 401, 667, 494]
+                "roi": [25, 401, 667, 494],
+                "threshold": 0.9
             }})
         if reco_detail:
             items_list = []

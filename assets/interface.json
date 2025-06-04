@@ -85,7 +85,7 @@
         "启用AP兑换所"
       ],
       "check":true,
-      "doc":"默认仅购买推荐物品\n[size:15][color:tomato]因MAF框架限制，指定购买物品需要修改config.jsonc文件[/color][/size]"
+      "doc":"默认仅购买推荐物品\n[color:tomato]因MAF框架限制，指定购买物品需要修改[/color][config.jsonc](config.jsonc)[color:tomato]文件[/color]"
     },
     {
       "name":"领取奖励",
