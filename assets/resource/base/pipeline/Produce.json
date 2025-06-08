@@ -1,0 +1,389 @@
+{
+	"Produce":{
+    "post_wait_freezes":300,
+    "next":[
+      "ProduceHomeFlag"
+    ],
+    "interrupt":[
+      "ReturnHome",
+      "BackHome",
+      "CloseButtonRound"
+    ]
+  },
+  "ProduceHomeFlag":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "home.png",
+      "home_1.png"
+    ],
+    "action":"Click",
+    "next":[
+      "ProduceNextPage",
+      "ProduceChooseDifficulty"
+    ]
+  },
+  "ProduceNextPage":{
+    "enabled":false,
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/Master.png"
+    ],
+    "action":"Swipe",
+    "begin" : [600,600,1,1],
+    "end" : [120,600,1,1],
+    "next":[
+      "ProduceChooseDifficulty"
+    ]
+  },
+  "ProduceChooseDifficulty":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/Regular.png"
+    ],
+    "action":"Click",
+    "next":[
+      "ProduceChooseIdolFlag"
+    ]
+  },
+  "ProduceChooseIdolFlag":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/choose_idol.png"
+    ],
+    "action":"Click",
+    "next":[
+      "ProduceChooseIdol"
+    ],
+    "interrupt":[
+      "ProduceChooseIdolNextPage"
+    ]
+  },
+  "ProduceChooseIdol":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "idols/花海咲季_Fighting My Way.png"
+    ],
+    "action":"Click",
+    "threshold": 0.5,
+    "next":[
+      "ProduceChooseIdolNext"
+    ]
+  },
+  "ProduceChooseIdolNextPage":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/decide.png"
+    ],
+    "action":"Swipe",
+    "begin" : [360,1000,1,1],
+    "end" : [360,615,1,1],
+    "duration": 2000
+  },
+  "ProduceChooseIdolNext":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "next.png"
+    ],
+    "action":"Click",
+    "next":[
+      "ProduceChooseSupport"
+    ]
+  },
+  "ProduceChooseSupport":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/auto_support.png"
+    ],
+    "action":"Click",
+    "next":[
+      "ProduceChooseSupportNext"
+    ],
+    "interrupt":[
+      "ProduceDecide"
+    ]
+  },
+  "ProduceChooseSupportNext":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "next.png"
+    ],
+    "action":"Click",
+    "next":[
+      "ProduceChooseMemory",
+      "ProduceChooseMemoryNext"
+    ]
+  },
+  "ProduceChooseMemory":{
+    "enabled":true,
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/auto_support.png"
+    ],
+    "action":"Click",
+    "next":[
+      "ProduceChooseMemoryNext"
+    ],
+    "interrupt":[
+      "ProduceDecide"
+    ]
+  },
+  "ProduceChooseMemoryNext":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "next.png"
+    ],
+    "action":"Click",
+    "next":[
+      "ProduceEntry"
+    ],
+    "interrupt":[
+      "ProduceDecide",
+      "ProduceNext"
+    ]
+  },
+  "ProduceEntry" : {
+    "next":[
+      "ProduceEnd"
+    ],
+    "interrupt":[
+
+      "ProduceOptionsFlag",
+      "ProduceChooseEventFlag",
+      "ProduceShoppingFlag",
+      "ProduceCardsFlag",
+
+      "ProduceChooseCardsFlag",
+      "ProduceChooseDrinkFlag",
+      "ProduceChooseDrinkNo",
+      "ProduceChooseStrengthenFlag",
+
+      "ProduceDecide",
+      "ProduceNext",
+      "ProduceSkip",
+      "ProduceYes",
+      "ProduceStart",
+      "ProduceTakeRest",
+      "Click_1"
+    ]
+  },
+  "ProduceChooseEventFlag": {
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/Da.png",
+      "produce/Vi.png",
+      "produce/Vo.png",
+      "produce/chat.png",
+      "produce/lesson.png",
+      "produce/event.png",
+      "produce/go_out.png"
+    ],
+    "roi": [0, 800, 720, 256],
+    "next":[
+      "ProduceChooseEvent"
+    ]
+  },
+  "ProduceChooseEvent": {
+    "recognition":"Custom",
+    "custom_recognition":"ProduceChooseEventAuto",
+    "custom_recognition_param": {
+      "preference": "Vi"
+    },
+    "action":"Click"
+  },
+  "ProduceChooseCardsFlag": {
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/choose_cards.png"
+    ],
+    "threshold":0.9,
+    "next": "ProduceChooseCards"
+  },
+  "ProduceChooseCards": {
+    "recognition":"Custom",
+    "custom_recognition":"ProduceChooseCardsAuto",
+    "action":"Click",
+    "next": [
+        "ProduceGetCards"
+    ]
+  },
+  "ProduceGetCards": {
+      "recognition":"TemplateMatch",
+    "template":[
+      "produce/cards_get.png"
+    ],
+    "roi" : [0,980,720,300],
+    "action": "Click",
+    "next": "Click_1"
+  },
+
+  "ProduceChooseDrinkFlag": {
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/choose_drink.png"
+    ],
+    "threshold":0.9,
+    "next": "ProduceChooseDrink"
+  },
+  "ProduceChooseDrink": {
+    "recognition":"Custom",
+    "custom_recognition":"ProduceChooseDrinkAuto",
+    "action":"Click",
+    "next": [
+        "ProduceGetDrink"
+    ]
+  },
+    "ProduceGetDrink": {
+      "recognition":"TemplateMatch",
+    "template":[
+      "produce/drink_get.png"
+    ],
+      "roi" : [0,980,720,300],
+      "action": "Click"
+    },
+  "ProduceChooseDrinkNo": {
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/drink_no.png"
+    ],
+      "action": "Click"
+  },
+
+  "ProduceChooseItemFlag": {
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/choose_item.png"
+    ],
+    "threshold":0.9,
+    "next": "ProduceChooseItem"
+  },
+  "ProduceChooseItem": {
+    "recognition":"Custom",
+    "custom_recognition":"ProduceChooseItemAuto",
+    "action":"Click",
+    "next": [
+        "ProduceGetItem"
+    ]
+  },
+  "ProduceGetItem": {
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/cards_get.png"
+    ],
+    "roi" : [0,1080,720,200],
+      "action": "Click"
+    },
+
+  "ProduceShoppingFlag": {
+    "recognition":"TemplateMatch",
+    "template":"produce/shopping.png",
+    "roi" : [30,166,660,288],
+    "action":"Custom",
+    "custom_action":"ProduceShoppingAuto",
+    "next": "ProduceShoppingExit"
+  },
+  "ProduceShoppingBuy": {
+    "recognition":"TemplateMatch",
+    "template":"produce/shopping_buy.png",
+    "action":"Click",
+    "threshold":0.9,
+    "next": ["ProduceShoppingDecide"],
+    "interrupt": "Click_1"
+  },
+  "ProduceShoppingDecide": {
+    "recognition":"TemplateMatch",
+    "template":[
+      "produce/shopping_exchange.png",
+      "produce/point_runout.png"
+    ],
+    "action":"Click",
+    "interrupt": "Click_1"
+  },
+  "ProduceShoppingExit": {
+    "recognition":"TemplateMatch",
+    "template":"produce/shop_exit.png",
+    "action":"Click"
+  },
+  "ProduceChooseStrengthenFlag": {
+    "recognition":"TemplateMatch",
+    "template":"produce/strengthen_icon.png",
+    "action":"Custom",
+    "custom_action":"ProduceStrengthenAuto"
+  },
+  "ProduceChooseStrengthen": {
+    "recognition":"TemplateMatch",
+    "template":"produce/strengthen.png",
+    "action":"Click"
+  },
+  "ProduceExit": {
+    "recognition":"TemplateMatch",
+    "template":"produce/exit.png",
+    "action":"Click",
+    "next": "ProduceEnd",
+    "interrupt":[
+      "ProduceSkipShow"
+    ]
+  },
+
+  "ProduceEnd": {
+    "recognition":"OCR",
+    "expected": "生成",
+    "action":"Click",
+    "roi" : [310,945,100,60],
+    "next": "ProduceFinished",
+    "interrupt":[
+      "ProduceNext"
+    ]
+  },
+  "ProduceFinished":
+  {
+    "recognition":"TemplateMatch",
+    "template":"produce/finished.png",
+    "action":"Click",
+    "next": [
+      "HomeFlag"
+    ],
+    "interrupt":[
+      "ProduceFollow"
+    ]
+  },
+  "ProduceFollow":
+  {
+    "recognition":"TemplateMatch",
+    "template":"produce/follow.png",
+    "action":"Click"
+  },
+
+  "ProduceCardsFlag": {
+    "recognition":"Custom",
+    "custom_recognition":"ProduceCardsFlagAuto",
+    "action":"Custom",
+    "custom_action":"ProduceCardsAuto"
+  },
+  "ProduceOptionsFlag": {
+    "recognition":"Custom",
+    "custom_recognition":"ProduceOptionsFlagAuto",
+    "action":"Click"
+  },
+
+
+  "AAA": {
+    "recognition":"NeuralNetworkDetect",
+    "labels": ["cards", "suggestions", "useless"],
+    "model": "cards.onnx",
+    "expected": [0, 1, 2],
+    "action":"Custom",
+    "custom_action":"ProduceCardsAuto"
+  },
+  "AAAAA":{
+    "recognition":"Custom",
+    "custom_recognition":"ProduceChooseEventAuto",
+    "action":"Click"
+  },
+  "A":{
+    "recognition":"NeuralNetworkDetect",
+    "roi": [52, 660, 614, 283],
+    "model": "choose.onnx",
+    "labels": ["choose", "lesson"],
+    "expected": [0, 1]
+  }
+}
