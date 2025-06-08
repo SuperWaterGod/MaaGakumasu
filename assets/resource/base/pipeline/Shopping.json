@@ -105,6 +105,7 @@
   "ShoppingExchange":{
     "recognition":"TemplateMatch",
     "template":"shopping_exchange.png",
+    "roi" : [0,660,720,460],
     "action":"Click",
     "post_delay":500,
     "pre_wait_freezes":500,
@@ -119,6 +120,7 @@
     "enabled":true,
     "recognition":"TemplateMatch",
     "template":"shopping_money.png",
+    "roi" : [50,1060,300,70],
     "post_delay":500,
     "pre_wait_freezes":500,
     "post_wait_freezes":500,
@@ -205,6 +207,7 @@
     "recognition":"TemplateMatch",
     "template":"shopping_plus.png",
     "action":"Click",
-    "threshold":0.99
+    "threshold":0.99,
+    "roi" : [516,856,130,104]
   }
 }

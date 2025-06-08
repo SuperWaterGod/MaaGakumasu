@@ -103,7 +103,7 @@
     "next":[
       "WorkChooseShowTime"
     ],
-    "interrupt": "DecideButton"
+    "interrupt":"DecideButton"
   },
   "WorkChooseLiveConfirm":{
     "recognition":"TemplateMatch",
@@ -112,7 +112,7 @@
     "next":[
       "WorkChooseLiveTime"
     ],
-    "interrupt": "DecideButton"
+    "interrupt":"DecideButton"
   },
   "WorkChooseShowTime":{
     "recognition":"OCR",
