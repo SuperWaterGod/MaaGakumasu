@@ -659,16 +659,16 @@
         {
           "name":"Yes",
           "pipeline_override":{
-            "ShoppingCoin":{
-              "enabled":true
+            "ShoppingCoinController":{
+              "next":"ShoppingCoin"
             }
           }
         },
         {
           "name":"No",
           "pipeline_override":{
-            "ShoppingCoin":{
-              "enabled":false
+            "ShoppingCoinController":{
+              "next":"ShoppingExchange"
             }
           }
         }
@@ -679,16 +679,16 @@
         {
           "name":"Yes",
           "pipeline_override":{
-            "ShoppingExchangeMoney":{
-              "enabled":true
+            "ShoppingExchangeMoneyController":{
+              "next":"ShoppingExchangeMoney"
             }
           }
         },
         {
           "name":"No",
           "pipeline_override":{
-            "ShoppingExchangeMoney":{
-              "enabled":false
+            "ShoppingExchangeMoneyController":{
+              "next":"ShoppingExchangeAPController"
             }
           }
         }
@@ -699,16 +699,16 @@
         {
           "name":"Yes",
           "pipeline_override":{
-            "ShoppingExchangeAPStart":{
-              "enabled":true
+            "ShoppingExchangeAPController":{
+              "next":"ShoppingExchangeAPStart"
             }
           }
         },
         {
           "name":"No",
           "pipeline_override":{
-            "ShoppingExchangeAPStart":{
-              "enabled":false
+            "ShoppingExchangeAPController":{
+              "next":"BackHome"
             }
           }
         }
