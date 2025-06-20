@@ -25,6 +25,9 @@
       "ChallengeChoose",
       "ChallengeRunOut",
       "ChallengeReadyPeriod"
+    ],
+    "interrupt":[
+      "ClickCenter"
     ]
   },
   "ChallengeChoose":{
