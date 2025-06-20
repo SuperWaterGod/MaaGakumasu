@@ -39,15 +39,28 @@
   },
   "ProduceYes":{
     "recognition":"TemplateMatch",
-    "template":["produce/yes.png",
-    "produce/decide.png"],
+    "template":[
+      "produce/yes.png",
+      "produce/decide.png"
+    ],
     "action":"Click",
-    "roi" : [0,1080,720,200]
+    "roi":[
+      0,
+      1080,
+      720,
+      200
+    ]
   },
   "ProduceStart":{
     "recognition":"TemplateMatch",
     "template":"produce/start.png",
     "action":"Click"
+  },
+  "ProduceChooseRest":{
+    "recognition":"TemplateMatch",
+    "template":"produce/rest.png",
+    "action":"Click",
+    "next": "ProduceTakeRest"
   },
   "ProduceTakeRest":{
     "recognition":"TemplateMatch",
@@ -77,12 +90,19 @@
   "ProduceRecognitionNoCards":{
     "recognition":"OCR",
     "expected":"手札のスキルカードが0枚です",
-    "roi":[159,947,393,97]
+    "roi":[
+      159,
+      947,
+      393,
+      97
+    ]
   },
   "ProduceRecognitionSkipRound":{
     "recognition":"TemplateMatch",
-    "template":["produce/skip_round.png",
-    "produce/skip_round_1.png"],
+    "template":[
+      "produce/skip_round.png",
+      "produce/skip_round_1.png"
+    ],
     "action":"Click"
   },
   "ProduceRecognitionCards":{
@@ -135,9 +155,9 @@
       "produce/week_7.png",
       "produce/week_lesson.png"
     ],
-    "threshold": 0.9
+    "threshold":0.9
   },
-  "Click_1": {
+  "Click_1":{
     "action":"Click",
     "target":[
       10,

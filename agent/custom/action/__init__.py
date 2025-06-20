@@ -5,6 +5,7 @@ __all__ = [
     "ShoppingCoinAuto",
     "ShoppingExchangeMoneyAuto",
     "ShoppingExchangeAPAuto",
+    "ProduceChooseEventAuto",
     "ProduceCardsAuto",
     "ProduceShoppingAuto",
     "ProduceStrengthenAuto"
