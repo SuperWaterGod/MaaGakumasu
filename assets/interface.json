@@ -1,6 +1,6 @@
 {
   "name":"MaaGakumasu",
-  "version":"v0.0.1",
+  "version":"v0.1.0",
   "mirrorchyan_rid":null,
   "mirrorchyan_multiplatform":false,
   "url":"https://github.com/SuperWaterGod/MaaGakumasu",
@@ -29,7 +29,7 @@
     "child_exec":"python",
     "child_args":[
       "{PROJECT_DIR}/agent/main.py",
-        "-u"
+      "-u"
     ]
   },
   "task":[
@@ -37,7 +37,7 @@
       "name":"启动游戏",
       "entry":"StartUp",
       "check":true,
-      "doc":""
+      "doc": ""
     },
     {
       "name":"收取活动费",
@@ -85,7 +85,11 @@
         "启用AP兑换所"
       ],
       "check":true,
-      "doc":"默认仅购买推荐物品\n[color:tomato]因MAF框架限制，指定购买物品需要修改[/color][config.jsonc](config.jsonc)[color:tomato]文件[/color]"
+      "doc": [
+        "默认仅购买推荐物品",
+        "[color:tomato]因MAF框架限制，指定购买物品需要修改[/color][config.jsonc](config.jsonc)[color:tomato]文件[/color]",
+        "true为购买，false为不购买"
+      ]
     },
     {
       "name":"领取奖励",
@@ -98,6 +102,23 @@
       "doc":""
     },
     {
+      "name":"开始培育",
+      "entry":"Produce",
+      "option":[
+        "培育难度",
+        "培育偶像",
+        "启用自动回忆",
+        "启用关注租借"
+      ],
+      "check":true,
+      "doc":[
+        "## 注:测试阶段，存在卡住的BUG",
+        "可以通过重新进入培育来解决",
+        "目前仅支持初的培育",
+        "平均半小时完成一次培育，培育完成后请及时清理log文件"
+      ]
+    },
+    {
       "name":"关闭游戏",
       "entry":"Shutdown",
       "check":true
@@ -105,7 +126,7 @@
   ],
   "option":{
     "选择挑战第几位":{
-      "default_case": "第二位",
+      "default_case":"第二位",
       "cases":[
         {
           "name":"第一位",
@@ -134,7 +155,7 @@
       ]
     },
     "迷你演唱会工作时长":{
-      "default_case": "12 小时",
+      "default_case":"12 小时",
       "cases":[
         {
           "name":"4 小时",
@@ -163,7 +184,7 @@
       ]
     },
     "直播活动工作时长":{
-      "default_case": "12 小时",
+      "default_case":"12 小时",
       "cases":[
         {
           "name":"4 小时",
@@ -480,7 +501,7 @@
       ]
     },
     "请求物品种类":{
-      "default_case": "自动",
+      "default_case":"自动",
       "cases":[
         {
           "name":"自动",
@@ -729,6 +750,720 @@
           "pipeline_override":{
             "ShoppingFreeRefresh":{
               "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "培育难度":{
+      "default_case":"MASTER",
+      "cases":[
+        {
+          "name":"REGULAR",
+          "pipeline_override":{
+            "ProduceChooseDifficulty":{
+              "expected":"REGULAR"
+            }
+          }
+        },
+        {
+          "name":"PRO",
+          "pipeline_override":{
+            "ProduceChooseDifficulty":{
+              "expected":"PRO"
+            }
+          }
+        },
+        {
+          "name":"MASTER",
+          "pipeline_override":{
+            "ProduceChooseDifficulty":{
+              "expected":"MASTER"
+            }
+          }
+        }
+      ]
+    },
+    "启用自动回忆":{
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ProduceChooseMemory":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ProduceChooseMemory":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "启用关注租借":{
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ProduceFollow":{
+              "template":"produce/follow.png"
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ProduceFollow":{
+              "template":"produce/follow.png"
+            }
+          }
+        }
+      ]
+    },
+    "培育偶像":{
+      "default_case":"紫云清夏(Tame-Lie-One-Step)",
+      "cases":[
+        {
+          "name":"倉本千奈(Campus mode!!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/倉本千奈(Campus mode!!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"倉本千奈(Howling over the World)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/倉本千奈(Howling over the World).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"倉本千奈(Wonder Scale)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/倉本千奈(Wonder Scale).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"倉本千奈(ようこそ初星温泉)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/倉本千奈(ようこそ初星温泉).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"倉本千奈(仮装狂騒曲)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/倉本千奈(仮装狂騒曲).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"倉本千奈(日々、発見的ステップ！)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/倉本千奈(日々、発見的ステップ！).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"倉本千奈(雪解けに)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/倉本千奈(雪解けに).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"十王星南(Campus mode!!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/十王星南(Campus mode!!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"十王星南(Our Chant)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/十王星南(Our Chant).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"十王星南(ハッピーミルフィーユ)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/十王星南(ハッピーミルフィーユ).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"十王星南(小さな野望)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/十王星南(小さな野望).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"姫崎莉波(clumsy trick)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/姫崎莉波(clumsy trick).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"姫崎莉波(キミトセミブルー)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/姫崎莉波(キミトセミブルー).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"姫崎莉波(Campus mode!!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/姫崎莉波(Campus mode!!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"姫崎莉波(Howling over the World)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/姫崎莉波(Howling over the World).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"姫崎莉波(L.U.V)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/姫崎莉波(L.U.V).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"姫崎莉波(ようこそ初星温泉)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/姫崎莉波(ようこそ初星温泉).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"姫崎莉波(ハッピーミルフィーユ)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/姫崎莉波(ハッピーミルフィーユ).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"月村手毬(Luna say maybe)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/月村手毬(Luna say maybe).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"月村手毬(Campus mode!!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/月村手毬(Campus mode!!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"月村手毬(アイヴイ)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/月村手毬(アイヴイ).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"月村手毬(仮装狂騒曲)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/月村手毬(仮装狂騒曲).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"月村手毬(雨上がりのアイリス)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/月村手毬(雨上がりのアイリス).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"月村手毬(雪解けに)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/月村手毬(雪解けに).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"有村麻央(Fluorite)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/有村麻央(Fluorite).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"有村麻央(Campus mode!!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/有村麻央(Campus mode!!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"有村麻央(Feel Jewel Dream)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/有村麻央(Feel Jewel Dream).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"有村麻央(キミトセミブルー)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/有村麻央(キミトセミブルー).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"有村麻央(雪解けに)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/有村麻央(雪解けに).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"秦谷美玲(ツキノカメ)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/秦谷美玲(ツキノカメ).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"篠泽广(Campus mode!!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/篠泽广(Campus mode!!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"篠泽广(コントラスト)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/篠泽广(コントラスト).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"篠泽广(光景)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/篠泽广(光景).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"篠泽广(ハッピーミルフィーユ)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/篠泽广(ハッピーミルフィーユ).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"篠泽广(仮装狂騒曲)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/篠泽广(仮装狂騒曲).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"紫云清夏(Campus mode!!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/紫云清夏(Campus mode!!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"紫云清夏(Tame-Lie-One-Step)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/紫云清夏(Tame-Lie-One-Step).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"紫云清夏(カクシタワタシ)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/紫云清夏(カクシタワタシ).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"紫云清夏(Love & Joy)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/紫云清夏(Love & Joy).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"紫云清夏(キミトセミブルー)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/紫云清夏(キミトセミブルー).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"紫云清夏(桜フォトグラフ)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/紫云清夏(桜フォトグラフ).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"花海佑芽(Campus mode!!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/花海佑芽(Campus mode!!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"花海佑芽(The Rolling Riceball)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/花海佑芽(The Rolling Riceball).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"花海佑芽(White night! White Wish!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/花海佑芽(White night! White Wish!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"花海咲季(Boom Boom Pow)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/花海咲季(Boom Boom Pow).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"花海咲季(Campus mode!!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/花海咲季(Campus mode!!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"花海咲季(Fighting My Way)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/花海咲季(Fighting My Way).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"花海咲季(冠菊)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/花海咲季(冠菊).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"花海咲季(古今東西)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/花海咲季(古今東西).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"花海咲季(桜フォトグラフ)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/花海咲季(桜フォトグラフ).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"花海咲季(雨上がりのアイリス)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/花海咲季(雨上がりのアイリス).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"葛城リーリヤ(Campus mode!!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/葛城リーリヤ(Campus mode!!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"葛城リーリヤ(Howling over the World)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/葛城リーリヤ(Howling over the World).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"葛城リーリヤ(極光)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/葛城リーリヤ(極光).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"葛城リーリヤ(白線)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/葛城リーリヤ(白線).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"葛城リーリヤ(White night! White Wish!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/葛城リーリヤ(White night! White Wish!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"葛城リーリヤ(冠菊)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/葛城リーリヤ(冠菊).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"葛城リーリヤ(桜フォトグラフ)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/葛城リーリヤ(桜フォトグラフ).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"藤田琴音(Campus mode!!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/藤田琴音(Campus mode!!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"藤田琴音(Yellow Big Bang！)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/藤田琴音(Yellow Big Bang！).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"藤田琴音(世界一可愛い私)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/藤田琴音(世界一可愛い私).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"藤田琴音(雨上がりのアイリス)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/藤田琴音(雨上がりのアイリス).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"藤田琴音(White night! White Wish!)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/藤田琴音(White night! White Wish!).png"
+              ]
+            }
+          }
+        },
+        {
+          "name":"藤田琴音(冠菊)",
+          "pipeline_override":{
+            "ProduceChooseIdol":{
+              "template":[
+                "idols/藤田琴音(冠菊).png"
+              ]
             }
           }
         }
