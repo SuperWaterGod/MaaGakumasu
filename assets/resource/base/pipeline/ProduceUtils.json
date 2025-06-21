@@ -2,7 +2,13 @@
   "ProduceDecide":{
     "recognition":"TemplateMatch",
     "template":"produce/decide.png",
-    "action":"Click"
+    "action":"Click",
+    "target_offset":[
+      0,
+      -20,
+      0,
+      0
+    ]
   },
   "ProduceNext":{
     "recognition":"TemplateMatch",
@@ -24,18 +30,27 @@
     ]
   },
   "ProduceSkipShow":{
+    "action":"Click",
+    "target":[
+      1160,
+      66,
+      42,
+      42
+    ]
+  },
+  "ProduceSkipShowConfirm":{
     "recognition":"TemplateMatch",
     "template":[
-      "produce/skip_show.png",
-      "skip_show_1.png"
+      "produce/skip_confirm.png"
     ],
-    "action":"Click",
-    "roi":[
-      1170,
-      6,
-      100,
-      100
-    ]
+    "pre_wait_freezes":500,
+    "target_offset":[
+      0,
+      -50,
+      0,
+      0
+    ],
+    "action":"Click"
   },
   "ProduceYes":{
     "recognition":"TemplateMatch",
@@ -51,16 +66,11 @@
       200
     ]
   },
-  "ProduceStart":{
-    "recognition":"TemplateMatch",
-    "template":"produce/start.png",
-    "action":"Click"
-  },
   "ProduceChooseRest":{
     "recognition":"TemplateMatch",
     "template":"produce/rest.png",
     "action":"Click",
-    "next": "ProduceTakeRest"
+    "next":"ProduceTakeRest"
   },
   "ProduceTakeRest":{
     "recognition":"TemplateMatch",

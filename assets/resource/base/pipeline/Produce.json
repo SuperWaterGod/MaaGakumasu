@@ -47,8 +47,13 @@
   },
   "ProduceChooseDifficulty":{
     "recognition":"OCR",
-    "expected": "REGULAR",
-    "roi": [0,824,719,171],
+    "expected":"PRO",
+    "roi":[
+      0,
+      824,
+      719,
+      171
+    ],
     "action":"Click",
     "next":[
       "ProduceChooseIdolFlag"
@@ -70,11 +75,11 @@
   "ProduceChooseIdol":{
     "recognition":"TemplateMatch",
     "template":[
-      "idols/花海咲季_Fighting My Way_1.png"
+      "idols/紫云清夏_Tame-Lie-One-Step.png"
     ],
     "action":"Click",
     "threshold":0.5,
-    "order_by": "Score",
+    "order_by":"Score",
     "next":[
       "ProduceChooseIdolDecide"
     ]
@@ -171,39 +176,62 @@
       "ProduceNext"
     ]
   },
-  "ProduceLauncher": {
+  "ProduceLauncher":{
     "recognition":"TemplateMatch",
     "template":[
       "produce/produce_start.png"
     ],
     "action":"Click",
+    "next":"ProduceEntry",
     "interrupt":[
       "ProduceNext"
     ]
   },
   "ProduceEntry":{
     "next":[
-      "ProduceEnd"
+      "ProduceExit"
     ],
     "interrupt":[
-
       "ProduceOptionsFlag",
       "ProduceChooseEventFlag",
-      "ProduceShoppingFlag",
       "ProduceCardsFlag",
-
       "ProduceChooseCardsFlag",
       "ProduceChooseDrinkFlag",
-      "ProduceChooseDrinkNo",
+      "ProduceChooseItemFlag",
       "ProduceChooseStrengthenFlag",
-
-      "ProduceDecide",
-      "ProduceNext",
+      "ProduceButton",
       "ProduceSkip",
-      "ProduceYes",
-      "ProduceStart",
       "Click_1"
     ]
+  },
+  "ProduceExit":{
+    "recognition":"Custom",
+    "custom_recognition":"ProduceShowStart",
+    "next":"ProduceEnd",
+    "interrupt":[
+      "ProduceSkipShowConfirm",
+      "ProduceSkipShow"
+    ]
+  },
+  "ProduceButton":{
+    "recognition":"TemplateMatch",
+    "template":[
+      "next.png",
+      "produce/decide.png",
+      "produce/yes.png",
+      "produce/decide.png",
+      "produce/start.png",
+      "produce/event.png",
+      "produce/drink_no.png"
+    ],
+    "order_by":"Score",
+    "roi":[
+      0,
+      780,
+      720,
+      500
+    ],
+    "action":"Click"
   },
   "ProduceChooseEventFlag":{
     "recognition":"TemplateMatch",
@@ -234,6 +262,12 @@
       "produce/choose_cards.png"
     ],
     "threshold":0.9,
+    "roi":[
+      80,
+      530,
+      561,
+      197
+    ],
     "next":"ProduceChooseCards"
   },
   "ProduceChooseCards":{
@@ -287,17 +321,16 @@
     ],
     "action":"Click"
   },
-  "ProduceChooseDrinkNo":{
-    "recognition":"TemplateMatch",
-    "template":[
-      "produce/drink_no.png"
-    ],
-    "action":"Click"
-  },
   "ProduceChooseItemFlag":{
     "recognition":"TemplateMatch",
     "template":[
       "produce/choose_item.png"
+    ],
+    "roi":[
+      80,
+      530,
+      561,
+      197
     ],
     "threshold":0.9,
     "next":"ProduceChooseItem"
@@ -317,9 +350,9 @@
     ],
     "roi":[
       0,
-      1080,
+      1020,
       720,
-      200
+      135
     ],
     "action":"Click"
   },
@@ -340,6 +373,12 @@
     "recognition":"TemplateMatch",
     "template":"produce/shopping_buy.png",
     "action":"Click",
+    "roi":[
+      0,
+      1020,
+      720,
+      135
+    ],
     "threshold":0.9,
     "next":[
       "ProduceShoppingDecide"
@@ -352,8 +391,13 @@
       "produce/shopping_exchange.png",
       "produce/point_runout.png"
     ],
-    "action":"Click",
-    "interrupt":"Click_1"
+    "roi":[
+      0,
+      1020,
+      720,
+      260
+    ],
+    "action":"Click"
   },
   "ProduceShoppingExit":{
     "recognition":"TemplateMatch",
@@ -371,16 +415,18 @@
     "template":"produce/strengthen.png",
     "action":"Click"
   },
-  "ProduceExit":{
-    "recognition":"TemplateMatch",
-    "template":"produce/exit.png",
-    "action":"Click",
-    "next":"ProduceEnd",
+  "ProduceEnd":{
+    "recognition":"Custom",
+    "custom_recognition":"ProduceShowEnd",
+    "next":"ProduceGeneration",
     "interrupt":[
-      "ProduceSkipShow"
+      "ProduceNext",
+      "ProduceSkip",
+      "ProduceDecide",
+      "Click_1"
     ]
   },
-  "ProduceEnd":{
+  "ProduceGeneration":{
     "recognition":"OCR",
     "expected":"生成",
     "action":"Click",
@@ -392,7 +438,8 @@
     ],
     "next":"ProduceFinished",
     "interrupt":[
-      "ProduceNext"
+      "ProduceNext",
+      "Click_1"
     ]
   },
   "ProduceFinished":{
@@ -421,44 +468,5 @@
     "recognition":"Custom",
     "custom_recognition":"ProduceOptionsFlagAuto",
     "action":"Click"
-  },
-  "AAA":{
-    "recognition":"NeuralNetworkDetect",
-    "labels":[
-      "cards",
-      "suggestions",
-      "useless"
-    ],
-    "model":"cards.onnx",
-    "expected":[
-      0,
-      1,
-      2
-    ],
-    "action":"Custom",
-    "custom_action":"ProduceCardsAuto"
-  },
-  "AAAAA":{
-    "recognition":"Custom",
-    "custom_recognition":"ProduceChooseEventAuto",
-    "action":"Click"
-  },
-  "A":{
-    "recognition":"NeuralNetworkDetect",
-    "roi":[
-      52,
-      660,
-      614,
-      283
-    ],
-    "model":"choose.onnx",
-    "labels":[
-      "choose",
-      "lesson"
-    ],
-    "expected":[
-      0,
-      1
-    ]
   }
 }

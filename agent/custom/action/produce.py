@@ -21,7 +21,7 @@ class ProduceChooseEventAuto(CustomAction):
             argv: CustomAction.RunArg,
     ) -> bool:
 
-        logger.info("【选择事件】")
+        logger.success("事件: 选择事件")
         suggestion_list = {
             "Vo": {
                 "img": "produce/Vo.png",
@@ -38,6 +38,10 @@ class ProduceChooseEventAuto(CustomAction):
             "体力": {
                 "img": "produce/rest.png",
                 "keyword": ["体力"]
+            },
+            "交谈": {
+                "img": "produce/chat.png",
+                "keyword": ["先生に相談して"]
             }
         }
         ocr_list = [
@@ -98,6 +102,14 @@ class ProduceChooseEventAuto(CustomAction):
                         context.run_task("ProduceChooseRest")
                         time.sleep(3)
                         return True
+                    if "chat" in suggestion_img:
+                        logger.info("选择交谈")
+                        result = reco_detail.best_result.box
+                        context.tasker.controller.post_click(result[0] + 80, result[1] + 80).wait()
+                        time.sleep(0.5)
+                        context.tasker.controller.post_click(result[0] + 80, result[1] + 80).wait()
+                        context.run_task("ProduceShoppingFlag")
+                        time.sleep(3)
                     result = reco_detail.best_result.box
                     context.tasker.controller.post_click(result[0] + 80, result[1] + 80).wait()
                     time.sleep(0.5)
@@ -130,6 +142,9 @@ class ProduceChooseEventAuto(CustomAction):
                     event_name: reco_detail.best_result.box,
                 })
         logger.info(event_existed)
+        if not event_existed:
+            logger.info("无可用事件")
+            return True
 
         reco_detail = context.run_recognition("ProduceRecognitionHealth", image)
         if reco_detail:
@@ -170,6 +185,7 @@ class ProduceChooseEventAuto(CustomAction):
                     time.sleep(0.5)
                     context.tasker.controller.post_click(chat_box[0] + 80, chat_box[1] + 80).wait()
                     time.sleep(3)
+                    context.run_task("ProduceShoppingFlag")
                     return True
 
         params = json.loads(argv.custom_action_param)
@@ -208,6 +224,7 @@ class ProduceChooseEventAuto(CustomAction):
             time.sleep(0.5)
             context.tasker.controller.post_click(chat_box[0] + 80, chat_box[1] + 80).wait()
             time.sleep(3)
+            context.run_task("ProduceShoppingFlag")
             return True
         if go_out_box:
             logger.info("选择外出")
@@ -300,32 +317,41 @@ class ProduceCardsAuto(CustomAction):
                 # print(f"卡片数量:{suggestions}/{cards}/{useless}")
 
                 if suggestions > 0:
+
+                    if suggestions_box[1] < 840 or suggestions_box[1] > 1150:
+                        continue
                     context.tasker.controller.post_click(suggestions_box[0] + 100, suggestions_box[1] + 140).wait()
                     time.sleep(0.3)
                     context.tasker.controller.post_click(suggestions_box[0] + 100, suggestions_box[1] + 140).wait()
                     end_time = time.time()
-                    logger.info("出牌 耗时:{}秒".format(end_time - start_time))
+                    logger.info("出牌 耗时:{:.2f}秒".format(end_time - start_time))
                     time.sleep(3)
                     start_time = time.time()
                 elif useless > 0 and suggestions == 0 and cards == 0:
-                    logger.info("!!!!!!!!无可用牌!!!!!!!!!!!")
+                    logger.warning("!!!!!!!!无可用牌!!!!!!!!!!!")
                     context.run_task("ProduceRecognitionSkipRound")
 
                 end_time = time.time()
                 if end_time - start_time > 10:
-                    logger.info("检测超时")
+                    if best_box[1] < 840 or best_box[1] > 1150:
+                        continue
+                    logger.warning("检测超时")
                     context.tasker.controller.post_click(best_box[0], best_box[1]).wait()
+                    time.sleep(0.3)
+                    context.tasker.controller.post_click(best_box[0], best_box[1]).wait()
+                    time.sleep(3)
+                    start_time = time.time()
 
             else:
                 reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", image)
                 if not reco_detail:
                     logger.info("未检测到卡片和体力")
-                    logger.info("退出出牌")
+                    logger.success("事件: 退出出牌")
                     break
 
                 reco_detail = context.run_recognition("ProduceYes", image)
                 if reco_detail:
-                    logger.info("------------------点击确认------------------")
+                    logger.info("点击确认")
                     context.tasker.controller.post_click(reco_detail.best_result.box[0], reco_detail.best_result.box[1]).wait()
 
                 reco_detail = context.run_recognition("ProduceRecognitionNoCards", image)
@@ -360,16 +386,33 @@ class ProduceShoppingAuto(CustomAction):
                     "template": "produce/Sale.png",
                     "roi": [46, 479, 626, 529]
                 }})
-        logger.info("商店购买")
+        logger.success("事件: 商店购买")
         if reco_detail:
             for result in reco_detail.filterd_results:
                 box = result.box
                 context.tasker.controller.post_click(box[0], box[1] - 66).wait()
-                time.sleep(0.3)
+                time.sleep(0.5)
+                image = context.tasker.controller.post_screencap().wait().get()
+                reco_detail = context.run_recognition(
+                    "ProduceRecognitionDrinkFull", image, pipeline_override={
+                        "ProduceRecognitionDrinkFull": {
+                            "recognition": "TemplateMatch",
+                            "template": "produce/drink_full.png",
+                            "roi": [0, 1020, 720, 135]
+                        }})
+                if reco_detail:
+                    logger.info("饮料已满，放弃购买")
+                    continue
                 reco_detail = context.run_recognition("ProduceShoppingBuy", image)
                 if reco_detail:
                     context.run_task("ProduceShoppingBuy")
-                    time.sleep(5)
+                    start_time = time.time()
+                    while True:
+                        context.run_task("Click_1")
+                        time.sleep(0.5)
+                        end_time = time.time()
+                        if end_time - start_time > 3:
+                            break
 
         return True
 
@@ -385,6 +428,7 @@ class ProduceStrengthenAuto(CustomAction):
             context: Context,
             argv: CustomAction.RunArg,
     ) -> bool:
+        logger.success("事件: 选择强化")
         context.tasker.controller.post_click(140, 760).wait()
         context.run_task("ProduceChooseStrengthen")
         return True
