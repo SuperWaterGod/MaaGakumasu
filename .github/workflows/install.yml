@@ -104,9 +104,25 @@ jobs:
           if [ -d "MFA" ]; then
             echo "Copying MFA files to install directory..."
             mkdir -p install
-            cp -rpvn MFA/. install/
+            # 使用robocopy的bash等效方式，排除zip文件
+            find MFA -type f ! -name "*.zip" -exec cp --parents {} install/ \; 2>/dev/null || {
+            # 如果上面的命令失败，使用传统方式然后清理
+              cp -rpvn MFA/* install/ 2>/dev/null || true
+              find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
+            }
+            echo "MFA files copied successfully."
           else
             echo "MFA directory not found, skipping copy."
+          fi
+    
+          # 复制logo.ico到Assets文件夹
+          if [ -f "logo.ico" ]; then
+            echo "Copying logo.ico to Assets folder..."
+            mkdir -p install/Assets
+            cp logo.ico install/Assets/
+            echo "logo.ico copied to install/Assets/"
+          else
+            echo "Warning: logo.ico not found in project root."
           fi
 
       - uses: actions/upload-artifact@v4
@@ -154,14 +170,28 @@ jobs:
 
           if [[ "${{ matrix.os }}" != "android" ]]; then
             if [ -d "MFA" ]; then
-              echo "Copying MFA files to install directory..."
+              echo "Copying MFA files to install directory (excluding zip files)..."
               mkdir -p install
-              rsync -av --ignore-existing MFA/ install/
+              rsync -av --ignore-existing --exclude="*.zip" MFA/ install/
+              echo "MFA files copied successfully."
             else
               echo "MFA directory not found, skipping copy."
             fi
           else
             echo "Skipping copy MFA for Android."
+          fi
+
+      - name: Copy Logo to Assets
+        shell: bash
+        run: |
+          if [ -f "logo.ico" ]; then
+            echo "Copying logo.ico to Assets folder..."
+            mkdir -p install/Assets
+            cp logo.ico install/Assets/
+            echo "logo.ico copied to install/Assets/"
+          else
+            echo "Warning: logo.ico not found in project root."
+            exit 1
           fi
 
       - uses: actions/upload-artifact@v4
