@@ -8,7 +8,7 @@
 
 # MaaGakumasu
 
-基于全新架构的 **学園アイドルマスター(学マス)** 小助手。图像技术 + 模拟控制，解放双手！  
+基于全新架构的 **学園アイドルマスター(学マス)** 小助手。图像技术 + 模拟控制 + 深度学习，解放双手！  
 由 [MaaFramework](https://github.com/MaaXYZ/MaaFramework) 强力驱动！
 
 ✨ 如果喜欢 MaaGakumasu，欢迎在项目右上角点亮 Star 支持 ✨
@@ -34,7 +34,7 @@
   - [x] 指定挑战
   - [ ] 自动选择
 - [x] 社团互动
-  - [x] `自动` 请求
+  - [x] `自动/指定` 请求
 - [x] 安排工作
   - [x] 领取奖励
   - [x] `自动/指定` 选择偶像
@@ -42,13 +42,17 @@
 - [x] 商店购买
   - [x] 扭蛋币购买
   - [x] 金币购买[^1]
+  - [x] 自动免费刷新
   - [X] AP购买[^1]
 - [x] 领取邮箱礼物
 - [x] 领取任务奖励
-- [x] 自动培育
+- [x] 自动培育(测试阶段)
+  - [x] 初 `REGULAR/PRO/MASTER` 难度
   - [x] 指定SSR偶像
   - [x] 自动选择
-  - [x] 中断继续
+  - [x] **中断继续**
+
+详细内容见 [功能说明](docs/zh_cn/功能说明.md)
 
 [^1]: 因MaaFramework框架限制，购买指定物品需要手动修改config.jsonc文件
 
@@ -57,7 +61,7 @@
 
 - [ ] 支持Kuyo版汉化
 - [ ] 强化支援卡
-
+- [ ] …………
 
 ## 注意事项
 
@@ -66,7 +70,7 @@
 > 开发是基于 MuMu12 模拟器测试的，因此推荐使用 MuMu12 运行游戏。其他模拟器若出现问题，请第一时间把脚本根目录下`debug\maa.log` 文件保存并截图进行反馈。
 
 1. 默认用户的操作系统为 Windows 系统，其他平台未经测试
-2. 推荐使用MuMu模拟器12运行游戏，[模拟器支持情况](https://maa.plus/docs/zh-cn/manual/device/windows.html)请查看官方文档。
+2. 推荐使用`MuMu模拟器12`运行游戏，[模拟器支持情况](https://maa.plus/docs/zh-cn/manual/device/windows.html)请查看官方文档。
 3. 模拟器分辨率建议设置为`1280*720(240DPI)`，其他`16:9`分辨率未经过详细测试。
 4. **DMM版**本暂不支持，**Kuyo汉化**版未来会支持
 5. 本项目部分功能使用了 `深度学习Yolov11` 模型进行识别，请确保电脑有显卡且开启GPU加速。
@@ -84,6 +88,10 @@
 请注意！Windows 的电脑几乎全都是 x86_64 的，可能占 **99.999%**，除非你非常确定自己是 arm，否则别下这个！
 
 解压后运行 `MFAAvalonia.exe` 即可。
+
+压缩包已自带`Python 3.13`环境，无需额外安装。
+
+首次启动，将会自动安装相关依赖
 
 如果无法运行则按照如下的方案尝试解决:
 
@@ -118,11 +126,7 @@
 
 ### Linux
 
-暂无详细文档（
-
 Linux大佬自有办法
-
-~~其实是没的抄了~~
 
 
 ## 开发相关
@@ -133,12 +137,19 @@ Linux大佬自有办法
 
 主要用于 `自动培育` 相关功能
 
-参考[MFW](https://github.com/MaaXYZ/MaaNeuralNetworkCookbook/tree/main/NeuralNetworkDetect)官方文档
+模型训练参考[MFW](https://github.com/MaaXYZ/MaaNeuralNetworkCookbook/tree/main/NeuralNetworkDetect)官方文档
 
 数据集标注使用 [roboflow](https://app.roboflow.com/gakumasu) 网站
 
-- cards 集用于识别*出牌*
-- button 集用于识别*上课/冲刺选项*
+- `cards` 集用于识别*出牌*
+- `button` 集用于识别*上课/冲刺选项*
+
+> [!IMPORTANT]
+> `cards` 集 目前405张样本，均已标注完成。基本满足当前需求
+> `button` 集 目前仅28张样本，均已标注完成。目前未能完全满足当前需求，部分场景下识别率较低。
+> 若您有兴趣参与标注或者提供样本，欢迎联系开发组。
+
+详细内容见 [开发相关](docs/zh_cn/开发相关.md)
 
 ## 免责声明
 

@@ -88,7 +88,7 @@
       "doc": [
         "默认仅购买推荐物品",
         "[color:tomato]因MAF框架限制，指定购买物品需要修改[/color][config.jsonc](config.jsonc)[color:tomato]文件[/color]",
-        "true为购买，false为不购买"
+        "`true`为购买，`false`为不购买"
       ]
     },
     {
@@ -108,14 +108,15 @@
         "培育难度",
         "培育偶像",
         "启用自动回忆",
-        "启用关注租借"
+        "启用关注租借",
+        "跳过准备阶段"
       ],
       "check":true,
       "doc":[
         "## 注:测试阶段，存在卡住的BUG",
-        "可以通过重新进入培育来解决",
-        "目前仅支持初的培育",
-        "平均半小时完成一次培育，培育完成后请及时清理log文件"
+        "目前仅支持 初 的`REGULAR/PRO/MASTER` 难度",
+        "当培育过程中出现异常时，可以返回主界面再次进入培育后，勾选 `跳过准备阶段`，再次运行本任务即可继续培育",
+        "平均半小时完成一次培育，培育完成后请及时清理`debug`目录下的log文件"
       ]
     },
     {
@@ -819,6 +820,27 @@
           "pipeline_override":{
             "ProduceFollow":{
               "template":"produce/follow.png"
+            }
+          }
+        }
+      ]
+    },
+    "跳过准备阶段":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "Produce":{
+              "next": "ProduceEntry"
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "Produce":{
+              "next": "ProduceHomeFlag"
             }
           }
         }

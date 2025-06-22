@@ -1,6 +1,8 @@
-# v0.0.1 更新公告
+# v0.1.0 更新公告
 
 首个正式版本！
+
+请详细阅读[官网首页](https://github.com/SuperWaterGod/MaaGakumasu)的使用说明及注意事项
 
 
 
