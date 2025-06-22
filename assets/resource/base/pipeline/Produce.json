@@ -47,7 +47,7 @@
   },
   "ProduceChooseDifficulty":{
     "recognition":"OCR",
-    "expected":"PRO",
+    "expected":"REGULAR",
     "roi":[
       0,
       824,
@@ -75,7 +75,7 @@
   "ProduceChooseIdol":{
     "recognition":"TemplateMatch",
     "template":[
-      "idols/紫云清夏_Tame-Lie-One-Step.png"
+      "idols/花海咲季(Fighting My Way)_.png"
     ],
     "action":"Click",
     "threshold":0.5,
@@ -230,6 +230,12 @@
       780,
       720,
       500
+    ],
+    "target_offset":[
+      0,
+      0,
+      0,
+      -10
     ],
     "action":"Click"
   },

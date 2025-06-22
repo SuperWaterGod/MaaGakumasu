@@ -46,9 +46,9 @@
     "pre_wait_freezes":500,
     "target_offset":[
       0,
-      -50,
       0,
-      0
+      0,
+      -20
     ],
     "action":"Click"
   },

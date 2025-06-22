@@ -2,6 +2,7 @@ import json
 import time
 from utils import logger
 from collections import Counter
+from typing import Dict, List, Optional, Any
 
 from maa.context import Context
 from maa.custom_action import CustomAction
@@ -11,243 +12,319 @@ from maa.agent.agent_server import AgentServer
 @AgentServer.custom_action("ProduceChooseEventAuto")
 class ProduceChooseEventAuto(CustomAction):
     """
-        自动识别选择培育事件
-        优先选择SP，没有SP则根据老师意见选择
+    自动识别选择培育事件
+    优先选择SP，没有SP则根据老师意见选择
+    然后检测体力和点数
+    最后根据偏好设置选择事件
     """
 
-    def run(
-            self,
-            context: Context,
-            argv: CustomAction.RunArg,
-    ) -> bool:
+    # 常量定义
+    SUGGESTION_CONFIG = {
+        "Vo": {"img": "produce/Vo.png", "keyword": ["ボーカル", "唱歌"]},
+        "Da": {"img": "produce/Da.png", "keyword": ["ダンス", "舞蹈"]},
+        "Vi": {"img": "produce/Vi.png", "keyword": ["ビジュアル", "视觉"]},
+        "体力": {"img": "produce/rest.png", "keyword": ["体力"]},
+        "交谈": {"img": "produce/chat.png", "keyword": ["先生に相談して"]}
+    }
 
+    EVENT_CONFIG = {
+        "Da": "produce/Da.png",
+        "Vi": "produce/Vi.png",
+        "Vo": "produce/Vo.png",
+        "交谈": "produce/chat.png",
+        "上课": "produce/lesson.png",
+        "活动": "produce/event.png",
+        "外出": "produce/go_out.png"
+    }
+
+    # 阈值常量
+    LOW_HEALTH_THRESHOLD = 0.3
+    HIGH_POINT_THRESHOLD = 300
+    CLICK_DELAY = 0.5
+    ACTION_DELAY = 3.0
+
+    def run(self, context: Context, argv: CustomAction.RunArg) -> bool:
         logger.success("事件: 选择事件")
-        suggestion_list = {
-            "Vo": {
-                "img": "produce/Vo.png",
-                "keyword": ["ボーカル", "唱歌"]
-            },
-            "Da": {
-                "img": "produce/Da.png",
-                "keyword": ["ダンス", "舞蹈"]
-            },
-            "Vi": {
-                "img": "produce/Vi.png",
-                "keyword": ["ビジュアル", "视觉"]
-            },
-            "体力": {
-                "img": "produce/rest.png",
-                "keyword": ["体力"]
-            },
-            "交谈": {
-                "img": "produce/chat.png",
-                "keyword": ["先生に相談して"]
-            }
-        }
-        ocr_list = [
-            keyword
-            for category_info in suggestion_list.values()
-            if "keyword" in category_info and isinstance(category_info["keyword"], list)
-            for keyword in category_info["keyword"]
-        ]
-        # 识别SP课程
-        image = context.tasker.controller.post_screencap().wait().get()
+
+        # 获取屏幕截图
+        image = self._get_screenshot(context)
+
+        # 1. 优先检查SP课程
+        if self._handle_sp_course(context, image):
+            return True
+
+        # 2. 检查老师建议
+        if self._handle_teacher_suggestion(context, image):
+            return True
+
+        # 3. 获取可用事件列表
+        available_events = self._get_available_events(context, image)
+        if not available_events:
+            logger.info("无可用事件")
+            return True
+
+        # 4. 根据角色状态选择事件
+        return self._choose_event_by_status(context, image, available_events, argv)
+
+    @staticmethod
+    def _get_screenshot(context: Context):
+        """获取屏幕截图"""
+        return context.tasker.controller.post_screencap().wait().get()
+
+    def _handle_sp_course(self, context: Context, image) -> bool:
+        """处理SP课程选择"""
         reco_detail = context.run_recognition(
             "ProduceChooseEventSp", image,
             pipeline_override={"ProduceChooseEventSp": {
                 "recognition": "TemplateMatch",
                 "template": "produce/sp.png",
                 "roi": [0, 880, 720, 220]
-            }})
+            }}
+        )
 
         if reco_detail:
             logger.info("存在SP课程")
             result = reco_detail.best_result.box
-            context.tasker.controller.post_click(result[0] + 80, result[1] + 80).wait()
-            time.sleep(0.5)
-            context.tasker.controller.post_click(result[0] + 80, result[1] + 80).wait()
-            time.sleep(3)
+            self._double_click(context, result[0] + 80, result[1] + 80)
+            time.sleep(self.ACTION_DELAY)
             return True
+        return False
 
-        time.sleep(0.2)
-        # 识别老师建议
-        image = context.tasker.controller.post_screencap().wait().get()
+    def _handle_teacher_suggestion(self, context: Context, image) -> bool:
+        """处理老师建议"""
+        ocr_keywords = self._get_ocr_keywords()
+
         reco_detail = context.run_recognition(
             "ProduceChooseEventSuggestion", image,
             pipeline_override={"ProduceChooseEventSuggestion": {
                 "recognition": "OCR",
-                "expected": ocr_list,
+                "expected": ocr_keywords,
                 "roi": [270, 160, 350, 56]
-            }})
+            }}
+        )
 
-        if reco_detail:
-            suggestion_str = "".join(item.text for item in reco_detail.filterd_results)
-            logger.info(suggestion_str)
-            suggestion_img = self._find_image_from_phrase(suggestion_str, suggestion_list)
-            logger.info(suggestion_img)
+        if not reco_detail:
+            return False
 
-            if suggestion_img:
-                # 识别建议课程
-                reco_detail = context.run_recognition(
-                    "ProduceChooseSuggestion", image,
-                    pipeline_override={"ProduceChooseSuggestion": {
-                        "recognition": "TemplateMatch",
-                        "template": suggestion_img,
-                        "roi": [0, 800, 720, 256]
-                    }})
-                if reco_detail:
-                    logger.info("存在建议课程")
-                    if "rest" in suggestion_img:
-                        logger.info("选择休息")
-                        context.run_task("ProduceChooseRest")
-                        time.sleep(3)
-                        return True
-                    if "chat" in suggestion_img:
-                        logger.info("选择交谈")
-                        result = reco_detail.best_result.box
-                        context.tasker.controller.post_click(result[0] + 80, result[1] + 80).wait()
-                        time.sleep(0.5)
-                        context.tasker.controller.post_click(result[0] + 80, result[1] + 80).wait()
-                        context.run_task("ProduceShoppingFlag")
-                        time.sleep(3)
-                    result = reco_detail.best_result.box
-                    context.tasker.controller.post_click(result[0] + 80, result[1] + 80).wait()
-                    time.sleep(0.5)
-                    context.tasker.controller.post_click(result[0] + 80, result[1] + 80).wait()
-                    time.sleep(3)
-                    return True
+        suggestion_text = "".join(item.text for item in reco_detail.filterd_results)
+        logger.info(f"老师建议: {suggestion_text}")
 
-        event_list = {
-            "Da": "produce/Da.png",
-            "Vi": "produce/Vi.png",
-            "Vo": "produce/Vo.png",
-            "交谈": "produce/chat.png",
-            "上课": "produce/lesson.png",
-            "活动": "produce/event.png",
-            "外出": "produce/go_out.png"
-        }
+        suggestion_img = self._find_image_from_phrase(suggestion_text, self.SUGGESTION_CONFIG)
+        if not suggestion_img:
+            return False
 
-        event_existed = []
+        logger.info(f"建议图片: {suggestion_img}")
+        return self._execute_suggestion(context, image, suggestion_img)
 
-        for event_name, event_img in event_list.items():
+    def _execute_suggestion(self, context: Context, image, suggestion_img: str) -> bool:
+        """执行老师建议"""
+        reco_detail = context.run_recognition(
+            "ProduceChooseSuggestion", image,
+            pipeline_override={"ProduceChooseSuggestion": {
+                "recognition": "TemplateMatch",
+                "template": suggestion_img,
+                "roi": [0, 800, 720, 256]
+            }}
+        )
+
+        if not reco_detail:
+            return False
+
+        logger.info("存在建议课程")
+        result = reco_detail.best_result.box
+
+        if "rest" in suggestion_img:
+            logger.info("选择休息")
+            context.run_task("ProduceChooseRest")
+            time.sleep(self.ACTION_DELAY)
+            return True
+
+        if "chat" in suggestion_img:
+            logger.info("选择交谈")
+            self._double_click(context, result[0] + 80, result[1] + 80)
+            context.run_task("ProduceShoppingFlag")
+            time.sleep(self.ACTION_DELAY)
+            return True
+
+        # 其他建议课程
+        self._double_click(context, result[0] + 80, result[1] + 80)
+        time.sleep(self.ACTION_DELAY)
+        return True
+
+    def _get_available_events(self, context: Context, image) -> List[Dict[str, Any]]:
+        """获取可用事件列表"""
+        available_events = []
+        available_events_name = ""
+
+        for event_name, event_img in self.EVENT_CONFIG.items():
             reco_detail = context.run_recognition(
                 "ProduceRecognitionEvent", image,
                 pipeline_override={"ProduceRecognitionEvent": {
                     "recognition": "TemplateMatch",
                     "template": event_img,
                     "roi": [0, 880, 720, 220]
-                }})
+                }}
+            )
             if reco_detail:
-                event_existed.append({
-                    event_name: reco_detail.best_result.box,
-                })
-        logger.info(event_existed)
-        if not event_existed:
-            logger.info("无可用事件")
+                available_events.append({event_name: reco_detail.best_result.box})
+                available_events_name += event_name
+
+        logger.info(f"可用事件: {available_events_name}")
+        return available_events
+
+    def _choose_event_by_status(self, context: Context, image, available_events: List[Dict], argv) -> bool:
+        """根据角色状态选择事件"""
+        # 检查体力状态
+        if self._handle_low_health(context, image, available_events):
             return True
 
-        reco_detail = context.run_recognition("ProduceRecognitionHealth", image)
-        if reco_detail:
-            health_detail = reco_detail.best_result.text.split("/")
-            health = int(health_detail[0])
-            health_total = int(health_detail[1])
-            logger.info(f"{health}/{health_total}")
-
-            if health / health_total < 0.3:
-                logger.info("体力过低")
-                go_out_box = self._get_event_box("外出", event_existed)
-                if go_out_box:
-                    logger.info("选择外出")
-                    context.tasker.controller.post_click(go_out_box[0] + 80, go_out_box[1] + 80).wait()
-                    time.sleep(0.5)
-                    context.tasker.controller.post_click(go_out_box[0] + 80, go_out_box[1] + 80).wait()
-                    time.sleep(3)
-                    return True
-
-                reco_detail = context.run_recognition("ProduceChooseRest", image)
-                if reco_detail:
-                    logger.info("选择休息")
-                    context.run_task("ProduceChooseRest")
-                    time.sleep(3)
-                    return True
-
-        reco_detail = context.run_recognition("ProduceRecognitionPoint", image)
-
-        if reco_detail:
-            point = int(reco_detail.best_result.text.replace(",", ""))
-            logger.info(f"point: {point}")
-
-            if point > 300:
-                chat_box = self._get_event_box("交谈", event_existed)
-                if chat_box:
-                    logger.info("选择交谈")
-                    context.tasker.controller.post_click(chat_box[0] + 80, chat_box[1] + 80).wait()
-                    time.sleep(0.5)
-                    context.tasker.controller.post_click(chat_box[0] + 80, chat_box[1] + 80).wait()
-                    time.sleep(3)
-                    context.run_task("ProduceShoppingFlag")
-                    return True
-
-        params = json.loads(argv.custom_action_param)
-
-        preference = (lambda x: x if x in ["Da", "Vi", "Vo"] else "Da")((params if isinstance(params, dict) else {}).get("preference"))
-        preference_box = self._get_event_box(preference, event_existed)
-        lesson_box = self._get_event_box("上课", event_existed)
-        event_box = self._get_event_box("活动", event_existed)
-        chat_box = self._get_event_box("交谈", event_existed)
-        go_out_box = self._get_event_box("外出", event_existed)
-
-        if preference_box:
-            logger.info("选择偏好属性")
-            context.tasker.controller.post_click(preference_box[0] + 80, preference_box[1] + 80).wait()
-            time.sleep(0.5)
-            context.tasker.controller.post_click(preference_box[0] + 80, preference_box[1] + 80).wait()
-            time.sleep(3)
+        # 检查积分状态
+        if self._handle_high_points(context, image, available_events):
             return True
-        if lesson_box:
-            logger.info("选择上课")
-            context.tasker.controller.post_click(lesson_box[0] + 80, lesson_box[1] + 80).wait()
-            time.sleep(0.5)
-            context.tasker.controller.post_click(lesson_box[0] + 80, lesson_box[1] + 80).wait()
-            time.sleep(3)
-            return True
-        if event_box:
-            logger.info("选择活动")
-            context.tasker.controller.post_click(event_box[0] + 80, event_box[1] + 80).wait()
-            time.sleep(0.5)
-            context.tasker.controller.post_click(event_box[0] + 80, event_box[1] + 80).wait()
-            time.sleep(3)
-            return True
-        if chat_box:
-            logger.info("选择交谈")
-            context.tasker.controller.post_click(chat_box[0] + 80, chat_box[1] + 80).wait()
-            time.sleep(0.5)
-            context.tasker.controller.post_click(chat_box[0] + 80, chat_box[1] + 80).wait()
-            time.sleep(3)
-            context.run_task("ProduceShoppingFlag")
-            return True
+
+        # 根据偏好选择事件
+        return self._choose_by_preference(context, available_events, argv)
+
+    def _handle_low_health(self, context: Context, image, available_events: List[Dict]) -> bool:
+        """处理低体力情况"""
+        health_ratio = self._get_health_ratio(context, image)
+        if health_ratio is None or health_ratio >= self.LOW_HEALTH_THRESHOLD:
+            return False
+
+        logger.info("体力过低")
+
+        # 优先选择外出
+        go_out_box = self._get_event_box("外出", available_events)
         if go_out_box:
             logger.info("选择外出")
-            context.tasker.controller.post_click(go_out_box[0] + 80, go_out_box[1] + 80).wait()
-            time.sleep(0.5)
-            context.tasker.controller.post_click(go_out_box[0] + 80, go_out_box[1] + 80).wait()
-            time.sleep(3)
+            self._double_click(context, go_out_box[0] + 80, go_out_box[1] + 80)
+            time.sleep(self.ACTION_DELAY)
+            return True
+
+        # 其次选择休息
+        reco_detail = context.run_recognition("ProduceChooseRest", image)
+        if reco_detail:
+            logger.info("选择休息")
+            context.run_task("ProduceChooseRest")
+            time.sleep(self.ACTION_DELAY)
             return True
 
         return False
 
+    def _handle_high_points(self, context: Context, image, available_events: List[Dict]) -> bool:
+        """处理高积分情况"""
+        points = self._get_current_points(context, image)
+        if points is None or points <= self.HIGH_POINT_THRESHOLD:
+            return False
+
+        logger.info(f"积分充足: {points}")
+        chat_box = self._get_event_box("交谈", available_events)
+        if chat_box:
+            logger.info("选择交谈")
+            self._double_click(context, chat_box[0] + 80, chat_box[1] + 80)
+            context.run_task("ProduceShoppingFlag")
+            time.sleep(self.ACTION_DELAY)
+            return True
+
+        return False
+
+    def _choose_by_preference(self, context: Context, available_events: List[Dict], argv) -> bool:
+        """根据偏好选择事件"""
+        # 获取偏好设置
+        preference = self._get_preference(argv)
+
+        # 按优先级顺序尝试选择事件
+        event_priority = [
+            (preference, "偏好属性"),
+            ("上课", "上课"),
+            ("活动", "活动"),
+            ("交谈", "交谈"),
+            ("外出", "外出")
+        ]
+
+        for event_type, description in event_priority:
+            event_box = self._get_event_box(event_type, available_events)
+            if event_box:
+                logger.info(f"选择{description}")
+                self._double_click(context, event_box[0] + 80, event_box[1] + 80)
+
+                if event_type == "交谈":
+                    context.run_task("ProduceShoppingFlag")
+
+                time.sleep(self.ACTION_DELAY)
+                return True
+
+        return False
+
     @staticmethod
-    def _find_image_from_phrase(target_phrase, data_dict):
+    def _get_health_ratio(context: Context, image) -> Optional[float]:
+        """获取体力比例"""
+        reco_detail = context.run_recognition("ProduceRecognitionHealth", image)
+        if not reco_detail:
+            return None
+
+        try:
+            health_parts = reco_detail.best_result.text.split("/")
+            current_health = int(health_parts[0])
+            max_health = int(health_parts[1])
+            ratio = current_health / max_health
+            logger.info(f"体力: {current_health}/{max_health} ({ratio:.2%})")
+            return ratio
+        except (ValueError, IndexError, ZeroDivisionError):
+            logger.warning("体力数据解析失败")
+            return None
+
+    @staticmethod
+    def _get_current_points(context: Context, image) -> Optional[int]:
+        """获取当前积分"""
+        reco_detail = context.run_recognition("ProduceRecognitionPoint", image)
+        if not reco_detail:
+            return None
+
+        try:
+            points = int(reco_detail.best_result.text.replace(",", ""))
+            logger.info(f"积分: {points}")
+            return points
+        except ValueError:
+            logger.warning("积分数据解析失败")
+            return None
+
+    @staticmethod
+    def _get_preference(argv) -> str:
+        """获取用户偏好设置"""
+        try:
+            params = json.loads(argv.custom_action_param)
+            preference = params.get("preference") if isinstance(params, dict) else None
+            return preference if preference in ["Da", "Vi", "Vo"] else "Da"
+        except (json.JSONDecodeError, AttributeError):
+            return "Da"
+
+    def _get_ocr_keywords(self) -> List[str]:
+        """获取OCR关键词列表"""
+        return [
+            keyword
+            for category_info in self.SUGGESTION_CONFIG.values()
+            if "keyword" in category_info and isinstance(category_info["keyword"], list)
+            for keyword in category_info["keyword"]
+        ]
+
+    def _double_click(self, context: Context, x: int, y: int):
+        """执行双击操作"""
+        context.tasker.controller.post_click(x, y).wait()
+        time.sleep(self.CLICK_DELAY)
+        context.tasker.controller.post_click(x, y).wait()
+
+    @staticmethod
+    def _find_image_from_phrase(target_phrase: str, data_dict: Dict) -> Optional[str]:
         """
         检测给定的短语（句子）包含字典中哪个类别的关键词，并返回对应的图片路径。
 
         Args:
-            target_phrase (str): 要查找的短语或句子。
-            data_dict (dict): 包含分类信息的字典，其值是包含 'img' 和 'keyword' 的字典。
+            target_phrase: 要查找的短语或句子
+            data_dict: 包含分类信息的字典
 
         Returns:
-            str or None: 如果短语包含匹配的类别关键词，则返回对应的 'img' 值；否则返回 None。
-                          遵循“以第一个为准”的原则。
+            如果短语包含匹配的类别关键词，则返回对应的 'img' 值；否则返回 None
         """
         for category_key, category_info in data_dict.items():
             if "keyword" in category_info and isinstance(category_info["keyword"], list):
@@ -260,23 +337,23 @@ class ProduceChooseEventAuto(CustomAction):
         return None
 
     @staticmethod
-    def _get_event_box(data: str, data_list: list):
+    def _get_event_box(event_name: str, event_list: List[Dict]) -> Optional[List]:
         """
-        遍历列表中的每个字典，如果找到任何一个字典包含 'data' 键，
+        从事件列表中获取指定事件的坐标框
 
         Args:
-            data_list (list): 包含字典的列表，例如 [{'上课': [...]}, {'xxx': [...]}]。
+            event_name: 事件名称
+            event_list: 包含事件信息的字典列表
 
         Returns:
-            list: 如果找到 'data' 键，返回其对应的值（一个列表）。
-            None: 如果列表为空，或者列表中没有字典，或者所有字典中都没有 'data' 键。
+            如果找到事件，返回其坐标框；否则返回 None
         """
-        if not data_list:
+        if not event_list:
             return None
-        for item in data_list:
-            data_value = item.get(data)
-            if data_value is not None:
-                return data_value
+
+        for event_dict in event_list:
+            if event_name in event_dict:
+                return event_dict[event_name]
         return None
 
 
