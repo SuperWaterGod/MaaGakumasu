@@ -21,6 +21,8 @@
       "produce/skip_chat.png",
       "produce/skip_chat_1.png"
     ],
+    "pre_delay": 100,
+    "post_delay": 100,
     "action":"Click",
     "roi":[
       553,
@@ -174,6 +176,8 @@
       1260,
       10,
       10
-    ]
+    ],
+    "pre_delay": 0,
+    "post_delay": 0
   }
 }

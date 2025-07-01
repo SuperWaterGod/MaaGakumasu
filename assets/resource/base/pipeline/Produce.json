@@ -222,7 +222,8 @@
       "produce/decide.png",
       "produce/start.png",
       "produce/event.png",
-      "produce/drink_no.png"
+      "produce/drink_no.png",
+      "produce/close.png"
     ],
     "order_by":"Score",
     "roi":[
@@ -237,6 +238,8 @@
       0,
       -10
     ],
+    "pre_delay":100,
+    "post_delay":100,
     "action":"Click"
   },
   "ProduceChooseEventFlag":{
@@ -257,6 +260,8 @@
       256
     ],
     "action":"Custom",
+    "pre_delay":100,
+    "post_delay":100,
     "custom_action":"ProduceChooseEventAuto",
     "custom_action_param":{
       "preference":"Vi"
@@ -274,6 +279,8 @@
       561,
       197
     ],
+    "pre_delay":100,
+    "post_delay":100,
     "next":"ProduceChooseCards"
   },
   "ProduceChooseCards":{
@@ -304,6 +311,8 @@
       "produce/choose_drink.png"
     ],
     "threshold":0.9,
+    "pre_delay":100,
+    "post_delay":100,
     "next":"ProduceChooseDrink"
   },
   "ProduceChooseDrink":{
@@ -339,6 +348,8 @@
       197
     ],
     "threshold":0.9,
+    "pre_delay":100,
+    "post_delay":100,
     "next":"ProduceChooseItem"
   },
   "ProduceChooseItem":{
@@ -412,7 +423,18 @@
   },
   "ProduceChooseStrengthenFlag":{
     "recognition":"TemplateMatch",
-    "template":"produce/strengthen_icon.png",
+    "template":[
+      "produce/strengthen_icon.png",
+      "produce/exchange_icon.png"
+    ],
+    "roi":[
+      0,
+      28,
+      182,
+      58
+    ],
+    "pre_delay":100,
+    "post_delay":100,
     "action":"Custom",
     "custom_action":"ProduceStrengthenAuto"
   },
@@ -456,7 +478,9 @@
       "HomeFlag"
     ],
     "interrupt":[
-      "ProduceFollow"
+      "ProduceFollow",
+      "ProduceSkip",
+      "CloseButtonRound"
     ]
   },
   "ProduceFollow":{
@@ -467,12 +491,16 @@
   "ProduceCardsFlag":{
     "recognition":"Custom",
     "custom_recognition":"ProduceCardsFlagAuto",
+    "pre_delay":100,
+    "post_delay":100,
     "action":"Custom",
     "custom_action":"ProduceCardsAuto"
   },
   "ProduceOptionsFlag":{
     "recognition":"Custom",
     "custom_recognition":"ProduceOptionsFlagAuto",
+    "pre_delay":100,
+    "post_delay":100,
     "action":"Click"
   }
 }
