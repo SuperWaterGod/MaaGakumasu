@@ -58,6 +58,12 @@
     "recognition":"TemplateMatch",
     "template":"challenge_skip.png",
     "action":"Click",
+    "roi":[
+      0,
+      980,
+      720,
+      300
+    ],
     "next":[
       "ChallengeSkip",
       "ChallengeNext"
@@ -70,6 +76,12 @@
     "recognition":"TemplateMatch",
     "template":"challenge_next.png",
     "action":"Click",
+    "roi":[
+      0,
+      980,
+      720,
+      300
+    ],
     "next":[
       "ChallengeFinish"
     ]
@@ -78,12 +90,19 @@
     "recognition":"TemplateMatch",
     "template":"challenge_finish.png",
     "action":"Click",
+    "roi":[
+      0,
+      980,
+      720,
+      300
+    ],
     "next":[
       "ChallengeChoose",
       "ChallengeRunOut"
     ],
     "interrupt":[
-      "ChallengeAward"
+      "ChallengeAward",
+      "ClickCenter"
     ]
   },
   "ChallengeRunOut":{
@@ -93,7 +112,7 @@
       "BackHome"
     ]
   },
-  "ChallengeAward": {
+  "ChallengeAward":{
     "recognition":"TemplateMatch",
     "template":"challenge_award.png",
     "action":"Click"
