@@ -104,17 +104,18 @@ jobs:
           if [ -d "MFA" ]; then
             echo "Copying MFA files to install directory..."
             mkdir -p install
-            # 使用robocopy的bash等效方式，排除zip文件
-            find MFA -type f ! -name "*.zip" -exec cp --parents {} install/ \; 2>/dev/null || {
-            # 如果上面的命令失败，使用传统方式然后清理
-              cp -rpvn MFA/* install/ 2>/dev/null || true
-              find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
-            }
-            echo "MFA files copied successfully."
+
+            # 直接将MFA目录的内容复制到install根目录
+            cp -r MFA/* install/
+
+            # 删除不需要的zip文件
+            echo "Cleaning up zip files..."
+            find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
+            echo "MFA files copied and cleaned successfully."
           else
             echo "MFA directory not found, skipping copy."
           fi
-    
+
           # 复制logo.ico到Assets文件夹
           if [ -f "logo.ico" ]; then
             echo "Copying logo.ico to Assets folder..."
@@ -163,6 +164,7 @@ jobs:
           out-file-path: "MFA"
           extract: true
 
+
       - name: Install
         shell: bash
         run: |
@@ -170,9 +172,13 @@ jobs:
 
           if [[ "${{ matrix.os }}" != "android" ]]; then
             if [ -d "MFA" ]; then
-              echo "Copying MFA files to install directory (excluding zip files)..."
+              echo "Copying MFA files to install directory..."
               mkdir -p install
-              rsync -av --ignore-existing --exclude="*.zip" MFA/ install/
+
+              # 直接将MFA目录的内容复制到install根目录
+              # 使用rsync但去掉--ignore-existing，并排除zip文件
+              rsync -av --exclude="*.zip" MFA/ install/
+
               echo "MFA files copied successfully."
             else
               echo "MFA directory not found, skipping copy."
@@ -181,9 +187,7 @@ jobs:
             echo "Skipping copy MFA for Android."
           fi
 
-      - name: Copy Logo to Assets
-        shell: bash
-        run: |
+          # 复制logo.ico到Assets文件夹
           if [ -f "logo.ico" ]; then
             echo "Copying logo.ico to Assets folder..."
             mkdir -p install/Assets
@@ -191,7 +195,6 @@ jobs:
             echo "logo.ico copied to install/Assets/"
           else
             echo "Warning: logo.ico not found in project root."
-            exit 1
           fi
 
       - uses: actions/upload-artifact@v4
