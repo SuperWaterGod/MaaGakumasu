@@ -65,6 +65,12 @@ def install_chores():
             working_dir / file,
             install_path,
         )
+    shutil.copytree(
+        working_dir / "docs",
+        install_path / "docs",
+        dirs_exist_ok=True,
+        ignore=shutil.ignore_patterns("*.yaml"),
+    )
 
 
 def install_agent():
@@ -79,6 +85,10 @@ def install_agent():
 
     if sys.platform.startswith("win"):
         interface["agent"]["child_exec"] = r"{PROJECT_DIR}/python/python.exe"
+    elif sys.platform.startswith("darwin"):
+        interface["agent"]["child_exec"] = r"{PROJECT_DIR}/python/bin/python3"
+    elif sys.platform.startswith("linux"):
+        interface["agent"]["child_exec"] = r"python3"
 
     interface["agent"]["child_args"] = [r"{PROJECT_DIR}/agent/main.py", "-u"]
 
