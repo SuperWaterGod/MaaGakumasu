@@ -1,6 +1,13 @@
 {
   "ActivityFee":{
-    "post_wait_freezes":300,
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "ActivityFeeHomeFlag"
     ],
@@ -11,38 +18,68 @@
     ]
   },
   "ActivityFeeHomeFlag":{
-    "recognition":"TemplateMatch",
-    "template":[
-      "home.png",
-      "home_1.png"
-    ],
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":[
+          "home.png",
+          "home_1.png"
+        ]
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "ActivityFeeClick"
     ]
   },
   "ActivityFeeClick":{
-    "recognition":"TemplateMatch",
-    "template": [
-      "activity_fee.png",
-      "activity_fee_1.png"
-    ],
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":[
+          "activity_fee.png",
+          "activity_fee_1.png"
+        ]
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "ActivityFeeClose",
       "ActivityWithoutFee"
     ]
   },
   "ActivityFeeClose":{
-    "recognition":"TemplateMatch",
-    "template":"close.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"close.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "HomeFlag"
     ]
   },
   "ActivityWithoutFee":{
-    "recognition":"TemplateMatch",
-    "template":"activity_without_fee.png",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"activity_without_fee.png"
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "HomeFlag"
     ]

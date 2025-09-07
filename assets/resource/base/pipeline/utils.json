@@ -1,41 +1,97 @@
 {
   "ReturnHome":{
-    "recognition":"TemplateMatch",
-    "template":"homeflag_black.png",
-    "action":"Click"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"homeflag_black.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "next":[
+      "HomeFlag"
+    ]
   },
   "BackHome":{
-    "recognition":"TemplateMatch",
-    "template":"homeflag_grey.png",
-    "action":"Click"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"homeflag_grey.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "next":[
+      "HomeFlag"
+    ]
   },
   "CloseMenu":{
-    "recognition":"TemplateMatch",
-    "template":"close_menu.png",
-    "action":"Click"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"close_menu.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    }
   },
   "CloseButton":{
-    "recognition":"TemplateMatch",
-    "template":"close.png",
-    "action":"Click"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"close.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    }
   },
   "DecideButton":{
-    "recognition":"TemplateMatch",
-    "template":"decide.png",
-    "action":"Click"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"decide.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    }
   },
   "CloseButtonRound":{
-    "recognition":"TemplateMatch",
-    "template":"close_icon.png",
-    "action":"Click"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"close_icon.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    }
   },
   "ClickCenter":{
-    "action":"Click",
-    "target":[
-      0,
-      0,
-      0,
-      0
-    ]
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"Click",
+      "param":{
+        "target":[
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
   }
 }

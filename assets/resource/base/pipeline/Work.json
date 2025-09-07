@@ -1,6 +1,13 @@
 {
   "Work":{
-    "post_wait_freezes":300,
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "WorkHomeFlag"
     ],
@@ -10,24 +17,38 @@
     ]
   },
   "WorkHomeFlag":{
-    "recognition":"TemplateMatch",
-    "template":[
-      "home.png",
-      "home_1.png"
-    ],
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":[
+          "home.png",
+          "home_1.png"
+        ]
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "WorkClick"
     ]
   },
   "WorkClick":{
-    "recognition":"TemplateMatch",
-    "template":[
-      "work.png",
-      "work_1.png",
-      "work_2.png"
-    ],
-    "action":"Click",
-    "post_wait_freezes":500,
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":[
+          "work.png",
+          "work_1.png",
+          "work_2.png"
+        ]
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkFinished",
       "WorkStartChooseShow",
@@ -39,9 +60,16 @@
     ]
   },
   "WorkFinished":{
-    "recognition":"TemplateMatch",
-    "template":"work_finish.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"work_finish.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkFinished",
       "WorkStartChooseShow",
@@ -49,99 +77,193 @@
     ]
   },
   "WorkStartChooseShow":{
-    "recognition":"TemplateMatch",
-    "template":"work_choose_show.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"work_choose_show.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkChooseShowGoodFlag"
     ]
   },
   "WorkStartChooseLive":{
-    "recognition":"TemplateMatch",
-    "template":"work_choose_live.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"work_choose_live.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkChooseLiveGoodFlag"
     ]
   },
   "WorkChooseShowGoodFlag":{
-    "recognition":"TemplateMatch",
-    "template":[
-      "work_good.png"
-    ],
-    "next":"WorkChooseShow"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":[
+          "work_good.png"
+        ]
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
+    "next":[
+      "WorkChooseShow"
+    ]
   },
   "WorkChooseLiveGoodFlag":{
-    "recognition":"TemplateMatch",
-    "template":[
-      "work_good.png"
-    ],
-    "next":"WorkChooseLive"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":[
+          "work_good.png"
+        ]
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
+    "next":[
+      "WorkChooseLive"
+    ]
   },
   "WorkChooseShow":{
-    "recognition":"Custom",
-    "custom_recognition":"WorkChooseAuto",
-    "action":"Click",
-    "custom_recognition_param":{ },
+    "recognition":{
+      "type":"Custom",
+      "param":{
+        "custom_recognition":"WorkChooseAuto",
+        "custom_recognition_param":{ }
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkChooseShowConfirm"
     ]
   },
   "WorkChooseLive":{
-    "recognition":"Custom",
-    "custom_recognition":"WorkChooseAuto",
-    "action":"Click",
-    "custom_recognition_param":{ },
+    "recognition":{
+      "type":"Custom",
+      "param":{
+        "custom_recognition":"WorkChooseAuto",
+        "custom_recognition_param":{ }
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkChooseLiveConfirm"
     ]
   },
   "WorkChooseShowConfirm":{
-    "recognition":"TemplateMatch",
-    "template":"work_choose_idol.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"work_choose_idol.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkChooseShowTime"
     ],
-    "interrupt":"DecideButton"
+    "interrupt":[
+      "DecideButton"
+    ]
   },
   "WorkChooseLiveConfirm":{
-    "recognition":"TemplateMatch",
-    "template":"work_choose_idol.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"work_choose_idol.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkChooseLiveTime"
     ],
-    "interrupt":"DecideButton"
+    "interrupt":[
+      "DecideButton"
+    ]
   },
   "WorkChooseShowTime":{
-    "recognition":"OCR",
-    "expected":"4時間",
-    "action":"Click",
+    "recognition":{
+      "type":"OCR",
+      "param":{
+        "expected":"4時間"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkSure"
     ]
   },
   "WorkChooseLiveTime":{
-    "recognition":"OCR",
-    "expected":"12",
-    "action":"Click",
+    "recognition":{
+      "type":"OCR",
+      "param":{
+        "expected":"12"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkSure"
     ]
   },
   "WorkSure":{
-    "recognition":"TemplateMatch",
-    "template":"work_sure.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"work_sure.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkStart"
     ]
   },
   "WorkStart":{
-    "recognition":"TemplateMatch",
-    "template":"work_start.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"work_start.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "WorkStartChooseShow",
       "WorkStartChooseLive",
@@ -149,19 +271,35 @@
     ]
   },
   "WorkChooseGood":{
-    "recognition":"TemplateMatch",
-    "template":[
-      "work_good.png"
-    ],
-    "roi":[
-      8,
-      709,
-      621,
-      317
-    ]
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":[
+          "work_good.png"
+        ],
+        "roi":[
+          8,
+          709,
+          621,
+          317
+        ]
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    }
   },
   "WorkAlready":{
-    "recognition":"FeatureMatch",
-    "template":"work_already.png"
+    "recognition":{
+      "type":"FeatureMatch",
+      "param":{
+        "template":"work_already.png"
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    }
   }
 }

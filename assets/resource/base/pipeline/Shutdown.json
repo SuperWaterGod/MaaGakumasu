@@ -1,6 +1,14 @@
 {
-    "Shutdown": {
-        "action": "StopApp",
-        "package": "com.bandainamcoent.idolmaster_gakuen"
+  "Shutdown":{
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"StopApp",
+      "param":{
+        "package":"com.bandainamcoent.idolmaster_gakuen"
+      }
     }
+  }
 }

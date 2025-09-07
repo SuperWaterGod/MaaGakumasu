@@ -1,15 +1,32 @@
 {
   "StartUp":{
-    "post_wait_freezes":300,
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "StartGame"
     ]
   },
   "StartGame":{
-    "action":"StartApp",
-    "package":"com.bandainamcoent.idolmaster_gakuen",
-    "next":"HomeFlag",
-    "timeout": 600000,
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"StartApp",
+      "param":{
+        "package":"com.bandainamcoent.idolmaster_gakuen"
+      }
+    },
+    "timeout":600000,
+    "next":[
+      "HomeFlag"
+    ],
     "interrupt":[
       "Download",
       "LoginBonus",
@@ -19,28 +36,58 @@
     ]
   },
   "HomeFlag":{
-    "recognition":"TemplateMatch",
-    "template":[
-      "home.png",
-      "home_1.png"
-    ]
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":[
+          "home.png",
+          "home_1.png"
+        ]
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    }
   },
   "Download":{
-    "recognition":"TemplateMatch",
-    "template":"decide.png",
-    "action":"Click"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"decide.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    }
   },
   "LoginBonus":{
-    "recognition":"OCR",
-    "expected":[
-      "LOGIN",
-      "BONUS"
-    ],
-    "action":"Click"
+    "recognition":{
+      "type":"OCR",
+      "param":{
+        "expected":[
+          "LOGIN",
+          "BONUS"
+        ]
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    }
   },
   "GetFriendPoints":{
-    "recognition":"TemplateMatch",
-    "template":"friend_points.png",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"friend_points.png"
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "CloseButton"
     ]
