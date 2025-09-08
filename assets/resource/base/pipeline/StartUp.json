@@ -27,6 +27,7 @@
     "next":[
       "HomeFlag"
     ],
+    "post_wait_freezes":5000,
     "interrupt":[
       "Download",
       "LoginBonus",
