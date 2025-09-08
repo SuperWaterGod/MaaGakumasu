@@ -40,23 +40,27 @@ class WorkChooseAuto(CustomRecognition):
         def handle_smile_page(page_image, roi, swipe_coords):
             smile_reco_detail = recognize_smile(page_image, roi)
             if smile_reco_detail:
-                logger.info("有笑脸")
+                # 有笑脸
                 good_list = [result.box for result in smile_reco_detail.filterd_results]
                 new_page_image = context.tasker.controller.post_screencap().wait().get()
                 work_reco_detail = recognize_work(new_page_image, good_list[0])
                 if work_reco_detail:
                     if len(good_list) > 1:
-                        logger.info("笑脸存在且被选中, 选择第二个笑脸")
+                        # 笑脸存在且被选中, 选择第二个笑脸
+                        logger.info("选择笑脸")
                         return CustomRecognition.AnalyzeResult(box=good_list[1], detail="笑脸存在且被选中, 选择第二个笑脸")
                     else:
-                        logger.info("笑脸存在且被选中")
+                        # 笑脸存在且被选中
+                        logger.info("第二页")
                         context.tasker.controller.post_swipe(*swipe_coords, duration=200).wait()
                         time.sleep(0.5)
                 else:
-                    logger.info("笑脸存在且未被选中")
+                    # 笑脸存在且未被选中
+                    logger.info("选择笑脸")
                     return CustomRecognition.AnalyzeResult(box=good_list[0], detail="笑脸存在且未被选中")
             else:
-                logger.info("无笑脸")
+                # 无笑脸
+                logger.info("返回第一页")
                 context.tasker.controller.post_swipe(*swipe_coords, duration=200).wait()
                 time.sleep(0.5)
             return None
@@ -83,13 +87,15 @@ class WorkChooseAuto(CustomRecognition):
             new_affinity_image = context.tasker.controller.post_screencap().wait().get()
             work_reco_detail_ocr = recognize_work(new_affinity_image, max_affinity["box"])
             if work_reco_detail_ocr:
-                logger.info("最高好感已工作")
+                # 最高好感已工作
+                logger.info("选择第二高好感")
                 return CustomRecognition.AnalyzeResult(box=second_affinity["box"], detail="第二高好感度")
             else:
-                logger.info("最高好感未工作")
+                # 最高好感未工作
+                logger.info("选择最高好感")
                 return CustomRecognition.AnalyzeResult(box=max_affinity["box"], detail="最高好感度")
         else:
-            logger.info("OCR识别失败")
+            logger.warning("OCR识别失败")
             return CustomRecognition.AnalyzeResult(box=None, detail="无文字")
 
 
@@ -149,5 +155,5 @@ class WorkChooseIdol(CustomRecognition):
                 box = reco_detail.filterd_results[0].box
                 return CustomRecognition.AnalyzeResult(box=box, detail="已选中")
 
-        logger.info("未能找到指定Idol")
+        logger.warning("未能找到指定Idol")
         return CustomRecognition.AnalyzeResult(box=[0, 0, 0, 0], detail="无文字")
