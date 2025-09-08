@@ -1,6 +1,13 @@
 {
   "Challenge":{
-    "post_wait_freezes":300,
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "ChallengeHomeFlag"
     ],
@@ -10,17 +17,63 @@
     ]
   },
   "ChallengeHomeFlag":{
-    "recognition":"TemplateMatch",
-    "template":"challenge.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":[
+          "home.png",
+          "home_1.png"
+        ]
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "ChallengeClick"
     ]
   },
   "ChallengeClick":{
-    "recognition":"TemplateMatch",
-    "template":"challenge_icon.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "next":[
+      "ChallengeEnter"
+    ]
+  },
+  "ChallengeEnter":{
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge_icon.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "next":"ChallengeSelector",
+    "interrupt":[
+      "ClickCenter"
+    ]
+  },
+  "ChallengeSelector":{
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "ChallengeChoose",
       "ChallengeRunOut",
@@ -31,39 +84,85 @@
     ]
   },
   "ChallengeChoose":{
-    "recognition":"TemplateMatch",
-    "template":"challenge_battle_total.png",
-    "action":"Click",
-    "index":1,
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge_battle_total.png"
+      }
+    },
+    "action":{
+      "type":"Custom",
+      "param":{
+        "custom_action":"ChallengeAuto",
+        "custom_action_param":{
+          "mode":"auto",
+          "index": 1
+        }
+      }
+    },
+    "pre_delay":0,
+    "post_delay":0,
     "next":[
       "ChallengeStart"
     ]
   },
+  "ChallengeIndex":{
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge_battle_total.png",
+        "index": 1,
+        "order_by": "Vertical"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    }
+  },
   "ChallengeStart":{
-    "recognition":"TemplateMatch",
-    "template":"challenge_start.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge_start.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "ChallengeReady"
     ]
   },
   "ChallengeReady":{
-    "recognition":"TemplateMatch",
-    "template":"challenge_ready.png",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge_ready.png"
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "ChallengeSkip"
     ]
   },
   "ChallengeSkip":{
-    "recognition":"TemplateMatch",
-    "template":"challenge_skip.png",
-    "action":"Click",
-    "roi":[
-      0,
-      980,
-      720,
-      300
-    ],
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge_skip.png",
+        "roi": [482,1020,207,64]
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "timeout":20000,
     "next":[
       "ChallengeSkip",
       "ChallengeNext"
@@ -73,32 +172,45 @@
     ]
   },
   "ChallengeNext":{
-    "recognition":"TemplateMatch",
-    "template":"challenge_next.png",
-    "action":"Click",
-    "roi":[
-      0,
-      980,
-      720,
-      300
-    ],
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge_next.png",
+        "roi":[
+          0,
+          980,
+          720,
+          300
+        ]
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "ChallengeFinish"
     ]
   },
   "ChallengeFinish":{
-    "recognition":"TemplateMatch",
-    "template":"challenge_finish.png",
-    "action":"Click",
-    "roi":[
-      0,
-      980,
-      720,
-      300
-    ],
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge_finish.png",
+        "roi":[
+          0,
+          980,
+          720,
+          300
+        ]
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
-      "ChallengeChoose",
-      "ChallengeRunOut"
+      "ChallengeSelector"
     ],
     "interrupt":[
       "ChallengeAward",
@@ -106,20 +218,49 @@
     ]
   },
   "ChallengeRunOut":{
-    "recognition":"TemplateMatch",
-    "template":"challenge_runout.png",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge_runout.png"
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "BackHome"
     ]
   },
   "ChallengeAward":{
-    "recognition":"TemplateMatch",
-    "template":"challenge_award.png",
-    "action":"Click"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge_award.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    }
   },
   "ChallengeReadyPeriod":{
-    "recognition":"TemplateMatch",
-    "template":"challenge_ready_period.png",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"challenge_ready_period.png",
+        "roi":[
+          20,
+          100,
+          330,
+          100
+        ]
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "BackHome"
     ]
