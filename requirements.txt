@@ -1,3 +1,2 @@
 maafw>=4.0.0
 loguru
-jsonc-parser
