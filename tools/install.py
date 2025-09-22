@@ -60,7 +60,7 @@ def install_resource():
 
 
 def install_chores():
-    for file in ["README.md", "LICENSE", "requirements.txt", "config.jsonc"]:
+    for file in ["README.md", "LICENSE", "requirements.txt"]:
         shutil.copy2(
             working_dir / file,
             install_path,
