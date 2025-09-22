@@ -79,19 +79,56 @@
       ]
     },
     {
-      "name":"商店购物",
+      "name":"扭蛋兑换",
       "entry":"Shopping",
       "option":[
-        "启用购买扭蛋",
-        "启用金币兑换所",
-        "金币兑换所免费刷新",
-        "启用AP兑换所"
+        "启用购买扭蛋"
       ],
       "check":true,
       "doc": [
-        "默认仅购买推荐物品",
-        "[color:tomato]因MAF框架限制，指定购买物品需要修改[/color][config.jsonc](config.jsonc)[color:tomato]文件[/color]",
-        "`true`为购买，`false`为不购买"
+        "默认全部购买"
+      ]
+    },
+    {
+      "name":"每日兑换",
+      "entry":"ShoppingDailyExchange",
+      "option":[
+        "启用金币兑换",
+        "- 购买推荐物品",
+        "- 购买感性笔记(声乐)",
+        "- 购买感性笔记(舞蹈)",
+        "- 购买感性笔记(形象)",
+        "- 购买理性笔记(声乐)",
+        "- 购买理性笔记(舞蹈)",
+        "- 购买理性笔记(形象)",
+        "- 购买非凡笔记(声乐)",
+        "- 购买非凡笔记(舞蹈)",
+        "- 购买非凡笔记(形象)",
+        "- 购买课程笔记",
+        "- 购买资深笔记",
+        "- 购买支援强化Pt",
+        "- 购买再挑战卷",
+        "- 购买记录钥匙",
+        "- 购买[The rolling Riceball]花海佑芽",
+        "- 购买[白线]葛城莉莉亚",
+        "- 购买[光景]篠泽广",
+        "- 购买[Tame-Lie-One-Step]紫云清夏",
+        "- 购买[Luna say maybe]月村手毬",
+        "- 购买[世界一可愛い私]藤田琴音",
+        "- 购买[Fighting My Way]花海咲季",
+        "- 购买[Wonder Scale]仓本千柰",
+        "- 购买[Fluorite]有村麻央",
+        "- 购买[clumsy trick]姬崎莉波",
+        "金币兑换免费刷新",
+        "启用AP兑换",
+        "- 购买支援强化Pt提升",
+        "- 购买笔记数量提升",
+        "- 购买再挑战卷(AP)",
+        "- 购买回忆生成卷"
+      ],
+      "check":true,
+      "doc": [
+        "默认仅购买推荐物品"
       ]
     },
     {
@@ -730,66 +767,48 @@
       ]
     },
     "启用购买扭蛋":{
+    },
+    "启用金币兑换":{
       "cases":[
         {
           "name":"Yes",
           "pipeline_override":{
-            "ShoppingCoinController":{
-              "next":"ShoppingCoin"
+            "ShoppingDailyExchangeMoneyController":{
+              "next":"ShoppingDailyExchangeMoney"
             }
           }
         },
         {
           "name":"No",
           "pipeline_override":{
-            "ShoppingCoinController":{
-              "next":"ShoppingExchange"
+            "ShoppingDailyExchangeMoneyController":{
+              "next":"ShoppingDailyExchangeAPController"
             }
           }
         }
       ]
     },
-    "启用金币兑换所":{
+    "启用AP兑换":{
       "cases":[
         {
           "name":"Yes",
           "pipeline_override":{
-            "ShoppingExchangeMoneyController":{
-              "next":"ShoppingExchangeMoney"
+            "ShoppingDailyExchangeAPController":{
+              "next":"ShoppingDailyExchangeAPStart"
             }
           }
         },
         {
           "name":"No",
           "pipeline_override":{
-            "ShoppingExchangeMoneyController":{
-              "next":"ShoppingExchangeAPController"
-            }
-          }
-        }
-      ]
-    },
-    "启用AP兑换所":{
-      "cases":[
-        {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingExchangeAPController":{
-              "next":"ShoppingExchangeAPStart"
-            }
-          }
-        },
-        {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingExchangeAPController":{
+            "ShoppingDailyExchangeAPController":{
               "next":"BackHome"
             }
           }
         }
       ]
     },
-    "金币兑换所免费刷新":{
+    "金币兑换免费刷新":{
       "cases":[
         {
           "name":"Yes",
@@ -803,6 +822,615 @@
           "name":"No",
           "pipeline_override":{
             "ShoppingFreeRefresh":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买推荐物品":{
+      "default_case":"Yes",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsRecommend":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsRecommend":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买感性笔记(声乐)":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSenseBlue":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSenseBlue":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买感性笔记(舞蹈)":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSenseRed":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSenseRed":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买感性笔记(形象)":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSenseYellow":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSenseYellow":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买理性笔记(声乐)":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsLogicBlue":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsLogicBlue":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买理性笔记(舞蹈)":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsLogicRed":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsLogicRed":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买理性笔记(形象)":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsLogicYellow":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsLogicYellow":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买非凡笔记(声乐)":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsAnomalyBlue":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsAnomalyBlue":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买非凡笔记(舞蹈)":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsAnomalyRed":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsAnomalyRed":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买非凡笔记(形象)":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsAnomalyYellow":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsAnomalyYellow":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买课程笔记":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsLessonNote":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsLessonNote":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买资深笔记":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsVeteranNote":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsVeteranNote":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买支援强化Pt":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSupportPoint":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSupportPoint":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买再挑战卷":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsChallengeTicket":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsChallengeTicket":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买记录钥匙":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsRecordKey":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsRecordKey":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买[The rolling Riceball]花海佑芽":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsHanamiUme":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsHanamiUme":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买[白线]葛城莉莉亚":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsKaturagiRiriya":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsKaturagiRiriya":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买[光景]篠泽广":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSasazawaHiro":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSasazawaHiro":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买[Tame-Lie-One-Step]紫云清夏":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSionSumika":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsSionSumika":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买[Luna say maybe]月村手毬":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsTukimuraTemari":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsTukimuraTemari":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买[世界一可愛い私]藤田琴音":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsHuzitaKotone":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsHuzitaKotone":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买[Fighting My Way]花海咲季":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsHanamiSaki":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsHanamiSaki":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买[Wonder Scale]仓本千柰":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsKuramotoTina":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsKuramotoTina":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买[Fluorite]有村麻央":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsArimuraMao":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsArimuraMao":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买[clumsy trick]姬崎莉波":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsHimezakiRinami":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeItemsHimezakiRinami":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买支援强化Pt提升":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeAPSupportPointIncreased":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeAPSupportPointIncreased":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买笔记数量提升":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeAPNoteIncreased":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeAPNoteIncreased":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买再挑战卷(AP)":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeAPChallengeTicket":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeAPChallengeTicket":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买回忆生成卷":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingDailyExchangeAPMemoryTicket":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingDailyExchangeAPMemoryTicket":{
               "enabled":false
             }
           }

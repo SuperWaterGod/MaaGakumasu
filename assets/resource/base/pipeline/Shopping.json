@@ -1,6 +1,13 @@
 {
   "Shopping":{
-    "post_wait_freezes":300,
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "ShoppingMenuClick"
     ],
@@ -10,223 +17,108 @@
     ]
   },
   "ShoppingMenuClick":{
-    "recognition":"TemplateMatch",
-    "template":"menu.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":["menu.png"]
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "ShoppingClick"
     ]
   },
   "ShoppingClick":{
-    "recognition":"TemplateMatch",
-    "template":"shopping.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"shopping.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "post_wait_freezes":500,
-    "next":[
-      "ShoppingCoinController"
-    ]
+    "next":[]
   },
   "ShoppingCoinController":{
-    "next":"ShoppingCoin"
-  },
-  "ShoppingCoin":{
-    "enabled":true,
-    "recognition":"TemplateMatch",
-    "template":"shopping_coin.png",
-    "action":"Click",
-    "post_wait_freezes":500,
-    "next":"ShoppingCoinStart"
-  },
-  "ShoppingCoinStart":{
-    "recognition":"TemplateMatch",
-    "template":"shopping_coin_button.png",
-    "action":"Custom",
-    "custom_action":"ShoppingCoinAuto",
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
-      "ShoppingBack"
+      "ShoppingCoin"
     ]
-  },
-  "ShoppingCoinButton":{
-    "recognition":"TemplateMatch",
-    "template":"shopping_coin_button.png"
-  },
-  "ShoppingCoinBuy":{
-    "recognition":"TemplateMatch",
-    "template":"decide.png",
-    "action":"Click",
-    "pre_wait_freezes":200,
-    "post_wait_freezes":500,
-    "next":[
-      "ShoppingCoinButton"
-    ],
-    "interrupt":[
-      "ShoppingCoinBuyRunout",
-      "CloseButton"
-    ]
-  },
-  "ShoppingCoinBuyRunout":{
-    "recognition":"TemplateMatch",
-    "template":"shopping_coin_runout.png",
-    "post_wait_freezes":200,
-    "next":"ShoppingCoinBuyCancel"
-  },
-  "ShoppingCoinBuyCancel":{
-    "recognition":"TemplateMatch",
-    "template":"cancel.png",
-    "action":"Click"
-  },
-  "ShoppingCoinNext":{
-    "action":"Swipe",
-    "begin":[
-      100,
-      1000,
-      1,
-      1
-    ],
-    "end":[
-      100,
-      270,
-      1,
-      1
-    ],
-    "duration":2000
   },
   "ShoppingBack":{
-    "recognition":"TemplateMatch",
-    "template":"back.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"back.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "pre_wait_freezes":500,
     "post_wait_freezes":500,
-    "post_delay":1000,
     "next":[
-      "ShoppingExchange"
-    ]
-  },
-  "ShoppingExchange":{
-    "recognition":"TemplateMatch",
-    "template":"shopping_exchange.png",
-    "roi":[
-      0,
-      660,
-      720,
-      460
-    ],
-    "action":"Click",
-    "post_delay":500,
-    "pre_wait_freezes":500,
-    "next":[
-      "ShoppingExchangeMoneyController"
-    ]
-  },
-  "ShoppingExchangeMoneyController":{
-    "next":"ShoppingExchangeMoney"
-  },
-  "ShoppingExchangeMoney":{
-    "enabled":true,
-    "recognition":"TemplateMatch",
-    "template":"shopping_money.png",
-    "roi":[
-      50,
-      1060,
-      300,
-      70
-    ],
-    "pre_wait_freezes": {
-      "time": 500,
-      "target": [30, 288, 660, 667]
-    },
-    "post_wait_freezes":500,
-    "action":"Custom",
-    "custom_action":"ShoppingExchangeMoneyAuto",
-    "custom_action_param":{
-      "recommend":true,
-      "sense_blue":false,
-      "sense_red":false,
-      "sense_yellow":false,
-      "logic_blue":false,
-      "logic_red":false,
-      "logic_yellow":false,
-      "anomaly_blue":false,
-      "anomaly_red":false,
-      "anomaly_yellow":false,
-      "lesson_note":false,
-      "veteran_note":false,
-      "support_point":false,
-      "challenge_ticket":false,
-      "record_key":false,
-      "hanami_ume_shards":false,
-      "katuragi_ririya_shards":false,
-      "sasazawa_hiro_shards":false,
-      "sion_sumika_shards":false,
-      "tukimura_temari_shards":false,
-      "huzita_kotone_shards":false,
-      "kuramoto_tina_shards":false,
-      "hanami_saki_shards":false,
-      "arimura_mao_shards":false,
-      "himezaki_rinami_shards":false
-    },
-    "next":[
-      "ShoppingFreeRefresh",
-      "ShoppingExchangeAPController"
-    ]
-  },
-  "ShoppingFreeRefresh":{
-    "enabled":true,
-    "recognition":"TemplateMatch",
-    "template":"shopping_refresh.png",
-    "action":"Click",
-    "next":[
-      "ShoppingExchangeMoney"
-    ]
-  },
-  "ShoppingExchangeBuy":{
-    "recognition":"TemplateMatch",
-    "template":[
-      "decide.png",
-      "shopping_exchange_runout.png"
-    ],
-    "action":"Click",
-    "interrupt":[
-      "CloseButton"
-    ]
-  },
-  "ShoppingExchangeAPController":{
-    "next":"ShoppingExchangeAPStart"
-  },
-  "ShoppingExchangeAPStart":{
-    "enabled":true,
-    "recognition":"TemplateMatch",
-    "template":"shopping_ap.png",
-    "action":"Click",
-    "next":[
-      "ShoppingExchangeAP"
-    ]
-  },
-  "ShoppingExchangeAP":{
-    "recognition":"TemplateMatch",
-    "template":"shopping_ap_flag.png",
-    "action":"Custom",
-    "custom_action":"ShoppingExchangeAPAuto",
-    "custom_action_param":{
-      "support_point_increased":false,
-      "note_increased":false,
-      "challenge_ticket":false,
-      "memory_ticket":false
-    },
-    "next":[
-      "BackHome"
+      "ShoppingDailyExchange"
     ]
   },
   "ShoppingPlus":{
-    "recognition":"TemplateMatch",
-    "template":"shopping_plus.png",
-    "action":"Click",
-    "threshold":0.99,
-    "roi":[
-      516,
-      856,
-      130,
-      104
-    ]
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"shopping_plus.png",
+        "threshold":0.98,
+        "roi":[
+          516,
+          856,
+          130,
+          104
+        ]
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "post_wait_freezes":500
+  },
+  "ShoppingNextPage":{
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"Swipe",
+      "param":{
+        "begin":[
+          100,
+          1000,
+          1,
+          1
+        ],
+        "end":[
+          [
+            100,
+            270,
+            1,
+            1
+          ]
+        ],
+        "duration":2000
+      }
+    }
   }
 }

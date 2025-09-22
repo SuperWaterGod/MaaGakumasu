@@ -4,8 +4,8 @@ from .challenge import *
 
 __all__ = [
     "ShoppingCoinAuto",
-    "ShoppingExchangeMoneyAuto",
-    "ShoppingExchangeAPAuto",
+    "ShoppingDailyExchangeMoneyAuto",
+    "ShoppingDailyExchangeAPAuto",
     "ChallengeAuto",
     "ProduceChooseEventAuto",
     "ProduceCardsAuto",
