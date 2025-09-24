@@ -21,7 +21,9 @@
     "recognition":{
       "type":"TemplateMatch",
       "param":{
-        "template":["menu.png"]
+        "template":[
+          "menu.png"
+        ]
       }
     },
     "action":{
@@ -44,7 +46,7 @@
       "param":{ }
     },
     "post_wait_freezes":500,
-    "next": "ShoppingCoinGachaStart"
+    "next":"ShoppingCoinGachaStart"
   },
   "ShoppingCoinGachaStart":{
     "recognition":{
@@ -94,7 +96,12 @@
     "action":{
       "type":"Click",
       "param":{
-        "target_offset": [170,86,0,0]
+        "target_offset":[
+          170,
+          86,
+          0,
+          0
+        ]
       }
     },
     "post_wait_freezes":100,
@@ -134,8 +141,6 @@
       "param":{ }
     }
   },
-
-
   "ShoppingCoinGachaFriendGacha":{
     "recognition":{
       "type":"DirectHit",

@@ -21,7 +21,9 @@
     "recognition":{
       "type":"TemplateMatch",
       "param":{
-        "template":["menu.png"]
+        "template":[
+          "menu.png"
+        ]
       }
     },
     "action":{
@@ -44,7 +46,7 @@
       "param":{ }
     },
     "post_wait_freezes":500,
-    "next": "ShoppingDailyExchangeStart"
+    "next":"ShoppingDailyExchangeStart"
   },
   "ShoppingDailyExchangeStart":{
     "recognition":{
@@ -76,7 +78,7 @@
       "type":"DoNothing",
       "param":{ }
     },
-    "post_wait_freezes": 200,
+    "post_wait_freezes":200,
     "next":[
       "ShoppingDailyExchangeMoney"
     ]
@@ -146,7 +148,7 @@
       "type":"Click",
       "param":{ }
     },
-    "post_wait_freezes": 500,
+    "post_wait_freezes":500,
     "interrupt":[
       "CloseButton"
     ]
@@ -160,7 +162,7 @@
       "type":"DoNothing",
       "param":{ }
     },
-    "post_wait_freezes": 200,
+    "post_wait_freezes":200,
     "next":[
       "ShoppingDailyExchangeAPStart"
     ]
