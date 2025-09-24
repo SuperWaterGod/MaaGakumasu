@@ -1,5 +1,13 @@
 {
   "Society":{
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "post_wait_freezes":300,
     "next":[
       "SocietyMenuClick"
@@ -10,17 +18,31 @@
     ]
   },
   "SocietyMenuClick":{
-    "recognition":"TemplateMatch",
-    "template":"menu.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"menu.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "SocietyClick"
     ]
   },
   "SocietyClick":{
-    "recognition":"TemplateMatch",
-    "template":"society.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"society.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "post_wait_freezes":500,
     "next":[
       "SocietyDonation",
@@ -32,6 +54,14 @@
     ]
   },
   "SocietyDonation":{
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "SocietyDonationCommit",
       "SocietyCommitAlready"
@@ -41,82 +71,139 @@
     ]
   },
   "SocietyDonationCommit":{
-    "recognition":"TemplateMatch",
-    "template":"society_commit.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"society_commit.png",
+        "roi":[
+          26,
+          750,
+          666,
+          250
+        ]
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "post_wait_freezes":{
+      "time":500,
+      "target":[
+        0,
+        580,
+        720,
+        160
+      ]
+    },
     "next":[
-      "SocietyDonationSubmit",
-      "SocietyDonationCommitRunout",
-      "SocietyDonationCommit"
+      "SocietyDonationNext"
     ],
     "interrupt":[
       "SocietyDonationConfirm",
       "CloseButton"
     ]
   },
-  "SocietyDonationSubmit":{
-    "recognition":"TemplateMatch",
-    "template":"society_submit.png",
-    "post_wait_freezes":500,
-    "next":[
-      "SocietyDonationNext",
-      "SocietyDonationCommit",
-      "SocietyCommitAlready"
-    ]
-  },
   "SocietyDonationConfirm":{
-    "recognition":"TemplateMatch",
-    "template":"decide.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"decide.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "post_wait_freezes":500
   },
-  "SocietyDonationCommitRunout":{
-    "recognition":"TemplateMatch",
-    "template":"society_commit_runout.png",
-    "next":[
-      "SocietyRequest",
-      "BackHome"
-    ]
-  },
   "SocietyDonationNext":{
-    "recognition":"TemplateMatch",
-    "template":"society_next.png",
-    "action":"Swipe",
-    "begin":[
-      491,
-      853,
-      1,
-      1
-    ],
-    "end":[
-      182,
-      855,
-      1,
-      1
-    ],
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"society_next.png"
+      }
+    },
+    "action":{
+      "type":"Swipe",
+      "param":{
+        "begin":[
+          490,
+          855,
+          1,
+          1
+        ],
+        "end":[
+          [
+            182,
+            855,
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    "post_wait_freezes":{
+      "time":200,
+      "target":[
+        0,
+        580,
+        720,
+        160
+      ]
+    },
     "next":[
       "SocietyDonationCommit",
       "SocietyCommitAlready"
     ]
   },
   "SocietyCommitAlready":{
-    "recognition":"TemplateMatch",
-    "template":"society_commit_already.png",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "roi":[
+          26,
+          750,
+          666,
+          250
+        ],
+        "template":"society_commit_already.png"
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "SocietyRequest",
       "BackHome"
     ]
   },
   "SocietyRequest":{
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "SocietyRequestItem",
       "SocietyRequestsAlready"
     ]
   },
   "SocietyRequestItem":{
-    "recognition":"TemplateMatch",
-    "template":"society_requests.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"society_requests.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "post_wait_freezes":500,
     "next":[
       "SocietyRequestChoose",
@@ -124,42 +211,78 @@
     ]
   },
   "SocietyRequestChoose":{
-    "recognition":"Custom",
-    "custom_recognition":"SocietyRequestAuto",
-    "action":"Click",
+    "recognition":{
+      "type":"Custom",
+      "param":{
+        "custom_recognition":"SocietyRequestAuto"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "SocietyRequestConfirm"
     ]
   },
   "SocietyRequestConfirm":{
-    "recognition":"TemplateMatch",
-    "template":"decide.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"decide.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "SocietyRequestConfirm",
       "BackHome"
     ]
   },
   "SocietyRequestsAlready":{
-    "recognition":"TemplateMatch",
-    "template":"society_requests_already.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"society_requests_already.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "SocietyRequestGet",
       "SocietyRequestClose"
     ]
   },
   "SocietyRequestGet":{
-    "recognition":"TemplateMatch",
-    "template":"society_requests_get.png",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"society_requests_get.png"
+      }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "next":[
       "SocietyRequestClose"
     ]
   },
   "SocietyRequestClose":{
-    "recognition":"TemplateMatch",
-    "template":"close.png",
-    "action":"Click",
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"close.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
     "next":[
       "BackHome"
     ]
