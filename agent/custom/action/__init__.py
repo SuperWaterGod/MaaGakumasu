@@ -3,7 +3,7 @@ from .produce import *
 from .challenge import *
 
 __all__ = [
-    "ShoppingCoinAuto",
+    "ShoppingCoinGachaAuto",
     "ShoppingDailyExchangeMoneyAuto",
     "ShoppingDailyExchangeAPAuto",
     "ChallengeAuto",

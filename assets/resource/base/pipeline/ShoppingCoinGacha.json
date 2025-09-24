@@ -1,22 +1,73 @@
 {
-  "ShoppingCoin":{
+  "ShoppingCoinCacha":{
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
+    "next":[
+      "ShoppingCoinGachaStart",
+      "ShoppingCoinGachaMenuClick"
+    ],
+    "interrupt":[
+      "CloseMenu",
+      "BackHome"
+    ]
+  },
+  "ShoppingCoinGachaMenuClick":{
     "recognition":{
       "type":"TemplateMatch",
       "param":{
-        "template":"shopping_coin.png"
+        "template":["menu.png"]
       }
     },
     "action":{
       "type":"Click",
       "param":{ }
     },
-    "enabled":true,
-    "post_wait_freezes":500,
     "next":[
-      "ShoppingCoinStart"
+      "ShoppingCoinGachaClick"
     ]
   },
-  "ShoppingCoinStart":{
+  "ShoppingCoinGachaClick":{
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"shopping.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "post_wait_freezes":500,
+    "next": "ShoppingCoinGachaStart"
+  },
+  "ShoppingCoinGachaStart":{
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"shopping_coin_gacha.png",
+        "roi":[
+          0,
+          660,
+          720,
+          460
+        ]
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "next":[
+      "ShoppingDailyCoinGachaController"
+    ]
+  },
+  "ShoppingDailyCoinGachaController":{
     "recognition":{
       "type":"TemplateMatch",
       "param":{
@@ -26,11 +77,49 @@
     "action":{
       "type":"Custom",
       "param":{
-        "custom_action":"ShoppingCoinAuto"
+        "custom_action":"ShoppingCoinGachaAuto"
       }
     },
     "next":[
-      "ShoppingBack"
+      "BackHome"
+    ]
+  },
+  "ShoppingCoinGachaBuy":{
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"shopping_gacha_friend.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{
+        "target_offset": [170,86,0,0]
+      }
+    },
+    "post_wait_freezes":100,
+    "next":[
+      "ShoppingCoinGachaDecide"
+    ]
+  },
+  "ShoppingCoinGachaDecide":{
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"decide.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "post_wait_freezes":200,
+    "next":[
+      "ShoppingCoinButton"
+    ],
+    "interrupt":[
+      "ClickCenter",
+      "CloseButton"
     ]
   },
   "ShoppingCoinButton":{
@@ -45,53 +134,50 @@
       "param":{ }
     }
   },
-  "ShoppingCoinBuy":{
+
+
+  "ShoppingCoinGachaFriendGacha":{
     "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"decide.png"
-      }
-    },
-    "action":{
-      "type":"Click",
+      "type":"DirectHit",
       "param":{ }
-    },
-    "pre_wait_freezes":200,
-    "post_wait_freezes":500,
-    "next":[
-      "ShoppingCoinButton"
-    ],
-    "interrupt":[
-      "ShoppingCoinBuyRunout",
-      "CloseButton"
-    ]
-  },
-  "ShoppingCoinBuyRunout":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping_coin_runout.png"
-      }
     },
     "action":{
       "type":"DoNothing",
       "param":{ }
     },
-    "post_wait_freezes":200,
-    "next":[
-      "ShoppingCoinBuyCancel"
-    ]
+    "enabled":true
   },
-  "ShoppingCoinBuyCancel":{
+  "ShoppingCoinGachaSenseGacha":{
     "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"cancel.png"
-      }
+      "type":"DirectHit",
+      "param":{ }
     },
     "action":{
-      "type":"Click",
+      "type":"DoNothing",
       "param":{ }
-    }
+    },
+    "enabled":false
+  },
+  "ShoppingCoinGachaLogicGacha":{
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
+    "enabled":false
+  },
+  "ShoppingCoinGachaAnomalyGacha":{
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
+    "enabled":false
   }
 }

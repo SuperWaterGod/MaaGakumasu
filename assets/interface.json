@@ -80,13 +80,16 @@
     },
     {
       "name":"扭蛋兑换",
-      "entry":"Shopping",
+      "entry":"ShoppingCoinCacha",
       "option":[
-        "启用购买扭蛋"
+        "- 购买好友扭蛋",
+        "- 购买感性扭蛋",
+        "- 购买理性扭蛋",
+        "- 购买非凡扭蛋"
       ],
       "check":true,
       "doc": [
-        "默认全部购买"
+        "购买会将扭蛋全部用光"
       ]
     },
     {
@@ -766,7 +769,89 @@
         }
       ]
     },
-    "启用购买扭蛋":{
+    "- 购买好友扭蛋":{
+      "default_case":"Yes",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingCoinGachaFriendGacha":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingCoinGachaFriendGacha":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买感性扭蛋":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingCoinGachaSenseGacha":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingCoinGachaSenseGacha":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买理性扭蛋":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingCoinGachaLogicGacha":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingCoinGachaLogicGacha":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买非凡扭蛋":{
+      "default_case":"No",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingCoinGachaAnomalyGacha":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingCoinGachaAnomalyGacha":{
+              "enabled":false
+            }
+          }
+        }
+      ]
     },
     "启用金币兑换":{
       "cases":[

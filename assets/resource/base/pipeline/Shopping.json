@@ -1,63 +1,4 @@
 {
-  "Shopping":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
-    },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
-    },
-    "next":[
-      "ShoppingMenuClick"
-    ],
-    "interrupt":[
-      "CloseMenu",
-      "BackHome"
-    ]
-  },
-  "ShoppingMenuClick":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":["menu.png"]
-      }
-    },
-    "action":{
-      "type":"Click",
-      "param":{ }
-    },
-    "next":[
-      "ShoppingClick"
-    ]
-  },
-  "ShoppingClick":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping.png"
-      }
-    },
-    "action":{
-      "type":"Click",
-      "param":{ }
-    },
-    "post_wait_freezes":500,
-    "next":[]
-  },
-  "ShoppingCoinController":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
-    },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
-    },
-    "next":[
-      "ShoppingCoin"
-    ]
-  },
   "ShoppingBack":{
     "recognition":{
       "type":"TemplateMatch",
@@ -69,11 +10,7 @@
       "type":"Click",
       "param":{ }
     },
-    "pre_wait_freezes":500,
-    "post_wait_freezes":500,
-    "next":[
-      "ShoppingDailyExchange"
-    ]
+    "post_wait_freezes":200
   },
   "ShoppingPlus":{
     "recognition":{
@@ -119,6 +56,7 @@
         ],
         "duration":2000
       }
-    }
+    },
+  "post_wait_freezes":200
   }
 }

@@ -76,6 +76,7 @@
       "type":"DoNothing",
       "param":{ }
     },
+    "post_wait_freezes": 200,
     "next":[
       "ShoppingDailyExchangeMoney"
     ]
@@ -159,6 +160,7 @@
       "type":"DoNothing",
       "param":{ }
     },
+    "post_wait_freezes": 200,
     "next":[
       "ShoppingDailyExchangeAPStart"
     ]
