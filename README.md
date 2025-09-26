@@ -17,6 +17,7 @@
 <p align="center">
   <img alt="Python" src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white">
   <img alt="platform" src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-blueviolet">
+  <img alt="CodeFactor" src="https://www.codefactor.io/repository/github/superwatergod/maagakumasu/badge">
   <br>
   <img alt="license" src="https://img.shields.io/github/license/SuperWaterGod/MaaGakumasu">
   <img alt="commit" src="https://img.shields.io/github/commit-activity/m/SuperWaterGod/MaaGakumasu">
@@ -32,7 +33,7 @@
 - [x] 领取活动费
 - [x] 竞赛挑战
   - [x] 指定挑战
-  - [ ] 自动选择
+  - [x] 自动选择
 - [x] 社团互动
   - [x] `自动/指定` 请求
 - [x] 安排工作
@@ -40,7 +41,7 @@
   - [x] `自动/指定` 选择偶像
   - [x] 指定时长
 - [x] 商店购买
-  - [x] 扭蛋币购买
+  - [x] 扭蛋购买
   - [x] 金币购买[^1]
   - [x] 自动免费刷新
   - [X] AP购买[^1]
