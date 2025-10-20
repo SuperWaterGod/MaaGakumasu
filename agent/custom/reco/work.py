@@ -99,24 +99,6 @@ class WorkChooseAuto(CustomRecognition):
             return CustomRecognition.AnalyzeResult(box=None, detail="无文字")
 
 
-"""
-        # context is a reference, will override the pipeline for whole task
-        context.override_pipeline({"MyCustomOCR": {"roi": [1, 1, 114, 514]}})
-        # context.run_recognition ...
-
-
-        # make a new context to override the pipeline, only for itself
-        new_context = context.clone()
-        new_context.override_pipeline({"MyCustomOCR": {"roi": [100, 200, 300, 400]}})
-        reco_detail = new_context.run_recognition("MyCustomOCR", argv.image)
-
-        click_job = context.tasker.controller.post_click(10, 20)
-        click_job.wait()
-
-        context.override_next(argv.node_name, ["TaskA", "TaskB"])
-"""
-
-
 @AgentServer.custom_recognition("WorkChooseIdol")
 class WorkChooseIdol(CustomRecognition):
     """

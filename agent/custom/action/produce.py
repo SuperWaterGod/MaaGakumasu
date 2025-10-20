@@ -490,7 +490,7 @@ class ProduceShoppingAuto(CustomAction):
                         end_time = time.time()
                         if end_time - start_time > 3:
                             break
-
+                break
         return True
 
 
