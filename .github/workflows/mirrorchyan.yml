@@ -1,0 +1,26 @@
+name: mirrorchyan
+
+on:
+  workflow_dispatch:
+
+jobs:
+  mirrorchyan:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [win, macos, linux]
+        arch: [aarch64, x86_64]
+    steps:
+      - uses: MirrorChyan/uploading-action@v1
+        with:
+          filetype: latest-release
+          filename: "MaaGakumasu-${{ matrix.os }}-${{ matrix.arch }}*"
+          mirrorchyan_rid: MaaGakumasu
+
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          owner: SuperWaterGod
+          repo: MaaGakumasu
+          upload_token: ${{ secrets.MirrorChyanUploadToken }}
+          os: ${{ matrix.os }}
+          arch: ${{ matrix.arch }}

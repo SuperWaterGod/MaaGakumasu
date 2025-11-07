@@ -105,10 +105,10 @@ jobs:
             echo "Copying MFA files to install directory..."
             mkdir -p install
 
-            # Ö±½Ó½«MFAÄ¿Â¼µÄÄÚÈÝ¸´ÖÆµ½install¸ùÄ¿Â¼
+            # Ö±ï¿½Ó½ï¿½MFAÄ¿Â¼ï¿½ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½Æµï¿½installï¿½ï¿½Ä¿Â¼
             cp -r MFA/* install/
 
-            # É¾³ý²»ÐèÒªµÄzipÎÄ¼þ
+            # É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½zipï¿½Ä¼ï¿½
             echo "Cleaning up zip files..."
             find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
             echo "MFA files copied and cleaned successfully."
@@ -116,7 +116,7 @@ jobs:
             echo "MFA directory not found, skipping copy."
           fi
 
-          # ¸´ÖÆlogo.icoµ½AssetsÎÄ¼þ¼Ð
+          # ï¿½ï¿½ï¿½ï¿½logo.icoï¿½ï¿½Assetsï¿½Ä¼ï¿½ï¿½ï¿½
           if [ -f "logo.ico" ]; then
             echo "Copying logo.ico to Assets folder..."
             mkdir -p install/Assets
@@ -175,8 +175,8 @@ jobs:
               echo "Copying MFA files to install directory..."
               mkdir -p install
 
-              # Ö±½Ó½«MFAÄ¿Â¼µÄÄÚÈÝ¸´ÖÆµ½install¸ùÄ¿Â¼
-              # Ê¹ÓÃrsyncµ«È¥µô--ignore-existing£¬²¢ÅÅ³ýzipÎÄ¼þ
+              # Ö±ï¿½Ó½ï¿½MFAÄ¿Â¼ï¿½ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½Æµï¿½installï¿½ï¿½Ä¿Â¼
+              # Ê¹ï¿½ï¿½rsyncï¿½ï¿½È¥ï¿½ï¿½--ignore-existingï¿½ï¿½ï¿½ï¿½ï¿½Å³ï¿½zipï¿½Ä¼ï¿½
               rsync -av --exclude="*.zip" MFA/ install/
 
               echo "MFA files copied successfully."
@@ -187,7 +187,7 @@ jobs:
             echo "Skipping copy MFA for Android."
           fi
 
-          # ¸´ÖÆlogo.icoµ½AssetsÎÄ¼þ¼Ð
+          # ï¿½ï¿½ï¿½ï¿½logo.icoï¿½ï¿½Assetsï¿½Ä¼ï¿½ï¿½ï¿½
           if [ -f "logo.ico" ]; then
             echo "Copying logo.ico to Assets folder..."
             mkdir -p install/Assets
@@ -273,3 +273,10 @@ jobs:
           body: ${{ needs.changelog.outputs.release_body }}
           draft: false
           prerelease: ${{ needs.meta.outputs.is_prerelease == 'true' }}
+
+      - name: Trigger MirrorChyanUploading
+        run: |
+          gh workflow run --repo $GITHUB_REPOSITORY mirrorchyan
+          gh workflow run --repo $GITHUB_REPOSITORY mirrorchyan_release_note
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
