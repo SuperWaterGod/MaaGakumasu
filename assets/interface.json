@@ -1,8 +1,8 @@
 {
   "name":"MaaGakumasu",
   "version":"v0.1.0",
-  "mirrorchyan_rid":null,
-  "mirrorchyan_multiplatform":false,
+  "mirrorchyan_rid": "MaaGakumasu",
+  "mirrorchyan_multiplatform": true,
   "url":"https://github.com/SuperWaterGod/MaaGakumasu",
   "controller":[
     {

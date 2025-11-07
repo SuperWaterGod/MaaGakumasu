@@ -105,10 +105,10 @@ jobs:
             echo "Copying MFA files to install directory..."
             mkdir -p install
 
-            # Ö±½Ó½«MFAÄ¿Â¼µÄÄÚÈİ¸´ÖÆµ½install¸ùÄ¿Â¼
+            # ç›´æ¥å°†MFAç›®å½•çš„å†…å®¹å¤åˆ¶åˆ°installæ ¹ç›®å½•
             cp -r MFA/* install/
 
-            # É¾³ı²»ĞèÒªµÄzipÎÄ¼ş
+            # åˆ é™¤ä¸éœ€è¦çš„zipæ–‡ä»¶
             echo "Cleaning up zip files..."
             find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
             echo "MFA files copied and cleaned successfully."
@@ -116,7 +116,7 @@ jobs:
             echo "MFA directory not found, skipping copy."
           fi
 
-          # ¸´ÖÆlogo.icoµ½AssetsÎÄ¼ş¼Ğ
+          # å¤åˆ¶logo.icoåˆ°Assetsæ–‡ä»¶å¤¹
           if [ -f "logo.ico" ]; then
             echo "Copying logo.ico to Assets folder..."
             mkdir -p install/Assets
@@ -175,8 +175,8 @@ jobs:
               echo "Copying MFA files to install directory..."
               mkdir -p install
 
-              # Ö±½Ó½«MFAÄ¿Â¼µÄÄÚÈİ¸´ÖÆµ½install¸ùÄ¿Â¼
-              # Ê¹ÓÃrsyncµ«È¥µô--ignore-existing£¬²¢ÅÅ³ızipÎÄ¼ş
+              # ç›´æ¥å°†MFAç›®å½•çš„å†…å®¹å¤åˆ¶åˆ°installæ ¹ç›®å½•
+              # ä½¿ç”¨rsyncä½†å»æ‰--ignore-existingï¼Œå¹¶æ’é™¤zipæ–‡ä»¶
               rsync -av --exclude="*.zip" MFA/ install/
 
               echo "MFA files copied successfully."
@@ -187,7 +187,7 @@ jobs:
             echo "Skipping copy MFA for Android."
           fi
 
-          # ¸´ÖÆlogo.icoµ½AssetsÎÄ¼ş¼Ğ
+          # å¤åˆ¶logo.icoåˆ°Assetsæ–‡ä»¶å¤¹
           if [ -f "logo.ico" ]; then
             echo "Copying logo.ico to Assets folder..."
             mkdir -p install/Assets
@@ -273,3 +273,10 @@ jobs:
           body: ${{ needs.changelog.outputs.release_body }}
           draft: false
           prerelease: ${{ needs.meta.outputs.is_prerelease == 'true' }}
+
+      - name: Trigger MirrorChyanUploading
+        run: |
+          gh workflow run --repo $GITHUB_REPOSITORY mirrorchyan
+          gh workflow run --repo $GITHUB_REPOSITORY mirrorchyan_release_note
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
