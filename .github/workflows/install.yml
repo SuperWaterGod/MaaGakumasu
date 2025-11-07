@@ -105,10 +105,10 @@ jobs:
             echo "Copying MFA files to install directory..."
             mkdir -p install
 
-            # ֱ�ӽ�MFAĿ¼�����ݸ��Ƶ�install��Ŀ¼
+            # 直接将MFA目录的内容复制到install根目录
             cp -r MFA/* install/
 
-            # ɾ������Ҫ��zip�ļ�
+            # 删除不需要的zip文件
             echo "Cleaning up zip files..."
             find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
             echo "MFA files copied and cleaned successfully."
@@ -116,7 +116,7 @@ jobs:
             echo "MFA directory not found, skipping copy."
           fi
 
-          # ����logo.ico��Assets�ļ���
+          # 复制logo.ico到Assets文件夹
           if [ -f "logo.ico" ]; then
             echo "Copying logo.ico to Assets folder..."
             mkdir -p install/Assets
@@ -175,8 +175,8 @@ jobs:
               echo "Copying MFA files to install directory..."
               mkdir -p install
 
-              # ֱ�ӽ�MFAĿ¼�����ݸ��Ƶ�install��Ŀ¼
-              # ʹ��rsync��ȥ��--ignore-existing�����ų�zip�ļ�
+              # 直接将MFA目录的内容复制到install根目录
+              # 使用rsync但去掉--ignore-existing，并排除zip文件
               rsync -av --exclude="*.zip" MFA/ install/
 
               echo "MFA files copied successfully."
@@ -187,7 +187,7 @@ jobs:
             echo "Skipping copy MFA for Android."
           fi
 
-          # ����logo.ico��Assets�ļ���
+          # 复制logo.ico到Assets文件夹
           if [ -f "logo.ico" ]; then
             echo "Copying logo.ico to Assets folder..."
             mkdir -p install/Assets
