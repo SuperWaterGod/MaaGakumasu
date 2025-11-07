@@ -55,7 +55,9 @@ body = """
 # 尾部
 footer = """
 
-<!--本软件完全免费，若您有付费购买请立即退款并举报！-->
+[已有 Mirror酱 CDK？点击前往高速下载](https://mirrorchyan.com/zh/projects?rid=MaaGakumasu)
+
+<!--软件本体完全免费，认准唯一官网 1999.fan，若您有付费购买请立即退款并举报！-->
 """
 
 [git]

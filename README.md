@@ -18,10 +18,14 @@
   <img alt="Python" src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white">
   <img alt="platform" src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-blueviolet">
   <img alt="CodeFactor" src="https://www.codefactor.io/repository/github/superwatergod/maagakumasu/badge">
+  <img alt="Yolo" src="https://img.shields.io/badge/Yolo-v11-blue">
   <br>
   <img alt="license" src="https://img.shields.io/github/license/SuperWaterGod/MaaGakumasu">
   <img alt="commit" src="https://img.shields.io/github/commit-activity/m/SuperWaterGod/MaaGakumasu">
   <img alt="stars" src="https://img.shields.io/github/stars/SuperWaterGod/MaaGakumasu?style=social">
+  <img alt="downloads" src="https://img.shields.io/github/downloads/SuperWaterGod/MaaGakumasu/total?style=social">
+  <a href="https://mirrorchyan.com/zh/projects?rid=MaaGakumasu" target="_blank"><img alt="mirrorc" src="https://img.shields.io/badge/Mirror%E9%85%B1-%239af3f6?logo=countingworkspro&logoColor=4f46e5"></a>
+
 </p>
 
 
@@ -42,9 +46,9 @@
   - [x] 指定时长
 - [x] 商店购买
   - [x] 扭蛋购买
-  - [x] 金币购买[^1]
+  - [x] 金币购买
   - [x] 自动免费刷新
-  - [X] AP购买[^1]
+  - [X] AP购买
 - [x] 领取邮箱礼物
 - [x] 领取任务奖励
 - [x] 自动培育(测试阶段)
@@ -52,10 +56,9 @@
   - [x] 指定SSR偶像
   - [x] 自动选择
   - [x] **中断继续**
+- [x] 支持从Mirror酱更新
 
 详细内容见 [功能说明](docs/zh_cn/功能说明.md)
-
-[^1]: 因MaaFramework框架限制，购买指定物品需要手动修改config.jsonc文件
 
 - 
   等待实现
@@ -154,6 +157,16 @@ Linux大佬自有办法
 > 若您有兴趣参与标注或者提供样本，欢迎联系开发组。
 
 详细内容见 [开发相关](docs/zh_cn/开发相关.md)
+
+### Mirror酱相关
+
+>  自2025/11/08起，MaaGakumasu已全面支持Mirror酱，在其他地方购买的CDK同样可以在此使用。
+
+Mirror酱是一个第三方应用分发平台，让开源应用的**更新**更简单。
+
+用户付费使用，收益与开发者共享。此外，Mirror酱本身也是开源的。
+
+CDK 购买连接: [官网](https://mirrorchyan.com/zh/projects?rid=MaaGakumasu)
 
 ## 免责声明
 
