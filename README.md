@@ -35,9 +35,7 @@
 
 - [x] 启动游戏
 - [x] 领取活动费
-- [x] 竞赛挑战
-  - [x] 指定挑战
-  - [x] 自动选择
+
 - [x] 社团互动
   - [x] `自动/指定` 请求
 - [x] 安排工作
@@ -62,7 +60,9 @@
 
 - 
   等待实现
-
+- [ ] [新]竞赛挑战
+  - [ ] 指定挑战
+  - [ ] 自动选择
 - [ ] 支持Kuyo版汉化
 - [ ] 强化支援卡
 - [ ] …………
@@ -102,7 +102,7 @@
 
 > MAA 本家提供的解决方案 ⬇️
 >
-> 请安装 [`Visual C++ 可再发行程序包`](https://aka.ms/vs/17/release/vc_redist.x64.exe) 和 [`.NET 桌面运行时 8`](https://dotnet.microsoft.com/en-us/download/dotnet/8.0#:~:text=Binaries-,Windows,-x64) 并 **重新启动计算机** 。
+> 请安装 [`Visual C++ 可再发行程序包`](https://aka.ms/vs/17/release/vc_redist.x64.exe) 和 [`.NET 桌面SDK 10`](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0) 并 **重新启动计算机** 。
 >
 > 推荐使用 Windows 10 或 11 的用户使用 winget 工具进行安装，只需在终端中运行以下命令。
 >
