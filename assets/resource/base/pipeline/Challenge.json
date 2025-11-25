@@ -180,7 +180,10 @@
     "recognition":{
       "type":"TemplateMatch",
       "param":{
-        "template":"challenge_next.png",
+        "template":[
+          "challenge_next.png",
+          "challenge_skip.png"
+        ],
         "roi":[
           0,
           980,
