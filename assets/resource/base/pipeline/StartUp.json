@@ -27,7 +27,6 @@
     "next":[
       "HomeFlag"
     ],
-    "post_wait_freezes":5000,
     "interrupt":[
       "Download",
       "LoginBonus",
@@ -49,7 +48,14 @@
     "action":{
       "type":"DoNothing",
       "param":{ }
-    }
+    },
+    "pre_wait_freezes": {
+      "time": 1500,
+      "target": [204,964,312,90]
+    },
+    "interrupt":[
+      "CloseButtonRound"
+    ]
   },
   "Download":{
     "recognition":{
