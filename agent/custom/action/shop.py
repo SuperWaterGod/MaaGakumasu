@@ -153,7 +153,7 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
                     return True
 
                 if reco_detail.best_result:
-                    for result in reco_detail.filterd_results:
+                    for result in reco_detail.filtered_results:
                         box = result.box
                         context.tasker.controller.post_click(box[0] + 70, box[1] + 70).wait()
                         time.sleep(0.5)

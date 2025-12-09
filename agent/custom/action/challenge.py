@@ -50,7 +50,7 @@ class ChallengeAuto(CustomAction):
                 "order_by": "Vertical"
             }})
             if reco_detail.best_result:
-                ratings = [result.text for result in reco_detail.filterd_results]
+                ratings = [result.text for result in reco_detail.filtered_results]
                 index = 1
                 logger.info(f"挑战评分识别结果: {ratings}")
                 ratings_int = []
