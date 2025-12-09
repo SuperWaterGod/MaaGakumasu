@@ -58,7 +58,7 @@ class ShoppingCoinGachaAuto(CustomAction):
                         "expected": "^\\d{1,3}(,\\d{3})*$",
                         "roi": params[key]["roi"]
                     }})
-                if reco_detail:
+                if reco_detail.best_result:
                     params[key]["count"] = int(reco_detail.best_result.text.replace(",", ""))
                 else:
                     params[key]["count"] = 0
@@ -152,7 +152,7 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
                     logger.warning("任务中断")
                     return True
 
-                if reco_detail:
+                if reco_detail.best_result:
                     for result in reco_detail.filterd_results:
                         box = result.box
                         context.tasker.controller.post_click(box[0] + 70, box[1] + 70).wait()
@@ -160,7 +160,7 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
 
                         image_plus = context.tasker.controller.post_screencap().wait().get()
                         reco_detail = context.run_recognition("ShoppingPlus", image_plus)
-                        if reco_detail:
+                        if reco_detail.best_result:
                             box = reco_detail.best_result.box
                             context.tasker.controller.post_click(box[0], box[1]).wait()
                         context.run_task("ShoppingDailyExchangeBuy")
@@ -219,13 +219,13 @@ class ShoppingDailyExchangeAPAuto(CustomAction):
                 logger.warning("任务中断")
                 return True
 
-            if reco_detail:
+            if reco_detail.best_result:
                 box = reco_detail.best_result.box
                 context.tasker.controller.post_click(box[0] + 80, box[1] + 80).wait()
                 time.sleep(0.8)
                 image = context.tasker.controller.post_screencap().wait().get()
                 reco_detail = context.run_recognition("ShoppingPlus", image)
-                if reco_detail:
+                if reco_detail.best_result:
                     box = reco_detail.best_result.box
                     context.tasker.controller.post_click(box[0], box[1]).wait()
                 context.run_task("ShoppingDailyExchangeBuy")

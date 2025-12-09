@@ -49,7 +49,7 @@ class ChallengeAuto(CustomAction):
                 "roi": [54, 634, 233, 447],
                 "order_by": "Vertical"
             }})
-            if reco_detail:
+            if reco_detail.best_result:
                 ratings = [result.text for result in reco_detail.filterd_results]
                 index = 1
                 logger.info(f"挑战评分识别结果: {ratings}")
@@ -75,7 +75,7 @@ class ChallengeAuto(CustomAction):
                         "roi": [172, 505, 195, 69],
                         "order_by": "Vertical"
                     }})
-                    if reco_detail:
+                    if reco_detail.best_result:
                         self_rating_score = reco_detail.best_result.text
                         try:
                             self_rating_int = int(self_rating_score)
