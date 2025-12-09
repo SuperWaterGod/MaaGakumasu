@@ -35,7 +35,9 @@
 
 - [x] 启动游戏
 - [x] 领取活动费
-
+- [x] 竞赛挑战
+  - [x] 指定挑战
+  - [x] 自动选择
 - [x] 社团互动
   - [x] `自动/指定` 请求
 - [x] 安排工作
@@ -58,11 +60,8 @@
 
 详细内容见 [功能说明](docs/zh_cn/功能说明.md)
 
-- 
-  等待实现
-- [ ] [新]竞赛挑战
-  - [ ] 指定挑战
-  - [ ] 自动选择
+- 等待实现
+- [ ] 适配MFA 5.0
 - [ ] 支持Kuyo版汉化
 - [ ] 强化支援卡
 - [ ] …………
@@ -195,5 +194,5 @@ UI 由 [MFAAvalonia](https://github.com/SweetSmellFox/MFAAvalonia) 大力支持�
 [![Contributors](https://contrib.rocks/image?repo=SuperWaterGod/MaaGakumasu&max=1000)](https://github.com/SuperWaterGod/MaaGakumasu/graphs/contributors)
 
 ## Join us
-- MaaGakumasu 交流群 QQ 群：还没建立
+- MaaGakumasu 交流群 QQ 群：799823681
 - MaaFramework 开发交流 QQ 群: 595990173
