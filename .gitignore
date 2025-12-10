@@ -450,3 +450,5 @@ tools/ImageCropper/**/*.png
 
 config
 debug
+*.bat
+*.bak
