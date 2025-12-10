@@ -13,36 +13,75 @@ class ShoppingCoinGachaAuto(CustomAction):
             context: Context,
             argv: CustomAction.RunArg,
     ) -> bool:
-        params = {
-            "friend": {
-                "name": "好友",
-                "enabled": context.get_node_data("ShoppingCoinGachaFriendGacha").get("enabled", True),
-                "roi": [344, 26, 150, 44],
-                "count": 0,
-                "page": 1
-            },
-            "sense": {
-                "name": "感性",
-                "enabled": context.get_node_data("ShoppingCoinGachaSenseGacha").get("enabled", False),
-                "roi": [546, 26, 150, 44],
-                "count": 0,
-                "page": 1
-            },
-            "logic": {
-                "name": "理性",
-                "enabled": context.get_node_data("ShoppingCoinGachaLogicGacha").get("enabled", False),
-                "roi": [344, 84, 660, 150],
-                "count": 0,
-                "page": 2
-            },
-            "anomaly": {
-                "name": "非凡",
-                "enabled": context.get_node_data("ShoppingCoinGachaAnomalyGacha").get("enabled", False),
-                "roi": [546, 84, 660, 150],
-                "count": 0,
-                "page": 2
-            }
+
+        image = context.tasker.controller.post_screencap().wait().get()
+        reco_detail = context.run_recognition(
+            "ShoppingCoinGachaCheckActivity", image,
+            pipeline_override={"ShoppingCoinGachaCheckActivity": {
+                "recognition": "TemplateMatch",
+                "template": "shopping_gacha_anomaly_coin.png",
+                "roi": [296, 135, 62, 66]
+            }})
+        if reco_detail and reco_detail.hit:
+            logger.info("检测到活动扭蛋")
+            has_activity = True
+        else:
+            has_activity = False
+
+        BASE_X = 344
+        BASE_Y = 26
+        OFFSET_X = 202
+        OFFSET_Y = 58
+        WIDTH = 150
+        HEIGHT = 44
+
+        # 所有条目
+        items = {
+            "activity": ("活动", "ShoppingCoinGachaActivityGacha"),
+            "friend": ("好友", "ShoppingCoinGachaFriendGacha"),
+            "sense": ("感性", "ShoppingCoinGachaSenseGacha"),
+            "logic": ("理性", "ShoppingCoinGachaLogicGacha"),
+            "anomaly": ("非凡", "ShoppingCoinGachaAnomalyGacha"),
         }
+
+        layout = (
+            {
+                # 无 activity 时（4 项）
+                "friend": (0, 0),
+                "sense": (0, 1),
+                "logic": (1, 0),
+                "anomaly": (1, 1),
+            }
+            if not has_activity else
+            {
+                # 有 activity 时（5 项）
+                "activity": (0, 0),
+                "friend": (0, 1),
+                "sense": (1, 0),
+                "logic": (1, 1),
+                "anomaly": (2, 0),
+            }
+        )
+
+        params = {}
+
+        for key, (row, col) in layout.items():
+            name, node_key = items[key]
+            node_data = context.get_node_data(node_key) or {}
+            roi = [
+                BASE_X + OFFSET_X * col,
+                BASE_Y + OFFSET_Y * row,
+                WIDTH,
+                HEIGHT,
+            ]
+            params[key] = {
+                "name": name,
+                "enabled": node_data.get("enabled", True),
+                "roi": roi,
+                "count": 0,
+                "page": row + 1,
+            }
+
         page = 1
         image = context.tasker.controller.post_screencap().wait().get()
         for key in params.keys():
@@ -58,7 +97,7 @@ class ShoppingCoinGachaAuto(CustomAction):
                         "expected": "^\\d{1,3}(,\\d{3})*$",
                         "roi": params[key]["roi"]
                     }})
-                if reco_detail.best_result:
+                if reco_detail and reco_detail.hit:
                     params[key]["count"] = int(reco_detail.best_result.text.replace(",", ""))
                 else:
                     params[key]["count"] = 0
@@ -152,7 +191,7 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
                     logger.warning("任务中断")
                     return True
 
-                if reco_detail.best_result:
+                if reco_detail and reco_detail.hit:
                     for result in reco_detail.filtered_results:
                         box = result.box
                         context.tasker.controller.post_click(box[0] + 70, box[1] + 70).wait()
@@ -160,7 +199,7 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
 
                         image_plus = context.tasker.controller.post_screencap().wait().get()
                         reco_detail = context.run_recognition("ShoppingPlus", image_plus)
-                        if reco_detail.best_result:
+                        if reco_detail and reco_detail.hit:
                             box = reco_detail.best_result.box
                             context.tasker.controller.post_click(box[0], box[1]).wait()
                         context.run_task("ShoppingDailyExchangeBuy")
@@ -219,13 +258,13 @@ class ShoppingDailyExchangeAPAuto(CustomAction):
                 logger.warning("任务中断")
                 return True
 
-            if reco_detail.best_result:
+            if reco_detail and reco_detail.hit:
                 box = reco_detail.best_result.box
                 context.tasker.controller.post_click(box[0] + 80, box[1] + 80).wait()
                 time.sleep(0.8)
                 image = context.tasker.controller.post_screencap().wait().get()
                 reco_detail = context.run_recognition("ShoppingPlus", image)
-                if reco_detail.best_result:
+                if reco_detail and reco_detail.hit:
                     box = reco_detail.best_result.box
                     context.tasker.controller.post_click(box[0], box[1]).wait()
                 context.run_task("ShoppingDailyExchangeBuy")

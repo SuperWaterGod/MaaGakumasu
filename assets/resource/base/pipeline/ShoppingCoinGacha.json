@@ -121,6 +121,7 @@
       "param":{ }
     },
     "post_wait_freezes":200,
+    "pre_wait_freezes":200,
     "next":[
       "ShoppingCoinButton"
     ],
@@ -175,6 +176,17 @@
     "enabled":false
   },
   "ShoppingCoinGachaAnomalyGacha":{
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
+    "enabled":false
+  },
+  "ShoppingCoinGachaActivityGacha":{
     "recognition":{
       "type":"DirectHit",
       "param":{ }

@@ -1,8 +1,8 @@
 {
   "name":"MaaGakumasu",
   "version":"v1.0.2",
-  "mirrorchyan_rid": "MaaGakumasu",
-  "mirrorchyan_multiplatform": true,
+  "mirrorchyan_rid":"MaaGakumasu",
+  "mirrorchyan_multiplatform":true,
   "url":"https://github.com/SuperWaterGod/MaaGakumasu",
   "controller":[
     {
@@ -37,7 +37,7 @@
       "name":"启动游戏",
       "entry":"StartUp",
       "check":true,
-      "doc": ""
+      "doc":""
     },
     {
       "name":"收取活动费",
@@ -86,11 +86,13 @@
         "- 购买好友扭蛋",
         "- 购买感性扭蛋",
         "- 购买理性扭蛋",
-        "- 购买非凡扭蛋"
+        "- 购买非凡扭蛋",
+        "- 购买活动扭蛋"
       ],
       "check":true,
-      "doc": [
-        "购买会将扭蛋全部用光"
+      "doc":[
+        "购买会将扭蛋全部用光",
+        "购买活动扭蛋仅在活动扭蛋上架期间有效"
       ]
     },
     {
@@ -131,7 +133,7 @@
         "- 购买回忆生成卷"
       ],
       "check":true,
-      "doc": [
+      "doc":[
         "默认仅购买推荐物品"
       ]
     },
@@ -171,7 +173,7 @@
     }
   ],
   "option":{
-    "挑战模式": {
+    "挑战模式":{
       "default_case":"自动",
       "cases":[
         {
@@ -448,6 +450,17 @@
               }
             }
           }
+        },
+        {
+          "name":"雨夜燕子",
+          "pipeline_override":{
+            "WorkChooseShow":{
+              "custom_recognition":"WorkChooseIdol",
+              "custom_recognition_param":{
+                "idol":"idols/tsubame_amaya.png"
+              }
+            }
+          }
         }
       ]
     },
@@ -589,6 +602,17 @@
               "custom_recognition":"WorkChooseIdol",
               "custom_recognition_param":{
                 "idol":"idols/zyuuou_sena.png"
+              }
+            }
+          }
+        },
+        {
+          "name":"雨夜燕子",
+          "pipeline_override":{
+            "WorkChooseShow":{
+              "custom_recognition":"WorkChooseIdol",
+              "custom_recognition_param":{
+                "idol":"idols/tsubame_amaya.png"
               }
             }
           }
@@ -848,6 +872,27 @@
           "name":"No",
           "pipeline_override":{
             "ShoppingCoinGachaAnomalyGacha":{
+              "enabled":false
+            }
+          }
+        }
+      ]
+    },
+    "- 购买活动扭蛋":{
+      "default_case":"N",
+      "cases":[
+        {
+          "name":"Yes",
+          "pipeline_override":{
+            "ShoppingCoinGachaActivityGacha":{
+              "enabled":true
+            }
+          }
+        },
+        {
+          "name":"No",
+          "pipeline_override":{
+            "ShoppingCoinGachaActivityGacha":{
               "enabled":false
             }
           }
@@ -1599,7 +1644,7 @@
           "name":"Yes",
           "pipeline_override":{
             "Produce":{
-              "next": "ProduceEntry"
+              "next":"ProduceEntry"
             }
           }
         },
@@ -1607,7 +1652,7 @@
           "name":"No",
           "pipeline_override":{
             "Produce":{
-              "next": "ProduceHomeFlag"
+              "next":"ProduceHomeFlag"
             }
           }
         }
@@ -1620,7 +1665,7 @@
           "name":"Yes",
           "pipeline_override":{
             "ProduceChooseDifficulty":{
-              "next": "ProduceChooseIdolNext"
+              "next":"ProduceChooseIdolNext"
             }
           }
         },
@@ -1628,7 +1673,7 @@
           "name":"No",
           "pipeline_override":{
             "ProduceChooseDifficulty":{
-              "next": "ProduceChooseIdolFlag"
+              "next":"ProduceChooseIdolFlag"
             }
           }
         }
