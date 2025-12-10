@@ -71,7 +71,7 @@ class ProduceChooseCardsAuto(CustomRecognition):
             }})
 
         logger.success("事件: 选择卡牌")
-        if reco_detail:
+        if reco_detail.best_result:
             logger.info("选择建议卡")
             result = reco_detail.best_result.box
             result[1] = result[1] - 80
@@ -102,7 +102,7 @@ class ProduceChooseDrinkAuto(CustomRecognition):
                 "roi": [54, 950, 610, 98]
             }})
         logger.success("事件: 选择饮料")
-        if reco_detail:
+        if reco_detail.best_result:
             logger.info("放弃饮料")
             return CustomRecognition.AnalyzeResult(box=reco_detail.best_result.box, detail="放弃饮料")
         else:
@@ -144,7 +144,7 @@ class ProduceCardsFlagAuto(CustomRecognition):
         context.run_task("Click_1")
         cards_reco_detail = context.run_recognition("ProduceRecognitionCards", argv.image)
         health_reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", argv.image)
-        if cards_reco_detail and health_reco_detail:
+        if cards_reco_detail.best_result and health_reco_detail.best_result:
             logger.success("事件: 出牌场景")
             return CustomRecognition.AnalyzeResult(box=[0, 0, 0, 0], detail="识别到出牌场景")
         else:
@@ -165,7 +165,7 @@ class ProduceOptionsFlagAuto(CustomRecognition):
         context.run_task("Click_1")
         options_reco_detail = context.run_recognition("ProduceRecognitionOptions", argv.image)
         health_reco_detail = context.run_recognition("ProduceRecognitionOptionsEvents", argv.image)
-        if not options_reco_detail or not health_reco_detail:
+        if not options_reco_detail.best_result or not health_reco_detail.best_result:
             return CustomRecognition.AnalyzeResult(box=None, detail="未识别到选择冲刺/上课场景")
 
         logger.success("事件: 选择冲刺/上课")

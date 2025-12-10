@@ -39,12 +39,12 @@ class WorkChooseAuto(CustomRecognition):
 
         def handle_smile_page(page_image, roi, swipe_coords):
             smile_reco_detail = recognize_smile(page_image, roi)
-            if smile_reco_detail:
+            if smile_reco_detail.best_result:
                 # 有笑脸
                 good_list = [result.box for result in smile_reco_detail.filterd_results]
                 new_page_image = context.tasker.controller.post_screencap().wait().get()
                 work_reco_detail = recognize_work(new_page_image, good_list[0])
-                if work_reco_detail:
+                if work_reco_detail.best_result:
                     if len(good_list) > 1:
                         # 笑脸存在且被选中, 选择第二个笑脸
                         logger.info("选择笑脸")
@@ -79,14 +79,14 @@ class WorkChooseAuto(CustomRecognition):
         # 处理好感度
         affinity_image = context.tasker.controller.post_screencap().wait().get()
         affinity_reco_detail = recognize_affinity(affinity_image)
-        if affinity_reco_detail:
+        if affinity_reco_detail.best_result:
             affinity_list = [{"box": result.box, "text": int(result.text.replace("/20", ""))} for result in affinity_reco_detail.filterd_results]
             sorted_list = sorted(affinity_list, key=lambda item: item['text'])
             max_affinity = sorted_list[-1]
             second_affinity = sorted_list[-2]
             new_affinity_image = context.tasker.controller.post_screencap().wait().get()
             work_reco_detail_ocr = recognize_work(new_affinity_image, max_affinity["box"])
-            if work_reco_detail_ocr:
+            if work_reco_detail_ocr.best_result:
                 # 最高好感已工作
                 logger.info("选择第二高好感")
                 return CustomRecognition.AnalyzeResult(box=second_affinity["box"], detail="第二高好感度")
@@ -119,7 +119,7 @@ class WorkChooseIdol(CustomRecognition):
                 "recognition": "TemplateMatch",
                 "template": idol
             }})
-        if reco_detail:
+        if reco_detail.best_result:
             box = reco_detail.filterd_results[0].box
             return CustomRecognition.AnalyzeResult(box=box, detail="已选中")
         else:
@@ -133,7 +133,7 @@ class WorkChooseIdol(CustomRecognition):
                     "recognition": "TemplateMatch",
                     "template": idol
                 }})
-            if reco_detail:
+            if reco_detail.best_result:
                 box = reco_detail.filterd_results[0].box
                 return CustomRecognition.AnalyzeResult(box=box, detail="已选中")
 

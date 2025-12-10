@@ -28,7 +28,7 @@ class SocietyRequestAuto(CustomRecognition):
                 "roi": [25, 400, 665, 500],
                 "threshold": 0.9
             }})
-        if reco_detail:
+        if reco_detail.best_result:
             items_list = []
             for result in reco_detail.filterd_results:
                 items_list.append({
