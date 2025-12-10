@@ -28,9 +28,9 @@ class SocietyRequestAuto(CustomRecognition):
                 "roi": [25, 400, 665, 500],
                 "threshold": 0.9
             }})
-        if reco_detail.best_result:
+        if reco_detail and reco_detail.hit:
             items_list = []
-            for result in reco_detail.filterd_results:
+            for result in reco_detail.filtered_results:
                 items_list.append({
                     "box": result.box,
                     "text": int(result.text.replace(",", ""))
@@ -38,7 +38,7 @@ class SocietyRequestAuto(CustomRecognition):
             sorted_list = sorted(items_list, key=lambda item: item['text'])
             min_item = sorted_list[0]
             logger.info(f"已选择最少数量:{min_item['text']}")
-            return CustomRecognition.AnalyzeResult(box=min_item["box"], detail="选择数量最少的物品")
+            return CustomRecognition.AnalyzeResult(box=min_item["box"], detail={"detail": "选择数量最少的物品"})
 
         logger.warning("OCR识别失败!")
         reco_detail = context.run_recognition("SocietyRequestChoose", argv.image,
@@ -48,4 +48,5 @@ class SocietyRequestAuto(CustomRecognition):
                                               }})
         best_result = reco_detail.best_result
         logger.info("使用默认选项")
-        return CustomRecognition.AnalyzeResult(box=best_result.box, detail="OCR识别失败!")
+        return CustomRecognition.AnalyzeResult(box=best_result.box, detail={"detail": "OCR识别失败"})
+
