@@ -1,102 +1,181 @@
 {
-  "StartUp":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "StartUp": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
-      "StartGame"
+    "next": [
+      "StartUpStartGame"
     ]
   },
-  "StartGame":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "StartUpStartGame": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"StartApp",
-      "param":{
-        "package":"com.bandainamcoent.idolmaster_gakuen"
+    "action": {
+      "type": "StartApp",
+      "param": {
+        "package": "com.bandainamcoent.idolmaster_gakuen"
       }
     },
-    "timeout":600000,
-    "next":[
-      "HomeFlag"
-    ],
-    "interrupt":[
-      "Download",
-      "LoginBonus",
-      "GetFriendPoints",
-      "CloseButtonRound",
-      "ClickCenter"
+    "next": [
+      "StartUpTestScreen"
     ]
   },
-  "HomeFlag":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
+  "StartUpTestScreen": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "StartUpHomeFlag",
+      "[JumpBack]StartUpDownload",
+      "[JumpBack]StartUpLoginBonus",
+      "[JumpBack]StartUpGetFriendPoints",
+      "[JumpBack]StartUpCloseRoundButton",
+      "[JumpBack]ClickCenter"
+    ]
+  },
+  "StartUpHomeFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
           "home.png",
           "home_1.png"
         ]
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
-    },
-    "pre_wait_freezes": {
-      "time": 1500,
-      "target": [204,964,312,90]
-    },
-    "interrupt":[
-      "CloseButtonRound"
-    ]
-  },
-  "Download":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"decide.png"
+    "action": {
+      "type": "Custom",
+      "param": {
+        "custom_action": "UseCounter",
+        "custom_action_param": {
+          "name": "StartUp",
+          "max": 5,
+          "text": "主界面"
+        }
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "next": [
+      "StartUpTestScreen"
+    ],
+    "on_error": [
+      "StartUpStopTest"
+    ]
+  },
+  "StartUpStopTest": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     }
   },
-  "LoginBonus":{
-    "recognition":{
-      "type":"OCR",
-      "param":{
-        "expected":[
+  "StartUpDownload": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "decide.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "StartUpInitCounter"
+    ]
+  },
+  "StartUpLoginBonus": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": [
           "LOGIN",
           "BONUS"
         ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
-    }
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "StartUpInitCounter"
+    ]
   },
-  "GetFriendPoints":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"friend_points.png"
+  "StartUpGetFriendPoints": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "friend_points.png"
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
-      "CloseButton"
+    "next": [
+      "StartUpCloseButton"
     ]
+  },
+  "StartUpCloseButton": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "close.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "StartUpInitCounter"
+    ]
+  },
+  "StartUpCloseRoundButton": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "close_icon.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "StartUpInitCounter"
+    ]
+  },
+  "StartUpInitCounter": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "Custom",
+      "param": {
+        "custom_action": "InitCounter",
+        "custom_action_param": {
+          "name": "StartUp",
+          "max": 5,
+          "text": "主界面"
+        }
+      }
+    }
   }
 }

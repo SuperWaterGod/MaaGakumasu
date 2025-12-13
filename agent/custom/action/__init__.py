@@ -1,6 +1,7 @@
 from .shop import *
 from .produce import *
 from .challenge import *
+from .Counter import *
 
 __all__ = [
     "ShoppingCoinGachaAuto",
@@ -10,5 +11,7 @@ __all__ = [
     "ProduceChooseEventAuto",
     "ProduceCardsAuto",
     "ProduceShoppingAuto",
-    "ProduceStrengthenAuto"
+    "ProduceStrengthenAuto",
+    "InitCounter",
+    "UseCounter"
 ]
