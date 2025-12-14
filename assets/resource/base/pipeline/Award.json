@@ -72,7 +72,14 @@
     },
     "action": {
       "type": "Click",
-      "param": {}
+      "param": {
+        "target_offset": [
+          50,
+          0,
+          -50,
+          0
+        ]
+      }
     },
     "next": [
       "AwardGiftRunout",
