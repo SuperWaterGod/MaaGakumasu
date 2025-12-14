@@ -1,59 +1,65 @@
 {
-  "ShoppingCoinCacha":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingCoinCacha": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ShoppingCoinGachaStart",
-      "ShoppingCoinGachaMenuClick"
-    ],
-    "interrupt":[
-      "CloseMenu",
-      "BackHome"
+      "ShoppingCoinGachaMenuClick",
+      "[JumpBack]CloseMenu",
+      "[JumpBack]BackHome"
     ]
   },
-  "ShoppingCoinGachaMenuClick":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
+  "ShoppingCoinGachaMenuClick": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
           "menu.png"
+        ],
+        "roi": [
+          600,
+          1160,
+          120,
+          120
         ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ShoppingCoinGachaClick"
     ]
   },
-  "ShoppingCoinGachaClick":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping.png"
+  "ShoppingCoinGachaClick": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "post_wait_freezes":500,
-    "next":"ShoppingCoinGachaStart"
+    "post_wait_freezes": 500,
+    "next": [
+      "ShoppingCoinGachaStart"
+    ]
   },
-  "ShoppingCoinGachaStart":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping_coin_gacha.png",
-        "roi":[
+  "ShoppingCoinGachaStart": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping_coin_gacha.png",
+        "roi": [
           0,
           660,
           720,
@@ -61,42 +67,42 @@
         ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ShoppingDailyCoinGachaController"
     ]
   },
-  "ShoppingDailyCoinGachaController":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping_coin_button.png"
+  "ShoppingDailyCoinGachaController": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping_coin_button.png"
       }
     },
-    "action":{
-      "type":"Custom",
-      "param":{
-        "custom_action":"ShoppingCoinGachaAuto"
+    "action": {
+      "type": "Custom",
+      "param": {
+        "custom_action": "ShoppingCoinGachaAuto"
       }
     },
-    "next":[
+    "next": [
       "BackHome"
     ]
   },
-  "ShoppingCoinGachaBuy":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping_gacha_friend.png"
+  "ShoppingCoinGachaBuy": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping_gacha_friend.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{
-        "target_offset":[
+    "action": {
+      "type": "Click",
+      "param": {
+        "target_offset": [
           170,
           86,
           0,
@@ -104,97 +110,95 @@
         ]
       }
     },
-    "post_wait_freezes":100,
-    "next":[
+    "post_wait_freezes": 100,
+    "next": [
       "ShoppingCoinGachaDecide"
     ]
   },
-  "ShoppingCoinGachaDecide":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"decide.png"
+  "ShoppingCoinGachaDecide": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "decide.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "post_wait_freezes":200,
-    "pre_wait_freezes":200,
-    "next":[
-      "ShoppingCoinButton"
-    ],
-    "interrupt":[
-      "CloseButton",
-      "ClickCenter"
+    "post_wait_freezes": 200,
+    "pre_wait_freezes": 200,
+    "next": [
+      "ShoppingCoinButton",
+      "[JumpBack]CloseButton",
+      "[JumpBack]ClickCenter"
     ]
   },
-  "ShoppingCoinButton":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping_coin_button.png"
+  "ShoppingCoinButton": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping_coin_button.png"
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     }
   },
-  "ShoppingCoinGachaFriendGacha":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingCoinGachaFriendGacha": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":true
+    "enabled": true
   },
-  "ShoppingCoinGachaSenseGacha":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingCoinGachaSenseGacha": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingCoinGachaLogicGacha":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingCoinGachaLogicGacha": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingCoinGachaAnomalyGacha":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingCoinGachaAnomalyGacha": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingCoinGachaActivityGacha":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingCoinGachaActivityGacha": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   }
 }

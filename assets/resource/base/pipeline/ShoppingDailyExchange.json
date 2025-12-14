@@ -1,59 +1,65 @@
 {
-  "ShoppingDailyExchange":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchange": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ShoppingDailyExchangeStart",
-      "ShoppingDailyExchangeMenuClick"
-    ],
-    "interrupt":[
-      "CloseMenu",
-      "BackHome"
+      "ShoppingDailyExchangeMenuClick",
+      "[JumpBack]CloseMenu",
+      "[JumpBack]BackHome"
     ]
   },
-  "ShoppingDailyExchangeMenuClick":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
+  "ShoppingDailyExchangeMenuClick": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
           "menu.png"
+        ],
+        "roi": [
+          600,
+          1160,
+          120,
+          120
         ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ShoppingDailyExchangeClick"
     ]
   },
-  "ShoppingDailyExchangeClick":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping.png"
+  "ShoppingDailyExchangeClick": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "post_wait_freezes":500,
-    "next":"ShoppingDailyExchangeStart"
+    "post_wait_freezes": 500,
+    "next": [
+      "ShoppingDailyExchangeStart"
+    ]
   },
-  "ShoppingDailyExchangeStart":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping_daily_exchange.png",
-        "roi":[
+  "ShoppingDailyExchangeStart": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping_daily_exchange.png",
+        "roi": [
           0,
           660,
           720,
@@ -61,34 +67,34 @@
         ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ShoppingDailyExchangeMoneyController"
     ]
   },
-  "ShoppingDailyExchangeMoneyController":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeMoneyController": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "post_wait_freezes":200,
-    "next":[
+    "post_wait_freezes": 200,
+    "next": [
       "ShoppingDailyExchangeMoney"
     ]
   },
-  "ShoppingDailyExchangeMoney":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping_money.png",
-        "roi":[
+  "ShoppingDailyExchangeMoney": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping_money.png",
+        "roi": [
           50,
           1060,
           300,
@@ -96,427 +102,427 @@
         ]
       }
     },
-    "action":{
-      "type":"Custom",
-      "param":{
-        "custom_action":"ShoppingDailyExchangeMoneyAuto"
+    "action": {
+      "type": "Custom",
+      "param": {
+        "custom_action": "ShoppingDailyExchangeMoneyAuto"
       }
     },
-    "enabled":true,
-    "pre_wait_freezes":{
-      "time":500,
-      "target":[
+    "enabled": true,
+    "pre_wait_freezes": {
+      "time": 500,
+      "target": [
         30,
         288,
         660,
         667
       ]
     },
-    "post_wait_freezes":500,
-    "next":[
+    "post_wait_freezes": 500,
+    "next": [
       "ShoppingFreeRefresh",
       "ShoppingDailyExchangeAPController"
     ]
   },
-  "ShoppingFreeRefresh":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping_refresh.png"
+  "ShoppingFreeRefresh": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping_refresh.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "enabled":true,
-    "next":[
+    "enabled": true,
+    "next": [
       "ShoppingDailyExchangeMoney"
     ]
   },
-  "ShoppingDailyExchangeBuy":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
+  "ShoppingDailyExchangeBuy": {
+    "next": [
+      "[JumpBack]CloseButton"
+    ],
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
           "decide.png",
           "shopping_exchange_runout.png"
         ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "post_wait_freezes":500,
-    "interrupt":[
-      "CloseButton"
-    ]
+    "post_wait_freezes": 500
   },
-  "ShoppingDailyExchangeAPController":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeAPController": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "post_wait_freezes":200,
-    "next":[
+    "post_wait_freezes": 200,
+    "next": [
       "ShoppingDailyExchangeAPStart"
     ]
   },
-  "ShoppingDailyExchangeAPStart":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping_ap.png"
+  "ShoppingDailyExchangeAPStart": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping_ap.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "enabled":true,
-    "next":[
+    "enabled": true,
+    "next": [
       "ShoppingDailyExchangeAP"
     ]
   },
-  "ShoppingDailyExchangeAP":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"shopping_ap_flag.png"
+  "ShoppingDailyExchangeAP": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping_ap_flag.png"
       }
     },
-    "action":{
-      "type":"Custom",
-      "param":{
-        "custom_action":"ShoppingDailyExchangeAPAuto"
+    "action": {
+      "type": "Custom",
+      "param": {
+        "custom_action": "ShoppingDailyExchangeAPAuto"
       }
     },
-    "next":[
+    "next": [
       "BackHome"
     ]
   },
-  "ShoppingDailyExchangeItemsRecommend":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsRecommend": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":true
+    "enabled": true
   },
-  "ShoppingDailyExchangeItemsSenseBlue":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsSenseBlue": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsSenseRed":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsSenseRed": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsSenseYellow":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsSenseYellow": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsLogicBlue":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsLogicBlue": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsLogicRed":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsLogicRed": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsLogicYellow":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsLogicYellow": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsAnomalyBlue":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsAnomalyBlue": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsAnomalyRed":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsAnomalyRed": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsAnomalyYellow":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsAnomalyYellow": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsLessonNote":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsLessonNote": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsVeteranNote":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsVeteranNote": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsSupportPoint":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsSupportPoint": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":true
+    "enabled": true
   },
-  "ShoppingDailyExchangeItemsChallengeTicket":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsChallengeTicket": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsRecordKey":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsRecordKey": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsHanamiUme":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsHanamiUme": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsKaturagiRiriya":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsKaturagiRiriya": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsSasazawaHiro":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsSasazawaHiro": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsSionSumika":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsSionSumika": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsTukimuraTemari":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsTukimuraTemari": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsHuzitaKotone":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsHuzitaKotone": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsHanamiSaki":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsHanamiSaki": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsKuramotoTina":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsKuramotoTina": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsArimuraMao":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsArimuraMao": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeItemsHimezakiRinami":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeItemsHimezakiRinami": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":false
+    "enabled": false
   },
-  "ShoppingDailyExchangeAPSupportPointIncreased":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeAPSupportPointIncreased": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":true
+    "enabled": true
   },
-  "ShoppingDailyExchangeAPNoteIncreased":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeAPNoteIncreased": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":true
+    "enabled": true
   },
-  "ShoppingDailyExchangeAPChallengeTicket":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeAPChallengeTicket": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":true
+    "enabled": true
   },
-  "ShoppingDailyExchangeAPMemoryTicket":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ShoppingDailyExchangeAPMemoryTicket": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "enabled":true
+    "enabled": true
   }
 }
