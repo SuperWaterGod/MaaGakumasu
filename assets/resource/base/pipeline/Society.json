@@ -143,6 +143,30 @@
       ]
     },
     "next": [
+      "SocietyDonationNextCount"
+    ]
+  },
+  "SocietyDonationNextCount": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "Custom",
+      "param": {
+        "custom_action": "UseCounter",
+        "custom_action_param": {
+          "name": "Society",
+          "max": 5,
+          "text": "社团活动"
+        }
+      }
+    },
+    "on_error": [
+      "SocietyRequest",
+      "BackHome"
+    ],
+    "next": [
       "SocietyDonationCommit",
       "SocietyCommitAlready"
     ]
@@ -227,6 +251,7 @@
       "type": "Click",
       "param": {}
     },
+    "post_wait_freezes": 200,
     "next": [
       "SocietyRequestConfirm",
       "BackHome"
@@ -259,6 +284,7 @@
       "type": "DoNothing",
       "param": {}
     },
+    "post_wait_freezes": 200,
     "next": [
       "SocietyRequestClose"
     ]
