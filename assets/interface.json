@@ -1,156 +1,130 @@
 {
-  "name":"MaaGakumasu",
-  "version":"v1.0.2",
-  "mirrorchyan_rid":"MaaGakumasu",
-  "mirrorchyan_multiplatform":true,
-  "url":"https://github.com/SuperWaterGod/MaaGakumasu",
-  "controller":[
+  "interface_version": 2,
+  "name": "MaaGakumasu",
+  "version": "v1.1.0",
+  "mirrorchyan_rid": "MaaGakumasu",
+  "mirrorchyan_multiplatform": true,
+  "github": "https://github.com/SuperWaterGod/MaaGakumasu",
+  "contact": "QQ群: 799823681",
+  "license": "./LICENSE",
+  "welcome": "欢迎使用基于全新架构的 学園アイドルマスター(学マス) 小助手。图像技术 + 模拟控制 + 深度学习，解放双手！由 MaaFramework 强力驱动！",
+  "description": "学園アイドルマスター（学マス）小助手 | Assistant For Gakuen Idolmaster",
+  "controller": [
     {
-      "name":"官服",
-      "type":"Adb"
+      "name": "官服",
+      "type": "Adb"
     }
   ],
-  "resource":[
+  "resource": [
     {
-      "name":"官服",
-      "path":[
+      "name": "官服",
+      "path": [
         "{PROJECT_DIR}/resource/base"
       ]
     },
     {
-      "name":"kuyo",
-      "path":[
+      "name": "kuyo",
+      "path": [
         "{PROJECT_DIR}/resource/base",
         "{PROJECT_DIR}/resource/kuyo"
       ]
     }
   ],
-  "agent":{
-    "child_exec":"python",
-    "child_args":[
+  "agent": {
+    "child_exec": "python",
+    "child_args": [
       "{PROJECT_DIR}/agent/main.py",
       "-u"
     ]
   },
-  "task":[
+  "task": [
     {
-      "name":"启动游戏",
-      "entry":"StartUp",
-      "check":true,
-      "doc":""
+      "name": "启动游戏",
+      "entry": "StartUp",
+      "default_check": true
     },
     {
-      "name":"收取活动费",
-      "entry":"ActivityFee",
-      "check":true
+      "name": "收取活动费",
+      "entry": "ActivityFee",
+      "default_check": true
     },
     {
-      "name":"安排工作",
-      "entry":"Work",
-      "option":[
+      "name": "安排工作",
+      "entry": "Work",
+      "option": [
         "迷你演唱会Idol",
         "迷你演唱会工作时长",
         "直播活动Idol",
         "直播活动工作时长"
       ],
-      "check":true,
-      "doc":"自动:优先选择笑脸，其次按照好感高低选择"
+      "default_check": true,
+      "doc": "自动:优先选择笑脸，其次按照好感高低选择"
     },
     {
-      "name":"社团活动",
-      "entry":"Society",
-      "option":[
+      "name": "社团活动",
+      "entry": "Society",
+      "option": [
         "启用捐赠物品",
         "启用请求物品",
         "请求物品种类"
       ],
-      "check":true,
-      "doc":"自动选择物品将选择数量最少的物品"
+      "default_check": true,
+      "doc": "自动选择物品将选择数量最少的物品"
     },
     {
-      "name":"每日挑战",
-      "entry":"Challenge",
-      "option":[
+      "name": "每日挑战",
+      "entry": "Challenge",
+      "option": [
         "挑战模式"
       ],
-      "check":true,
-      "doc":[
+      "default_check": true,
+      "doc": [
         "自动模式下，将选择分差最小的对手进行挑战",
         "1.5周年新版挑战尚未适配"
       ]
     },
     {
-      "name":"扭蛋兑换",
-      "entry":"ShoppingCoinCacha",
-      "option":[
-        "- 购买好友扭蛋",
-        "- 购买感性扭蛋",
-        "- 购买理性扭蛋",
-        "- 购买非凡扭蛋",
-        "- 购买活动扭蛋"
+      "name": "扭蛋兑换",
+      "entry": "ShoppingCoinCacha",
+      "option": [
+        "购买好友扭蛋",
+        "购买感性扭蛋",
+        "购买理性扭蛋",
+        "购买非凡扭蛋",
+        "购买活动扭蛋"
       ],
-      "check":true,
-      "doc":[
+      "default_check": true,
+      "doc": [
         "购买会将扭蛋全部用光",
         "购买活动扭蛋仅在活动扭蛋上架期间有效"
       ]
     },
     {
-      "name":"每日兑换",
-      "entry":"ShoppingDailyExchange",
-      "option":[
+      "name": "每日兑换",
+      "entry": "ShoppingDailyExchange",
+      "option": [
         "启用金币兑换",
-        "- 购买推荐物品",
-        "- 购买感性笔记(声乐)",
-        "- 购买感性笔记(舞蹈)",
-        "- 购买感性笔记(形象)",
-        "- 购买理性笔记(声乐)",
-        "- 购买理性笔记(舞蹈)",
-        "- 购买理性笔记(形象)",
-        "- 购买非凡笔记(声乐)",
-        "- 购买非凡笔记(舞蹈)",
-        "- 购买非凡笔记(形象)",
-        "- 购买课程笔记",
-        "- 购买资深笔记",
-        "- 购买支援强化Pt",
-        "- 购买再挑战卷",
-        "- 购买记录钥匙",
-        "- 购买[The rolling Riceball]花海佑芽",
-        "- 购买[白线]葛城莉莉亚",
-        "- 购买[光景]篠泽广",
-        "- 购买[Tame-Lie-One-Step]紫云清夏",
-        "- 购买[Luna say maybe]月村手毬",
-        "- 购买[世界一可愛い私]藤田琴音",
-        "- 购买[Fighting My Way]花海咲季",
-        "- 购买[Wonder Scale]仓本千柰",
-        "- 购买[Fluorite]有村麻央",
-        "- 购买[clumsy trick]姬崎莉波",
-        "金币兑换免费刷新",
-        "启用AP兑换",
-        "- 购买支援强化Pt提升",
-        "- 购买笔记数量提升",
-        "- 购买再挑战卷(AP)",
-        "- 购买回忆生成卷"
+        "启用AP兑换"
       ],
-      "check":true,
-      "doc":[
+      "default_check": true,
+      "doc": [
         "默认仅购买推荐物品"
       ]
     },
     {
-      "name":"领取奖励",
-      "entry":"Award",
-      "option":[
+      "name": "领取奖励",
+      "entry": "Award",
+      "option": [
         "启用领取礼物",
         "启用领取任务"
       ],
-      "check":true,
-      "doc":""
+      "default_check": true,
+      "doc": ""
     },
     {
-      "name":"开始培育",
-      "entry":"Produce",
-      "option":[
+      "name": "开始培育",
+      "entry": "Produce",
+      "option": [
         "培育难度",
         "培育偶像",
         "跳过选择偶像",
@@ -158,8 +132,8 @@
         "启用关注租借",
         "跳过准备阶段"
       ],
-      "check":true,
-      "doc":[
+      "default_check": true,
+      "doc": [
         "## 注:测试阶段，存在卡住的BUG",
         "目前仅支持 初 的`REGULAR/PRO/MASTER` 难度",
         "当培育过程中出现异常时，可以返回主界面再次进入培育后，勾选 `跳过准备阶段`，再次运行本任务即可继续培育",
@@ -167,2156 +141,2200 @@
       ]
     },
     {
-      "name":"关闭游戏",
-      "entry":"Shutdown",
-      "check":true
+      "name": "关闭游戏",
+      "entry": "Shutdown",
+      "default_check": true
     }
   ],
-  "option":{
-    "挑战模式":{
-      "default_case":"自动",
-      "cases":[
+  "option": {
+    "挑战模式": {
+      "default_case": "自动",
+      "cases": [
         {
-          "name":"自动",
-          "pipeline_override":{
-            "ChallengeChoose":{
-              "custom_action_param":{
-                "mode":"auto"
+          "name": "自动",
+          "pipeline_override": {
+            "ChallengeChoose": {
+              "custom_action_param": {
+                "mode": "auto"
               }
             }
           }
         },
         {
-          "name":"最大值",
-          "pipeline_override":{
-            "ChallengeChoose":{
-              "custom_action_param":{
-                "mode":"max"
+          "name": "最大值",
+          "pipeline_override": {
+            "ChallengeChoose": {
+              "custom_action_param": {
+                "mode": "max"
               }
             }
           }
         },
         {
-          "name":"最小值",
-          "pipeline_override":{
-            "ChallengeChoose":{
-              "custom_action_param":{
-                "mode":"min"
+          "name": "最小值",
+          "pipeline_override": {
+            "ChallengeChoose": {
+              "custom_action_param": {
+                "mode": "min"
               }
             }
           }
         },
         {
-          "name":"随机",
-          "pipeline_override":{
-            "ChallengeChoose":{
-              "custom_action_param":{
-                "mode":"random"
+          "name": "随机",
+          "pipeline_override": {
+            "ChallengeChoose": {
+              "custom_action_param": {
+                "mode": "random"
               }
             }
           }
         },
         {
-          "name":"固定第一位",
-          "pipeline_override":{
-            "ChallengeChoose":{
-              "custom_action_param":{
-                "mode":"fixed",
-                "index":0
+          "name": "固定第一位",
+          "pipeline_override": {
+            "ChallengeChoose": {
+              "custom_action_param": {
+                "mode": "fixed",
+                "index": 0
               }
             }
           }
         },
         {
-          "name":"固定第二位",
-          "pipeline_override":{
-            "ChallengeChoose":{
-              "custom_action_param":{
-                "mode":"fixed",
-                "index":1
+          "name": "固定第二位",
+          "pipeline_override": {
+            "ChallengeChoose": {
+              "custom_action_param": {
+                "mode": "fixed",
+                "index": 1
               }
             }
           }
         },
         {
-          "name":"固定第三位",
-          "pipeline_override":{
-            "ChallengeChoose":{
-              "custom_action_param":{
-                "mode":"fixed",
-                "index":3
-              }
-            }
-          }
-        }
-      ]
-    },
-    "迷你演唱会工作时长":{
-      "default_case":"12 小时",
-      "cases":[
-        {
-          "name":"4 小时",
-          "pipeline_override":{
-            "WorkChooseShowTime":{
-              "expected":"4"
-            }
-          }
-        },
-        {
-          "name":"8 小时",
-          "pipeline_override":{
-            "WorkChooseShowTime":{
-              "expected":"8"
-            }
-          }
-        },
-        {
-          "name":"12 小时",
-          "pipeline_override":{
-            "WorkChooseShowTime":{
-              "expected":"12"
-            }
-          }
-        }
-      ]
-    },
-    "直播活动工作时长":{
-      "default_case":"12 小时",
-      "cases":[
-        {
-          "name":"4 小时",
-          "pipeline_override":{
-            "WorkChooseLiveTime":{
-              "expected":"4"
-            }
-          }
-        },
-        {
-          "name":"8 小时",
-          "pipeline_override":{
-            "WorkChooseLiveTime":{
-              "expected":"8"
-            }
-          }
-        },
-        {
-          "name":"12 小时",
-          "pipeline_override":{
-            "WorkChooseLiveTime":{
-              "expected":"12"
-            }
-          }
-        }
-      ]
-    },
-    "迷你演唱会Idol":{
-      "cases":[
-        {
-          "name":"自动",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseAuto"
-            }
-          }
-        },
-        {
-          "name":"花海咲季",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/hanami_saki.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"月村手毬",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/tukimura_temari.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"藤田琴音",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/huzita_kotone.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"姬崎莉波",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/himezaki_rinami.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"紫云清夏",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/sion_sumika.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"篠泽广",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/sasazawa_hiro.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"葛城莉莉亚",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/katuragi_ririya.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"仓本千奈",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/kuramoto_tina.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"有村麻央",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/arimura_mao.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"花海佑芽",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/hanami_ume.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"秦谷美铃",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/hataya_misuzu.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"十王星南",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/zyuuou_sena.png"
-              }
-            }
-          }
-        },
-        {
-          "name":"雨夜燕子",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/tsubame_amaya.png"
+          "name": "固定第三位",
+          "pipeline_override": {
+            "ChallengeChoose": {
+              "custom_action_param": {
+                "mode": "fixed",
+                "index": 3
               }
             }
           }
         }
       ]
     },
-    "直播活动Idol":{
-      "cases":[
+    "迷你演唱会工作时长": {
+      "default_case": "12 小时",
+      "cases": [
         {
-          "name":"自动",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseAuto"
+          "name": "4 小时",
+          "label": "$4 小时",
+          "pipeline_override": {
+            "WorkChooseShowTime": {
+              "expected": "4"
             }
           }
         },
         {
-          "name":"花海咲季",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/hanami_saki.png"
+          "name": "8 小时",
+          "label": "$8 小时",
+          "pipeline_override": {
+            "WorkChooseShowTime": {
+              "expected": "8"
+            }
+          }
+        },
+        {
+          "name": "12 小时",
+          "label": "$12 小时",
+          "pipeline_override": {
+            "WorkChooseShowTime": {
+              "expected": "12"
+            }
+          }
+        }
+      ]
+    },
+    "直播活动工作时长": {
+      "default_case": "12 小时",
+      "cases": [
+        {
+          "name": "4 小时",
+          "label": "$4 小时",
+          "pipeline_override": {
+            "WorkChooseLiveTime": {
+              "expected": "4"
+            }
+          }
+        },
+        {
+          "name": "8 小时",
+          "label": "$8 小时",
+          "pipeline_override": {
+            "WorkChooseLiveTime": {
+              "expected": "8"
+            }
+          }
+        },
+        {
+          "name": "12 小时",
+          "label": "$12 小时",
+          "pipeline_override": {
+            "WorkChooseLiveTime": {
+              "expected": "12"
+            }
+          }
+        }
+      ]
+    },
+    "迷你演唱会Idol": {
+      "cases": [
+        {
+          "name": "自动",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseAuto"
+            }
+          }
+        },
+        {
+          "name": "花海咲季",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/hanami_saki.png"
               }
             }
           }
         },
         {
-          "name":"月村手毬",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/tukimura_temari.png"
+          "name": "月村手毬",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/tukimura_temari.png"
               }
             }
           }
         },
         {
-          "name":"藤田琴音",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/huzita_kotone.png"
+          "name": "藤田琴音",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/huzita_kotone.png"
               }
             }
           }
         },
         {
-          "name":"姬崎莉波",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/himezaki_rinami.png"
+          "name": "姬崎莉波",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/himezaki_rinami.png"
               }
             }
           }
         },
         {
-          "name":"紫云清夏",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/sion_sumika.png"
+          "name": "紫云清夏",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/sion_sumika.png"
               }
             }
           }
         },
         {
-          "name":"篠泽广",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/sasazawa_hiro.png"
+          "name": "篠泽广",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/sasazawa_hiro.png"
               }
             }
           }
         },
         {
-          "name":"葛城莉莉亚",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/katuragi_ririya.png"
+          "name": "葛城莉莉亚",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/katuragi_ririya.png"
               }
             }
           }
         },
         {
-          "name":"仓本千奈",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/kuramoto_tina.png"
+          "name": "仓本千奈",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/kuramoto_tina.png"
               }
             }
           }
         },
         {
-          "name":"有村麻央",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/arimura_mao.png"
+          "name": "有村麻央",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/arimura_mao.png"
               }
             }
           }
         },
         {
-          "name":"花海佑芽",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/hanami_ume.png"
+          "name": "花海佑芽",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/hanami_ume.png"
               }
             }
           }
         },
         {
-          "name":"秦谷美铃",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/hataya_misuzu.png"
+          "name": "秦谷美铃",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/hataya_misuzu.png"
               }
             }
           }
         },
         {
-          "name":"十王星南",
-          "pipeline_override":{
-            "WorkChooseLive":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/zyuuou_sena.png"
+          "name": "十王星南",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/zyuuou_sena.png"
               }
             }
           }
         },
         {
-          "name":"雨夜燕子",
-          "pipeline_override":{
-            "WorkChooseShow":{
-              "custom_recognition":"WorkChooseIdol",
-              "custom_recognition_param":{
-                "idol":"idols/tsubame_amaya.png"
+          "name": "雨夜燕子",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/tsubame_amaya.png"
               }
             }
           }
         }
       ]
     },
-    "请求物品种类":{
-      "default_case":"自动",
-      "cases":[
+    "直播活动Idol": {
+      "cases": [
         {
-          "name":"自动",
-          "pipeline_override":{
-            "SocietyRequestChoose":{
-              "recognition":"Custom",
-              "custom_recognition":"SocietyRequestAuto"
+          "name": "自动",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseAuto"
             }
           }
         },
         {
-          "name":"感性笔记(声乐)",
-          "pipeline_override":{
-            "SocietyRequestChoose":{
-              "recognition":"FeatureMatch",
-              "template":"items/sense_red.png"
+          "name": "花海咲季",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/hanami_saki.png"
+              }
             }
           }
         },
         {
-          "name":"感性笔记(舞蹈)",
-          "pipeline_override":{
-            "SocietyRequestChoose":{
-              "recognition":"FeatureMatch",
-              "template":"items/sense_blue.png"
+          "name": "月村手毬",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/tukimura_temari.png"
+              }
             }
           }
         },
         {
-          "name":"感性笔记(形象)",
-          "pipeline_override":{
-            "SocietyRequestChoose":{
-              "recognition":"FeatureMatch",
-              "template":"items/sense_yellow.png"
+          "name": "藤田琴音",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/huzita_kotone.png"
+              }
             }
           }
         },
         {
-          "name":"理性笔记(声乐)",
-          "pipeline_override":{
-            "SocietyRequestChoose":{
-              "recognition":"FeatureMatch",
-              "template":"items/logic_red.png"
+          "name": "姬崎莉波",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/himezaki_rinami.png"
+              }
             }
           }
         },
         {
-          "name":"理性笔记(舞蹈)",
-          "pipeline_override":{
-            "SocietyRequestChoose":{
-              "recognition":"FeatureMatch",
-              "template":"items/logic_blue.png"
+          "name": "紫云清夏",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/sion_sumika.png"
+              }
             }
           }
         },
         {
-          "name":"理性笔记(形象)",
-          "pipeline_override":{
-            "SocietyRequestChoose":{
-              "recognition":"FeatureMatch",
-              "template":"items/logic_yellow.png"
+          "name": "篠泽广",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/sasazawa_hiro.png"
+              }
             }
           }
         },
         {
-          "name":"非凡笔记(声乐)",
-          "pipeline_override":{
-            "SocietyRequestChoose":{
-              "recognition":"FeatureMatch",
-              "template":"items/anomaly_red.png"
+          "name": "葛城莉莉亚",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/katuragi_ririya.png"
+              }
             }
           }
         },
         {
-          "name":"非凡笔记(舞蹈)",
-          "pipeline_override":{
-            "SocietyRequestChoose":{
-              "recognition":"FeatureMatch",
-              "template":"items/anomaly_blue.png"
+          "name": "仓本千奈",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/kuramoto_tina.png"
+              }
             }
           }
         },
         {
-          "name":"非凡笔记(形象)",
-          "pipeline_override":{
-            "SocietyRequestChoose":{
-              "recognition":"FeatureMatch",
-              "template":"items/anomaly_yellow.png"
+          "name": "有村麻央",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/arimura_mao.png"
+              }
+            }
+          }
+        },
+        {
+          "name": "花海佑芽",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/hanami_ume.png"
+              }
+            }
+          }
+        },
+        {
+          "name": "秦谷美铃",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/hataya_misuzu.png"
+              }
+            }
+          }
+        },
+        {
+          "name": "十王星南",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/zyuuou_sena.png"
+              }
+            }
+          }
+        },
+        {
+          "name": "雨夜燕子",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/tsubame_amaya.png"
+              }
             }
           }
         }
       ]
     },
-    "启用捐赠物品":{
-      "cases":[
+    "请求物品种类": {
+      "default_case": "自动",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "SocietyDonation":{
-              "enabled":true
+          "name": "自动",
+          "pipeline_override": {
+            "SocietyRequestChoose": {
+              "recognition": "Custom",
+              "custom_recognition": "SocietyRequestAuto"
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "SocietyDonation":{
-              "enabled":false
+          "name": "感性笔记(声乐)",
+          "pipeline_override": {
+            "SocietyRequestChoose": {
+              "recognition": "FeatureMatch",
+              "template": "items/sense_red.png"
+            }
+          }
+        },
+        {
+          "name": "感性笔记(舞蹈)",
+          "pipeline_override": {
+            "SocietyRequestChoose": {
+              "recognition": "FeatureMatch",
+              "template": "items/sense_blue.png"
+            }
+          }
+        },
+        {
+          "name": "感性笔记(形象)",
+          "pipeline_override": {
+            "SocietyRequestChoose": {
+              "recognition": "FeatureMatch",
+              "template": "items/sense_yellow.png"
+            }
+          }
+        },
+        {
+          "name": "理性笔记(声乐)",
+          "pipeline_override": {
+            "SocietyRequestChoose": {
+              "recognition": "FeatureMatch",
+              "template": "items/logic_red.png"
+            }
+          }
+        },
+        {
+          "name": "理性笔记(舞蹈)",
+          "pipeline_override": {
+            "SocietyRequestChoose": {
+              "recognition": "FeatureMatch",
+              "template": "items/logic_blue.png"
+            }
+          }
+        },
+        {
+          "name": "理性笔记(形象)",
+          "pipeline_override": {
+            "SocietyRequestChoose": {
+              "recognition": "FeatureMatch",
+              "template": "items/logic_yellow.png"
+            }
+          }
+        },
+        {
+          "name": "非凡笔记(声乐)",
+          "pipeline_override": {
+            "SocietyRequestChoose": {
+              "recognition": "FeatureMatch",
+              "template": "items/anomaly_red.png"
+            }
+          }
+        },
+        {
+          "name": "非凡笔记(舞蹈)",
+          "pipeline_override": {
+            "SocietyRequestChoose": {
+              "recognition": "FeatureMatch",
+              "template": "items/anomaly_blue.png"
+            }
+          }
+        },
+        {
+          "name": "非凡笔记(形象)",
+          "pipeline_override": {
+            "SocietyRequestChoose": {
+              "recognition": "FeatureMatch",
+              "template": "items/anomaly_yellow.png"
             }
           }
         }
       ]
     },
-    "启用请求物品":{
-      "cases":[
+    "启用捐赠物品": {
+      "default_case": "Yes",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "SocietyRequest":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "SocietyDonation": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "SocietyRequest":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "SocietyDonation": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "启用领取礼物":{
-      "cases":[
+    "启用请求物品": {
+      "default_case": "Yes",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "AwardGift":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "SocietyRequest": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "AwardGift":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "SocietyRequest": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "启用领取任务":{
-      "cases":[
+    "启用领取礼物": {
+      "default_case": "Yes",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "AwardMission":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "AwardGift": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "AwardMission":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "AwardGift": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买好友扭蛋":{
-      "default_case":"Yes",
-      "cases":[
+    "启用领取任务": {
+      "default_case": "Yes",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingCoinGachaFriendGacha":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "AwardMission": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingCoinGachaFriendGacha":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "AwardMission": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买感性扭蛋":{
-      "default_case":"No",
-      "cases":[
+    "购买好友扭蛋": {
+      "default_case": "Yes",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingCoinGachaSenseGacha":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingCoinGachaFriendGacha": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingCoinGachaSenseGacha":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingCoinGachaFriendGacha": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买理性扭蛋":{
-      "default_case":"No",
-      "cases":[
+    "购买感性扭蛋": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingCoinGachaLogicGacha":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingCoinGachaSenseGacha": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingCoinGachaLogicGacha":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingCoinGachaSenseGacha": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买非凡扭蛋":{
-      "default_case":"No",
-      "cases":[
+    "购买理性扭蛋": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingCoinGachaAnomalyGacha":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingCoinGachaLogicGacha": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingCoinGachaAnomalyGacha":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingCoinGachaLogicGacha": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买活动扭蛋":{
-      "default_case":"N",
-      "cases":[
+    "购买非凡扭蛋": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingCoinGachaActivityGacha":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingCoinGachaAnomalyGacha": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingCoinGachaActivityGacha":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingCoinGachaAnomalyGacha": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "启用金币兑换":{
-      "cases":[
+    "购买活动扭蛋": {
+      "default_case": "N",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeMoneyController":{
-              "next":"ShoppingDailyExchangeMoney"
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingCoinGachaActivityGacha": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeMoneyController":{
-              "next":"ShoppingDailyExchangeAPController"
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingCoinGachaActivityGacha": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "启用AP兑换":{
-      "cases":[
+    "启用金币兑换": {
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeAPController":{
-              "next":"ShoppingDailyExchangeAPStart"
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeMoneyController": {
+              "next": "ShoppingDailyExchangeMoney"
             }
-          }
+          },
+          "option": [
+            "金币兑换免费刷新",
+            "购买推荐物品",
+            "购买感性笔记(声乐)",
+            "购买感性笔记(舞蹈)",
+            "购买感性笔记(形象)",
+            "购买理性笔记(声乐)",
+            "购买理性笔记(舞蹈)",
+            "购买理性笔记(形象)",
+            "购买非凡笔记(声乐)",
+            "购买非凡笔记(舞蹈)",
+            "购买非凡笔记(形象)",
+            "购买课程笔记",
+            "购买资深笔记",
+            "购买支援强化Pt",
+            "购买再挑战卷",
+            "购买记录钥匙",
+            "购买[The rolling Riceball]花海佑芽",
+            "购买[白线]葛城莉莉亚",
+            "购买[光景]篠泽广",
+            "购买[Tame-Lie-One-Step]紫云清夏",
+            "购买[Luna say maybe]月村手毬",
+            "购买[世界一可愛い私]藤田琴音",
+            "购买[Fighting My Way]花海咲季",
+            "购买[Wonder Scale]仓本千柰",
+            "购买[Fluorite]有村麻央",
+            "购买[clumsy trick]姬崎莉波"
+          ]
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeAPController":{
-              "next":"BackHome"
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeMoneyController": {
+              "next": "ShoppingDailyExchangeAPController"
             }
           }
         }
       ]
     },
-    "金币兑换免费刷新":{
-      "cases":[
+    "启用AP兑换": {
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingFreeRefresh":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeAPController": {
+              "next": "ShoppingDailyExchangeAPStart"
             }
-          }
+          },
+          "option": [
+            "购买支援强化Pt提升",
+            "购买笔记数量提升",
+            "购买再挑战卷(AP)",
+            "购买回忆生成卷"
+          ]
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingFreeRefresh":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeAPController": {
+              "next": "BackHome"
             }
           }
         }
       ]
     },
-    "- 购买推荐物品":{
-      "default_case":"Yes",
-      "cases":[
+    "金币兑换免费刷新": {
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsRecommend":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingFreeRefresh": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsRecommend":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingFreeRefresh": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买感性笔记(声乐)":{
-      "default_case":"No",
-      "cases":[
+    "购买推荐物品": {
+      "default_case": "Yes",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSenseBlue":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsRecommend": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSenseBlue":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsRecommend": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买感性笔记(舞蹈)":{
-      "default_case":"No",
-      "cases":[
+    "购买感性笔记(声乐)": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSenseRed":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSenseBlue": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSenseRed":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSenseBlue": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买感性笔记(形象)":{
-      "default_case":"No",
-      "cases":[
+    "购买感性笔记(舞蹈)": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSenseYellow":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSenseRed": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSenseYellow":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSenseRed": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买理性笔记(声乐)":{
-      "default_case":"No",
-      "cases":[
+    "购买感性笔记(形象)": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsLogicBlue":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSenseYellow": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsLogicBlue":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSenseYellow": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买理性笔记(舞蹈)":{
-      "default_case":"No",
-      "cases":[
+    "购买理性笔记(声乐)": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsLogicRed":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsLogicBlue": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsLogicRed":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsLogicBlue": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买理性笔记(形象)":{
-      "default_case":"No",
-      "cases":[
+    "购买理性笔记(舞蹈)": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsLogicYellow":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsLogicRed": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsLogicYellow":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsLogicRed": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买非凡笔记(声乐)":{
-      "default_case":"No",
-      "cases":[
+    "购买理性笔记(形象)": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsAnomalyBlue":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsLogicYellow": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsAnomalyBlue":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsLogicYellow": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买非凡笔记(舞蹈)":{
-      "default_case":"No",
-      "cases":[
+    "购买非凡笔记(声乐)": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsAnomalyRed":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsAnomalyBlue": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsAnomalyRed":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsAnomalyBlue": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买非凡笔记(形象)":{
-      "default_case":"No",
-      "cases":[
+    "购买非凡笔记(舞蹈)": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsAnomalyYellow":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsAnomalyRed": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsAnomalyYellow":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsAnomalyRed": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买课程笔记":{
-      "default_case":"No",
-      "cases":[
+    "购买非凡笔记(形象)": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsLessonNote":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsAnomalyYellow": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsLessonNote":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsAnomalyYellow": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买资深笔记":{
-      "default_case":"No",
-      "cases":[
+    "购买课程笔记": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsVeteranNote":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsLessonNote": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsVeteranNote":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsLessonNote": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买支援强化Pt":{
-      "default_case":"No",
-      "cases":[
+    "购买资深笔记": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSupportPoint":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsVeteranNote": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSupportPoint":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsVeteranNote": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买再挑战卷":{
-      "default_case":"No",
-      "cases":[
+    "购买支援强化Pt": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsChallengeTicket":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSupportPoint": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsChallengeTicket":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSupportPoint": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买记录钥匙":{
-      "default_case":"No",
-      "cases":[
+    "购买再挑战卷": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsRecordKey":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsChallengeTicket": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsRecordKey":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsChallengeTicket": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买[The rolling Riceball]花海佑芽":{
-      "default_case":"No",
-      "cases":[
+    "购买记录钥匙": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsHanamiUme":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsRecordKey": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsHanamiUme":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsRecordKey": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买[白线]葛城莉莉亚":{
-      "default_case":"No",
-      "cases":[
+    "购买[The rolling Riceball]花海佑芽": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsKaturagiRiriya":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsHanamiUme": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsKaturagiRiriya":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsHanamiUme": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买[光景]篠泽广":{
-      "default_case":"No",
-      "cases":[
+    "购买[白线]葛城莉莉亚": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSasazawaHiro":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsKaturagiRiriya": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSasazawaHiro":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsKaturagiRiriya": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买[Tame-Lie-One-Step]紫云清夏":{
-      "default_case":"No",
-      "cases":[
+    "购买[光景]篠泽广": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSionSumika":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSasazawaHiro": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsSionSumika":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSasazawaHiro": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买[Luna say maybe]月村手毬":{
-      "default_case":"No",
-      "cases":[
+    "购买[Tame-Lie-One-Step]紫云清夏": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsTukimuraTemari":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSionSumika": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsTukimuraTemari":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSionSumika": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买[世界一可愛い私]藤田琴音":{
-      "default_case":"No",
-      "cases":[
+    "购买[Luna say maybe]月村手毬": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsHuzitaKotone":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsTukimuraTemari": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsHuzitaKotone":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsTukimuraTemari": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买[Fighting My Way]花海咲季":{
-      "default_case":"No",
-      "cases":[
+    "购买[世界一可愛い私]藤田琴音": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsHanamiSaki":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsHuzitaKotone": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsHanamiSaki":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsHuzitaKotone": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买[Wonder Scale]仓本千柰":{
-      "default_case":"No",
-      "cases":[
+    "购买[Fighting My Way]花海咲季": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsKuramotoTina":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsHanamiSaki": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsKuramotoTina":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsHanamiSaki": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买[Fluorite]有村麻央":{
-      "default_case":"No",
-      "cases":[
+    "购买[Wonder Scale]仓本千柰": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsArimuraMao":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsKuramotoTina": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsArimuraMao":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsKuramotoTina": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买[clumsy trick]姬崎莉波":{
-      "default_case":"No",
-      "cases":[
+    "购买[Fluorite]有村麻央": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsHimezakiRinami":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsArimuraMao": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeItemsHimezakiRinami":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsArimuraMao": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买支援强化Pt提升":{
-      "default_case":"No",
-      "cases":[
+    "购买[clumsy trick]姬崎莉波": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeAPSupportPointIncreased":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsHimezakiRinami": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeAPSupportPointIncreased":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsHimezakiRinami": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买笔记数量提升":{
-      "default_case":"No",
-      "cases":[
+    "购买支援强化Pt提升": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeAPNoteIncreased":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeAPSupportPointIncreased": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeAPNoteIncreased":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeAPSupportPointIncreased": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买再挑战卷(AP)":{
-      "default_case":"No",
-      "cases":[
+    "购买笔记数量提升": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeAPChallengeTicket":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeAPNoteIncreased": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeAPChallengeTicket":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeAPNoteIncreased": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "- 购买回忆生成卷":{
-      "default_case":"No",
-      "cases":[
+    "购买再挑战卷(AP)": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ShoppingDailyExchangeAPMemoryTicket":{
-              "enabled":true
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeAPChallengeTicket": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ShoppingDailyExchangeAPMemoryTicket":{
-              "enabled":false
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeAPChallengeTicket": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "培育难度":{
-      "default_case":"MASTER",
-      "cases":[
+    "购买回忆生成卷": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"REGULAR",
-          "pipeline_override":{
-            "ProduceChooseDifficulty":{
-              "expected":"REGULAR"
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeAPMemoryTicket": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"PRO",
-          "pipeline_override":{
-            "ProduceChooseDifficulty":{
-              "expected":"PRO"
-            }
-          }
-        },
-        {
-          "name":"MASTER",
-          "pipeline_override":{
-            "ProduceChooseDifficulty":{
-              "expected":"MASTER"
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeAPMemoryTicket": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "启用自动回忆":{
-      "cases":[
+    "培育难度": {
+      "default_case": "MASTER",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ProduceChooseMemory":{
-              "enabled":true
+          "name": "REGULAR",
+          "pipeline_override": {
+            "ProduceChooseDifficulty": {
+              "expected": "REGULAR"
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ProduceChooseMemory":{
-              "enabled":false
+          "name": "PRO",
+          "pipeline_override": {
+            "ProduceChooseDifficulty": {
+              "expected": "PRO"
+            }
+          }
+        },
+        {
+          "name": "MASTER",
+          "pipeline_override": {
+            "ProduceChooseDifficulty": {
+              "expected": "MASTER"
             }
           }
         }
       ]
     },
-    "启用关注租借":{
-      "cases":[
+    "启用自动回忆": {
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ProduceFollow":{
-              "template":"produce/follow.png"
+          "name": "Yes",
+          "pipeline_override": {
+            "ProduceChooseMemory": {
+              "enabled": true
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ProduceFollow":{
-              "template":"produce/follow.png"
+          "name": "No",
+          "pipeline_override": {
+            "ProduceChooseMemory": {
+              "enabled": false
             }
           }
         }
       ]
     },
-    "跳过准备阶段":{
-      "default_case":"No",
-      "cases":[
+    "启用关注租借": {
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "Produce":{
-              "next":"ProduceEntry"
+          "name": "Yes",
+          "pipeline_override": {
+            "ProduceFollow": {
+              "template": "produce/follow.png"
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "Produce":{
-              "next":"ProduceHomeFlag"
+          "name": "No",
+          "pipeline_override": {
+            "ProduceFollow": {
+              "template": "produce/follow.png"
             }
           }
         }
       ]
     },
-    "跳过选择偶像":{
-      "default_case":"No",
-      "cases":[
+    "跳过准备阶段": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"Yes",
-          "pipeline_override":{
-            "ProduceChooseDifficulty":{
-              "next":"ProduceChooseIdolNext"
+          "name": "Yes",
+          "pipeline_override": {
+            "Produce": {
+              "next": "ProduceEntry"
             }
           }
         },
         {
-          "name":"No",
-          "pipeline_override":{
-            "ProduceChooseDifficulty":{
-              "next":"ProduceChooseIdolFlag"
+          "name": "No",
+          "pipeline_override": {
+            "Produce": {
+              "next": "ProduceHomeFlag"
             }
           }
         }
       ]
     },
-    "培育偶像":{
-      "default_case":"紫云清夏(Tame-Lie-One-Step)",
-      "cases":[
+    "跳过选择偶像": {
+      "default_case": "No",
+      "cases": [
         {
-          "name":"倉本千奈(Campus mode!!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "Yes",
+          "pipeline_override": {
+            "ProduceChooseDifficulty": {
+              "next": "ProduceChooseIdolNext"
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "ProduceChooseDifficulty": {
+              "next": "ProduceChooseIdolFlag"
+            }
+          }
+        }
+      ]
+    },
+    "培育偶像": {
+      "default_case": "紫云清夏(Tame-Lie-One-Step)",
+      "cases": [
+        {
+          "name": "倉本千奈(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/倉本千奈(Campus mode!!).png"
               ]
             }
           }
         },
         {
-          "name":"倉本千奈(Howling over the World)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "倉本千奈(Howling over the World)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/倉本千奈(Howling over the World).png"
               ]
             }
           }
         },
         {
-          "name":"倉本千奈(Wonder Scale)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "倉本千奈(Wonder Scale)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/倉本千奈(Wonder Scale).png"
               ]
             }
           }
         },
         {
-          "name":"倉本千奈(ようこそ初星温泉)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "倉本千奈(ようこそ初星温泉)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/倉本千奈(ようこそ初星温泉).png"
               ]
             }
           }
         },
         {
-          "name":"倉本千奈(仮装狂騒曲)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "倉本千奈(仮装狂騒曲)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/倉本千奈(仮装狂騒曲).png"
               ]
             }
           }
         },
         {
-          "name":"倉本千奈(日々、発見的ステップ！)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "倉本千奈(日々、発見的ステップ！)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/倉本千奈(日々、発見的ステップ！).png"
               ]
             }
           }
         },
         {
-          "name":"倉本千奈(雪解けに)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "倉本千奈(雪解けに)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/倉本千奈(雪解けに).png"
               ]
             }
           }
         },
         {
-          "name":"十王星南(Campus mode!!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "十王星南(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/十王星南(Campus mode!!).png"
               ]
             }
           }
         },
         {
-          "name":"十王星南(Our Chant)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "十王星南(Our Chant)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/十王星南(Our Chant).png"
               ]
             }
           }
         },
         {
-          "name":"十王星南(ハッピーミルフィーユ)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "十王星南(ハッピーミルフィーユ)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/十王星南(ハッピーミルフィーユ).png"
               ]
             }
           }
         },
         {
-          "name":"十王星南(小さな野望)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "十王星南(小さな野望)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/十王星南(小さな野望).png"
               ]
             }
           }
         },
         {
-          "name":"姫崎莉波(clumsy trick)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "姫崎莉波(clumsy trick)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/姫崎莉波(clumsy trick).png"
               ]
             }
           }
         },
         {
-          "name":"姫崎莉波(キミトセミブルー)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "姫崎莉波(キミトセミブルー)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/姫崎莉波(キミトセミブルー).png"
               ]
             }
           }
         },
         {
-          "name":"姫崎莉波(Campus mode!!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "姫崎莉波(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/姫崎莉波(Campus mode!!).png"
               ]
             }
           }
         },
         {
-          "name":"姫崎莉波(Howling over the World)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "姫崎莉波(Howling over the World)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/姫崎莉波(Howling over the World).png"
               ]
             }
           }
         },
         {
-          "name":"姫崎莉波(L.U.V)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "姫崎莉波(L.U.V)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/姫崎莉波(L.U.V).png"
               ]
             }
           }
         },
         {
-          "name":"姫崎莉波(ようこそ初星温泉)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "姫崎莉波(ようこそ初星温泉)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/姫崎莉波(ようこそ初星温泉).png"
               ]
             }
           }
         },
         {
-          "name":"姫崎莉波(ハッピーミルフィーユ)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "姫崎莉波(ハッピーミルフィーユ)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/姫崎莉波(ハッピーミルフィーユ).png"
               ]
             }
           }
         },
         {
-          "name":"月村手毬(Luna say maybe)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "月村手毬(Luna say maybe)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/月村手毬(Luna say maybe).png"
               ]
             }
           }
         },
         {
-          "name":"月村手毬(Campus mode!!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "月村手毬(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/月村手毬(Campus mode!!).png"
               ]
             }
           }
         },
         {
-          "name":"月村手毬(アイヴイ)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "月村手毬(アイヴイ)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/月村手毬(アイヴイ).png"
               ]
             }
           }
         },
         {
-          "name":"月村手毬(仮装狂騒曲)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "月村手毬(仮装狂騒曲)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/月村手毬(仮装狂騒曲).png"
               ]
             }
           }
         },
         {
-          "name":"月村手毬(雨上がりのアイリス)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "月村手毬(雨上がりのアイリス)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/月村手毬(雨上がりのアイリス).png"
               ]
             }
           }
         },
         {
-          "name":"月村手毬(雪解けに)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "月村手毬(雪解けに)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/月村手毬(雪解けに).png"
               ]
             }
           }
         },
         {
-          "name":"有村麻央(Fluorite)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "有村麻央(Fluorite)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/有村麻央(Fluorite).png"
               ]
             }
           }
         },
         {
-          "name":"有村麻央(Campus mode!!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "有村麻央(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/有村麻央(Campus mode!!).png"
               ]
             }
           }
         },
         {
-          "name":"有村麻央(Feel Jewel Dream)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "有村麻央(Feel Jewel Dream)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/有村麻央(Feel Jewel Dream).png"
               ]
             }
           }
         },
         {
-          "name":"有村麻央(キミトセミブルー)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "有村麻央(キミトセミブルー)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/有村麻央(キミトセミブルー).png"
               ]
             }
           }
         },
         {
-          "name":"有村麻央(雪解けに)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "有村麻央(雪解けに)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/有村麻央(雪解けに).png"
               ]
             }
           }
         },
         {
-          "name":"秦谷美玲(ツキノカメ)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "秦谷美玲(ツキノカメ)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/秦谷美玲(ツキノカメ).png"
               ]
             }
           }
         },
         {
-          "name":"篠泽广(Campus mode!!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "篠泽广(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/篠泽广(Campus mode!!).png"
               ]
             }
           }
         },
         {
-          "name":"篠泽广(コントラスト)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "篠泽广(コントラスト)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/篠泽广(コントラスト).png"
               ]
             }
           }
         },
         {
-          "name":"篠泽广(光景)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "篠泽广(光景)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/篠泽广(光景).png"
               ]
             }
           }
         },
         {
-          "name":"篠泽广(ハッピーミルフィーユ)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "篠泽广(ハッピーミルフィーユ)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/篠泽广(ハッピーミルフィーユ).png"
               ]
             }
           }
         },
         {
-          "name":"篠泽广(仮装狂騒曲)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "篠泽广(仮装狂騒曲)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/篠泽广(仮装狂騒曲).png"
               ]
             }
           }
         },
         {
-          "name":"紫云清夏(Campus mode!!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "紫云清夏(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/紫云清夏(Campus mode!!).png"
               ]
             }
           }
         },
         {
-          "name":"紫云清夏(Tame-Lie-One-Step)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "紫云清夏(Tame-Lie-One-Step)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/紫云清夏(Tame-Lie-One-Step).png"
               ]
             }
           }
         },
         {
-          "name":"紫云清夏(カクシタワタシ)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "紫云清夏(カクシタワタシ)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/紫云清夏(カクシタワタシ).png"
               ]
             }
           }
         },
         {
-          "name":"紫云清夏(Love & Joy)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "紫云清夏(Love & Joy)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/紫云清夏(Love & Joy).png"
               ]
             }
           }
         },
         {
-          "name":"紫云清夏(キミトセミブルー)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "紫云清夏(キミトセミブルー)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/紫云清夏(キミトセミブルー).png"
               ]
             }
           }
         },
         {
-          "name":"紫云清夏(桜フォトグラフ)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "紫云清夏(桜フォトグラフ)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/紫云清夏(桜フォトグラフ).png"
               ]
             }
           }
         },
         {
-          "name":"花海佑芽(Campus mode!!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "花海佑芽(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/花海佑芽(Campus mode!!).png"
               ]
             }
           }
         },
         {
-          "name":"花海佑芽(The Rolling Riceball)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "花海佑芽(The Rolling Riceball)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/花海佑芽(The Rolling Riceball).png"
               ]
             }
           }
         },
         {
-          "name":"花海佑芽(White night! White Wish!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "花海佑芽(White night! White Wish!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/花海佑芽(White night! White Wish!).png"
               ]
             }
           }
         },
         {
-          "name":"花海咲季(Boom Boom Pow)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "花海咲季(Boom Boom Pow)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/花海咲季(Boom Boom Pow).png"
               ]
             }
           }
         },
         {
-          "name":"花海咲季(Campus mode!!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "花海咲季(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/花海咲季(Campus mode!!).png"
               ]
             }
           }
         },
         {
-          "name":"花海咲季(Fighting My Way)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "花海咲季(Fighting My Way)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/花海咲季(Fighting My Way).png"
               ]
             }
           }
         },
         {
-          "name":"花海咲季(冠菊)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "花海咲季(冠菊)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/花海咲季(冠菊).png"
               ]
             }
           }
         },
         {
-          "name":"花海咲季(古今東西)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "花海咲季(古今東西)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/花海咲季(古今東西).png"
               ]
             }
           }
         },
         {
-          "name":"花海咲季(桜フォトグラフ)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "花海咲季(桜フォトグラフ)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/花海咲季(桜フォトグラフ).png"
               ]
             }
           }
         },
         {
-          "name":"花海咲季(雨上がりのアイリス)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "花海咲季(雨上がりのアイリス)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/花海咲季(雨上がりのアイリス).png"
               ]
             }
           }
         },
         {
-          "name":"葛城リーリヤ(Campus mode!!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "葛城リーリヤ(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/葛城リーリヤ(Campus mode!!).png"
               ]
             }
           }
         },
         {
-          "name":"葛城リーリヤ(Howling over the World)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "葛城リーリヤ(Howling over the World)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/葛城リーリヤ(Howling over the World).png"
               ]
             }
           }
         },
         {
-          "name":"葛城リーリヤ(極光)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "葛城リーリヤ(極光)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/葛城リーリヤ(極光).png"
               ]
             }
           }
         },
         {
-          "name":"葛城リーリヤ(白線)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "葛城リーリヤ(白線)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/葛城リーリヤ(白線).png"
               ]
             }
           }
         },
         {
-          "name":"葛城リーリヤ(White night! White Wish!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "葛城リーリヤ(White night! White Wish!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/葛城リーリヤ(White night! White Wish!).png"
               ]
             }
           }
         },
         {
-          "name":"葛城リーリヤ(冠菊)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "葛城リーリヤ(冠菊)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/葛城リーリヤ(冠菊).png"
               ]
             }
           }
         },
         {
-          "name":"葛城リーリヤ(桜フォトグラフ)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "葛城リーリヤ(桜フォトグラフ)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/葛城リーリヤ(桜フォトグラフ).png"
               ]
             }
           }
         },
         {
-          "name":"藤田琴音(Campus mode!!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "藤田琴音(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/藤田琴音(Campus mode!!).png"
               ]
             }
           }
         },
         {
-          "name":"藤田琴音(Yellow Big Bang！)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "藤田琴音(Yellow Big Bang！)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/藤田琴音(Yellow Big Bang！).png"
               ]
             }
           }
         },
         {
-          "name":"藤田琴音(世界一可愛い私)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "藤田琴音(世界一可愛い私)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/藤田琴音(世界一可愛い私).png"
               ]
             }
           }
         },
         {
-          "name":"藤田琴音(雨上がりのアイリス)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "藤田琴音(雨上がりのアイリス)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/藤田琴音(雨上がりのアイリス).png"
               ]
             }
           }
         },
         {
-          "name":"藤田琴音(White night! White Wish!)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "藤田琴音(White night! White Wish!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/藤田琴音(White night! White Wish!).png"
               ]
             }
           }
         },
         {
-          "name":"藤田琴音(冠菊)",
-          "pipeline_override":{
-            "ProduceChooseIdol":{
-              "template":[
+          "name": "藤田琴音(冠菊)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
                 "idols/藤田琴音(冠菊).png"
               ]
             }
