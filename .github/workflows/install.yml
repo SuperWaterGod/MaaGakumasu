@@ -126,6 +126,16 @@ jobs:
             echo "Warning: logo.ico not found in project root."
           fi
 
+          # 复制LICENSE到根目录
+          if [ -f "LICENSE" ]; then
+            echo "Copying LICENSE to root folder..."
+            mkdir -p install
+            cp LICENSE install/
+            echo "LICENSE copied to install/"
+          else
+            echo "Warning: LICENSE not found in project root."
+          fi
+
       - uses: actions/upload-artifact@v4
         with:
           name: MaaGakumasu-win-${{ matrix.arch }}
@@ -195,6 +205,16 @@ jobs:
             echo "logo.ico copied to install/Assets/"
           else
             echo "Warning: logo.ico not found in project root."
+          fi
+
+          # 复制LICENSE到根目录
+          if [ -f "LICENSE" ]; then
+            echo "Copying LICENSE to root folder..."
+            mkdir -p install
+            cp LICENSE install/
+            echo "LICENSE copied to install/"
+          else
+            echo "Warning: LICENSE not found in project root."
           fi
 
       - uses: actions/upload-artifact@v4
