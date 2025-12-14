@@ -44,7 +44,7 @@ class ProduceChooseEventAuto(CustomAction):
     ACTION_DELAY = 3.0
 
     def run(self, context: Context, argv: CustomAction.RunArg) -> bool:
-        logger.success("事件: 选择事件")
+        logger.success("info: 事件: 选择事件")
 
         # 获取屏幕截图
         image = self._get_screenshot(context)
@@ -60,7 +60,7 @@ class ProduceChooseEventAuto(CustomAction):
         # 3. 获取可用事件列表
         available_events = self._get_available_events(context, image)
         if not available_events:
-            logger.info("无可用事件")
+            logger.info("info: 无可用事件")
             return True
 
         # 4. 根据角色状态选择事件
@@ -82,8 +82,8 @@ class ProduceChooseEventAuto(CustomAction):
             }}
         )
 
-        if reco_detail.best_result:
-            logger.info("存在SP课程")
+        if reco_detail and reco_detail.hit:
+            logger.info("info: 存在SP课程")
             result = reco_detail.best_result.box
             self._double_click(context, result[0] + 80, result[1] + 80)
             time.sleep(self.ACTION_DELAY)
@@ -103,17 +103,17 @@ class ProduceChooseEventAuto(CustomAction):
             }}
         )
 
-        if not reco_detail.best_result:
+        if not (reco_detail and reco_detail.hit):
             return False
 
-        suggestion_text = "".join(item.text for item in reco_detail.filterd_results)
-        logger.info(f"老师建议: {suggestion_text}")
+        suggestion_text = "".join(item.text for item in reco_detail.filtered_results)
+        logger.info(f"info: 老师建议: {suggestion_text}")
 
         suggestion_img = self._find_image_from_phrase(suggestion_text, self.SUGGESTION_CONFIG)
         if not suggestion_img:
             return False
 
-        logger.info(f"建议图片: {suggestion_img}")
+        logger.info(f"info: 建议图片: {suggestion_img}")
         return self._execute_suggestion(context, image, suggestion_img)
 
     def _execute_suggestion(self, context: Context, image, suggestion_img: str) -> bool:
@@ -127,20 +127,20 @@ class ProduceChooseEventAuto(CustomAction):
             }}
         )
 
-        if not reco_detail.best_result:
+        if not (reco_detail and reco_detail.hit):
             return False
 
-        logger.info("存在建议课程")
+        logger.info("info: 存在建议课程")
         result = reco_detail.best_result.box
 
         if "rest" in suggestion_img:
-            logger.info("选择休息")
+            logger.info("info: 选择休息")
             context.run_task("ProduceChooseRest")
             time.sleep(self.ACTION_DELAY)
             return True
 
         if "chat" in suggestion_img:
-            logger.info("选择交谈")
+            logger.info("info: 选择交谈")
             self._double_click(context, result[0] + 80, result[1] + 80)
             context.run_task("ProduceShoppingFlag")
             time.sleep(self.ACTION_DELAY)
@@ -165,11 +165,11 @@ class ProduceChooseEventAuto(CustomAction):
                     "roi": [0, 880, 720, 220]
                 }}
             )
-            if reco_detail.best_result:
+            if reco_detail and reco_detail.hit:
                 available_events.append({event_name: reco_detail.best_result.box})
                 available_events_name += event_name
 
-        logger.info(f"可用事件: {available_events_name}")
+        logger.info(f"info: 可用事件: {available_events_name}")
         return available_events
 
     def _choose_event_by_status(self, context: Context, image, available_events: List[Dict], argv) -> bool:
@@ -191,12 +191,12 @@ class ProduceChooseEventAuto(CustomAction):
         if health_ratio is None or health_ratio >= self.LOW_HEALTH_THRESHOLD:
             return False
 
-        logger.info("体力过低")
+        logger.info("info: 体力过低")
 
         # 优先选择外出
         go_out_box = self._get_event_box("外出", available_events)
         if go_out_box:
-            logger.info("选择外出")
+            logger.info("info: 选择外出")
             self._double_click(context, go_out_box[0] + 80, go_out_box[1] + 80)
             time.sleep(self.ACTION_DELAY)
             return True
@@ -204,7 +204,7 @@ class ProduceChooseEventAuto(CustomAction):
         # 其次选择休息
         reco_detail = context.run_recognition("ProduceChooseRest", image)
         if reco_detail.best_result:
-            logger.info("选择休息")
+            logger.info("info: 选择休息")
             context.run_task("ProduceChooseRest")
             time.sleep(self.ACTION_DELAY)
             return True
@@ -217,10 +217,10 @@ class ProduceChooseEventAuto(CustomAction):
         if points is None or points <= self.HIGH_POINT_THRESHOLD:
             return False
 
-        logger.info(f"积分充足: {points}")
+        logger.info(f"info: 积分充足: {points}")
         chat_box = self._get_event_box("交谈", available_events)
         if chat_box:
-            logger.info("选择交谈")
+            logger.info("info: 选择交谈")
             self._double_click(context, chat_box[0] + 80, chat_box[1] + 80)
             context.run_task("ProduceShoppingFlag")
             time.sleep(self.ACTION_DELAY)
@@ -245,7 +245,7 @@ class ProduceChooseEventAuto(CustomAction):
         for event_type, description in event_priority:
             event_box = self._get_event_box(event_type, available_events)
             if event_box:
-                logger.info(f"选择{description}")
+                logger.info(f"info: 选择{description}")
                 self._double_click(context, event_box[0] + 80, event_box[1] + 80)
 
                 if event_type == "交谈":
@@ -260,7 +260,7 @@ class ProduceChooseEventAuto(CustomAction):
     def _get_health_ratio(context: Context, image) -> Optional[float]:
         """获取体力比例"""
         reco_detail = context.run_recognition("ProduceRecognitionHealth", image)
-        if not reco_detail.best_result:
+        if not (reco_detail and reco_detail.hit):
             return None
 
         try:
@@ -268,25 +268,25 @@ class ProduceChooseEventAuto(CustomAction):
             current_health = int(health_parts[0])
             max_health = int(health_parts[1])
             ratio = current_health / max_health
-            logger.info(f"体力: {current_health}/{max_health} ({ratio:.2%})")
+            logger.info(f"info: 体力: {current_health}/{max_health} ({ratio:.2%})")
             return ratio
         except (ValueError, IndexError, ZeroDivisionError):
-            logger.warning("体力数据解析失败")
+            logger.warning("warn: 体力数据解析失败")
             return None
 
     @staticmethod
     def _get_current_points(context: Context, image) -> Optional[int]:
         """获取当前积分"""
         reco_detail = context.run_recognition("ProduceRecognitionPoint", image)
-        if not reco_detail.best_result:
+        if not (reco_detail and reco_detail.hit):
             return None
 
         try:
             points = int(reco_detail.best_result.text.replace(",", ""))
-            logger.info(f"积分: {points}")
+            logger.info(f"info: 积分: {points}")
             return points
         except ValueError:
-            logger.warning("积分数据解析失败")
+            logger.warning("warn: 积分数据解析失败")
             return None
 
     @staticmethod
@@ -378,7 +378,7 @@ class ProduceCardsAuto(CustomAction):
             # 识别手牌
             image = context.tasker.controller.post_screencap().wait().get()
             reco_detail = context.run_recognition("ProduceRecognitionCards", image)
-            if reco_detail.best_result:
+            if reco_detail and reco_detail.hit:
                 results = reco_detail.all_results
 
                 label_counts = Counter()
@@ -401,18 +401,18 @@ class ProduceCardsAuto(CustomAction):
                     time.sleep(0.3)
                     context.tasker.controller.post_click(suggestions_box[0] + 100, suggestions_box[1] + 140).wait()
                     end_time = time.time()
-                    logger.info("出牌 耗时:{:.2f}秒".format(end_time - start_time))
+                    logger.info("info: 出牌 耗时:{:.2f}秒".format(end_time - start_time))
                     time.sleep(3)
                     start_time = time.time()
                 elif useless > 0 and suggestions == 0 and cards == 0:
-                    logger.warning("!!!!!!!!无可用牌!!!!!!!!!!!")
+                    logger.warning("warn: !!!!!!!!无可用牌!!!!!!!!!!!")
                     context.run_task("ProduceRecognitionSkipRound")
 
                 end_time = time.time()
                 if end_time - start_time > 10:
                     if best_box[1] < 840 or best_box[1] > 1150:
                         continue
-                    logger.warning("检测超时")
+                    logger.warning("warn: 检测超时")
                     context.tasker.controller.post_click(best_box[0], best_box[1]).wait()
                     time.sleep(0.3)
                     context.tasker.controller.post_click(best_box[0], best_box[1]).wait()
@@ -421,23 +421,23 @@ class ProduceCardsAuto(CustomAction):
 
             else:
                 reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", image)
-                if not reco_detail.best_result:
-                    logger.info("未检测到卡片和体力")
-                    logger.success("事件: 退出出牌")
+                if not (reco_detail and reco_detail.hit):
+                    logger.info("info: 未检测到卡片和体力")
+                    logger.success("info: 事件: 退出出牌")
                     break
 
                 reco_detail = context.run_recognition("ProduceYes", image)
                 if reco_detail.best_result:
-                    logger.info("点击确认")
+                    logger.info("info: 点击确认")
                     context.tasker.controller.post_click(reco_detail.best_result.box[0], reco_detail.best_result.box[1]).wait()
 
                 reco_detail = context.run_recognition("ProduceRecognitionNoCards", image)
                 if reco_detail.best_result:
-                    logger.info("无手牌")
+                    logger.info("info: 无手牌")
                     context.run_task("ProduceRecognitionSkipRound")
 
             if context.tasker.stopping:
-                logger.info("任务中断")
+                logger.info("info: 任务中断")
                 return True
             time.sleep(0.2)
 
@@ -463,8 +463,8 @@ class ProduceShoppingAuto(CustomAction):
                     "template": "produce/Sale.png",
                     "roi": [46, 479, 626, 529]
                 }})
-        logger.success("事件: 商店购买")
-        if reco_detail.best_result:
+        logger.success("info: 事件: 商店购买")
+        if reco_detail and reco_detail.hit:
             for result in reco_detail.filtered_results:
                 box = result.box
                 context.tasker.controller.post_click(box[0], box[1] - 66).wait()
@@ -478,10 +478,10 @@ class ProduceShoppingAuto(CustomAction):
                             "roi": [0, 1020, 720, 135]
                         }})
                 if reco_detail.best_result:
-                    logger.info("饮料已满，放弃购买")
+                    logger.info("info: 饮料已满，放弃购买")
                     continue
                 reco_detail = context.run_recognition("ProduceShoppingBuy", image)
-                if reco_detail.best_result:
+                if reco_detail and reco_detail.hit:
                     context.run_task("ProduceShoppingBuy")
                     start_time = time.time()
                     while True:
@@ -505,7 +505,7 @@ class ProduceStrengthenAuto(CustomAction):
             context: Context,
             argv: CustomAction.RunArg,
     ) -> bool:
-        logger.success("事件: 选择强化")
+        logger.success("info: 事件: 选择强化")
         context.tasker.controller.post_click(140, 760).wait()
         context.run_task("ProduceChooseStrengthen")
         return True
