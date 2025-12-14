@@ -47,20 +47,20 @@ class WorkChooseAuto(CustomRecognition):
                 if work_reco_detail and work_reco_detail.hit:
                     if len(good_list) > 1:
                         # 笑脸存在且被选中, 选择第二个笑脸
-                        logger.info("选择笑脸")
+                        logger.debug("选择笑脸")
                         return CustomRecognition.AnalyzeResult(box=good_list[1], detail={"detail": "笑脸存在且被选中，选择第二个笑脸"})
                     else:
                         # 笑脸存在且被选中
-                        logger.info("第二页")
+                        logger.debug("第二页")
                         context.tasker.controller.post_swipe(*swipe_coords, duration=200).wait()
                         time.sleep(0.5)
                 else:
                     # 笑脸存在且未被选中
-                    logger.info("选择笑脸")
+                    logger.debug("选择笑脸")
                     return CustomRecognition.AnalyzeResult(box=good_list[0], detail={"detail": "笑脸存在且未被选中"})
             else:
                 # 无笑脸
-                logger.info("返回第一页")
+                logger.debug("返回第一页")
                 context.tasker.controller.post_swipe(*swipe_coords, duration=200).wait()
                 time.sleep(0.5)
             return None
@@ -88,14 +88,14 @@ class WorkChooseAuto(CustomRecognition):
             work_reco_detail_ocr = recognize_work(new_affinity_image, max_affinity["box"])
             if work_reco_detail_ocr and work_reco_detail_ocr.hit:
                 # 最高好感已工作
-                logger.info("选择第二高好感")
+                logger.debug("选择第二高好感")
                 return CustomRecognition.AnalyzeResult(box=second_affinity["box"], detail={"detail": "第二高好感度"})
             else:
                 # 最高好感未工作
-                logger.info("选择最高好感")
+                logger.debug("选择最高好感")
                 return CustomRecognition.AnalyzeResult(box=max_affinity["box"], detail={"detail": "最高好感度"})
         else:
-            logger.warning("OCR识别失败")
+            logger.error("OCR识别失败")
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "无文字"})
 
 

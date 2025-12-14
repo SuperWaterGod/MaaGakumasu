@@ -1,283 +1,330 @@
 {
-  "Work":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "Work": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
-      "WorkHomeFlag"
-    ],
-    "interrupt":[
-      "ReturnHome",
-      "BackHome"
+    "next": [
+      "WorkHomeFlag",
+      "[JumpBack]ReturnHome",
+      "[JumpBack]BackHome",
+      "[JumpBack]CloseRoundButton"
     ]
   },
-  "WorkHomeFlag":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
+  "WorkHomeFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
           "home.png",
           "home_1.png"
         ]
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "WorkClick"
     ]
   },
-  "WorkClick":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
-          "work.png",
-          "work_1.png",
-          "work_2.png"
+  "WorkClick": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": [
+          "お仕事"
+        ],
+        "replace": [
+          [
+            "书",
+            "お"
+          ]
+        ],
+        "roi": [
+          0,
+          640,
+          140,
+          140
         ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "WorkFinished",
       "WorkStartChooseShow",
       "WorkStartChooseLive",
-      "BackHome"
-    ],
-    "interrupt":[
-      "ClickCenter"
+      "BackHome",
+      "[JumpBack]ClickCenter"
     ]
   },
-  "WorkFinished":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"work_finish.png"
+  "WorkFinished": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "work_finish.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "WorkFinished",
       "WorkStartChooseShow",
       "WorkStartChooseLive"
     ]
   },
-  "WorkStartChooseShow":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"work_choose_show.png"
+  "WorkStartChooseShow": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "work_choose_show.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "WorkChooseShowGoodFlag"
     ]
   },
-  "WorkStartChooseLive":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"work_choose_live.png"
+  "WorkStartChooseLive": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "work_choose_live.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "WorkChooseLiveGoodFlag"
     ]
   },
-  "WorkChooseShowGoodFlag":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
-          "work_good.png"
+  "WorkChooseShowGoodFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "work_choose_idol.png"
         ]
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "WorkChooseShow"
     ]
   },
-  "WorkChooseLiveGoodFlag":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
-          "work_good.png"
+  "WorkChooseLiveGoodFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "work_choose_idol.png"
         ]
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "WorkChooseLive"
     ]
   },
-  "WorkChooseShow":{
-    "recognition":{
-      "type":"Custom",
-      "param":{
-        "custom_recognition":"WorkChooseAuto",
-        "custom_recognition_param":{ }
+  "WorkChooseShow": {
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "WorkChooseAuto",
+        "custom_recognition_param": {}
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "WorkChooseShowConfirm"
-    ]
+    ],
+    "focus": {
+      "Node.Recognition.Starting": "{name} 开始识别",
+      "Node.Recognition.Succeeded": "{name} 识别成功",
+      "Node.Recognition.Failed": "err:{name} 识别失败"
+    }
   },
-  "WorkChooseLive":{
-    "recognition":{
-      "type":"Custom",
-      "param":{
-        "custom_recognition":"WorkChooseAuto",
-        "custom_recognition_param":{ }
+  "WorkChooseLive": {
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "WorkChooseAuto",
+        "custom_recognition_param": {}
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "WorkChooseLiveConfirm"
-    ]
-  },
-  "WorkChooseShowConfirm":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"work_choose_idol.png"
-      }
-    },
-    "action":{
-      "type":"Click",
-      "param":{ }
-    },
-    "next":[
-      "WorkChooseShowTime"
     ],
-    "interrupt":[
-      "DecideButton"
-    ]
+    "focus": {
+      "Node.Recognition.Starting": "{name} 开始识别",
+      "Node.Recognition.Succeeded": "{name} 识别成功",
+      "Node.Recognition.Failed": "err:{name} 识别失败"
+    }
   },
-  "WorkChooseLiveConfirm":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"work_choose_idol.png"
+  "WorkChooseShowConfirm": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "work_choose_idol.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
-      "WorkChooseLiveTime"
-    ],
-    "interrupt":[
-      "DecideButton"
+    "next": [
+      "WorkChooseShowTime",
+      "[JumpBack]DecideButton"
     ]
   },
-  "WorkChooseShowTime":{
-    "recognition":{
-      "type":"OCR",
-      "param":{
-        "expected":"4時間"
+  "WorkChooseLiveConfirm": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "work_choose_idol.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
+      "WorkChooseLiveTime",
+      "[JumpBack]DecideButton"
+    ]
+  },
+  "WorkChooseShowTime": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": "4時間",
+        "replace": [
+          [
+            "时",
+            "時"
+          ],
+          [
+            "间",
+            "間"
+          ]
+        ],
+        "roi": [
+          36,
+          745,
+          650,
+          250
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
       "WorkSure"
     ]
   },
-  "WorkChooseLiveTime":{
-    "recognition":{
-      "type":"OCR",
-      "param":{
-        "expected":"12"
+  "WorkChooseLiveTime": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": "4時間",
+        "replace": [
+          [
+            "时",
+            "時"
+          ],
+          [
+            "间",
+            "間"
+          ]
+        ],
+        "roi": [
+          36,
+          745,
+          650,
+          250
+        ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "WorkSure"
     ]
   },
-  "WorkSure":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"work_sure.png"
+  "WorkSure": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "work_sure.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "post_wait_freezes": 500,
+    "next": [
       "WorkStart"
     ]
   },
-  "WorkStart":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"work_start.png"
+  "WorkStart": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "work_start.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "post_wait_freezes": 500,
+    "next": [
       "WorkStartChooseShow",
       "WorkStartChooseLive",
       "BackHome"
     ]
   },
-  "WorkChooseGood":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
+  "WorkChooseGood": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
           "work_good.png"
         ],
-        "roi":[
+        "roi": [
           8,
           709,
           621,
@@ -285,21 +332,21 @@
         ]
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     }
   },
-  "WorkAlready":{
-    "recognition":{
-      "type":"FeatureMatch",
-      "param":{
-        "template":"work_already.png"
+  "WorkAlready": {
+    "recognition": {
+      "type": "FeatureMatch",
+      "param": {
+        "template": "work_already.png"
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     }
   }
 }

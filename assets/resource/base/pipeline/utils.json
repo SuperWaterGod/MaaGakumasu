@@ -1,91 +1,106 @@
 {
-  "ReturnHome":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"homeflag_black.png"
+  "HomeFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "home.png",
+          "home_1.png"
+        ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    }
+  },
+  "ReturnHome": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "homeflag_black.png"
+      }
     },
-    "next":[
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
       "HomeFlag"
     ]
   },
-  "BackHome":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"homeflag_grey.png"
+  "BackHome": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "homeflag_grey.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "HomeFlag"
     ]
   },
-  "CloseMenu":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"close_menu.png"
+  "CloseMenu": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "close_menu.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     }
   },
-  "CloseButton":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"close.png"
+  "CloseButton": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "close.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     }
   },
-  "DecideButton":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"decide.png"
+  "DecideButton": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "decide.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     }
   },
-  "CloseButtonRound":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"close_icon.png"
+  "CloseRoundButton": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "close_icon.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     }
   },
-  "ClickCenter":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ClickCenter": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"Click",
-      "param":{
-        "target":[
+    "action": {
+      "type": "Click",
+      "param": {
+        "target": [
           0,
           0,
           0,

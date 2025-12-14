@@ -1,161 +1,167 @@
 {
-  "Challenge":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "Challenge": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
-      "ChallengeHomeFlag"
-    ],
-    "interrupt":[
-      "ReturnHome",
-      "BackHome"
+    "next": [
+      "ChallengeHomeFlag",
+      "[JumpBack]ReturnHome",
+      "[JumpBack]BackHome",
+      "[JumpBack]CloseRoundButton"
     ]
   },
-  "ChallengeHomeFlag":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
+  "ChallengeHomeFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
           "home.png",
           "home_1.png"
         ]
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ChallengeClick"
     ]
   },
-  "ChallengeClick":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"challenge.png"
+  "ChallengeClick": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "challenge.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ChallengeEnter"
     ]
   },
-  "ChallengeEnter":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"challenge_icon.png"
+  "ChallengeEnter": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": [
+          "コンテスト"
+        ],
+        "replace": [],
+        "roi": [
+          426,
+          809,
+          213,
+          157
+        ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":"ChallengeSelector",
-    "interrupt":[
-      "ClickCenter"
+    "next": [
+      "ChallengeSelector",
+      "[JumpBack]ClickCenter"
     ]
   },
-  "ChallengeSelector":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ChallengeSelector": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ChallengeChoose",
       "ChallengeRunOut",
-      "ChallengeReadyPeriod"
-    ],
-    "interrupt":[
-      "ClickCenter"
+      "ChallengeReadyPeriod",
+      "[JumpBack]ClickCenter"
     ]
   },
-  "ChallengeChoose":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"challenge_battle_total.png"
+  "ChallengeChoose": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "challenge_battle_total.png"
       }
     },
-    "action":{
-      "type":"Custom",
-      "param":{
-        "custom_action":"ChallengeAuto",
-        "custom_action_param":{
-          "mode":"auto",
-          "index":1
+    "action": {
+      "type": "Custom",
+      "param": {
+        "custom_action": "ChallengeAuto",
+        "custom_action_param": {
+          "mode": "auto",
+          "index": 1
         }
       }
     },
-    "pre_delay":0,
-    "post_delay":0,
-    "next":[
+    "pre_delay": 0,
+    "post_delay": 0,
+    "next": [
       "ChallengeStart"
     ]
   },
-  "ChallengeIndex":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"challenge_battle_total.png",
-        "index":1,
-        "order_by":"Vertical"
+  "ChallengeIndex": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "challenge_battle_total.png",
+        "index": 1,
+        "order_by": "Vertical"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     }
   },
-  "ChallengeStart":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"challenge_start.png"
+  "ChallengeStart": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "challenge_start.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ChallengeReady"
     ]
   },
-  "ChallengeReady":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"challenge_ready.png"
+  "ChallengeReady": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "challenge_ready.png"
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ChallengeSkip"
     ]
   },
-  "ChallengeSkip":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"challenge_skip.png",
-        "roi":[
+  "ChallengeSkip": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "challenge_skip.png",
+        "roi": [
           482,
           1020,
           207,
@@ -163,28 +169,26 @@
         ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "timeout":60000,
-    "next":[
+    "timeout": 60000,
+    "next": [
       "ChallengeSkip",
-      "ChallengeNext"
-    ],
-    "interrupt":[
-      "ClickCenter"
+      "ChallengeNext",
+      "[JumpBack]ClickCenter"
     ]
   },
-  "ChallengeNext":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
+  "ChallengeNext": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
           "challenge_next.png",
           "challenge_skip.png"
         ],
-        "roi":[
+        "roi": [
           0,
           980,
           720,
@@ -192,24 +196,22 @@
         ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "timeout":60000,
-    "next":[
-      "ChallengeFinish"
-    ],
-    "interrupt":[
-      "ClickCenter"
+    "timeout": 60000,
+    "next": [
+      "ChallengeFinish",
+      "[JumpBack]ClickCenter"
     ]
   },
-  "ChallengeFinish":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"challenge_finish.png",
-        "roi":[
+  "ChallengeFinish": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "challenge_finish.png",
+        "roi": [
           0,
           980,
           720,
@@ -217,51 +219,49 @@
         ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
-      "ChallengeSelector"
-    ],
-    "interrupt":[
-      "ChallengeAward",
-      "ClickCenter"
+    "next": [
+      "ChallengeSelector",
+      "[JumpBack]ChallengeAward",
+      "[JumpBack]ClickCenter"
     ]
   },
-  "ChallengeRunOut":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"challenge_runout.png"
+  "ChallengeRunOut": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "challenge_runout.png"
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "BackHome"
     ]
   },
-  "ChallengeAward":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"challenge_award.png"
+  "ChallengeAward": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "challenge_award.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     }
   },
-  "ChallengeReadyPeriod":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"challenge_ready_period.png",
-        "roi":[
+  "ChallengeReadyPeriod": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "challenge_ready_period.png",
+        "roi": [
           20,
           100,
           330,
@@ -269,11 +269,11 @@
         ]
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "BackHome"
     ]
   }

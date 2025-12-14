@@ -1,135 +1,236 @@
 {
-  "Award":{
-    "post_wait_freezes":300,
-    "next":[
-      "AwardHomeFlag"
-    ],
-    "interrupt":[
-      "ReturnHome",
-      "BackHome"
+  "Award": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "AwardHomeFlag",
+      "[JumpBack]ReturnHome",
+      "[JumpBack]BackHome"
     ]
   },
-  "AwardHomeFlag":{
-    "recognition":"TemplateMatch",
-    "template":[
-      "home.png",
-      "home_1.png"
-    ],
-    "next":[
+  "AwardHomeFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "home.png",
+          "home_1.png"
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
       "AwardGift",
       "AwardMission",
       "BackHome",
       "HomeFlag"
     ]
   },
-  "AwardGift":{
-    "enabled":true,
-    "next":[
+  "AwardGift": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "enabled": true,
+    "next": [
       "AwardGiftClick"
     ]
   },
-  "AwardGiftClick":{
-    "recognition":"TemplateMatch",
-    "template":"gift.png",
-    "action":"Click",
-    "next":[
+  "AwardGiftClick": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": [
+          "プレゼント"
+        ],
+        "replace": [
+          [
+            "ル",
+            "レ"
+          ]
+        ],
+        "roi": [
+          580,
+          390,
+          135,
+          130
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
       "AwardGiftRunout",
       "AwardGiftGet"
     ]
   },
-  "AwardGiftRunout":{
-    "recognition":"TemplateMatch",
-    "template":"gift_runout.png",
-    "next":[
+  "AwardGiftRunout": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "gift_runout.png"
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
       "AwardBackHome"
     ]
   },
-  "AwardGiftGet":{
-    "recognition":"TemplateMatch",
-    "template":"gift_get.png",
-    "action":"Click",
-    "next":[
-      "AwardBackHome"
-    ],
-    "post_wait_freezes":500,
-    "interrupt":[
-      "CloseButton"
+  "AwardGiftGet": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "gift_get.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_wait_freezes": 500,
+    "next": [
+      "AwardBackHome",
+      "[JumpBack]CloseButton"
     ]
   },
-  "AwardBackHome":{
-    "recognition":"TemplateMatch",
-    "template":"homeflag_grey.png",
-    "pre_wait_freezes":500,
-    "action":"Click",
-    "next":[
+  "AwardBackHome": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "homeflag_grey.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_wait_freezes": 500,
+    "next": [
       "AwardMission",
       "HomeFlag"
     ]
   },
-  "AwardMission":{
-    "enabled":true,
-    "next":[
-      "AwardMissionClick"
-    ],
-    "interrupt":[
-      "CloseButton"
+  "AwardMission": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "enabled": true,
+    "next": [
+      "AwardMissionClick",
+      "[JumpBack]CloseButton"
     ]
   },
-  "AwardMissionClick":{
-    "recognition":"TemplateMatch",
-    "template":"mission.png",
-    "action":"Click",
+  "AwardMissionClick": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": [
+          "ミッション"
+        ],
+        "replace": [],
+        "roi": [
+          590,
+          520,
+          130,
+          125
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
     "post_wait_freezes": 500,
-    "next":[
+    "next": [
       "AwardMissionChoose",
       "BackHome"
     ]
   },
-  "AwardMissionChoose":{
-    "recognition":"TemplateMatch",
-    "template":"mission_point.png",
-    "action":"Click",
-    "next":[
-      "AwardMissionGet"
-    ],
-    "interrupt":[
-      "AwardMissionUp"
+  "AwardMissionChoose": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "mission_point.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "AwardMissionGet",
+      "[JumpBack]AwardMissionUp"
     ]
   },
-  "AwardMissionGet":{
-    "recognition":"TemplateMatch",
-    "template":"gift_get.png",
-    "action":"Click",
-    "post_wait_freezes":1000,
-    "next":[
+  "AwardMissionGet": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "gift_get.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_wait_freezes": 1000,
+    "next": [
       "AwardMissionClose",
       "AwardMissionChoose",
       "BackHome"
     ]
   },
-  "AwardMissionClose":{
-    "recognition":"TemplateMatch",
-    "template":"close.png",
-    "action":"Click",
-    "post_wait_freezes":200,
-    "next":[
+  "AwardMissionClose": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "close.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_wait_freezes": 500,
+    "next": [
       "AwardMissionChoose",
-      "BackHome"
-    ],
-    "interrupt":[
-      "AwardMissionUp"
+      "BackHome",
+      "[JumpBack]AwardMissionUp"
     ]
   },
-  "AwardMissionRunout":{
-    "recognition":"TemplateMatch",
-    "template":"gift_runout.png",
-    "next":[
-      "BackHome"
-    ]
-  },
-  "AwardMissionUp":{
-    "recognition":"TemplateMatch",
-    "template":"close_icon.png",
-    "action":"Click"
+  "AwardMissionUp": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "close_icon.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    }
   }
 }

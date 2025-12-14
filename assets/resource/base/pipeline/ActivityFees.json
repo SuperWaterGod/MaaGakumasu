@@ -1,87 +1,106 @@
 {
-  "ActivityFee":{
-    "recognition":{
-      "type":"DirectHit",
-      "param":{ }
+  "ActivityFee": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
-      "ActivityFeeHomeFlag"
-    ],
-    "interrupt":[
-      "ReturnHome",
-      "BackHome",
-      "CloseButtonRound"
+    "next": [
+      "ActivityFeeHomeFlag",
+      "[JumpBack]ReturnHome",
+      "[JumpBack]BackHome",
+      "[JumpBack]CloseRoundButton"
     ]
   },
-  "ActivityFeeHomeFlag":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
+  "ActivityFeeHomeFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
           "home.png",
           "home_1.png"
         ]
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ActivityFeeClick"
     ]
   },
-  "ActivityFeeClick":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":[
-          "activity_fee.png",
-          "activity_fee_1.png"
+  "ActivityFeeClick": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": [
+          "活動費"
+        ],
+        "replace": [
+          [
+            "费",
+            "費"
+          ],
+          [
+            "动",
+            "動"
+          ]
+        ],
+        "roi": [
+          0,
+          520,
+          160,
+          130
         ]
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "ActivityFeeClose",
       "ActivityWithoutFee"
     ]
   },
-  "ActivityFeeClose":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"close.png"
+  "ActivityFeeClose": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "close.png"
       }
     },
-    "action":{
-      "type":"Click",
-      "param":{ }
+    "action": {
+      "type": "Click",
+      "param": {}
     },
-    "next":[
+    "next": [
       "HomeFlag"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "活动费用已领取"
+    }
   },
-  "ActivityWithoutFee":{
-    "recognition":{
-      "type":"TemplateMatch",
-      "param":{
-        "template":"activity_without_fee.png"
+  "ActivityWithoutFee": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "activity_without_fee.png"
       }
     },
-    "action":{
-      "type":"DoNothing",
-      "param":{ }
+    "action": {
+      "type": "DoNothing",
+      "param": {}
     },
-    "next":[
+    "next": [
       "HomeFlag"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "无活动费用可领取"
+    }
   }
 }

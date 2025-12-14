@@ -10,7 +10,7 @@ from maa.agent.agent_server import AgentServer
 @AgentServer.custom_action("ChallengeAuto")
 class ChallengeAuto(CustomAction):
     """
-    自带运行挑战
+    自动运行挑战
     """
 
     def run(
@@ -49,7 +49,7 @@ class ChallengeAuto(CustomAction):
                 "roi": [54, 634, 233, 447],
                 "order_by": "Vertical"
             }})
-            if reco_detail.best_result:
+            if reco_detail and reco_detail.hit:
                 ratings = [result.text for result in reco_detail.filtered_results]
                 index = 1
                 logger.info(f"挑战评分识别结果: {ratings}")
@@ -75,7 +75,7 @@ class ChallengeAuto(CustomAction):
                         "roi": [172, 505, 195, 69],
                         "order_by": "Vertical"
                     }})
-                    if reco_detail.best_result:
+                    if reco_detail and reco_detail.hit:
                         self_rating_score = reco_detail.best_result.text
                         try:
                             self_rating_int = int(self_rating_score)

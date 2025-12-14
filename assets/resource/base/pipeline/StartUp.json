@@ -81,6 +81,9 @@
     "action": {
       "type": "DoNothing",
       "param": {}
+    },
+    "focus": {
+      "Node.Action.Succeeded": "{name} 执行成功，任务 ID: {task_id}， 动作 ID: {action_id}"
     }
   },
   "StartUpDownload": {

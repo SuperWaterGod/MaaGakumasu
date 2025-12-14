@@ -21,11 +21,20 @@
             "url": "/deps/tools/interface_config.schema.json"
         }
     ],
+
+    "json.schemaDownload.enable": true,
+    "json.validate.enable": true,
+
     "[json]": {
         "editor.formatOnSave": true,
         "editor.insertSpaces": true,
         "editor.tabSize": 4,
-        "editor.indentSize": "tabSize"
+        "editor.indentSize": "tabSize",
+        "editor.quickSuggestions": {
+            "other": true,
+            "strings": true,
+            "comments": false
+        }
     },
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
