@@ -47,20 +47,20 @@ class WorkChooseAuto(CustomRecognition):
                 if work_reco_detail and work_reco_detail.hit:
                     if len(good_list) > 1:
                         # 笑脸存在且被选中, 选择第二个笑脸
-                        logger.info("info: 已选择笑脸")
+                        logger.info("已选择笑脸")
                         return CustomRecognition.AnalyzeResult(box=good_list[1], detail={"detail": "笑脸存在且被选中，选择第二个笑脸"})
                     else:
                         # 笑脸存在且被选中
-                        logger.info("第二页")
+                        logger.debug("第二页")
                         context.tasker.controller.post_swipe(*swipe_coords, duration=200).wait()
                         time.sleep(0.5)
                 else:
                     # 笑脸存在且未被选中
-                    logger.info("info: 已选择笑脸")
+                    logger.info("已选择笑脸")
                     return CustomRecognition.AnalyzeResult(box=good_list[0], detail={"detail": "笑脸存在且未被选中"})
             else:
                 # 无笑脸
-                logger.info("返回第一页")
+                logger.debug("返回第一页")
                 context.tasker.controller.post_swipe(*swipe_coords, duration=200).wait()
                 time.sleep(0.5)
             return None
@@ -88,14 +88,14 @@ class WorkChooseAuto(CustomRecognition):
             work_reco_detail_ocr = recognize_work(new_affinity_image, max_affinity["box"])
             if work_reco_detail_ocr and work_reco_detail_ocr.hit:
                 # 最高好感已工作
-                logger.info("info: 已选择可选的最高好感")
+                logger.info("已选择可选的最高好感")
                 return CustomRecognition.AnalyzeResult(box=second_affinity["box"], detail={"detail": "第二高好感度"})
             else:
                 # 最高好感未工作
-                logger.info("info: 已选择可选的最高好感")
+                logger.info("已选择可选的最高好感")
                 return CustomRecognition.AnalyzeResult(box=max_affinity["box"], detail={"detail": "最高好感度"})
         else:
-            logger.error("err: OCR识别失败")
+            logger.warning("OCR识别失败")
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "OCR识别失败"})
 
 
@@ -139,3 +139,25 @@ class WorkChooseIdol(CustomRecognition):
 
         logger.warning("未能找到指定Idol")
         return CustomRecognition.AnalyzeResult(box=[0, 0, 0, 0], detail={"detail": "无文字"})
+
+
+
+@AgentServer.custom_recognition("TEST")
+class TEST(CustomRecognition):
+    def analyze(
+            self,
+            context: Context,
+            argv: CustomRecognition.AnalyzeArg,
+    ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
+        reco_detail = context.run_recognition("WorkIdolAffinity", argv.image, pipeline_override={"WorkIdolAffinity": {
+            "recognition": "OCR",
+            "expected": "^(0|[1-9]|1[0-9]|20)\\/20$",
+            "roi": [70, 788, 558, 240]
+        }})
+        print(reco_detail)
+
+        reco_detail = context.run_recognition("WorkChooseGood", argv.image, pipeline_override={"WorkChooseGood": {"roi": [104, 700, 615, 309]}})
+
+        print(reco_detail)
+
+        return CustomRecognition.AnalyzeResult(box=[0, 0, 0, 0], detail={"detail": "test"})

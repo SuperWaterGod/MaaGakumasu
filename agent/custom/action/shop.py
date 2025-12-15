@@ -23,7 +23,7 @@ class ShoppingCoinGachaAuto(CustomAction):
                 "roi": [296, 135, 62, 66]
             }})
         if reco_detail and reco_detail.hit:
-            logger.info("info: 检测到活动扭蛋")
+            logger.info("检测到活动扭蛋")
             has_activity = True
         else:
             has_activity = False
@@ -86,7 +86,7 @@ class ShoppingCoinGachaAuto(CustomAction):
         image = context.tasker.controller.post_screencap().wait().get()
         for key in params.keys():
             if context.tasker.stopping:
-                logger.error("err: 任务中断")
+                logger.error("任务中断")
                 return True
 
             if params[key]["enabled"]:
@@ -101,22 +101,22 @@ class ShoppingCoinGachaAuto(CustomAction):
                     params[key]["count"] = int(reco_detail.best_result.text.replace(",", ""))
                 else:
                     params[key]["count"] = 0
-                logger.info(f"info: {params[key]['name']}扭蛋数量:{params[key]['count']}")
+                logger.info(f"{params[key]['name']}扭蛋数量:{params[key]['count']}")
                 if params[key]["count"] < 10:
-                    logger.info(f"info: 扭蛋数量不足10，跳过购买")
+                    logger.info(f"扭蛋数量不足10，跳过购买")
                     continue
                 if params[key]["page"] > page:
                     page = params[key]["page"]
-                    logger.info(f"切换到第{page}页")
+                    logger.debug(f"切换到第{page}页")
                     context.run_task("ShoppingNextPage")
-                logger.info(f"info: 开始购买 {params[key]['name']}")
+                logger.info(f"开始购买 {params[key]['name']}")
                 context.run_task("ShoppingCoinGachaBuy", pipeline_override={
                     "ShoppingCoinGachaBuy": {
                         "template": f"shopping_gacha_{key}.png"
                     }
                 })
 
-        logger.info("结束扭蛋购买")
+        logger.debug("结束扭蛋购买")
         return True
 
 
@@ -162,20 +162,20 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
             if value:
                 wishlist.append((key, value))
         if not wishlist:
-            logger.info("info: 没有选择任何金币物品，跳过购买")
+            logger.info("没有选择任何金币物品，跳过购买")
             return True
-        logger.info("购买金币物品")
+        logger.debug("购买金币物品")
         max_page = 2
         for i in range(max_page):
-            logger.info(f"第{i + 1}页")
+            logger.debug(f"第{i + 1}页")
             time.sleep(2)
             image = context.tasker.controller.post_screencap().wait().get()
             for key, value in wishlist:
                 if key == "recommend":
-                    logger.info("info: 购买推荐物品")
+                    logger.info("购买推荐物品")
                     file_name = f"shopping_recommend.png"
                 else:
-                    logger.info(f"info: 购买{key}")
+                    logger.info(f"购买{key}")
                     file_name = f"items/{key}.png"
 
                 reco_detail = context.run_recognition(
@@ -188,7 +188,7 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
                         }})
 
                 if context.tasker.stopping:
-                    logger.warning("任务中断")
+                    logger.error("任务中断")
                     return True
 
                 if reco_detail and reco_detail.hit:
@@ -213,7 +213,7 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
                 break
             context.run_task("ShoppingNextPage")
 
-        logger.info("结束购买")
+        logger.debug("结束购买")
         return True
 
 
@@ -238,12 +238,12 @@ class ShoppingDailyExchangeAPAuto(CustomAction):
             if value:
                 wishlist.append((key, value))
         if not wishlist:
-            logger.info("info: 没有选择任何AP物品，跳过购买")
+            logger.info("没有选择任何AP物品，跳过购买")
             return True
-        logger.info("购买AP物品")
+        logger.debug("购买AP物品")
         items_image = context.tasker.controller.post_screencap().wait().get()
         for key, value in wishlist:
-            logger.info(f"info: 购买{key}")
+            logger.info(f"购买{key}")
             file_name = f"items/{key}.png"
             reco_detail = context.run_recognition(
                 "ShoppingDailyExchangeAPRecognition", items_image, pipeline_override={
@@ -255,7 +255,7 @@ class ShoppingDailyExchangeAPAuto(CustomAction):
                     }})
 
             if context.tasker.stopping:
-                logger.warning("任务中断")
+                logger.error("任务中断")
                 return True
 
             if reco_detail and reco_detail.hit:
@@ -274,5 +274,5 @@ class ShoppingDailyExchangeAPAuto(CustomAction):
                 # 未找到该物品
                 pass
 
-        logger.info("结束购买")
+        logger.debug("结束购买")
         return True

@@ -57,7 +57,7 @@ def read_pip_config() -> dict:
         with open(config_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        logger.exception("err: 读取pip配置失败，使用默认配置")
+        logger.exception("读取pip配置失败，使用默认配置")
         return default_config
 
 
@@ -68,7 +68,7 @@ def get_available_mirror(pip_config: dict) -> Optional[str]:
     mirrors = [pip_config.get("mirror")] + pip_config.get("backup_mirrors", [])
     for mirror in mirrors:
         try:
-            logger.info(f"info: 尝试连接镜像源: {mirror}")
+            logger.info(f"尝试连接镜像源: {mirror}")
             response = subprocess.run(
                 [sys.executable, "-m", "pip", "list", "-i", mirror],
                 stdout=subprocess.DEVNULL,
@@ -79,8 +79,8 @@ def get_available_mirror(pip_config: dict) -> Optional[str]:
                 logger.info(f"镜像源可用: {mirror}")
                 return mirror
         except Exception:
-            logger.warning(f"warn: 镜像源不可用: {mirror}")
-    logger.error("err: 所有镜像源都不可用")
+            logger.warning(f"镜像源不可用: {mirror}")
+    logger.error("所有镜像源都不可用")
     return None
 
 
@@ -90,17 +90,17 @@ def install_requirements(req_file="requirements.txt", pip_config=None) -> bool:
     """
     req_path = Path(req_file)
     if not req_path.exists():
-        logger.error(f"err: requirements.txt 不存在")
+        logger.error(f"requirements.txt 不存在")
         return False
 
     # 获取可用的镜像源
     mirror = get_available_mirror(pip_config)
     if not mirror:
-        logger.error("err: 没有可用的镜像源，安装依赖失败")
+        logger.error("没有可用的镜像源，安装依赖失败")
         return False
 
     try:
-        logger.info("info: 开始安装依赖...")
+        logger.info("开始安装依赖...")
         cmd = [
             sys.executable,
             "-m",
@@ -115,10 +115,10 @@ def install_requirements(req_file="requirements.txt", pip_config=None) -> bool:
         ]
 
         subprocess.check_call(cmd)
-        logger.info("info: 依赖安装完成")
+        logger.info("依赖安装完成")
         return True
     except Exception as e:
-        logger.exception("err: pip 安装依赖时出错")
+        logger.exception("pip 安装依赖时出错")
         return False
 
 
@@ -128,11 +128,11 @@ def update_pip(pip_config=None):
     """
     mirror = get_available_mirror(pip_config)
     if not mirror:
-        logger.error("err: 没有可用的镜像源，无法更新 pip")
+        logger.error("没有可用的镜像源，无法更新 pip")
         return False
 
     try:
-        logger.info("info: 正在更新 pip...")
+        logger.info("正在更新 pip...")
         cmd = [
             sys.executable,
             "-m",
@@ -146,10 +146,10 @@ def update_pip(pip_config=None):
         ]
 
         subprocess.check_call(cmd)
-        logger.info("info: pip 更新成功")
+        logger.info("pip 更新成功")
         return True
     except Exception as e:
-        logger.exception("err: 更新 pip 时出错")
+        logger.exception("更新 pip 时出错")
         return False
 
 
@@ -163,24 +163,24 @@ def check_and_install_dependencies():
 
     if enable_pip_update:
         if not update_pip(pip_config=pip_config):
-            logger.warning("warm: pip 更新失败，继续尝试安装依赖...")
+            logger.warning("pip 更新失败，继续尝试安装依赖...")
 
     current_version = read_interface_version()
     last_version = pip_config.get("last_version", "unknown")
 
-    logger.info(f"info: 启用 pip 安装依赖: {enable_pip_install}")
-    logger.info(f"info: 当前版本: {current_version}, 上次运行版本: {last_version}")
+    logger.info(f"启用 pip 安装依赖: {enable_pip_install}")
+    logger.info(f"当前版本: {current_version}, 上次运行版本: {last_version}")
 
     if enable_pip_install and (
             current_version != last_version or current_version == "unknown"
     ):
         if install_requirements(pip_config=pip_config):
             update_pip_config(current_version)
-            logger.info("info: 依赖检查完成")
+            logger.info("依赖检查完成")
         else:
-            logger.warning("warn: 依赖安装失败，程序可能无法正常运行")
+            logger.warning("依赖安装失败，程序可能无法正常运行")
     else:
-        logger.info("info: 跳过依赖安装")
+        logger.info("跳过依赖安装")
 
 
 def read_interface_version(interface_file="./interface.json") -> str:
@@ -190,7 +190,7 @@ def read_interface_version(interface_file="./interface.json") -> str:
     interface_path = Path(interface_file)
 
     if not interface_path.exists():
-        logger.warning("warn: interface.json不存在")
+        logger.warning("interface.json不存在")
         return "unknown"
 
     try:
@@ -198,7 +198,7 @@ def read_interface_version(interface_file="./interface.json") -> str:
             interface_data = json.load(f)
             return interface_data.get("version", "unknown")
     except Exception as e:
-        logger.exception("err: 读取interface.json版本失败")
+        logger.exception("读取interface.json版本失败")
         return "unknown"
 
 
@@ -215,7 +215,7 @@ def update_pip_config(version) -> bool:
             json.dump(config, f, indent=4)
         return True
     except Exception as e:
-        logger.exception("err: 更新pip配置失败")
+        logger.exception("更新pip配置失败")
         return False
 
 
@@ -232,12 +232,12 @@ def agent():
         socket_id = sys.argv[-1]
 
         AgentServer.start_up(socket_id)
-        logger.info("info: AgentServer 启动")
+        logger.info("AgentServer 启动")
         AgentServer.join()
         AgentServer.shut_down()
-        logger.info("info: AgentServer 关闭")
+        logger.info("AgentServer 关闭")
     except Exception as e:
-        logger.exception("err: Agent 运行过程中发生异常")
+        logger.exception("Agent 运行过程中发生异常")
         raise
 
 
