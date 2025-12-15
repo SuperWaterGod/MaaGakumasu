@@ -83,7 +83,7 @@
       "param": {}
     },
     "focus": {
-      "Node.Action.Succeeded": "{name} 执行成功，任务 ID: {task_id}， 动作 ID: {action_id}"
+      "Node.Action.Succeeded": "游戏启动成功"
     }
   },
   "StartUpDownload": {
@@ -99,7 +99,10 @@
     },
     "next": [
       "StartUpInitCounter"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "开始下载更新"
+    }
   },
   "StartUpLoginBonus": {
     "recognition": {
@@ -132,7 +135,10 @@
     },
     "next": [
       "StartUpCloseButton"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "好友点数获取成功"
+    }
   },
   "StartUpCloseButton": {
     "recognition": {
