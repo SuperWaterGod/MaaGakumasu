@@ -1,125 +1,89 @@
 import os
 import sys
-from loguru import logger
+
+try:
+    from loguru import logger as _logger
 
 
-class LoggerWithPrint:
-    """封装loguru logger"""
-
-    # level映射关系: 格式化模板，{message}会被替换为实际消息
-    LEVEL_MAP = {
-        "TRACE": "trace: {message}",
-        "DEBUG": "debug: {message}",
-        "INFO": "info: {message}",
-        "SUCCESS": "info: [color:green]{message}[/color]",
-        "WARNING": "warn: {message}",
-        "ERROR": "err: {message}",
-        "CRITICAL": "critical: {message}",
-    }
-
-    def __init__(self, log_dir="debug/custom", print_levels=None):
-        """
-        初始化Logger
+    def setup_logger(log_dir="debug/custom", console_level="INFO"):
+        """设置 loguru logger
 
         Args:
             log_dir: 日志文件目录
-            print_levels: 需要print的level列表，None表示全部打印
-                         例如: ["INFO", "ERROR"] 只打印info和error
-                         空列表 [] 表示不打印任何level
+            console_level: 控制台输出等级 (DEBUG, INFO, WARNING, ERROR)
         """
-        self.logger = self._setup_logger(log_dir)
-        # 如果为None，默认打印所有level
-        self.print_levels = set(lvl.upper() for lvl in print_levels) if print_levels is not None else None
-
-    @staticmethod
-    def _setup_logger(log_dir):
         os.makedirs(log_dir, exist_ok=True)
+        _logger.remove()
 
-        logger.remove()
+        # 定义日志级别的简短格式
+        def format_level(record):
+            level_map = {
+                "INFO": "info",
+                "ERROR": "err",
+                "WARNING": "warn",
+                "DEBUG": "debug",
+                "CRITICAL": "critical",
+                "SUCCESS": "success",
+                "TRACE": "trace",
+            }
+            record["extra"]["level_short"] = level_map.get(
+                record["level"].name, record["level"].name.lower()
+            )
+            return True
 
-        logger.add(
+        _logger.add(
             sys.stderr,
-            format="[<level>{level}</level>] <level>{message}</level>",
+            format="<level>{extra[level_short]}</level>:<level>{message}</level>",
             colorize=True,
-            level="INFO",
+            level=console_level,
+            filter=format_level,
         )
-
-        logger.add(
+        _logger.add(
             f"{log_dir}/{{time:YYYY-MM-DD}}.log",
-            rotation="00:00",
+            rotation="00:00",  # midnight
             retention="2 weeks",
             compression="zip",
             level="DEBUG",
             format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} | {message}",
             encoding="utf-8",
             enqueue=True,
+            backtrace=True,  # 包含完整的异常回溯信息
+            diagnose=True,  # 包含变量值信息
         )
-
-        return logger
-
-    def _log_with_print(self, level, message):
-        """内部方法:记录日志并打印格式化信息"""
-        # 获取对应的日志方法
-        log_func = getattr(self.logger, level.lower())
-        log_func(message)
-
-        # 检查是否需要打印此level
-        if self.print_levels is None or level.upper() in self.print_levels:
-            # 获取格式化模板并替换message
-            template = self.LEVEL_MAP.get(level.upper(), f"{level.lower()}: {{message}}")
-            print_msg = template.format(message=message)
-
-            # 打印格式化后的信息
-            print(print_msg)
-
-    def set_print_levels(self, levels):
-        """
-        动态设置需要print的level
-
-        Args:
-            levels: level列表，None表示全部打印，[]表示不打印
-                   例如: ["INFO", "ERROR"]
-        """
-        self.print_levels = set(lvl.upper() for lvl in levels) if levels is not None else None
-
-    def enable_print(self, level):
-        """启用某个level的print"""
-        if self.print_levels is None:
-            self.print_levels = set(self.LEVEL_MAP.keys())
-        self.print_levels.add(level.upper())
-
-    def disable_print(self, level):
-        """禁用某个level的print"""
-        if self.print_levels is None:
-            self.print_levels = set(self.LEVEL_MAP.keys())
-        self.print_levels.discard(level.upper())
-
-    def trace(self, message):
-        self._log_with_print("TRACE", message)
-
-    def debug(self, message):
-        self._log_with_print("DEBUG", message)
-
-    def info(self, message):
-        self._log_with_print("INFO", message)
-
-    def success(self, message):
-        self._log_with_print("SUCCESS", message)
-
-    def warning(self, message):
-        self._log_with_print("WARNING", message)
-
-    def error(self, message):
-        self._log_with_print("ERROR", message)
-
-    def critical(self, message):
-        self._log_with_print("CRITICAL", message)
-
-    # 提供原始logger的访问(如果需要使用其他高级特性)
-    @property
-    def raw_logger(self):
-        return self.logger
+        return _logger
 
 
-# 创建全局logger实例
-custom_logger = LoggerWithPrint(print_levels=["INFO", "ERROR", "SUCCESS", "WARNING", "CRITICAL"])
+    def change_console_level(level="DEBUG"):
+        """动态修改控制台日志等级"""
+        setup_logger(console_level=level)
+        _logger.info(f"控制台日志等级已更改为: {level}")
+
+
+    logger = setup_logger()
+except ImportError:
+    import logging
+
+
+    class ShortLevelFormatter(logging.Formatter):
+        """自定义 Formatter，使用简短的日志级别名称"""
+
+        level_map = {
+            "INFO": "info",
+            "ERROR": "err",
+            "WARNING": "warn",
+            "DEBUG": "debug",
+            "CRITICAL": "critical",
+        }
+
+        def format(self, record):
+            record.level_short = self.level_map.get(
+                record.levelname, record.levelname.lower()
+            )
+            return super().format(record)
+
+
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(ShortLevelFormatter("%(level_short)s:%(message)s"))
+    logging.root.addHandler(handler)
+    logging.root.setLevel(logging.INFO)
+    logger = logging
