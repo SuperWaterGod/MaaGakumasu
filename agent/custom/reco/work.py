@@ -141,7 +141,6 @@ class WorkChooseIdol(CustomRecognition):
         return CustomRecognition.AnalyzeResult(box=[0, 0, 0, 0], detail={"detail": "无文字"})
 
 
-
 @AgentServer.custom_recognition("TEST")
 class TEST(CustomRecognition):
     def analyze(

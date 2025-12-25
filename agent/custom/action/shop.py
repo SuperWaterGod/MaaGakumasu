@@ -95,10 +95,11 @@ class ShoppingCoinGachaAuto(CustomAction):
                     pipeline_override={"ShoppingCoinGachaCount": {
                         "recognition": "OCR",
                         "expected": "^\\d{1,3}(,\\d{3})*$",
-                        "roi": params[key]["roi"]
+                        "roi": params[key]["roi"],
+                        "order_by": "Horizontal"
                     }})
                 if reco_detail and reco_detail.hit:
-                    params[key]["count"] = int(reco_detail.best_result.text.replace(",", ""))
+                    params[key]["count"] = int("".join([item.text for item in reco_detail.all_results]).replace(",", ""))
                 else:
                     params[key]["count"] = 0
                 logger.info(f"{params[key]['name']}扭蛋数量:{params[key]['count']}")
