@@ -55,6 +55,6 @@
         "duration": 2000
       }
     },
-    "post_wait_freezes": 200
+    "post_wait_freezes": 500
   }
 }

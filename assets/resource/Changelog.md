@@ -1,6 +1,12 @@
-# v1.1.0 更新公告
+# v1.2.0 更新公告
 
-适配MaaFW 5.2.0 版本，优化用户体验。
+* 适配MaaFW 5.2.0 版本，优化用户体验。
+
+* 提升系统稳定性
+
+> [!IMPORTANT]
+> 
+> 如果遇到MAG无法正确点击屏幕的问题，请尝试在MaaFW设置中将触控模式换成"MiniTouch(旧)"
 
 请详细阅读[官网首页](https://github.com/SuperWaterGod/MaaGakumasu)的使用说明及注意事项
 

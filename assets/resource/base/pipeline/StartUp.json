@@ -23,6 +23,7 @@
         "package": "com.bandainamcoent.idolmaster_gakuen"
       }
     },
+    "post_wait_freezes": 500,
     "next": [
       "StartUpTestScreen"
     ]
@@ -42,6 +43,7 @@
       "[JumpBack]StartUpLoginBonus",
       "[JumpBack]StartUpGetFriendPoints",
       "[JumpBack]StartUpCloseRoundButton",
+      "[JumpBack]StartUpScreenRotation",
       "[JumpBack]ClickCenter"
     ]
   },
@@ -185,6 +187,24 @@
           "text": "主界面"
         }
       }
+    }
+  },
+  "StartUpScreenRotation": {
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "ScreenRotateCheck"
+      }
+    },
+    "action": {
+      "type": "StartApp",
+      "param": {
+        "package": "com.bandainamcoent.idolmaster_gakuen"
+      }
+    },
+    "post_wait_freezes": 500,
+    "focus": {
+      "Node.Recognition.Succeeded": "游戏启动失败，尝试重新启动"
     }
   }
 }

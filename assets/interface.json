@@ -1,7 +1,7 @@
 {
   "interface_version": 2,
   "name": "MaaGakumasu",
-  "version": "v1.1.0",
+  "version": "v1.2.0",
   "mirrorchyan_rid": "MaaGakumasu",
   "mirrorchyan_multiplatform": true,
   "github": "https://github.com/SuperWaterGod/MaaGakumasu",
@@ -19,14 +19,14 @@
     {
       "name": "官服",
       "path": [
-        "{PROJECT_DIR}/resource/base"
+        "./resource/base"
       ]
     },
     {
       "name": "kuyo",
       "path": [
-        "{PROJECT_DIR}/resource/base",
-        "{PROJECT_DIR}/resource/kuyo"
+        "./resource/base",
+        "./resource/kuyo"
       ]
     }
   ],
@@ -34,7 +34,7 @@
     "child_exec": "python",
     "child_args": [
       "-u",
-      "{PROJECT_DIR}/agent/main.py"
+      "./agent/main.py"
     ]
   },
   "task": [

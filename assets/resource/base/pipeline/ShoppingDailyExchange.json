@@ -141,9 +141,6 @@
     ]
   },
   "ShoppingDailyExchangeBuy": {
-    "next": [
-      "[JumpBack]CloseButton"
-    ],
     "recognition": {
       "type": "TemplateMatch",
       "param": {
@@ -157,6 +154,7 @@
       "type": "Click",
       "param": {}
     },
+    "next": [],
     "post_wait_freezes": 500
   },
   "ShoppingDailyExchangeAPController": {
