@@ -72,6 +72,15 @@ jobs:
         with:
           submodules: true
 
+      - name: Download MFAAvalonia
+        uses: robinraju/release-downloader@v1
+        with:
+          repository: SweetSmellFox/MFAAvalonia
+          fileName: "MFAAvalonia-*-win-x64*"
+          latest: true
+          out-file-path: "install"
+          extract: true
+
       - name: Download MaaFramework
         uses: robinraju/release-downloader@v1
         with:
@@ -82,15 +91,6 @@ jobs:
           out-file-path: "deps"
           extract: true
 
-      - name: Download MFAAvalonia  
-        uses: robinraju/release-downloader@v1  
-        with:
-          repository: SweetSmellFox/MFAAvalonia
-          fileName: "MFAAvalonia-*-win-x64*"
-          latest: true
-          out-file-path: "MFA"
-          extract: true
-
       - name: Setup Embed Python
         shell: powershell
         run: |
@@ -99,22 +99,21 @@ jobs:
       - name: Install
         shell: bash
         run: |
-          python ./tools/install.py ${{ needs.meta.outputs.tag }}
-
-          if [ -d "MFA" ]; then
-            echo "Copying MFA files to install directory..."
-            mkdir -p install
-
-            # 直接将MFA目录的内容复制到install根目录
-            cp -r MFA/* install/
-
-            # 删除不需要的zip文件
-            echo "Cleaning up zip files..."
-            find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
-            echo "MFA files copied and cleaned successfully."
+          # 确定平台标签
+          if [ "${{ matrix.arch }}" == "x86_64" ]; then
+            platform_tag="win-x64"
           else
-            echo "MFA directory not found, skipping copy."
+            platform_tag="win-arm64"
           fi
+          
+          echo "Building for platform: ${platform_tag}"
+          
+          # 运行安装脚本，传入版本号和平台标签
+          python ./tools/install.py ${{ needs.meta.outputs.tag }} ${platform_tag}
+
+          # 清理zip文件
+          echo "Cleaning up zip files..."
+          find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
 
           # 复制logo.ico到Assets文件夹
           if [ -f "logo.ico" ]; then
@@ -129,7 +128,6 @@ jobs:
           # 复制LICENSE到根目录
           if [ -f "LICENSE" ]; then
             echo "Copying LICENSE to root folder..."
-            mkdir -p install
             cp LICENSE install/
             echo "LICENSE copied to install/"
           else
@@ -155,6 +153,15 @@ jobs:
         with:
           submodules: true
 
+      - name: Download MFAAvalonia
+        uses: robinraju/release-downloader@v1
+        with:
+          repository: SweetSmellFox/MFAAvalonia
+          fileName: "MFAAvalonia-*-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'osx' }}-${{ matrix.arch == 'x86_64' && 'x64' || 'arm64' }}*"
+          latest: true
+          out-file-path: "install"
+          extract: true
+
       - name: Download MaaFramework
         uses: robinraju/release-downloader@v1
         with:
@@ -165,37 +172,31 @@ jobs:
           out-file-path: "deps"
           extract: true
 
-      - name: Download MFAAvalonia  
-        uses: robinraju/release-downloader@v1  
-        with:
-          repository: SweetSmellFox/MFAAvalonia
-          fileName: "MFAAvalonia-*-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'osx' }}-${{ matrix.arch == 'x86_64' && 'x64' || 'arm64' }}*"
-          latest: true
-          out-file-path: "MFA"
-          extract: true
-
-
       - name: Install
         shell: bash
         run: |
-          python ./tools/install.py ${{ needs.meta.outputs.tag }}
-
-          if [[ "${{ matrix.os }}" != "android" ]]; then
-            if [ -d "MFA" ]; then
-              echo "Copying MFA files to install directory..."
-              mkdir -p install
-
-              # 直接将MFA目录的内容复制到install根目录
-              # 使用rsync但去掉--ignore-existing，并排除zip文件
-              rsync -av --exclude="*.zip" MFA/ install/
-
-              echo "MFA files copied successfully."
-            else
-              echo "MFA directory not found, skipping copy."
-            fi
+          # 确定平台标签
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            os_name="linux"
           else
-            echo "Skipping copy MFA for Android."
+            os_name="osx"
           fi
+          
+          if [ "${{ matrix.arch }}" == "x86_64" ]; then
+            arch_name="x64"
+          else
+            arch_name="arm64"
+          fi
+          
+          platform_tag="${os_name}-${arch_name}"
+          echo "Building for platform: ${platform_tag}"
+          
+          # 运行安装脚本，传入版本号和平台标签
+          python ./tools/install.py ${{ needs.meta.outputs.tag }} ${platform_tag}
+
+          # 清理zip文件
+          echo "Cleaning up zip files..."
+          find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
 
           # 复制logo.ico到Assets文件夹
           if [ -f "logo.ico" ]; then
@@ -210,7 +211,6 @@ jobs:
           # 复制LICENSE到根目录
           if [ -f "LICENSE" ]; then
             echo "Copying LICENSE to root folder..."
-            mkdir -p install
             cp LICENSE install/
             echo "LICENSE copied to install/"
           else

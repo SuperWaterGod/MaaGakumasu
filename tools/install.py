@@ -15,12 +15,24 @@ from configure import configure_ocr_model
 working_dir = Path(__file__).parent.parent
 install_path = working_dir / Path("install")
 version = len(sys.argv) > 1 and sys.argv[1] or "v0.0.1"
+platform_tag = len(sys.argv) > 2 and sys.argv[2] or ""
 
 
-def install_deps():
+def install_deps(platform: str):
+    """安装 MaaFramework 依赖到对应架构路径
+
+    Args:
+        platform: 平台标签，如 win-x64, linux-arm64, osx-arm64
+    """
+    if not platform:
+        raise ValueError("platform_tag is required")
+
+    print(f"Installing MaaFramework dependencies for platform: {platform}")
+
+    # 将 Framework 的库文件复制到对应平台的 runtimes 目录
     shutil.copytree(
         working_dir / "deps" / "bin",
-        install_path,
+        install_path / "runtimes" / platform / "native",
         ignore=shutil.ignore_patterns(
             "*MaaDbgControlUnit*",
             "*MaaThriftControlUnit*",
@@ -30,11 +42,15 @@ def install_deps():
         ),
         dirs_exist_ok=True,
     )
+
+    # 复制 MaaAgentBinary
     shutil.copytree(
         working_dir / "deps" / "share" / "MaaAgentBinary",
         install_path / "MaaAgentBinary",
         dirs_exist_ok=True,
     )
+
+    print(f"MaaFramework dependencies installed to runtimes/{platform}/native")
 
 
 def install_resource():
@@ -84,20 +100,20 @@ def install_agent():
         interface = json.load(f)
 
     if sys.platform.startswith("win"):
-        interface["agent"]["child_exec"] = r"{PROJECT_DIR}/python/python.exe"
+        interface["agent"]["child_exec"] = r"./python/python.exe"
     elif sys.platform.startswith("darwin"):
-        interface["agent"]["child_exec"] = r"{PROJECT_DIR}/python/bin/python3"
+        interface["agent"]["child_exec"] = r"./python/bin/python3"
     elif sys.platform.startswith("linux"):
         interface["agent"]["child_exec"] = r"python3"
 
-    interface["agent"]["child_args"] = [r"{PROJECT_DIR}/agent/main.py", "-u"]
+    interface["agent"]["child_args"] = ["-u", r"./agent/main.py"]
 
     with open(install_path / "interface.json", "w", encoding="utf-8") as f:
         json.dump(interface, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == "__main__":
-    install_deps()
+    install_deps(platform_tag)
     install_resource()
     install_chores()
     install_agent()
