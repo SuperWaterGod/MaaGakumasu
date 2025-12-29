@@ -19,17 +19,17 @@ platform_tag = len(sys.argv) > 2 and sys.argv[2] or ""
 
 
 def install_deps(platform: str):
-    """°²×° MaaFramework ÒÀÀµµ½¶ÔÓ¦¼Ü¹¹Â·¾¶
+    """å®‰è£… MaaFramework ä¾èµ–åˆ°å¯¹åº”æ¶æ„è·¯å¾„
 
     Args:
-        platform: Æ½Ì¨±êÇ©£¬Èç win-x64, linux-arm64, osx-arm64
+        platform: å¹³å°æ ‡ç­¾ï¼Œå¦‚ win-x64, linux-arm64, osx-arm64
     """
     if not platform:
         raise ValueError("platform_tag is required")
 
     print(f"Installing MaaFramework dependencies for platform: {platform}")
 
-    # ½« Framework µÄ¿âÎÄ¼ş¸´ÖÆµ½¶ÔÓ¦Æ½Ì¨µÄ runtimes Ä¿Â¼
+    # å°† Framework çš„åº“æ–‡ä»¶å¤åˆ¶åˆ°å¯¹åº”å¹³å°çš„ runtimes ç›®å½•
     shutil.copytree(
         working_dir / "deps" / "bin",
         install_path / "runtimes" / platform / "native",
@@ -43,7 +43,7 @@ def install_deps(platform: str):
         dirs_exist_ok=True,
     )
 
-    # ¸´ÖÆ MaaAgentBinary
+    # å¤åˆ¶ MaaAgentBinary
     shutil.copytree(
         working_dir / "deps" / "share" / "MaaAgentBinary",
         install_path / "MaaAgentBinary",
