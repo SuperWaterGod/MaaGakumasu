@@ -1,2 +1,2 @@
-maafw>=4.0.0
+maafw==5.2.6
 loguru

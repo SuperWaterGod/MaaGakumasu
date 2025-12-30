@@ -34,7 +34,7 @@
     "child_exec": "python",
     "child_args": [
       "-u",
-      "./agent/main.py"
+      "./../agent/main.py"
     ]
   },
   "task": [
