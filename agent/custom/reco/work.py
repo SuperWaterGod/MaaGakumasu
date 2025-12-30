@@ -53,7 +53,7 @@ class WorkChooseAuto(CustomRecognition):
                         # 笑脸存在且被选中
                         logger.debug("第二页")
                         context.tasker.controller.post_swipe(*swipe_coords, duration=200).wait()
-                        time.sleep(0.5)
+                        time.sleep(1)
                 else:
                     # 笑脸存在且未被选中
                     logger.info("已选择笑脸")
@@ -62,7 +62,7 @@ class WorkChooseAuto(CustomRecognition):
                 # 无笑脸
                 logger.debug("返回第一页")
                 context.tasker.controller.post_swipe(*swipe_coords, duration=200).wait()
-                time.sleep(0.5)
+                time.sleep(1)
             return None
 
         # 处理第一页笑脸
