@@ -10,8 +10,6 @@ import sys
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(script_dir)
 
-from configure import configure_ocr_model
-
 working_dir = Path(__file__).parent.parent
 install_path = working_dir / Path("install")
 version = len(sys.argv) > 1 and sys.argv[1] or "v0.0.1"
@@ -54,7 +52,6 @@ def install_deps(platform: str):
 
 
 def install_resource():
-    configure_ocr_model()
 
     shutil.copytree(
         working_dir / "assets" / "resource",
