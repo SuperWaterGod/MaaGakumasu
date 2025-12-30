@@ -1,34 +1,79 @@
 {
   "StartUp":{
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"DoNothing",
+      "param":{ }
+    },
     "post_wait_freezes":300,
     "next":[
       "StartKuyo"
     ]
   },
   "StartKuyo":{
-    "action":"StartApp",
-    "package":"org.kuyo.game",
-    "next":"StartKuyoSpeedup"
+    "recognition":{
+      "type":"DirectHit",
+      "param":{ }
+    },
+    "action":{
+      "type":"StartApp",
+      "param":{
+        "package":"org.kuyo.game"
+      }
+    },
+    "next":[
+      "StartKuyoSpeedup"
+    ]
   },
   "StartKuyoSpeedup":{
-    "recognition":"TemplateMatch",
-    "template":"kuyo_speedup.png",
-    "threshold": 0.9,
-    "action":"Click",
-    "next":"StartKuyoClick"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"kuyo_speedup.png",
+        "threshold":0.9
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "next":[
+      "StartKuyoClick"
+    ]
   },
   "StartKuyoClick":{
-    "recognition":"TemplateMatch",
-    "template":"kuyo_game.png",
-    "action":"Click",
-    "next":"StartKuyoStart"
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"kuyo_game.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "next":[
+      "StartKuyoStart"
+    ]
   },
   "StartKuyoStart":{
-    "recognition":"TemplateMatch",
-    "template":"kuyo_start.png",
-    "action":"Click",
-    "next":"HomeFlag",
-    "timeout": 600000,
+    "recognition":{
+      "type":"TemplateMatch",
+      "param":{
+        "template":"kuyo_start.png"
+      }
+    },
+    "action":{
+      "type":"Click",
+      "param":{ }
+    },
+    "timeout":600000,
+    "next":[
+      "HomeFlag"
+    ],
     "interrupt":[
       "Download",
       "LoginBonus",
