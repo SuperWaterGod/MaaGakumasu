@@ -170,6 +170,13 @@ jobs:
           out-file-path: "deps"
           extract: true
 
+      - name: Setup Embed Python (macOS)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          chmod +x ./tools/ci/setup_embed_python.sh
+          ./tools/ci/setup_embed_python.sh ${{ matrix.arch }}
+
       - name: Install
         shell: bash
         run: |

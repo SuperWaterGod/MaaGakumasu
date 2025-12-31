@@ -113,12 +113,13 @@
 
 - 若使用 Intel 处理器，请下载 `MaaGakumasu-macos-x86_64-vXXX.zip`
 - 若使用 M1, M2 等 arm 处理器，请下载 `MaaGakumasu-macos-aarch64-vXXX.zip`
+- 压缩包已自带 `Python 3.12.9` 环境，无需额外安装。
 - 解压缩之后，右击文件夹，点击“新建位于文件夹位置的终端窗口”
 - 在终端窗口内逐行输入以下指令
 
   ```
-  chmod a+x MaaGakumasu
-  ./MaaGakumasu
+  chmod a+x MFAAvalonia
+  ./MFAAvalonia
   ```
   > 注：需要安装.NET 运行库（使用上面的命令启动失败时会直接返回下载地址）
 
