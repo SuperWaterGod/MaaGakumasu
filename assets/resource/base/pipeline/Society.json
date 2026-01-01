@@ -191,7 +191,10 @@
     "next": [
       "SocietyRequest",
       "BackHome"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "[color:blue]社团捐赠物品已完成[/color]"
+    }
   },
   "SocietyRequest": {
     "recognition": {
@@ -255,7 +258,10 @@
     "next": [
       "SocietyRequestConfirm",
       "BackHome"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "[color:green]已请求物品[/color]"
+    }
   },
   "SocietyRequestsAlready": {
     "recognition": {

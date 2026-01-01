@@ -85,7 +85,7 @@
       "param": {}
     },
     "focus": {
-      "Node.Action.Succeeded": "游戏启动成功"
+      "Node.Action.Succeeded": "[color:green]游戏启动成功[/color]"
     }
   },
   "StartUpDownload": {
@@ -103,7 +103,7 @@
       "StartUpInitCounter"
     ],
     "focus": {
-      "Node.Action.Succeeded": "开始下载更新"
+      "Node.Action.Succeeded": "[color:blue]开始下载更新[/color]"
     }
   },
   "StartUpLoginBonus": {
@@ -139,7 +139,7 @@
       "StartUpCloseButton"
     ],
     "focus": {
-      "Node.Action.Succeeded": "好友点数获取成功"
+      "Node.Action.Succeeded": "[color:blue]好友点数获取成功[/color]"
     }
   },
   "StartUpCloseButton": {
@@ -204,7 +204,7 @@
     },
     "post_wait_freezes": 500,
     "focus": {
-      "Node.Recognition.Succeeded": "游戏启动失败，尝试重新启动"
+      "Node.Recognition.Succeeded": "[color:red]游戏启动失败，尝试重新启动[/color]"
     }
   }
 }

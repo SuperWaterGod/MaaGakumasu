@@ -122,7 +122,10 @@
     "next": [
       "ShoppingFreeRefresh",
       "ShoppingDailyExchangeAPController"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "[color:blue]金币兑换已完成[/color]"
+    }
   },
   "ShoppingFreeRefresh": {
     "recognition": {
@@ -138,7 +141,10 @@
     "enabled": true,
     "next": [
       "ShoppingDailyExchangeMoney"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "免费刷新已使用"
+    }
   },
   "ShoppingDailyExchangeBuy": {
     "recognition": {
@@ -202,7 +208,10 @@
     },
     "next": [
       "BackHome"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "[color:blue]AP兑换已完成[/color]"
+    }
   },
   "ShoppingDailyExchangeItemsRecommend": {
     "recognition": {

@@ -90,7 +90,10 @@
     },
     "next": [
       "BackHome"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "[color:blue]扭蛋已兑换[/color]"
+    }
   },
   "ShoppingCoinGachaBuy": {
     "recognition": {

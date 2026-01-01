@@ -82,7 +82,7 @@
       "HomeFlag"
     ],
     "focus": {
-      "Node.Action.Succeeded": "活动费用已领取"
+      "Node.Action.Succeeded": "[color:green]活动费用已领取[/color]"
     }
   },
   "ActivityWithoutFee": {
@@ -100,7 +100,7 @@
       "HomeFlag"
     ],
     "focus": {
-      "Node.Action.Succeeded": "无活动费用可领取"
+      "Node.Action.Succeeded": "[color:orange]无活动费用可领取[/color]"
     }
   }
 }

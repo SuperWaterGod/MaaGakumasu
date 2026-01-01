@@ -81,7 +81,10 @@
       "WorkFinished",
       "WorkStartChooseShow",
       "WorkStartChooseLive"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "工作报酬已获得"
+    }
   },
   "WorkStartChooseShow": {
     "recognition": {
@@ -159,13 +162,14 @@
       "type": "Click",
       "param": {}
     },
+    "pre_wait_freezes": 300,
+    "post_wait_freezes": 200,
     "next": [
       "WorkChooseShowConfirm"
     ],
     "focus": {
-      "Node.Recognition.Starting": "{name} 开始识别",
-      "Node.Recognition.Succeeded": "{name} 识别成功",
-      "Node.Recognition.Failed": "err:{name} 识别失败"
+      "Node.Recognition.Succeeded": "[color:blue]演出角色识别成功[/color]",
+      "Node.Recognition.Failed": "[color:red]演出角色识别失败[/color]"
     }
   },
   "WorkChooseLive": {
@@ -180,13 +184,14 @@
       "type": "Click",
       "param": {}
     },
+    "pre_wait_freezes": 300,
+    "post_wait_freezes": 200,
     "next": [
       "WorkChooseLiveConfirm"
     ],
     "focus": {
-      "Node.Recognition.Starting": "{name} 开始识别",
-      "Node.Recognition.Succeeded": "{name} 识别成功",
-      "Node.Recognition.Failed": "err:{name} 识别失败"
+      "Node.Recognition.Succeeded": "[color:blue]直播角色识别成功[/color]",
+      "Node.Recognition.Failed": "[color:red]直播角色识别失败[/color]"
     }
   },
   "WorkChooseShowConfirm": {
@@ -315,7 +320,10 @@
       "WorkStartChooseShow",
       "WorkStartChooseLive",
       "BackHome"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "[color:blue]开始工作[/color]"
+    }
   },
   "WorkChooseGood": {
     "recognition": {
@@ -339,9 +347,17 @@
   },
   "WorkAlready": {
     "recognition": {
-      "type": "FeatureMatch",
+      "type": "OCR",
       "param": {
-        "template": "work_already.png"
+        "expected": [
+          "お仕事中"
+        ],
+        "replace": [
+          [
+            "书",
+            "お"
+          ]
+        ]
       }
     },
     "action": {

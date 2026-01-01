@@ -116,7 +116,10 @@
     "next": [
       "AwardBackHome",
       "[JumpBack]CloseButton"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "[color:green]礼物已领取[/color]"
+    }
   },
   "AwardBackHome": {
     "recognition": {
@@ -233,7 +236,10 @@
       "AwardMissionChoose",
       "BackHome",
       "[JumpBack]AwardMissionUp"
-    ]
+    ],
+    "focus": {
+      "Node.Action.Succeeded": "[color:green]奖励已领取[/color]"
+    }
   },
   "AwardMissionUp": {
     "recognition": {
