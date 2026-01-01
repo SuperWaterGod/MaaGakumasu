@@ -139,24 +139,3 @@ class WorkChooseIdol(CustomRecognition):
 
         logger.warning("未能找到指定Idol")
         return CustomRecognition.AnalyzeResult(box=[0, 0, 0, 0], detail={"detail": "无文字"})
-
-
-@AgentServer.custom_recognition("TEST")
-class TEST(CustomRecognition):
-    def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
-    ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
-        reco_detail = context.run_recognition("WorkIdolAffinity", argv.image, pipeline_override={"WorkIdolAffinity": {
-            "recognition": "OCR",
-            "expected": "^(0|[1-9]|1[0-9]|20)\\/20$",
-            "roi": [70, 788, 558, 240]
-        }})
-        print(reco_detail)
-
-        reco_detail = context.run_recognition("WorkChooseGood", argv.image, pipeline_override={"WorkChooseGood": {"roi": [104, 700, 615, 309]}})
-
-        print(reco_detail)
-
-        return CustomRecognition.AnalyzeResult(box=[0, 0, 0, 0], detail={"detail": "test"})

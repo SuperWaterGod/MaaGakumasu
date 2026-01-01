@@ -68,6 +68,7 @@
       "type": "Click",
       "param": {}
     },
+    "post_wait_freezes": 200,
     "next": [
       "ChallengeSelector",
       "[JumpBack]ClickCenter"
@@ -86,6 +87,7 @@
       "ChallengeChoose",
       "ChallengeRunOut",
       "ChallengeReadyPeriod",
+      "[JumpBack]ChallengeError",
       "[JumpBack]ClickCenter"
     ]
   },
@@ -138,14 +140,21 @@
       "param": {}
     },
     "next": [
-      "ChallengeReady"
+      "ChallengeReady",
+      "[JumpBack]ChallengeUnformation"
     ]
   },
   "ChallengeReady": {
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "challenge_ready.png"
+        "template": "challenge_ready.png",
+        "roi": [
+          220,
+          1110,
+          250,
+          100
+        ]
       }
     },
     "action": {
@@ -223,9 +232,7 @@
       "param": {}
     },
     "next": [
-      "ChallengeSelector",
-      "[JumpBack]ChallengeAward",
-      "[JumpBack]ClickCenter"
+      "ChallengeSelector"
     ]
   },
   "ChallengeRunOut": {
@@ -241,13 +248,20 @@
     },
     "next": [
       "BackHome"
-    ]
+    ],
+    "focus": {
+      "Node.Recognition.Succeeded": "今日挑战次数已用完"
+    }
   },
-  "ChallengeAward": {
+  "ChallengeError": {
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "challenge_award.png"
+        "template": [
+          "challenge_award.png",
+          "challenge_finish.png",
+          "challenge_next.png"
+        ]
       }
     },
     "action": {
@@ -274,6 +288,139 @@
     },
     "next": [
       "BackHome"
+    ],
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:orange]挑战准备期间[/color]"
+    }
+  },
+  "ChallengeUnformation": {
+    "enabled": true,
+    "recognition": "OCR",
+    "expected": "メモリー未編成",
+    "roi": [
+      25,
+      810,
+      280,
+      70
+    ],
+    "pre_wait_freezes": 200,
+    "action": {
+      "type": "Click",
+      "param": {
+        "target_offset": [
+          105,
+          305,
+          0,
+          25
+        ]
+      }
+    },
+    "next": [
+      "ChallengeFormation"
+    ],
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:orange]尚未编队，即将自动编队[/color]"
+    }
+  },
+  "ChallengeFormation": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": [
+          "ユニット編成"
+        ],
+        "replace": [],
+        "roi": [
+          510,
+          1050,
+          190,
+          80
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ChallengeFormationAuto"
     ]
+  },
+  "ChallengeFormationAuto": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": [
+          "おまかせ"
+        ],
+        "replace": [],
+        "roi": [
+          530,
+          1010,
+          190,
+          180
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ChallengeFormationAutoDecide"
+    ]
+  },
+  "ChallengeFormationAutoDecide": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "decide.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_wait_freezes": 500,
+    "next": [
+      "ChallengeBack",
+      "[JumpBack]CloseButton"
+    ]
+  },
+  "ChallengeBack": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "back.png",
+        "roi": [
+          240,
+          1160,
+          125,
+          115
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ChallengeRestart"
+    ]
+  },
+  "ChallengeRestart": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "challenge_start.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "focus": {
+      "Node.Action.Succeeded": "[color:blue]自动编队完成[/color]"
+    }
   }
 }
