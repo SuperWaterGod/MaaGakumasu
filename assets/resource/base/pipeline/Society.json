@@ -260,7 +260,7 @@
       "BackHome"
     ],
     "focus": {
-      "Node.Action.Succeeded": "[color:green]已请求物品[/color]"
+      "Node.Action.Succeeded": "[color:blue]已请求物品[/color]"
     }
   },
   "SocietyRequestsAlready": {
