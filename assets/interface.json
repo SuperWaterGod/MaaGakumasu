@@ -1756,7 +1756,91 @@
     },
     "培育偶像": {
       "type": "select",
-      "default_case": "紫云清夏(Tame-Lie-One-Step)",
+      "default_case": "紫云清夏",
+      "cases": [
+        {
+          "name": "倉本千奈",
+          "option": [
+            "倉本千奈卡片"
+          ]
+        },
+        {
+          "name": "十王星南",
+          "option": [
+            "十王星南卡片"
+          ]
+        },
+        {
+          "name": "雨夜燕",
+          "option": [
+            "雨夜燕卡片"
+          ]
+        },
+        {
+          "name": "姫崎莉波",
+          "option": [
+            "姫崎莉波卡片"
+          ]
+        },
+        {
+          "name": "月村手毬",
+          "option": [
+            "月村手毬卡片"
+          ]
+        },
+        {
+          "name": "有村麻央",
+          "option": [
+            "有村麻央卡片"
+          ]
+        },
+        {
+          "name": "秦谷美玲",
+          "option": [
+            "秦谷美玲卡片"
+          ]
+        },
+        {
+          "name": "篠泽广",
+          "option": [
+            "篠泽广卡片"
+          ]
+        },
+        {
+          "name": "紫云清夏",
+          "option": [
+            "紫云清夏卡片"
+          ]
+        },
+        {
+          "name": "花海佑芽",
+          "option": [
+            "花海佑芽卡片"
+          ]
+        },
+        {
+          "name": "花海咲季",
+          "option": [
+            "花海咲季卡片"
+          ]
+        },
+        {
+          "name": "葛城リーリヤ",
+          "option": [
+            "葛城リーリヤ卡片"
+          ]
+        },
+        {
+          "name": "藤田琴音",
+          "option": [
+            "藤田琴音卡片"
+          ]
+        }
+      ]
+    },
+    "倉本千奈卡片": {
+      "type": "select",
+      "default_case": "倉本千奈(Campus mode!!)",
       "cases": [
         {
           "name": "倉本千奈(Campus mode!!)",
@@ -1827,7 +1911,13 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    "十王星南卡片": {
+      "type": "select",
+      "default_case": "十王星南(Campus mode!!)",
+      "cases": [
         {
           "name": "十王星南(Campus mode!!)",
           "pipeline_override": {
@@ -1867,7 +1957,29 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    "雨夜燕卡片": {
+      "type": "select",
+      "default_case": "雨夜燕(Campus mode!!)",
+      "cases": [
+        {
+          "name": "雨夜燕(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
+                "idols/雨夜燕(Campus mode!!).png"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "姫崎莉波卡片": {
+      "type": "select",
+      "default_case": "姫崎莉波(Campus mode!!)",
+      "cases": [
         {
           "name": "姫崎莉波(clumsy trick)",
           "pipeline_override": {
@@ -1937,7 +2049,13 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    "月村手毬卡片": {
+      "type": "select",
+      "default_case": "月村手毬(Campus mode!!)",
+      "cases": [
         {
           "name": "月村手毬(Luna say maybe)",
           "pipeline_override": {
@@ -1997,7 +2115,13 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    "有村麻央卡片": {
+      "type": "select",
+      "default_case": "有村麻央(Campus mode!!)",
+      "cases": [
         {
           "name": "有村麻央(Fluorite)",
           "pipeline_override": {
@@ -2047,7 +2171,13 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    "秦谷美玲卡片": {
+      "type": "select",
+      "default_case": "秦谷美玲(star-mine)",
+      "cases": [
         {
           "name": "秦谷美玲(ツキノカメ)",
           "pipeline_override": {
@@ -2058,6 +2188,22 @@
             }
           }
         },
+        {
+          "name": "秦谷美玲(star-mine)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
+                "idols/秦谷美玲(star-mine).png"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "篠泽广卡片": {
+      "type": "select",
+      "default_case": "篠泽广(Campus mode!!)",
+      "cases": [
         {
           "name": "篠泽广(Campus mode!!)",
           "pipeline_override": {
@@ -2107,7 +2253,13 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    "紫云清夏卡片": {
+      "type": "select",
+      "default_case": "紫云清夏(Tame-Lie-One-Step)",
+      "cases": [
         {
           "name": "紫云清夏(Campus mode!!)",
           "pipeline_override": {
@@ -2167,7 +2319,13 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    "花海佑芽卡片": {
+      "type": "select",
+      "default_case": "花海佑芽(Campus mode!!)",
+      "cases": [
         {
           "name": "花海佑芽(Campus mode!!)",
           "pipeline_override": {
@@ -2197,7 +2355,13 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    "花海咲季卡片": {
+      "type": "select",
+      "default_case": "花海咲季(Campus mode!!)",
+      "cases": [
         {
           "name": "花海咲季(Boom Boom Pow)",
           "pipeline_override": {
@@ -2267,7 +2431,13 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    "葛城リーリヤ卡片": {
+      "type": "select",
+      "default_case": "葛城リーリヤ(Campus mode!!)",
+      "cases": [
         {
           "name": "葛城リーリヤ(Campus mode!!)",
           "pipeline_override": {
@@ -2337,7 +2507,13 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    "藤田琴音卡片": {
+      "type": "select",
+      "default_case": "藤田琴音(Campus mode!!)",
+      "cases": [
         {
           "name": "藤田琴音(Campus mode!!)",
           "pipeline_override": {
