@@ -26,53 +26,55 @@ except ImportError:
     HAS_OPENCC = False
 
 
+def _extract_dollar_keys(value: any, keys: set) -> None:
+    """遞迴提取 $ 開頭的字串"""
+    if isinstance(value, str):
+        if value.startswith("$"):
+            keys.add(value[1:])
+    elif isinstance(value, list):
+        for item in value:
+            _extract_dollar_keys(item, keys)
+    elif isinstance(value, dict):
+        for v in value.values():
+            _extract_dollar_keys(v, keys)
+
+
+def _extract_task_keys(tasks: list, keys: set) -> None:
+    """提取 task 的 label 和 doc"""
+    for task in tasks:
+        if task.get("label"):
+            _extract_dollar_keys(task["label"], keys)
+        if task.get("doc"):
+            _extract_doc_key(task["doc"], keys)
+
+
+def _extract_doc_key(doc: any, keys: set) -> None:
+    """提取 doc 欄位的翻譯 key"""
+    if isinstance(doc, list):
+        # 陣列形式的 doc 會被 MFAAvalonia 合併成一個字串再翻譯
+        keys.add("\n".join(doc))
+    elif isinstance(doc, str):
+        keys.add(doc[1:] if doc.startswith("$") else doc)
+
+
+def _extract_option_keys(options: dict, keys: set) -> None:
+    """提取 option 的 label 和 cases"""
+    for opt_data in options.values():
+        if opt_data.get("label"):
+            _extract_dollar_keys(opt_data["label"], keys)
+        for case in opt_data.get("cases", []):
+            if case.get("name"):
+                keys.add(case["name"])
+
+
 def extract_keys_from_interface(interface_path: Path) -> set:
     """從 interface.json 提取所有需要翻譯的 key"""
     with open(interface_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     keys = set()
-
-    def extract_from_value(value):
-        """遞迴提取 $ 開頭的字串"""
-        if isinstance(value, str):
-            if value.startswith("$"):
-                # 去掉 $ 前綴作為 key
-                keys.add(value[1:])
-        elif isinstance(value, list):
-            for item in value:
-                extract_from_value(item)
-        elif isinstance(value, dict):
-            for v in value.values():
-                extract_from_value(v)
-
-    # 提取 task 的 label 和 doc
-    for task in data.get("task", []):
-        if task.get("label"):
-            extract_from_value(task["label"])
-        if task.get("doc"):
-            doc = task["doc"]
-            if isinstance(doc, list):
-                # 陣列形式的 doc 會被 MFAAvalonia 合併成一個字串再翻譯
-                combined = "\n".join(doc)
-                keys.add(combined)
-            elif isinstance(doc, str):
-                if doc.startswith("$"):
-                    keys.add(doc[1:])
-                else:
-                    keys.add(doc)
-
-    # 提取 option 的 label 和 cases
-    for opt_name, opt_data in data.get("option", {}).items():
-        if opt_data.get("label"):
-            extract_from_value(opt_data["label"])
-
-        # 提取 cases 的 name
-        for case in opt_data.get("cases", []):
-            if case.get("name"):
-                # case name 本身作為 key（不需要 $ 前綴）
-                keys.add(case["name"])
-
+    _extract_task_keys(data.get("task", []), keys)
+    _extract_option_keys(data.get("option", {}), keys)
     return keys
 
 
