@@ -167,8 +167,8 @@ class ProduceOptionsFlagAuto(CustomRecognition):
         options_reco_detail = context.run_recognition("ProduceRecognitionOptions", argv.image)
         # 通过识别右上角的“审查基准”去除大量场景，但注意N.I.A没有这4个字，适配N.I.A时注意修改判断或增加识别模板
         parameter_reco_detail = context.run_recognition("ProduceRecognitionParameterFlag", argv.image)
-        if (options_reco_detail and not options_reco_detail.hit or
-                parameter_reco_detail and not parameter_reco_detail.hit or
+        if (not options_reco_detail or not options_reco_detail.hit or
+                not parameter_reco_detail or not parameter_reco_detail.hit or
                 options_reco_detail.best_result.box[2] < 490):
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "未识别到选择场景"})
 
