@@ -365,6 +365,9 @@ class ProduceCardsAuto(CustomAction):
         识别不到体力退出函数
         处理是否打出该牌的弹窗
     """
+    # 阈值常量
+    CLICK_DELAY = 0.3
+    ACTION_DELAY = 5.0
 
     def run(
             self,
@@ -381,7 +384,7 @@ class ProduceCardsAuto(CustomAction):
             if reco_detail.hit:
                 # 处理移动卡片界面
                 self._handle_move_cards(context)
-                time.sleep(5)
+                time.sleep(self.ACTION_DELAY)
                 start_time = time.time()
                 continue
             reco_detail = context.run_recognition("ProduceRecognitionCards", image)
@@ -390,7 +393,7 @@ class ProduceCardsAuto(CustomAction):
 
                 label_counts = Counter()
                 suggestions_box = [0, 0]
-                best_box = None
+                best_box = [0, 0]
                 best_score = 0
                 for result in results:
                     label_counts[result.label] += 1
@@ -410,16 +413,16 @@ class ProduceCardsAuto(CustomAction):
                     if suggestions_box[1] < 840 or suggestions_box[1] > 1150:
                         continue
                     context.tasker.controller.post_click(suggestions_box[0] + 100, suggestions_box[1] + 140).wait()
-                    time.sleep(0.3)
+                    time.sleep(self.CLICK_DELAY)
                     context.tasker.controller.post_click(suggestions_box[0] + 100, suggestions_box[1] + 140).wait()
                     end_time = time.time()
                     logger.info("出牌 耗时:{:.2f}秒".format(end_time - start_time))
-                    time.sleep(5)
+                    time.sleep(self.ACTION_DELAY)
                     start_time = time.time()
                 elif useless > 0 and suggestions == 0 and cards == 0:
                     logger.warning("!!!!!!!!无可用牌!!!!!!!!!!!")
                     context.run_task("ProduceRecognitionSkipRound")
-                    time.sleep(5)
+                    time.sleep(self.ACTION_DELAY)
                     start_time = time.time()
 
                 end_time = time.time()
@@ -436,9 +439,9 @@ class ProduceCardsAuto(CustomAction):
                     else:
                         logger.warning("检测超时")
                         context.tasker.controller.post_click(best_box[0], best_box[1]).wait()
-                        time.sleep(0.3)
+                        time.sleep(self.CLICK_DELAY)
                         context.tasker.controller.post_click(best_box[0], best_box[1]).wait()
-                        time.sleep(5)
+                        time.sleep(self.ACTION_DELAY)
                         start_time = time.time()
 
             else:
@@ -457,14 +460,12 @@ class ProduceCardsAuto(CustomAction):
                 if reco_detail.best_result:
                     logger.info("无手牌")
                     context.run_task("ProduceRecognitionSkipRound")
-                    time.sleep(5)
-
-
+                    time.sleep(self.ACTION_DELAY)
 
             if context.tasker.stopping:
                 logger.info("任务中断")
                 return True
-            time.sleep(0.2)
+            time.sleep(self.CLICK_DELAY)
 
         return True
 
@@ -489,6 +490,9 @@ class ProduceCardsAuto(CustomAction):
                 break
             else:
                 y = y + 100
+            if context.tasker.stopping:
+                logger.info("任务中断")
+                return True
         return True
 
 
