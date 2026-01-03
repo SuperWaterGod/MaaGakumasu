@@ -18,6 +18,18 @@
       }
     }
   },
+  "ProduceEventResultButton": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "produce/ok.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    }
+  },
   "ProduceNext": {
     "recognition": {
       "type": "TemplateMatch",
@@ -38,6 +50,7 @@
           "produce/skip_chat.png",
           "produce/skip_chat_1.png"
         ],
+        "threshold": 0.8,
         "roi": [
           553,
           1154,
@@ -124,6 +137,7 @@
       "type": "Click",
       "param": {}
     },
+    "post_delay": 1000,
     "next": [
       "ProduceTakeRest"
     ]
@@ -132,7 +146,14 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "produce/rest_take.png"
+        "template": "produce/rest_take.png",
+        "roi": [
+          360,
+          1100,
+          360,
+          180
+        ],
+        "threshold": 0.9
       }
     },
     "action": {
@@ -186,6 +207,46 @@
           947,
           393,
           97
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    }
+  },
+  "ProduceRecognitionMoveCards": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/move_cards.png"
+        ],
+        "roi": [
+          0,
+          0,
+          300,
+          90
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    }
+  },
+  "ProduceRecognitionChooseMoveCards": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/choose_move_cards.png"
+        ],
+        "roi": [
+          0,
+          90,
+          720,
+          400
         ]
       }
     },
@@ -290,6 +351,59 @@
     },
     "action": {
       "type": "DoNothing",
+      "param": {}
+    }
+  },
+  "ProduceRecognitionParameterFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/criteria_title.png"
+        ],
+        "roi": [
+          500,
+          0,
+          220,
+          165
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    }
+  },
+  "ProduceRecognitionUncheckedMark": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/unchecked_mark.png"
+        ],
+        "threshold": 0.9
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    }
+  },
+  "ProduceDrinkNoButton": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "produce/drink_no.png",
+        "roi": [
+          0,
+          780,
+          720,
+          500
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
       "param": {}
     }
   },
