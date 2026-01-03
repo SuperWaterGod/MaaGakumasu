@@ -4,7 +4,7 @@
 自動從 interface.json 提取所有需要翻譯的 key，並同步到翻譯檔案
 
 使用方式:
-    python tools/sync_lang.py
+    python tools/sync_lang.py [--lang LANG_CODE]
 
 功能:
 1. 從 interface.json 提取所有 $ 開頭的翻譯 key
@@ -15,7 +15,6 @@
 """
 
 import json
-import re
 from pathlib import Path
 
 try:
@@ -78,7 +77,9 @@ def extract_keys_from_interface(interface_path: Path) -> set:
     return keys
 
 
-def sync_lang_file(interface_path: Path, lang_path: Path, dry_run: bool = False):
+def sync_lang_file(
+    interface_path: Path, lang_path: Path, lang_code: str, dry_run: bool = False
+):
     """同步翻譯檔案"""
     # 提取所有 key
     required_keys = extract_keys_from_interface(interface_path)
@@ -129,16 +130,18 @@ def sync_lang_file(interface_path: Path, lang_path: Path, dry_run: bool = False)
         return
 
     # 執行同步
-    # 1. 新增缺少的 key（自動翻譯成繁體中文）
-    if HAS_OPENCC:
-        cc = OpenCC("s2twp")  # s2twp = 簡體到繁體(台灣用詞)
+    # 1. 新增缺少的 key
+    if lang_code == "zh-Hant" and HAS_OPENCC:
+        # 簡體 -> 繁體（台灣用詞）
+        cc = OpenCC("s2twp")
         for key in missing_keys:
             translations[key] = cc.convert(key)
-        print(f"  使用 OpenCC 自動翻譯新增的 key")
+        print(f"  使用 OpenCC 自動轉換新增的 key")
     else:
         for key in missing_keys:
             translations[key] = key  # 預設值 = key 本身（簡體中文）
-        print(f"  提示: 安裝 opencc-python-reimplemented 可自動翻譯")
+        if lang_code == "zh-Hant" and not HAS_OPENCC:
+            print(f"  提示: 安裝 opencc-python-reimplemented 可自動轉換繁體")
 
     # 2. 移除多餘的 key
     for key in extra_keys:
@@ -160,6 +163,11 @@ def main():
 
     parser = argparse.ArgumentParser(description="同步翻譯檔案")
     parser.add_argument("--dry-run", action="store_true", help="只顯示差異，不修改檔案")
+    parser.add_argument(
+        "--lang",
+        default="zh-Hant",
+        help="語言代碼，例如 zh-Hant、ja、en（預設：zh-Hant）",
+    )
     args = parser.parse_args()
 
     # 路徑設定
@@ -172,9 +180,10 @@ def main():
     # 確保 lang 目錄存在
     lang_dir.mkdir(exist_ok=True)
 
-    # 同步 zh-Hant.json
-    lang_path = lang_dir / "zh-Hant.json"
-    sync_lang_file(interface_path, lang_path, dry_run=args.dry_run)
+    # 同步指定語言檔案
+    lang_path = lang_dir / f"{args.lang}.json"
+    print(f"目標語言: {args.lang}")
+    sync_lang_file(interface_path, lang_path, args.lang, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
