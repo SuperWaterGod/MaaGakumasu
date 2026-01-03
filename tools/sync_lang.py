@@ -77,27 +77,28 @@ def extract_keys_from_interface(interface_path: Path) -> set:
     return keys
 
 
-def sync_lang_file(
-    interface_path: Path, lang_path: Path, lang_code: str, dry_run: bool = False
-):
-    """同步翻譯檔案"""
-    # 提取所有 key
-    required_keys = extract_keys_from_interface(interface_path)
-
-    # 讀取現有翻譯
+def _load_translations(lang_path: Path) -> dict:
+    """讀取現有翻譯檔案"""
     if lang_path.exists():
         with open(lang_path, "r", encoding="utf-8") as f:
-            translations = json.load(f)
-    else:
-        translations = {}
+            return json.load(f)
+    return {}
 
-    existing_keys = set(translations.keys())
 
-    # 計算差異
-    missing_keys = required_keys - existing_keys
-    extra_keys = existing_keys - required_keys
+def _print_key_preview(keys: set, prefix: str, max_show: int = 10) -> None:
+    """預覽顯示 key 列表"""
+    for key in sorted(keys)[:max_show]:
+        preview = key[:50] + "..." if len(key) > 50 else key
+        print(f"  {prefix} {preview}")
+    if len(keys) > max_show:
+        print(f"  ... 還有 {len(keys) - max_show} 個")
+    print()
 
-    # 統計
+
+def _print_sync_report(
+    required_keys: set, existing_keys: set, missing_keys: set, extra_keys: set
+) -> None:
+    """輸出同步報告"""
     print(f"=== 翻譯檔案同步報告 ===")
     print(f"需要的 key 數量: {len(required_keys)}")
     print(f"現有的 key 數量: {len(existing_keys)}")
@@ -105,35 +106,19 @@ def sync_lang_file(
     print(f"多餘的 key 數量: {len(extra_keys)}")
     print()
 
-    # 顯示缺少的 key
     if missing_keys:
         print("--- 缺少的 key（將新增）---")
-        for key in sorted(missing_keys)[:10]:
-            preview = key[:50] + "..." if len(key) > 50 else key
-            print(f"  + {preview}")
-        if len(missing_keys) > 10:
-            print(f"  ... 還有 {len(missing_keys) - 10} 個")
-        print()
+        _print_key_preview(missing_keys, "+")
 
-    # 顯示多餘的 key
     if extra_keys:
         print("--- 多餘的 key（將移除）---")
-        for key in sorted(extra_keys)[:10]:
-            preview = key[:50] + "..." if len(key) > 50 else key
-            print(f"  - {preview}")
-        if len(extra_keys) > 10:
-            print(f"  ... 還有 {len(extra_keys) - 10} 個")
-        print()
+        _print_key_preview(extra_keys, "-")
 
-    if dry_run:
-        print("(Dry run 模式，不會修改檔案)")
-        return
 
-    # 執行同步
-    # 1. 新增缺少的 key
+def _add_missing_keys(translations: dict, missing_keys: set, lang_code: str) -> None:
+    """新增缺少的 key 到翻譯字典"""
     if lang_code == "zh-Hant" and HAS_OPENCC:
-        # 簡體 -> 繁體（台灣用詞）
-        cc = OpenCC("s2twp")
+        cc = OpenCC("s2twp")  # 簡體 -> 繁體（台灣用詞）
         for key in missing_keys:
             translations[key] = cc.convert(key)
         print(f"  使用 OpenCC 自動轉換新增的 key")
@@ -143,15 +128,37 @@ def sync_lang_file(
         if lang_code == "zh-Hant" and not HAS_OPENCC:
             print(f"  提示: 安裝 opencc-python-reimplemented 可自動轉換繁體")
 
-    # 2. 移除多餘的 key
+
+def _save_translations(translations: dict, lang_path: Path) -> None:
+    """按 key 排序後寫入翻譯檔案"""
+    sorted_translations = dict(sorted(translations.items()))
+    with open(lang_path, "w", encoding="utf-8") as f:
+        json.dump(sorted_translations, f, ensure_ascii=False, indent=4)
+
+
+def sync_lang_file(
+    interface_path: Path, lang_path: Path, lang_code: str, dry_run: bool = False
+):
+    """同步翻譯檔案"""
+    required_keys = extract_keys_from_interface(interface_path)
+    translations = _load_translations(lang_path)
+    existing_keys = set(translations.keys())
+
+    missing_keys = required_keys - existing_keys
+    extra_keys = existing_keys - required_keys
+
+    _print_sync_report(required_keys, existing_keys, missing_keys, extra_keys)
+
+    if dry_run:
+        print("(Dry run 模式，不會修改檔案)")
+        return
+
+    _add_missing_keys(translations, missing_keys, lang_code)
+
     for key in extra_keys:
         del translations[key]
 
-    # 3. 按 key 排序後寫入
-    sorted_translations = dict(sorted(translations.items()))
-
-    with open(lang_path, "w", encoding="utf-8") as f:
-        json.dump(sorted_translations, f, ensure_ascii=False, indent=4)
+    _save_translations(translations, lang_path)
 
     print(f"已更新 {lang_path}")
     print(f"  新增: {len(missing_keys)} 個 key")
