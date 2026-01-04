@@ -96,44 +96,53 @@ jobs:
           ./tools/ci/setup_embed_python.ps1
 
       - name: Modify MFAAvalonia exe icon
-        shell: bash
+        shell: powershell
         run: |
-          # 根据架构选择 rcedit 版本
-          if [ "${{ matrix.arch }}" == "x86_64" ]; then
-            rcedit_url="https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe"
-          else
-            rcedit_url="https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x86.exe"
-          fi
+          # 下载 ResourceHacker
+          Write-Host "Downloading ResourceHacker..."
+          $reshackerUrl = "https://www.angusj.com/resourcehacker/resource_hacker.zip"
+          Invoke-WebRequest -Uri $reshackerUrl -OutFile "reshacker.zip"
           
-          # 下载 rcedit
-          echo "Downloading rcedit for ${{ matrix.arch }}..."
-          curl -L "$rcedit_url" -o rcedit.exe
+          # 解压 ResourceHacker
+          Expand-Archive -Path "reshacker.zip" -DestinationPath "reshacker" -Force
           
           # 检查 logo.ico 是否存在
-          if [ ! -f "logo.ico" ]; then
-            echo "Warning: logo.ico not found in project root."
+          if (-not (Test-Path "logo.ico")) {
+            Write-Host "Warning: logo.ico not found in project root."
             exit 0
-          fi
+          }
           
           # 查找 MFAAvalonia.exe 的位置
-          exe_path=$(find install -name "MFAAvalonia.exe" | head -n 1)
+          $exePath = Get-ChildItem -Path "install" -Recurse -Filter "MFAAvalonia.exe" | Select-Object -First 1
           
-          if [ -z "$exe_path" ]; then
-            echo "Warning: MFAAvalonia.exe not found in install directory."
+          if ($null -eq $exePath) {
+            Write-Host "Warning: MFAAvalonia.exe not found in install directory."
             exit 0
-          fi
+          }
           
-          echo "Found MFAAvalonia.exe at: $exe_path"
+          Write-Host "Found MFAAvalonia.exe at: $($exePath.FullName)"
           
-          # 修改 exe 图标
-          ./rcedit.exe "$exe_path" --set-icon "logo.ico"
+          # 创建备份
+          $backupPath = "$($exePath.FullName).bak"
+          Copy-Item -Path $exePath.FullName -Destination $backupPath
           
-          if [ $? -eq 0 ]; then
-            echo "MFAAvalonia icon modified successfully"
-          else
-            echo "Failed to modify MFAAvalonia icon"
+          # 使用 ResourceHacker 替换所有图标组
+          $logoPath = (Resolve-Path "logo.ico").Path
+          $reshackerExe = "reshacker\ResourceHacker.exe"
+          
+          # 替换主图标组 (ICONGROUP,MAINICON)
+          & $reshackerExe -open $exePath.FullName -save $exePath.FullName -action addoverwrite -res $logoPath -mask ICONGROUP,MAINICON,
+          
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "MFAAvalonia icon modified successfully with ResourceHacker"
+            # 删除备份
+            Remove-Item -Path $backupPath -Force
+          } else {
+            Write-Host "Failed to modify MFAAvalonia icon, restoring backup"
+            # 恢复备份
+            Move-Item -Path $backupPath -Destination $exePath.FullName -Force
             exit 1
-          fi
+          }
 
       - name: Install
         shell: bash
@@ -172,6 +181,34 @@ jobs:
           else
             echo "Warning: LICENSE not found in project root."
           fi
+
+      - name: Create shortcut
+        shell: powershell
+        run: |
+          # 查找 MFAAvalonia.exe 的位置
+          $exePath = Get-ChildItem -Path "install" -Recurse -Filter "MFAAvalonia.exe" | Select-Object -First 1
+          
+          if ($null -eq $exePath) {
+            Write-Host "Warning: MFAAvalonia.exe not found in install directory."
+            exit 0
+          }
+          
+          Write-Host "Found MFAAvalonia.exe at: $($exePath.FullName)"
+          
+          # 创建快捷方式
+          $shortcutPath = Join-Path -Path "install" -ChildPath "MaaGakumasu.lnk"
+          $WScriptShell = New-Object -ComObject WScript.Shell
+          $Shortcut = $WScriptShell.CreateShortcut($shortcutPath)
+          $Shortcut.TargetPath = $exePath.FullName
+          $Shortcut.WorkingDirectory = $exePath.DirectoryName
+          
+          # 如果 logo.ico 存在，设置图标
+          if (Test-Path "logo.ico") {
+            $Shortcut.IconLocation = (Resolve-Path "logo.ico").Path
+          }
+          
+          $Shortcut.Save()
+          Write-Host "Shortcut created successfully at: $shortcutPath"
 
       - uses: actions/upload-artifact@v4
         with:
