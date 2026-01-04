@@ -96,53 +96,44 @@ jobs:
           ./tools/ci/setup_embed_python.ps1
 
       - name: Modify MFAAvalonia exe icon
-        shell: powershell
+        shell: bash
         run: |
-          # 下载 ResourceHacker
-          Write-Host "Downloading ResourceHacker..."
-          $reshackerUrl = "https://www.angusj.com/resourcehacker/resource_hacker.zip"
-          Invoke-WebRequest -Uri $reshackerUrl -OutFile "reshacker.zip"
+          # 根据架构选择 rcedit 版本
+          if [ "${{ matrix.arch }}" == "x86_64" ]; then
+            rcedit_url="https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe"
+          else
+            rcedit_url="https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x86.exe"
+          fi
           
-          # 解压 ResourceHacker
-          Expand-Archive -Path "reshacker.zip" -DestinationPath "reshacker" -Force
+          # 下载 rcedit
+          echo "Downloading rcedit for ${{ matrix.arch }}..."
+          curl -L "$rcedit_url" -o rcedit.exe
           
           # 检查 logo.ico 是否存在
-          if (-not (Test-Path "logo.ico")) {
-            Write-Host "Warning: logo.ico not found in project root."
+          if [ ! -f "logo.ico" ]; then
+            echo "Warning: logo.ico not found in project root."
             exit 0
-          }
+          fi
           
           # 查找 MFAAvalonia.exe 的位置
-          $exePath = Get-ChildItem -Path "install" -Recurse -Filter "MFAAvalonia.exe" | Select-Object -First 1
+          exe_path=$(find install -name "MFAAvalonia.exe" | head -n 1)
           
-          if ($null -eq $exePath) {
-            Write-Host "Warning: MFAAvalonia.exe not found in install directory."
+          if [ -z "$exe_path" ]; then
+            echo "Warning: MFAAvalonia.exe not found in install directory."
             exit 0
-          }
+          fi
           
-          Write-Host "Found MFAAvalonia.exe at: $($exePath.FullName)"
+          echo "Found MFAAvalonia.exe at: $exe_path"
           
-          # 创建备份
-          $backupPath = "$($exePath.FullName).bak"
-          Copy-Item -Path $exePath.FullName -Destination $backupPath
+          # 修改 exe 图标
+          ./rcedit.exe "$exe_path" --set-icon "logo.ico"
           
-          # 使用 ResourceHacker 替换所有图标组
-          $logoPath = (Resolve-Path "logo.ico").Path
-          $reshackerExe = "reshacker\ResourceHacker.exe"
-          
-          # 替换主图标组 (ICONGROUP,MAINICON)
-          & $reshackerExe -open $exePath.FullName -save $exePath.FullName -action addoverwrite -res $logoPath -mask ICONGROUP,MAINICON,
-          
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "MFAAvalonia icon modified successfully with ResourceHacker"
-            # 删除备份
-            Remove-Item -Path $backupPath -Force
-          } else {
-            Write-Host "Failed to modify MFAAvalonia icon, restoring backup"
-            # 恢复备份
-            Move-Item -Path $backupPath -Destination $exePath.FullName -Force
+          if [ $? -eq 0 ]; then
+            echo "MFAAvalonia icon modified successfully"
+          else
+            echo "Failed to modify MFAAvalonia icon"
             exit 1
-          }
+          fi
 
       - name: Install
         shell: bash
