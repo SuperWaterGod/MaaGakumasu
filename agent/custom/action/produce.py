@@ -365,6 +365,9 @@ class ProduceCardsAuto(CustomAction):
         识别不到体力退出函数
         处理是否打出该牌的弹窗
     """
+    # 阈值常量
+    CLICK_DELAY = 0.3
+    ACTION_DELAY = 5.0
 
     def run(
             self,
@@ -377,17 +380,29 @@ class ProduceCardsAuto(CustomAction):
 
             # 识别手牌
             image = context.tasker.controller.post_screencap().wait().get()
+            reco_detail = context.run_recognition('ProduceRecognitionMoveCards', image)
+            if reco_detail.hit:
+                # 处理移动卡片界面
+                if self._handle_move_cards(context):
+                    time.sleep(self.ACTION_DELAY)
+                    start_time = time.time()
+                    continue
             reco_detail = context.run_recognition("ProduceRecognitionCards", image)
             if reco_detail and reco_detail.hit:
                 results = reco_detail.all_results
 
                 label_counts = Counter()
                 suggestions_box = [0, 0]
-                best_box = reco_detail.best_result.box
+                best_box = [0, 0]
+                best_score = 0
                 for result in results:
                     label_counts[result.label] += 1
                     if result.label == "suggestions":
                         suggestions_box = result.box
+                    if result.label == "cards":
+                        if result.score > best_score:
+                            best_score = result.score
+                            best_box = result.box
                 suggestions = label_counts["suggestions"]
                 useless = label_counts["useless"]
                 cards = label_counts["cards"]
@@ -398,26 +413,36 @@ class ProduceCardsAuto(CustomAction):
                     if suggestions_box[1] < 840 or suggestions_box[1] > 1150:
                         continue
                     context.tasker.controller.post_click(suggestions_box[0] + 100, suggestions_box[1] + 140).wait()
-                    time.sleep(0.3)
+                    time.sleep(self.CLICK_DELAY)
                     context.tasker.controller.post_click(suggestions_box[0] + 100, suggestions_box[1] + 140).wait()
                     end_time = time.time()
                     logger.info("出牌 耗时:{:.2f}秒".format(end_time - start_time))
-                    time.sleep(3)
+                    time.sleep(self.ACTION_DELAY)
                     start_time = time.time()
                 elif useless > 0 and suggestions == 0 and cards == 0:
                     logger.warning("!!!!!!!!无可用牌!!!!!!!!!!!")
                     context.run_task("ProduceRecognitionSkipRound")
+                    time.sleep(self.ACTION_DELAY)
+                    start_time = time.time()
 
                 end_time = time.time()
-                if end_time - start_time > 10:
+                if end_time - start_time > 15:
                     if best_box[1] < 840 or best_box[1] > 1150:
                         continue
-                    logger.warning("检测超时")
-                    context.tasker.controller.post_click(best_box[0], best_box[1]).wait()
-                    time.sleep(0.3)
-                    context.tasker.controller.post_click(best_box[0], best_box[1]).wait()
-                    time.sleep(3)
-                    start_time = time.time()
+
+                    reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", image)
+                    if not reco_detail.hit:
+                        # 应对极其稀有的但是遇到过一次的把考试结果识别成卡片的情况
+                        logger.info("未检测到卡片和体力")
+                        logger.success("事件: 退出出牌")
+                        break
+                    else:
+                        logger.warning("检测超时")
+                        context.tasker.controller.post_click(best_box[0], best_box[1]).wait()
+                        time.sleep(self.CLICK_DELAY)
+                        context.tasker.controller.post_click(best_box[0], best_box[1]).wait()
+                        time.sleep(self.ACTION_DELAY)
+                        start_time = time.time()
 
             else:
                 reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", image)
@@ -435,13 +460,39 @@ class ProduceCardsAuto(CustomAction):
                 if reco_detail.best_result:
                     logger.info("无手牌")
                     context.run_task("ProduceRecognitionSkipRound")
+                    time.sleep(self.ACTION_DELAY)
 
             if context.tasker.stopping:
                 logger.info("任务中断")
                 return True
-            time.sleep(0.2)
+            time.sleep(self.CLICK_DELAY)
 
         return True
+
+    @staticmethod
+    def _handle_move_cards(context: Context) -> bool:
+        """
+            一种处理移动卡片界面的笨方法
+            在识别小卡片模型出来前可能都只能这样处理
+        """
+        y = 450
+        while y < 1100:
+            # for x in [140, 285, 440, 585]:
+            for x in [140, 285]:
+                context.tasker.controller.post_click(x, y).wait()
+                time.sleep(0.2)
+                context.tasker.controller.post_click(x, y).wait()
+                time.sleep(0.2)
+            image = context.tasker.controller.post_screencap().wait().get()
+            reco_detail = context.run_recognition('ProduceRecognitionChooseMoveCards', image)
+            if not reco_detail.hit:
+                context.tasker.controller.post_click(360, 1160).wait()
+                return True
+            else:
+                y = y + 100
+            if context.tasker.stopping:
+                return False
+        return False
 
 
 @AgentServer.custom_action("ProduceShoppingAuto")
@@ -461,7 +512,8 @@ class ProduceShoppingAuto(CustomAction):
                 "ProduceRecognitionSale": {
                     "recognition": "TemplateMatch",
                     "template": "produce/Sale.png",
-                    "roi": [46, 479, 626, 529]
+                    "roi": [46, 479, 626, 529],
+                    "pre_wait_freezes" : 100
                 }})
         logger.success("事件: 商店购买")
         if reco_detail and reco_detail.hit:
@@ -488,9 +540,8 @@ class ProduceShoppingAuto(CustomAction):
                         context.run_task("Click_1")
                         time.sleep(0.5)
                         end_time = time.time()
-                        if end_time - start_time > 3:
+                        if end_time - start_time > 5:
                             break
-                break
         return True
 
 
@@ -508,4 +559,28 @@ class ProduceStrengthenAuto(CustomAction):
         logger.success("事件: 选择强化")
         context.tasker.controller.post_click(140, 760).wait()
         context.run_task("ProduceChooseStrengthen")
+        return True
+
+
+@AgentServer.custom_action("ProduceKeepDrinkAuto")
+class ProduceKeepDrinkAuto(CustomAction):
+    """
+        处理保留饮料的窗口
+        原本是在ProduceButton节点直接按保留按钮处理
+        但是需要处理只有2瓶饮料时，一次性获得2瓶饮料时不会自动勾选3瓶的特殊情况
+        所以转为独立处理
+    """
+    def run(
+            self,
+            context: Context,
+            argv: CustomAction.RunArg,
+    ) -> bool:
+        image = context.tasker.controller.post_screencap().wait().get()
+        reco_detail = context.run_recognition("ProduceRecognitionUncheckedMark", image)
+        if reco_detail.hit:
+            for result in reco_detail.filtered_results:
+                box = result.box
+                context.tasker.controller.post_click(box[0]+int(box[2]/2), box[1]+int(box[3]/2)).wait()
+                time.sleep(0.1)
+            context.run_task("ProduceDrinkNoButton")
         return True

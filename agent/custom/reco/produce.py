@@ -1,3 +1,4 @@
+import time
 from utils import logger
 from collections import Counter
 from typing import Union, Optional
@@ -154,7 +155,7 @@ class ProduceCardsFlagAuto(CustomRecognition):
 @AgentServer.custom_recognition("ProduceOptionsFlagAuto")
 class ProduceOptionsFlagAuto(CustomRecognition):
     """
-        自动识别选择冲刺/上课场景
+        自动识别选择冲刺/上课/外出场景
     """
 
     def analyze(
@@ -164,14 +165,19 @@ class ProduceOptionsFlagAuto(CustomRecognition):
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         context.run_task("Click_1")
         options_reco_detail = context.run_recognition("ProduceRecognitionOptions", argv.image)
-        health_reco_detail = context.run_recognition("ProduceRecognitionOptionsEvents", argv.image)
-        if not (options_reco_detail and options_reco_detail.hit) or not (health_reco_detail and health_reco_detail.hit):
+        # 通过识别右上角的“审查基准”去除大量场景，但注意N.I.A没有这4个字，适配N.I.A时注意修改判断或增加识别模板
+        parameter_reco_detail = context.run_recognition("ProduceRecognitionParameterFlag", argv.image)
+        if (not options_reco_detail or not options_reco_detail.hit or
+                not parameter_reco_detail or not parameter_reco_detail.hit or
+                options_reco_detail.best_result.box[2] < 490):
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "未识别到选择场景"})
 
-        logger.success("事件: 选择冲刺/上课")
+        logger.success("事件: 选择冲刺/上课/外出")
         results = options_reco_detail.all_results
         label_counts = Counter()
         best_box = options_reco_detail.best_result.box
+        click_point_x = best_box[0] + best_box[2] // 2
+        click_point_y = best_box[1] + best_box[3] // 2
         for result in results:
             label_counts[result.label] += 1
         choose = label_counts["choose"]
@@ -179,5 +185,7 @@ class ProduceOptionsFlagAuto(CustomRecognition):
         logger.info(f"选项数量:{choose}/{lesson}")
         if lesson == 0:
             pass
-        context.tasker.controller.post_click(best_box[0], best_box[1]).wait()
+        context.tasker.controller.post_click(click_point_x, click_point_y).wait()
+        time.sleep(0.2)
+        context.tasker.controller.post_click(click_point_x, click_point_y).wait()
         return CustomRecognition.AnalyzeResult(box=best_box, detail={"detail": "选择加最佳选项"})
