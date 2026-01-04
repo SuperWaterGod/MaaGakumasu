@@ -383,10 +383,10 @@ class ProduceCardsAuto(CustomAction):
             reco_detail = context.run_recognition('ProduceRecognitionMoveCards', image)
             if reco_detail.hit:
                 # 处理移动卡片界面
-                self._handle_move_cards(context)
-                time.sleep(self.ACTION_DELAY)
-                start_time = time.time()
-                continue
+                if self._handle_move_cards(context):
+                    time.sleep(self.ACTION_DELAY)
+                    start_time = time.time()
+                    continue
             reco_detail = context.run_recognition("ProduceRecognitionCards", image)
             if reco_detail and reco_detail.hit:
                 results = reco_detail.all_results
@@ -487,13 +487,12 @@ class ProduceCardsAuto(CustomAction):
             reco_detail = context.run_recognition('ProduceRecognitionChooseMoveCards', image)
             if not reco_detail.hit:
                 context.tasker.controller.post_click(360, 1160).wait()
-                break
+                return True
             else:
                 y = y + 100
             if context.tasker.stopping:
-                logger.info("任务中断")
-                return True
-        return True
+                return False
+        return False
 
 
 @AgentServer.custom_action("ProduceShoppingAuto")
@@ -543,7 +542,6 @@ class ProduceShoppingAuto(CustomAction):
                         end_time = time.time()
                         if end_time - start_time > 5:
                             break
-                break
         return True
 
 
