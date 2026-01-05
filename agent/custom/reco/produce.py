@@ -1,12 +1,63 @@
 import time
+import json
 from utils import logger
 from collections import Counter
 from typing import Union, Optional
+from difflib import SequenceMatcher
 
 from maa.define import RectType
 from maa.context import Context
 from maa.agent.agent_server import AgentServer
 from maa.custom_recognition import CustomRecognition
+
+
+@AgentServer.custom_recognition("ProduceChooseIdolAuto")
+class ProduceChooseIdolAuto(CustomRecognition):
+    """
+        自动识别当前偶像名称和歌曲
+    """
+
+    def analyze(
+            self,
+            context: Context,
+            argv: CustomRecognition.AnalyzeArg,
+    ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
+
+        idol_name = json.loads(argv.custom_recognition_param)["idol_name"]
+        song_name = json.loads(argv.custom_recognition_param)["song_name"]
+        recognized_name = ""
+        recognized_song = ""
+
+        name_detail = context.run_recognition(
+            "ProduceChooseIdolName", argv.image,
+            pipeline_override={"ProduceChooseIdolName": {
+                "recognition": "OCR",
+                "roi": [400, 128, 320, 64]
+            }})
+        if name_detail and name_detail.hit:
+            recognized_name = "".join([item.text for item in name_detail.all_results]).replace(" ", "")
+            logger.debug(f"识别到偶像名称: {recognized_name}")
+
+        song_detail = context.run_recognition(
+            "ProduceChooseIdolSong", argv.image,
+            pipeline_override={"ProduceChooseIdolSong": {
+                "recognition": "OCR",
+                "roi": [340, 90, 380, 45]
+            }})
+        if song_detail and song_detail.hit:
+            recognized_song = "".join([item.text for item in song_detail.all_results]).replace("[", "").replace("]", "")
+            logger.debug(f"识别到歌曲名称: {recognized_song}")
+
+        if (self.similarity_ratio(recognized_name, idol_name) >= 0.9 and
+                self.similarity_ratio(recognized_song, song_name) >= 0.7):
+            return CustomRecognition.AnalyzeResult(box=[0, 0, 0, 0], detail={"detail": "识别偶像卡成功"})
+        else:
+            return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "识别偶像卡失败"})
+
+    @staticmethod
+    def similarity_ratio(str1, str2):
+        """返回0-1之间的相似度分数，1表示完全相同"""
+        return SequenceMatcher(None, str1, str2).ratio()
 
 
 @AgentServer.custom_recognition("ProduceShowStart")

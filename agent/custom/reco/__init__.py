@@ -7,6 +7,7 @@ __all__ = [
     "WorkChooseAuto",
     "WorkChooseIdol",
     "SocietyRequestAuto",
+    "ProduceChooseIdolAuto",
     "ProduceShowStart",
     "ProduceShowEnd",
     "ProduceChooseCardsAuto",

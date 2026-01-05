@@ -33,7 +33,8 @@
         "next": [
             "ProduceNextPage",
             "ProduceChooseDifficulty"
-        ]
+        ],
+        "post_wait_freezes": 200
     },
     "ProduceNextPage": {
         "recognition": {
@@ -87,7 +88,8 @@
         },
         "next": [
             "ProduceChooseIdolFlag"
-        ]
+        ],
+        "post_wait_freezes": 200
     },
     "ProduceChooseIdolFlag": {
         "recognition": {
@@ -99,79 +101,43 @@
             }
         },
         "action": {
-            "type": "Click",
+            "type": "DoNothing",
             "param": {}
         },
         "next": [
             "ProduceChooseIdol",
-            "[JumpBack]ProduceChooseIdolNextPage"
+            "[JumpBack]ProduceChooseNextIdol"
         ]
     },
     "ProduceChooseIdol": {
         "recognition": {
-            "type": "TemplateMatch",
+            "type": "Custom",
             "param": {
-                "template": [
-                    "idols/花海咲季(Fighting My Way)_.png"
-                ],
-                "threshold": 0.5,
-                "order_by": "Score"
+                "custom_recognition": "ProduceChooseIdolAuto",
+                "custom_recognition_param": {
+                    "idol_name": "藤田ことね",
+                    "song_name": "雨上がりのアイリス"
+                }
             }
         },
         "action": {
             "type": "Click",
-            "param": {}
-        },
-        "next": [
-            "ProduceChooseIdolDecide"
-        ]
-    },
-    "ProduceChooseIdolNextPage": {
-        "recognition": {
-            "type": "TemplateMatch",
             "param": {
-                "template": [
-                    "produce/decide.png"
+                "target": [
+                    256,
+                    1060,
+                    200,
+                    64
                 ]
             }
         },
-        "action": {
-            "type": "Swipe",
-            "param": {
-                "begin": [
-                    360,
-                    1000,
-                    1,
-                    1
-                ],
-                "end": [
-                    [
-                        360,
-                        615,
-                        1,
-                        1
-                    ]
-                ],
-                "duration": 2000
-            }
+        "next": [
+            "ProduceChooseSupport"
+        ],
+        "post_wait_freezes": 200,
+        "focus": {
+            "Node.Action.Succeeded": "[color:blue]已找到偶像卡[/color]"
         }
-    },
-    "ProduceChooseIdolDecide": {
-        "recognition": {
-            "type": "TemplateMatch",
-            "param": {
-                "template": [
-                    "produce/decide.png"
-                ]
-            }
-        },
-        "action": {
-            "type": "Click",
-            "param": {}
-        },
-        "next": [
-            "ProduceChooseIdolNext"
-        ]
     },
     "ProduceChooseIdolNext": {
         "recognition": {
@@ -189,6 +155,24 @@
         "next": [
             "ProduceChooseSupport"
         ]
+    },
+    "ProduceChooseNextIdol": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "Click",
+            "param": {
+                "target": [
+                    322,
+                    804,
+                    118,
+                    186
+                ]
+            }
+        },
+        "post_wait_freezes": 200
     },
     "ProduceChooseSupport": {
         "recognition": {
