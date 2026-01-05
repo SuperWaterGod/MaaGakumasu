@@ -375,6 +375,16 @@ class ProduceCardsAuto(CustomAction):
             argv: CustomAction.RunArg,
     ) -> bool:
 
+        # 使用饮料
+        time.sleep(2)
+        image = context.tasker.controller.post_screencap().wait().get()
+        reco_detail = context.run_recognition('ProduceCheckDrinkButton', image)
+        # FeatureMatch的reco_detail.hit返回的是布林值，而不是匹配数目，所以只能用filtered_results
+        hit_count = len(reco_detail.filtered_results)
+        logger.info(f"识别到{3-hit_count}瓶饮料")
+        for _ in range(hit_count, 3):
+            context.run_task('ProduceUseDrink')
+
         start_time = time.time()
         while True:
 
