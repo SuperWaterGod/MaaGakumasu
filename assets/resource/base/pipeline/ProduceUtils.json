@@ -22,7 +22,10 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "produce/ok.png"
+        "template": [
+          "produce/ok.png",
+          "next.png"
+        ]
       }
     },
     "action": {
@@ -406,6 +409,65 @@
       "type": "Click",
       "param": {}
     }
+  },
+  "ProduceCheckDrinkButton": {
+    "recognition": {
+      "type": "FeatureMatch",
+      "param": {
+        "template": "produce/empty_drink.png",
+        "roi": [
+          30,
+          1150,
+          300,
+          100
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    }
+  },
+  "ProduceUseDrink": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "Click",
+      "param": {
+        "target": [
+          65,
+          1180,
+          45,
+          40
+        ]
+      }
+    },
+    "next": [
+      "ProduceUseDrinkConfirm"
+    ],
+    "post_delay": 1000,
+    "timeout": 3000
+  },
+  "ProduceUseDrinkConfirm": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "produce/use_drink.png",
+        "roi": [
+          0,
+          1000,
+          720,
+          280
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_delay": 5000
   },
   "Click_1": {
     "recognition": {
