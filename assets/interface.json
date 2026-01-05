@@ -41,12 +41,14 @@
     {
       "name": "启动游戏",
       "entry": "StartUp",
-      "default_check": true
+      "default_check": true,
+      "label": "$启动游戏"
     },
     {
       "name": "收取活动费",
       "entry": "ActivityFee",
-      "default_check": true
+      "default_check": true,
+      "label": "$收取活动费"
     },
     {
       "name": "安排工作",
@@ -58,7 +60,8 @@
         "直播活动工作时长"
       ],
       "default_check": true,
-      "doc": "自动:优先选择笑脸，其次按照好感高低选择"
+      "doc": "自动:优先选择笑脸，其次按照好感高低选择",
+      "label": "$安排工作"
     },
     {
       "name": "社团活动",
@@ -69,7 +72,8 @@
         "请求物品种类"
       ],
       "default_check": true,
-      "doc": "自动选择物品将选择数量最少的物品"
+      "doc": "自动选择物品将选择数量最少的物品",
+      "label": "$社团活动"
     },
     {
       "name": "每日挑战",
@@ -81,7 +85,8 @@
       "doc": [
         "自动模式下，将选择分差最小的对手进行挑战",
         "如果没有编队，将使用自动编队"
-      ]
+      ],
+      "label": "$每日挑战"
     },
     {
       "name": "扭蛋兑换",
@@ -97,7 +102,8 @@
       "doc": [
         "购买会将扭蛋全部用光",
         "购买活动扭蛋仅在活动扭蛋上架期间有效"
-      ]
+      ],
+      "label": "$扭蛋兑换"
     },
     {
       "name": "每日兑换",
@@ -109,7 +115,8 @@
       "default_check": true,
       "doc": [
         "默认仅购买推荐物品"
-      ]
+      ],
+      "label": "$每日兑换"
     },
     {
       "name": "领取奖励",
@@ -119,7 +126,8 @@
         "启用领取任务"
       ],
       "default_check": true,
-      "doc": ""
+      "doc": "",
+      "label": "$领取奖励"
     },
     {
       "name": "开始培育",
@@ -138,12 +146,14 @@
         "目前仅支持 初 的`REGULAR/PRO/MASTER` 难度",
         "当培育过程中出现异常时，可以返回主界面再次进入培育后，勾选 `跳过准备阶段`，再次运行本任务即可继续培育",
         "平均半小时完成一次培育，培育完成后请及时清理`debug`目录下的log文件"
-      ]
+      ],
+      "label": "$开始培育"
     },
     {
       "name": "关闭游戏",
       "entry": "Shutdown",
-      "default_check": true
+      "default_check": true,
+      "label": "$关闭游戏"
     }
   ],
   "option": {
@@ -224,7 +234,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$挑战模式"
     },
     "迷你演唱会工作时长": {
       "type": "select",
@@ -257,7 +268,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$迷你演唱会工作时长"
     },
     "直播活动工作时长": {
       "type": "select",
@@ -290,7 +302,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$直播活动工作时长"
     },
     "迷你演唱会Idol": {
       "type": "select",
@@ -446,7 +459,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$迷你演唱会Idol"
     },
     "直播活动Idol": {
       "type": "select",
@@ -602,7 +616,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$直播活动Idol"
     },
     "请求物品种类": {
       "type": "select",
@@ -698,7 +713,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$请求物品种类"
     },
     "启用捐赠物品": {
       "type": "switch",
@@ -720,7 +736,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$启用捐赠物品"
     },
     "启用请求物品": {
       "type": "switch",
@@ -742,7 +759,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$启用请求物品"
     },
     "启用领取礼物": {
       "type": "switch",
@@ -764,7 +782,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$启用领取礼物"
     },
     "启用领取任务": {
       "type": "switch",
@@ -786,7 +805,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$启用领取任务"
     },
     "购买好友扭蛋": {
       "type": "switch",
@@ -808,7 +828,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买好友扭蛋"
     },
     "购买感性扭蛋": {
       "type": "switch",
@@ -830,7 +851,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买感性扭蛋"
     },
     "购买理性扭蛋": {
       "type": "switch",
@@ -852,7 +874,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买理性扭蛋"
     },
     "购买非凡扭蛋": {
       "type": "switch",
@@ -874,7 +897,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买非凡扭蛋"
     },
     "购买活动扭蛋": {
       "type": "switch",
@@ -896,7 +920,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买活动扭蛋"
     },
     "启用金币兑换": {
       "type": "switch",
@@ -946,7 +971,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$启用金币兑换"
     },
     "启用AP兑换": {
       "type": "switch",
@@ -974,7 +1000,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$启用AP兑换"
     },
     "金币兑换免费刷新": {
       "type": "switch",
@@ -996,7 +1023,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$金币兑换免费刷新"
     },
     "购买推荐物品": {
       "type": "switch",
@@ -1018,7 +1046,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买推荐物品"
     },
     "购买感性笔记(声乐)": {
       "type": "switch",
@@ -1040,7 +1069,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买感性笔记(声乐)"
     },
     "购买感性笔记(舞蹈)": {
       "type": "switch",
@@ -1062,7 +1092,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买感性笔记(舞蹈)"
     },
     "购买感性笔记(形象)": {
       "type": "switch",
@@ -1084,7 +1115,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买感性笔记(形象)"
     },
     "购买理性笔记(声乐)": {
       "type": "switch",
@@ -1106,7 +1138,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买理性笔记(声乐)"
     },
     "购买理性笔记(舞蹈)": {
       "type": "switch",
@@ -1128,7 +1161,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买理性笔记(舞蹈)"
     },
     "购买理性笔记(形象)": {
       "type": "switch",
@@ -1150,7 +1184,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买理性笔记(形象)"
     },
     "购买非凡笔记(声乐)": {
       "type": "switch",
@@ -1172,7 +1207,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买非凡笔记(声乐)"
     },
     "购买非凡笔记(舞蹈)": {
       "type": "switch",
@@ -1194,7 +1230,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买非凡笔记(舞蹈)"
     },
     "购买非凡笔记(形象)": {
       "type": "switch",
@@ -1216,7 +1253,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买非凡笔记(形象)"
     },
     "购买课程笔记": {
       "type": "switch",
@@ -1238,7 +1276,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买课程笔记"
     },
     "购买资深笔记": {
       "type": "switch",
@@ -1260,7 +1299,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买资深笔记"
     },
     "购买支援强化Pt": {
       "type": "switch",
@@ -1282,7 +1322,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买支援强化Pt"
     },
     "购买再挑战卷": {
       "type": "switch",
@@ -1304,7 +1345,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买再挑战卷"
     },
     "购买记录钥匙": {
       "type": "switch",
@@ -1326,7 +1368,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买记录钥匙"
     },
     "购买[The rolling Riceball]花海佑芽": {
       "type": "switch",
@@ -1348,7 +1391,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买[The rolling Riceball]花海佑芽"
     },
     "购买[白线]葛城莉莉亚": {
       "type": "switch",
@@ -1370,7 +1414,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买[白线]葛城莉莉亚"
     },
     "购买[光景]篠泽广": {
       "type": "switch",
@@ -1392,7 +1437,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买[光景]篠泽广"
     },
     "购买[Tame-Lie-One-Step]紫云清夏": {
       "type": "switch",
@@ -1414,7 +1460,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买[Tame-Lie-One-Step]紫云清夏"
     },
     "购买[Luna say maybe]月村手毬": {
       "type": "switch",
@@ -1436,7 +1483,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买[Luna say maybe]月村手毬"
     },
     "购买[世界一可愛い私]藤田琴音": {
       "type": "switch",
@@ -1458,7 +1506,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买[世界一可愛い私]藤田琴音"
     },
     "购买[Fighting My Way]花海咲季": {
       "type": "switch",
@@ -1480,7 +1529,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买[Fighting My Way]花海咲季"
     },
     "购买[Wonder Scale]仓本千柰": {
       "type": "switch",
@@ -1502,7 +1552,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买[Wonder Scale]仓本千柰"
     },
     "购买[Fluorite]有村麻央": {
       "type": "switch",
@@ -1524,7 +1575,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买[Fluorite]有村麻央"
     },
     "购买[clumsy trick]姬崎莉波": {
       "type": "switch",
@@ -1546,7 +1598,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买[clumsy trick]姬崎莉波"
     },
     "购买支援强化Pt提升": {
       "type": "switch",
@@ -1568,7 +1621,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买支援强化Pt提升"
     },
     "购买笔记数量提升": {
       "type": "switch",
@@ -1590,7 +1644,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买笔记数量提升"
     },
     "购买再挑战卷(AP)": {
       "type": "switch",
@@ -1612,7 +1667,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买再挑战卷(AP)"
     },
     "购买回忆生成卷": {
       "type": "switch",
@@ -1634,7 +1690,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$购买回忆生成卷"
     },
     "培育难度": {
       "type": "select",
@@ -1664,7 +1721,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$培育难度"
     },
     "启用自动回忆": {
       "type": "switch",
@@ -1686,7 +1744,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$启用自动回忆"
     },
     "启用关注租借": {
       "type": "switch",
@@ -1708,7 +1767,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$启用关注租借"
     },
     "跳过准备阶段": {
       "type": "switch",
@@ -1730,7 +1790,8 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$跳过准备阶段"
     },
     "跳过选择偶像": {
       "type": "switch",
@@ -1752,11 +1813,97 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$跳过选择偶像"
     },
     "培育偶像": {
       "type": "select",
-      "default_case": "紫云清夏(Tame-Lie-One-Step)",
+      "default_case": "紫云清夏",
+      "cases": [
+        {
+          "name": "倉本千奈",
+          "option": [
+            "倉本千奈卡片"
+          ]
+        },
+        {
+          "name": "十王星南",
+          "option": [
+            "十王星南卡片"
+          ]
+        },
+        {
+          "name": "雨夜燕",
+          "option": [
+            "雨夜燕卡片"
+          ]
+        },
+        {
+          "name": "姫崎莉波",
+          "option": [
+            "姫崎莉波卡片"
+          ]
+        },
+        {
+          "name": "月村手毬",
+          "option": [
+            "月村手毬卡片"
+          ]
+        },
+        {
+          "name": "有村麻央",
+          "option": [
+            "有村麻央卡片"
+          ]
+        },
+        {
+          "name": "秦谷美玲",
+          "option": [
+            "秦谷美玲卡片"
+          ]
+        },
+        {
+          "name": "篠泽广",
+          "option": [
+            "篠泽广卡片"
+          ]
+        },
+        {
+          "name": "紫云清夏",
+          "option": [
+            "紫云清夏卡片"
+          ]
+        },
+        {
+          "name": "花海佑芽",
+          "option": [
+            "花海佑芽卡片"
+          ]
+        },
+        {
+          "name": "花海咲季",
+          "option": [
+            "花海咲季卡片"
+          ]
+        },
+        {
+          "name": "葛城リーリヤ",
+          "option": [
+            "葛城リーリヤ卡片"
+          ]
+        },
+        {
+          "name": "藤田琴音",
+          "option": [
+            "藤田琴音卡片"
+          ]
+        }
+      ],
+      "label": "$培育偶像"
+    },
+    "倉本千奈卡片": {
+      "type": "select",
+      "default_case": "倉本千奈(Campus mode!!)",
       "cases": [
         {
           "name": "倉本千奈(Campus mode!!)",
@@ -1827,7 +1974,14 @@
               ]
             }
           }
-        },
+        }
+      ],
+      "label": "$倉本千奈卡片"
+    },
+    "十王星南卡片": {
+      "type": "select",
+      "default_case": "十王星南(Campus mode!!)",
+      "cases": [
         {
           "name": "十王星南(Campus mode!!)",
           "pipeline_override": {
@@ -1867,7 +2021,31 @@
               ]
             }
           }
-        },
+        }
+      ],
+      "label": "$十王星南卡片"
+    },
+    "雨夜燕卡片": {
+      "type": "select",
+      "default_case": "雨夜燕(Campus mode!!)",
+      "cases": [
+        {
+          "name": "雨夜燕(Campus mode!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
+                "idols/雨夜燕(Campus mode!!).png"
+              ]
+            }
+          }
+        }
+      ],
+      "label": "$雨夜燕卡片"
+    },
+    "姫崎莉波卡片": {
+      "type": "select",
+      "default_case": "姫崎莉波(Campus mode!!)",
+      "cases": [
         {
           "name": "姫崎莉波(clumsy trick)",
           "pipeline_override": {
@@ -1937,7 +2115,14 @@
               ]
             }
           }
-        },
+        }
+      ],
+      "label": "$姫崎莉波卡片"
+    },
+    "月村手毬卡片": {
+      "type": "select",
+      "default_case": "月村手毬(Campus mode!!)",
+      "cases": [
         {
           "name": "月村手毬(Luna say maybe)",
           "pipeline_override": {
@@ -1997,7 +2182,14 @@
               ]
             }
           }
-        },
+        }
+      ],
+      "label": "$月村手毬卡片"
+    },
+    "有村麻央卡片": {
+      "type": "select",
+      "default_case": "有村麻央(Campus mode!!)",
+      "cases": [
         {
           "name": "有村麻央(Fluorite)",
           "pipeline_override": {
@@ -2047,7 +2239,14 @@
               ]
             }
           }
-        },
+        }
+      ],
+      "label": "$有村麻央卡片"
+    },
+    "秦谷美玲卡片": {
+      "type": "select",
+      "default_case": "秦谷美玲(star-mine)",
+      "cases": [
         {
           "name": "秦谷美玲(ツキノカメ)",
           "pipeline_override": {
@@ -2058,6 +2257,23 @@
             }
           }
         },
+        {
+          "name": "秦谷美玲(star-mine)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "template": [
+                "idols/秦谷美玲(star-mine).png"
+              ]
+            }
+          }
+        }
+      ],
+      "label": "$秦谷美玲卡片"
+    },
+    "篠泽广卡片": {
+      "type": "select",
+      "default_case": "篠泽广(Campus mode!!)",
+      "cases": [
         {
           "name": "篠泽广(Campus mode!!)",
           "pipeline_override": {
@@ -2107,7 +2323,14 @@
               ]
             }
           }
-        },
+        }
+      ],
+      "label": "$篠泽广卡片"
+    },
+    "紫云清夏卡片": {
+      "type": "select",
+      "default_case": "紫云清夏(Tame-Lie-One-Step)",
+      "cases": [
         {
           "name": "紫云清夏(Campus mode!!)",
           "pipeline_override": {
@@ -2167,7 +2390,14 @@
               ]
             }
           }
-        },
+        }
+      ],
+      "label": "$紫云清夏卡片"
+    },
+    "花海佑芽卡片": {
+      "type": "select",
+      "default_case": "花海佑芽(Campus mode!!)",
+      "cases": [
         {
           "name": "花海佑芽(Campus mode!!)",
           "pipeline_override": {
@@ -2197,7 +2427,14 @@
               ]
             }
           }
-        },
+        }
+      ],
+      "label": "$花海佑芽卡片"
+    },
+    "花海咲季卡片": {
+      "type": "select",
+      "default_case": "花海咲季(Campus mode!!)",
+      "cases": [
         {
           "name": "花海咲季(Boom Boom Pow)",
           "pipeline_override": {
@@ -2267,7 +2504,14 @@
               ]
             }
           }
-        },
+        }
+      ],
+      "label": "$花海咲季卡片"
+    },
+    "葛城リーリヤ卡片": {
+      "type": "select",
+      "default_case": "葛城リーリヤ(Campus mode!!)",
+      "cases": [
         {
           "name": "葛城リーリヤ(Campus mode!!)",
           "pipeline_override": {
@@ -2337,7 +2581,14 @@
               ]
             }
           }
-        },
+        }
+      ],
+      "label": "$葛城リーリヤ卡片"
+    },
+    "藤田琴音卡片": {
+      "type": "select",
+      "default_case": "藤田琴音(Campus mode!!)",
+      "cases": [
         {
           "name": "藤田琴音(Campus mode!!)",
           "pipeline_override": {
@@ -2398,7 +2649,11 @@
             }
           }
         }
-      ]
+      ],
+      "label": "$藤田琴音卡片"
     }
+  },
+  "languages": {
+    "zh-Hant": "lang/zh-Hant.json"
   }
 }

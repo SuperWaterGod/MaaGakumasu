@@ -120,6 +120,7 @@
 
   ```
   chmod a+x MFAAvalonia
+  chmod a+x python/bin/python3
   ./MFAAvalonia
   ```
   > 注：需要安装.NET 运行库（使用上面的命令启动失败时会直接返回下载地址）

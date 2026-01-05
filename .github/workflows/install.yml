@@ -95,6 +95,46 @@ jobs:
         run: |
           ./tools/ci/setup_embed_python.ps1
 
+      - name: Modify MFAAvalonia exe icon
+        shell: bash
+        run: |
+          # 根据架构选择 rcedit 版本
+          if [ "${{ matrix.arch }}" == "x86_64" ]; then
+            rcedit_url="https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe"
+          else
+            rcedit_url="https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x86.exe"
+          fi
+          
+          # 下载 rcedit
+          echo "Downloading rcedit for ${{ matrix.arch }}..."
+          curl -L "$rcedit_url" -o rcedit.exe
+          
+          # 检查 logo.ico 是否存在
+          if [ ! -f "logo.ico" ]; then
+            echo "Warning: logo.ico not found in project root."
+            exit 0
+          fi
+          
+          # 查找 MFAAvalonia.exe 的位置
+          exe_path=$(find install -name "MFAAvalonia.exe" | head -n 1)
+          
+          if [ -z "$exe_path" ]; then
+            echo "Warning: MFAAvalonia.exe not found in install directory."
+            exit 0
+          fi
+          
+          echo "Found MFAAvalonia.exe at: $exe_path"
+          
+          # 修改 exe 图标
+          ./rcedit.exe "$exe_path" --set-icon "logo.ico"
+          
+          if [ $? -eq 0 ]; then
+            echo "MFAAvalonia icon modified successfully"
+          else
+            echo "Failed to modify MFAAvalonia icon"
+            exit 1
+          fi
+
       - name: Install
         shell: bash
         run: |
