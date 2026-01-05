@@ -22,7 +22,10 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "produce/ok.png"
+        "template": [
+          "produce/ok.png",
+          "next.png"
+        ]
       }
     },
     "action": {
