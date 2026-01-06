@@ -222,11 +222,147 @@ def sort_cards(cards):
     ), reverse=True)
 
 
-def save_to_json(data, filename='cards_data.json'):
+def load_old_data(filename):
     """
-    将数据保存到JSON文件（覆盖模式）
+    加载旧的JSON数据
     """
     try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+    except Exception as e:
+        print(f"读取旧文件时出错: {e}")
+        return None
+
+
+def create_card_key(card):
+    """
+    为卡片创建唯一键，用于比较
+    """
+    return f"{card.get('偶像名称', '')}|{card.get('歌曲名称', '')}"
+
+
+def compare_data(old_data, new_data):
+    """
+    比较新旧数据的差异
+    返回: (新增, 修改, 删除)
+    """
+    added = {'SSR': [], 'SR': [], 'R': []}
+    modified = {'SSR': [], 'SR': [], 'R': []}
+    deleted = {'SSR': [], 'SR': [], 'R': []}
+
+    if old_data is None:
+        # 如果没有旧数据，所有都是新增
+        for rarity in ['SSR', 'SR', 'R']:
+            added[rarity] = new_data[rarity].copy()
+        return added, modified, deleted
+
+    for rarity in ['SSR', 'SR', 'R']:
+        # 创建旧数据和新数据的字典映射
+        old_cards = {create_card_key(card): card for card in old_data.get(rarity, [])}
+        new_cards = {create_card_key(card): card for card in new_data[rarity]}
+
+        # 找出新增的卡片
+        for key, card in new_cards.items():
+            if key not in old_cards:
+                added[rarity].append(card)
+
+        # 找出删除的卡片
+        for key, card in old_cards.items():
+            if key not in new_cards:
+                deleted[rarity].append(card)
+
+        # 找出修改的卡片
+        for key in set(old_cards.keys()) & set(new_cards.keys()):
+            old_card = old_cards[key]
+            new_card = new_cards[key]
+
+            # 比较卡片的所有字段
+            differences = []
+            for field in ['体力', 'Vo', 'Da', 'Vi', '奖励加成', '推荐效果', '登场日期']:
+                old_value = old_card.get(field)
+                new_value = new_card.get(field)
+                if old_value != new_value:
+                    differences.append({
+                        'field': field,
+                        'old': old_value,
+                        'new': new_value
+                    })
+
+            if differences:
+                modified[rarity].append({
+                    'card': new_card,
+                    'changes': differences
+                })
+
+    return added, modified, deleted
+
+
+def print_comparison_report(added, modified, deleted):
+    """
+    打印数据变化报告
+    """
+    has_changes = False
+
+    print("\n" + "=" * 60)
+    print("数据变化报告")
+    print("=" * 60)
+
+    # 新增的卡片
+    total_added = sum(len(added[r]) for r in ['SSR', 'SR', 'R'])
+    if total_added > 0:
+        has_changes = True
+        print(f"\n【新增卡片】共 {total_added} 张")
+        for rarity in ['SSR', 'SR', 'R']:
+            if added[rarity]:
+                print(f"\n  {rarity}:")
+                for card in added[rarity]:
+                    print(f"    + {card['卡片名称']}")
+                    print(f"      偶像: {card['偶像名称']} | 歌曲: {card['歌曲名称']}")
+                    print(f"      登场日期: {card.get('登场日期', 'N/A')}")
+
+    # 修改的卡片
+    total_modified = sum(len(modified[r]) for r in ['SSR', 'SR', 'R'])
+    if total_modified > 0:
+        has_changes = True
+        print(f"\n【修改的卡片】共 {total_modified} 张")
+        for rarity in ['SSR', 'SR', 'R']:
+            if modified[rarity]:
+                print(f"\n  {rarity}:")
+                for item in modified[rarity]:
+                    card = item['card']
+                    changes = item['changes']
+                    print(f"    ~ {card['卡片名称']}")
+                    for change in changes:
+                        print(f"      {change['field']}: {change['old']} → {change['new']}")
+
+    # 删除的卡片
+    total_deleted = sum(len(deleted[r]) for r in ['SSR', 'SR', 'R'])
+    if total_deleted > 0:
+        has_changes = True
+        print(f"\n【删除的卡片】共 {total_deleted} 张")
+        for rarity in ['SSR', 'SR', 'R']:
+            if deleted[rarity]:
+                print(f"\n  {rarity}:")
+                for card in deleted[rarity]:
+                    print(f"    - {card['卡片名称']}")
+                    print(f"      偶像: {card['偶像名称']} | 歌曲: {card['歌曲名称']}")
+
+    if not has_changes:
+        print("\n   数据无变化")
+
+    print("\n" + "=" * 60)
+
+
+def save_to_json(data, filename='cards_data.json'):
+    """
+    将数据保存到JSON文件（覆盖模式），并比较差异
+    """
+    try:
+        # 加载旧数据
+        old_data = load_old_data(filename)
+
         # 对每个稀有度的卡片进行排序
         sorted_data = {
             '保存时间': datetime.now().strftime('%Y/%m/%d'),
@@ -234,6 +370,13 @@ def save_to_json(data, filename='cards_data.json'):
             'SR': sort_cards(data['SR']),
             'R': sort_cards(data['R'])
         }
+
+        # 比较新旧数据
+        if old_data:
+            added, modified, deleted = compare_data(old_data, sorted_data)
+            print_comparison_report(added, modified, deleted)
+        else:
+            print("\n首次创建文件，无旧数据可比较")
 
         # 使用'w'模式覆盖写入
         with open(filename, 'w', encoding='utf-8') as f:
@@ -261,15 +404,8 @@ def main():
 
     if cards_data:
         print("\n采集完成！")
-        save_to_json(cards_data, filename='../assets/resource/data/idols_cards.json')
+        save_to_json(cards_data, filename='../assets/data/idols_cards.json')
 
-        # 打印一些示例数据
-        print("\n=== 数据预览 ===")
-        for rarity in ['SSR', 'SR', 'R']:
-            if cards_data[rarity]:
-                print(f"\n{rarity}卡片示例（第一张）:")
-                print(json.dumps(cards_data[rarity][0], ensure_ascii=False, indent=2))
-                break
     else:
         print("采集失败，请检查网络连接或URL是否正确")
 
