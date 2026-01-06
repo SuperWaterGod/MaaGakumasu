@@ -101,13 +101,56 @@
             }
         },
         "action": {
-            "type": "DoNothing",
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "ProduceChooseIdolFirst"
+        ],
+        "post_wait_freezes": 200
+    },
+    "ProduceChooseIdolFirst": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "produce/decide.png"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {
+                "target": [
+                    45,
+                    610,
+                    120,
+                    150
+                ]
+            }
+        },
+        "next": [
+            "ProduceChooseIdolFirstDecide"
+        ],
+        "post_wait_freezes": 200
+    },
+    "ProduceChooseIdolFirstDecide": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "produce/decide.png"
+            }
+        },
+        "action": {
+            "type": "Click",
             "param": {}
         },
         "next": [
             "ProduceChooseIdol",
             "[JumpBack]ProduceChooseNextIdol"
-        ]
+        ],
+        "post_wait_freezes": 200,
+        "focus": {
+            "Node.Action.Succeeded": "[color:blue]已找到偶像卡[/color]"
+        }
     },
     "ProduceChooseIdol": {
         "recognition": {
