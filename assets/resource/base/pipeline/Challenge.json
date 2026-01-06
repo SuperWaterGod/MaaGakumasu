@@ -95,7 +95,8 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "challenge_battle_total.png"
+        "template": "challenge_battle_total.png",
+        "threshold": 0.9
       }
     },
     "action": {
