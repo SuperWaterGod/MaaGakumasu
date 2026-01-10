@@ -155,7 +155,8 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
             "kuramoto_tina_shards": context.get_node_data("ShoppingDailyExchangeItemsHanamiSaki").get("enabled", False),
             "hanami_saki_shards": context.get_node_data("ShoppingDailyExchangeItemsKuramotoTina").get("enabled", False),
             "arimura_mao_shards": context.get_node_data("ShoppingDailyExchangeItemsArimuraMao").get("enabled", False),
-            "himezaki_rinami_shards": context.get_node_data("ShoppingDailyExchangeItemsHimezakiRinami").get("enabled", False)
+            "himezaki_rinami_shards": context.get_node_data("ShoppingDailyExchangeItemsHimezakiRinami").get("enabled", False),
+            "misuzu_hataya_shards": context.get_node_data("ShoppingDailyExchangeItemsMisuzuHataya").get("enabled", False)
         }
 
         wishlist = []
