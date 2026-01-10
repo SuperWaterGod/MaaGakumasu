@@ -36,11 +36,11 @@ class ProduceChooseIdolAuto(CustomRecognition):
                 "roi": [430, 34, 266, 48]
             }})
         if true_end_detail and true_end_detail.hit:
-            logger.info("识别到True End")
+            logger.debug("识别到True End")
             idol_name_roi = [440, 128, 280, 64]
             song_name_roi = [380, 90, 320, 45]
         else:
-            logger.info("未识别到True End")
+            logger.debug("未识别到True End")
             idol_name_roi = [400, 98, 320, 64]
             song_name_roi = [340, 60, 380, 45]
 
