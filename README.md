@@ -1,5 +1,3 @@
-<!-- markdownlint-disable MD033 MD041 -->
-
 <p align="center">
   <img alt="LOGO" src="./logo.png" width="256" height="256" />
 </p>
@@ -12,6 +10,7 @@
 由 [MaaFramework](https://github.com/MaaXYZ/MaaFramework) 强力驱动！
 
 ✨ 如果喜欢 MaaGakumasu，欢迎在项目右上角点亮 Star 支持 ✨
+
 </div>
 
 <p align="center">
@@ -25,9 +24,7 @@
   <img alt="stars" src="https://img.shields.io/github/stars/SuperWaterGod/MaaGakumasu?style=social">
   <img alt="downloads" src="https://img.shields.io/github/downloads/SuperWaterGod/MaaGakumasu/total?style=social">
   <a href="https://mirrorchyan.com/zh/projects?rid=MaaGakumasu" target="_blank"><img alt="mirrorc" src="https://img.shields.io/badge/Mirror%E9%85%B1-%239af3f6?logo=countingworkspro&logoColor=4f46e5"></a>
-
 </p>
-
 
 ## 功能列表
 
@@ -81,7 +78,6 @@
 6. 本项目仅用于学习交流，请勿用于商业用途，否则后果自负。
 7. 本项目仅提供脚本，不提供任何游戏资源，如需要游戏资源，请自行购买。
 
-
 ## 使用说明
 
 ### Windows
@@ -101,12 +97,12 @@
 
 > MAA 本家提供的解决方案 ⬇️
 >
-> 请安装 [`Visual C++ 可再发行程序包`](https://aka.ms/vs/17/release/vc_redist.x64.exe) 和 [`.NET 桌面SDK 10`](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0) 并 **重新启动计算机** 。
+> 请安装 [`Visual C++ 可再发行程序包`](https://aka.ms/vs/17/release/vc_redist.x64.exe) 和 [`.NET 桌面运行时 10`](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0) 并 **重新启动计算机** 。
 >
 > 推荐使用 Windows 10 或 11 的用户使用 winget 工具进行安装，只需在终端中运行以下命令。
 >
-> ```
-> winget install Microsoft.VCRedist.2015+.x64 Microsoft.DotNet.DesktopRuntime.8
+> ```bash
+> winget install Microsoft.VCRedist.2015+.x64 Microsoft.DotNet.DesktopRuntime.10
 > ```
 
 ### MacOS
@@ -114,26 +110,25 @@
 - 若使用 Intel 处理器，请下载 `MaaGakumasu-macos-x86_64-vXXX.zip`
 - 若使用 M1, M2 等 arm 处理器，请下载 `MaaGakumasu-macos-aarch64-vXXX.zip`
 - 压缩包已自带 `Python 3.12.9` 环境，无需额外安装。
-- 解压缩之后，右击文件夹，点击“新建位于文件夹位置的终端窗口”
+- 解压缩之后，右击文件夹，点击"新建位于文件夹位置的终端窗口"
 - 在终端窗口内逐行输入以下指令
 
-  ```
-  chmod a+x MFAAvalonia
-  chmod a+x python/bin/python3
-  ./MFAAvalonia
-  ```
-  > 注：需要安装.NET 运行库（使用上面的命令启动失败时会直接返回下载地址）
+```bash
+chmod a+x MFAAvalonia
+chmod a+x python/bin/python3
+./MFAAvalonia
+```
+
+> 注：需要安装.NET 运行库（使用上面的命令启动失败时会直接返回下载地址）
 
 - Mac 可能会提示：因为 Apple 无法检查其是否包含恶意软件
 
-此时进入选择   设置  -  隐私与安全性，下方出现“已阻止…”点击   仍要打开。
+此时进入选择   设置  -  隐私与安全性，下方出现"已阻止…"点击   仍要打开。
 多重复以上步骤，因为有很多文件会被检查。
-
 
 ### Linux
 
 Linux大佬自有办法
-
 
 ## 开发相关
 
@@ -152,16 +147,16 @@ Linux大佬自有办法
 
 > [!IMPORTANT]
 > `cards` 集 目前405张样本，均已标注完成。基本满足当前需求
-> 
+>
 > `button` 集 目前仅28张样本，均已标注完成。**目前未能完全满足当前需求**，部分场景下识别率较低。
-> 
+>
 > 若您有兴趣参与标注或者提供样本，欢迎联系开发组。
 
 详细内容见 [开发相关](docs/zh_cn/开发相关.md)
 
 ### Mirror酱相关
 
->  自2025/11/08起，MaaGakumasu已全面支持Mirror酱，在其他地方购买的CDK同样可以在此使用。
+> 自2025/11/08起，MaaGakumasu已全面支持Mirror酱，在其他地方购买的CDK同样可以在此使用。
 
 Mirror酱是一个第三方应用分发平台，让开源应用的**更新**更简单。
 
@@ -174,7 +169,6 @@ CDK 购买连接: [官网](https://mirrorchyan.com/zh/projects?rid=MaaGakumasu)
 本软件开源、免费，仅供学习交流使用。若您遇到商家使用本软件进行代练并收费，可能是分发、设备或时间等费用，产生的费用、问题及后果与本软件无关。
 
 **在使用过程中，MaaGakumasu 可能存在任何意想不到的问题，因 MaaGakumasu 自身漏洞、文本理解有歧义、异常操作导致的账号问题等开发组不承担任何责任，请在确保在阅读完用户手册、自行尝试运行效果后谨慎使用！**
-
 
 ## Star History
 
@@ -196,5 +190,6 @@ UI 由 [MFAAvalonia](https://github.com/SweetSmellFox/MFAAvalonia) 大力支持�
 [![Contributors](https://contrib.rocks/image?repo=SuperWaterGod/MaaGakumasu&max=1000)](https://github.com/SuperWaterGod/MaaGakumasu/graphs/contributors)
 
 ## Join us
+
 - MaaGakumasu 交流群 QQ 群：799823681
 - MaaFramework 开发交流 QQ 群: 595990173
