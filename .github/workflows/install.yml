@@ -95,7 +95,33 @@ jobs:
         run: |
           ./tools/ci/setup_embed_python.ps1
 
-      - name: Modify MFAAvalonia exe icon
+      - name: Rename MFAAvalonia to MaaGakumasu
+        shell: bash
+        run: |
+          # 查找 MFAAvalonia.exe 的位置
+          exe_path=$(find install -name "MFAAvalonia.exe" | head -n 1)
+          
+          if [ -z "$exe_path" ]; then
+            echo "Warning: MFAAvalonia.exe not found in install directory."
+            exit 1
+          fi
+          
+          echo "Found MFAAvalonia.exe at: $exe_path"
+          
+          # 获取目录路径
+          exe_dir=$(dirname "$exe_path")
+          
+          # 重命名为 MaaGakumasu.exe
+          mv "$exe_path" "$exe_dir/MaaGakumasu.exe"
+          
+          if [ $? -eq 0 ]; then
+            echo "MFAAvalonia.exe renamed to MaaGakumasu.exe successfully"
+          else
+            echo "Failed to rename MFAAvalonia.exe"
+            exit 1
+          fi
+
+      - name: Modify MaaGakumasu exe icon
         shell: bash
         run: |
           # 根据架构选择 rcedit 版本
@@ -115,23 +141,23 @@ jobs:
             exit 0
           fi
           
-          # 查找 MFAAvalonia.exe 的位置
-          exe_path=$(find install -name "MFAAvalonia.exe" | head -n 1)
+          # 查找 MaaGakumasu.exe 的位置
+          exe_path=$(find install -name "MaaGakumasu.exe" | head -n 1)
           
           if [ -z "$exe_path" ]; then
-            echo "Warning: MFAAvalonia.exe not found in install directory."
+            echo "Warning: MaaGakumasu.exe not found in install directory."
             exit 0
           fi
           
-          echo "Found MFAAvalonia.exe at: $exe_path"
+          echo "Found MaaGakumasu.exe at: $exe_path"
           
           # 修改 exe 图标
           ./rcedit.exe "$exe_path" --set-icon "logo.ico"
           
           if [ $? -eq 0 ]; then
-            echo "MFAAvalonia icon modified successfully"
+            echo "MaaGakumasu icon modified successfully"
           else
-            echo "Failed to modify MFAAvalonia icon"
+            echo "Failed to modify MaaGakumasu icon"
             exit 1
           fi
 
