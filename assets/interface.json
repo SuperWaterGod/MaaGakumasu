@@ -637,6 +637,7 @@
         },
         {
           "name": "感性笔记(声乐)",
+          "description": "![](resource/base/image/items/sense_red.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
               "recognition": "FeatureMatch",
@@ -646,6 +647,7 @@
         },
         {
           "name": "感性笔记(舞蹈)",
+          "description": "![](resource/base/image/items/sense_blue.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
               "recognition": "FeatureMatch",
@@ -655,6 +657,7 @@
         },
         {
           "name": "感性笔记(形象)",
+          "description": "![](resource/base/image/items/sense_yellow.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
               "recognition": "FeatureMatch",
@@ -664,6 +667,7 @@
         },
         {
           "name": "理性笔记(声乐)",
+          "description": "![](resource/base/image/items/logic_red.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
               "recognition": "FeatureMatch",
@@ -673,6 +677,7 @@
         },
         {
           "name": "理性笔记(舞蹈)",
+          "description": "![](resource/base/image/items/logic_blue.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
               "recognition": "FeatureMatch",
@@ -682,6 +687,7 @@
         },
         {
           "name": "理性笔记(形象)",
+          "description": "![](resource/base/image/items/logic_yellow.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
               "recognition": "FeatureMatch",
@@ -691,6 +697,7 @@
         },
         {
           "name": "非凡笔记(声乐)",
+          "description": "![](resource/base/image/items/anomaly_red.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
               "recognition": "FeatureMatch",
@@ -700,6 +707,7 @@
         },
         {
           "name": "非凡笔记(舞蹈)",
+          "description": "![](resource/base/image/items/anomaly_blue.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
               "recognition": "FeatureMatch",
@@ -709,6 +717,7 @@
         },
         {
           "name": "非凡笔记(形象)",
+          "description": "![](resource/base/image/items/anomaly_yellow.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
               "recognition": "FeatureMatch",
@@ -963,7 +972,8 @@
             "购买[Fighting My Way]花海咲季",
             "购买[Wonder Scale]仓本千柰",
             "购买[Fluorite]有村麻央",
-            "购买[clumsy trick]姬崎莉波"
+            "购买[clumsy trick]姬崎莉波",
+            "购买[ツキノカメ]秦谷美鈴"
           ]
         },
         {
@@ -979,7 +989,7 @@
     },
     "启用AP兑换": {
       "type": "switch",
-      "default_case": "Yes",
+      "default_case": "No",
       "cases": [
         {
           "name": "Yes",
@@ -1055,6 +1065,7 @@
     "购买感性笔记(声乐)": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/sense_blue.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1078,6 +1089,7 @@
     "购买感性笔记(舞蹈)": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/sense_red.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1101,6 +1113,7 @@
     "购买感性笔记(形象)": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/sense_yellow.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1124,6 +1137,7 @@
     "购买理性笔记(声乐)": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/logic_blue.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1147,6 +1161,7 @@
     "购买理性笔记(舞蹈)": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/logic_red.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1170,6 +1185,7 @@
     "购买理性笔记(形象)": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/logic_yellow.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1193,6 +1209,7 @@
     "购买非凡笔记(声乐)": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/anomaly_blue.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1216,6 +1233,7 @@
     "购买非凡笔记(舞蹈)": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/anomaly_red.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1239,6 +1257,7 @@
     "购买非凡笔记(形象)": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/anomaly_yellow.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1262,6 +1281,7 @@
     "购买课程笔记": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/lesson_note.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1285,6 +1305,7 @@
     "购买资深笔记": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/veteran_note.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1308,6 +1329,7 @@
     "购买支援强化Pt": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/support_point.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1331,6 +1353,7 @@
     "购买再挑战卷": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/challenge_ticket.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1354,6 +1377,7 @@
     "购买记录钥匙": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/record_key.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1377,6 +1401,7 @@
     "购买[The rolling Riceball]花海佑芽": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/hanami_ume_shards.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1400,6 +1425,7 @@
     "购买[白线]葛城莉莉亚": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/katuragi_ririya_shards.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1423,6 +1449,7 @@
     "购买[光景]篠泽广": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/sasazawa_hiro_shards.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1446,6 +1473,7 @@
     "购买[Tame-Lie-One-Step]紫云清夏": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/sion_sumika_shards.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1469,6 +1497,7 @@
     "购买[Luna say maybe]月村手毬": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/tukimura_temari_shards.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1492,6 +1521,7 @@
     "购买[世界一可愛い私]藤田琴音": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/huzita_kotone_shards.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1515,6 +1545,7 @@
     "购买[Fighting My Way]花海咲季": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/hanami_saki_shards.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1538,6 +1569,7 @@
     "购买[Wonder Scale]仓本千柰": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/kuramoto_tina_shards.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1561,6 +1593,7 @@
     "购买[Fluorite]有村麻央": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/arimura_mao_shards.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1584,6 +1617,7 @@
     "购买[clumsy trick]姬崎莉波": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/himezaki_rinami_shards.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1604,9 +1638,34 @@
       ],
       "label": "$购买[clumsy trick]姬崎莉波"
     },
+    "购买[ツキノカメ]秦谷美鈴": {
+      "type": "switch",
+      "default_case": "No",
+      "description": "![](resource/base/image/items/misuzu_hataya_shards.png)",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsMisuzuHataya": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsMisuzuHataya": {
+              "enabled": false
+            }
+          }
+        }
+      ],
+      "label": "$购买[clumsy trick]姬崎莉波"
+    },
     "购买支援强化Pt提升": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/support_point_increased.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1630,6 +1689,7 @@
     "购买笔记数量提升": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/note_increased.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1653,6 +1713,7 @@
     "购买再挑战卷(AP)": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/challenge_ticket.png)",
       "cases": [
         {
           "name": "Yes",
@@ -1676,6 +1737,7 @@
     "购买回忆生成卷": {
       "type": "switch",
       "default_case": "No",
+      "description": "![](resource/base/image/items/memory_ticket.png)",
       "cases": [
         {
           "name": "Yes",
