@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD033 MD041 -->
 
 <p align="center">
-  <img alt="LOGO" src="https://github.com/user-attachments/assets/d22b9752-5b71-4423-95c7-30f9eb0b2923" width="256" height="256" />
+  <img alt="LOGO" src="./logo.png" width="256" height="256" />
 </p>
 
 <div align="center">
@@ -62,7 +62,6 @@
 详细内容见 [功能说明](docs/zh_cn/功能说明.md)
 
 - 等待实现
-- [ ] 重置培育
 - [ ] 支持Kuyo版汉化
 - [ ] 强化支援卡
 - [ ] …………
