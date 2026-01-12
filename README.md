@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD033 MD041 -->
+
 <p align="center">
   <img alt="LOGO" src="./logo.png" width="256" height="256" />
 </p>
@@ -55,6 +57,7 @@
   - [x] 自动选择
   - [x] **中断继续**
 - [x] 支持从Mirror酱更新
+- [x] 多语言适配(已支持繁体，更多语言等待补充……)
 
 详细内容见 [功能说明](docs/zh_cn/功能说明.md)
 
