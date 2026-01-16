@@ -482,7 +482,7 @@ class ProduceCardsAuto(CustomAction):
 
         return True
 
-    def _play_a_card(self, context: Context, box: list) -> float:
+    def _play_a_card(self, context: Context, box: list) -> bool:
         """
             出牌并处理移动卡牌界面
 
