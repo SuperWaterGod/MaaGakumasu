@@ -368,7 +368,6 @@ class ProduceCardsAuto(CustomAction):
     # 阈值常量
     CLICK_DELAY = 0.3
     ACTION_DELAY = 8.0
-    start_time = time.time()
 
     def run(
             self,
