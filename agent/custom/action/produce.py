@@ -477,6 +477,7 @@ class ProduceCardsAuto(CustomAction):
                     logger.info("无手牌")
                     context.run_task("ProduceRecognitionSkipRound")
                     time.sleep(self.ACTION_DELAY)
+                    self.start_time = time.time()
 
             if context.tasker.stopping:
                 logger.info("任务中断")
