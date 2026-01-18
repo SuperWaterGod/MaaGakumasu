@@ -85,7 +85,10 @@ class ChallengeAuto(CustomAction):
                         except ValueError:
                             index = 1
                             logger.warning("自身挑战评分识别失败, 已重置为第2位")
+                if index > 2:
+                    index = 1
+                    logger.warning("序列超出阈值, 已重置为第2位")
                 context.run_task("ChallengeIndex", pipeline_override={"ChallengeIndex": {"recognition": {"param": {"index": index}}}})
         else:
-            logger.error("战参数错误, 已退出挑战")
+            logger.error("挑战参数错误, 已退出挑战")
         return True
