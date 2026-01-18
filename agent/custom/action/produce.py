@@ -369,6 +369,10 @@ class ProduceCardsAuto(CustomAction):
     CLICK_DELAY = 0.3
     ACTION_DELAY = 8.0
 
+    def __init__(self):
+        super().__init__()
+        self.start_time = time.time()
+
     def run(
             self,
             context: Context,
@@ -509,7 +513,7 @@ class ProduceCardsAuto(CustomAction):
         self._handle_move_cards(context)
 
         # 等待出牌后动画并重置计时
-        time.sleep(max(0, self.ACTION_DELAY - sleep_time))
+        time.sleep(max(0.0, self.ACTION_DELAY - sleep_time))
         self.start_time = time.time()
 
         return True
