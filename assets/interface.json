@@ -1006,7 +1006,8 @@
             "购买[Wonder Scale]仓本千柰",
             "购买[Fluorite]有村麻央",
             "购买[clumsy trick]姬崎莉波",
-            "购买[ツキノカメ]秦谷美鈴"
+            "购买[ツキノカメ]秦谷美鈴",
+            "购买[小さな野望]十王星南"
           ]
         },
         {
@@ -1694,6 +1695,30 @@
         }
       ],
       "label": "$购买[ツキノカメ]秦谷美鈴"
+    },
+    "购买[小さな野望]十王星南": {
+      "type": "switch",
+      "default_case": "No",
+      "description": "![](resource/base/image/items/sena_juo_shards.png)",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSenaJuo": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "ShoppingDailyExchangeItemsSenaJuo": {
+              "enabled": false
+            }
+          }
+        }
+      ],
+      "label": "$购买[小さな野望]十王星南"
     },
     "购买支援强化Pt提升": {
       "type": "switch",
