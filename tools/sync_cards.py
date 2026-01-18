@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 
 
 def safe_print(text):

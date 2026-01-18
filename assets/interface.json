@@ -1,7 +1,7 @@
 {
   "interface_version": 2,
   "name": "MaaGakumasu",
-  "version": "v1.2.5",
+  "version": "v1.2.6",
   "mirrorchyan_rid": "MaaGakumasu",
   "mirrorchyan_multiplatform": true,
   "github": "https://github.com/SuperWaterGod/MaaGakumasu",
@@ -1919,9 +1919,69 @@
       "default_case": "紫云清夏",
       "cases": [
         {
+          "name": "花海咲季",
+          "option": [
+            "花海咲季卡片"
+          ]
+        },
+        {
+          "name": "月村手毬",
+          "option": [
+            "月村手毬卡片"
+          ]
+        },
+        {
+          "name": "藤田琴音",
+          "option": [
+            "藤田ことね卡片"
+          ]
+        },
+        {
+          "name": "有村麻央",
+          "option": [
+            "有村麻央卡片"
+          ]
+        },
+        {
+          "name": "葛城リーリヤ",
+          "option": [
+            "葛城リーリヤ卡片"
+          ]
+        },
+        {
           "name": "倉本千奈",
           "option": [
             "倉本千奈卡片"
+          ]
+        },
+        {
+          "name": "紫云清夏",
+          "option": [
+            "紫雲清夏卡片"
+          ]
+        },
+        {
+          "name": "篠泽广",
+          "option": [
+            "篠澤広卡片"
+          ]
+        },
+        {
+          "name": "姫崎莉波",
+          "option": [
+            "姫崎莉波卡片"
+          ]
+        },
+        {
+          "name": "花海佑芽",
+          "option": [
+            "花海佑芽卡片"
+          ]
+        },
+        {
+          "name": "秦谷美玲",
+          "option": [
+            "秦谷美鈴卡片"
           ]
         },
         {
@@ -1934,66 +1994,6 @@
           "name": "雨夜燕",
           "option": [
             "雨夜燕卡片"
-          ]
-        },
-        {
-          "name": "姫崎莉波",
-          "option": [
-            "姫崎莉波卡片"
-          ]
-        },
-        {
-          "name": "月村手毬",
-          "option": [
-            "月村手毬卡片"
-          ]
-        },
-        {
-          "name": "有村麻央",
-          "option": [
-            "有村麻央卡片"
-          ]
-        },
-        {
-          "name": "秦谷美玲",
-          "option": [
-            "秦谷美鈴卡片"
-          ]
-        },
-        {
-          "name": "篠泽广",
-          "option": [
-            "篠澤広卡片"
-          ]
-        },
-        {
-          "name": "紫云清夏",
-          "option": [
-            "紫雲清夏卡片"
-          ]
-        },
-        {
-          "name": "花海佑芽",
-          "option": [
-            "花海佑芽卡片"
-          ]
-        },
-        {
-          "name": "花海咲季",
-          "option": [
-            "花海咲季卡片"
-          ]
-        },
-        {
-          "name": "葛城リーリヤ",
-          "option": [
-            "葛城リーリヤ卡片"
-          ]
-        },
-        {
-          "name": "藤田琴音",
-          "option": [
-            "藤田ことね卡片"
           ]
         }
       ],
@@ -2966,8 +2966,19 @@
     },
     "月村手毬卡片": {
       "type": "select",
-      "default_case": "月村手毬(がむしゃらに行こう！)",
+      "default_case": "月村手毬(一体いつから)",
       "cases": [
+        {
+          "name": "月村手毬(一体いつから)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "月村手毬",
+                "song_name": "一体いつから"
+              }
+            }
+          }
+        },
         {
           "name": "月村手毬(がむしゃらに行こう！)",
           "pipeline_override": {

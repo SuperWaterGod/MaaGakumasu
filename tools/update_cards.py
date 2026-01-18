@@ -16,6 +16,15 @@ EFFECT_TRANSLATIONS = {
 }
 
 
+def safe_print(text):
+    """安全打印，处理编码问题"""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        # 如果打印失败，尝试用ASCII安全字符替换
+        print(text.encode('gbk', errors='replace').decode('gbk'))
+
+
 def extract_card_info(card_name):
     """
     从卡片名称中提取偶像名称和歌曲名称
@@ -305,54 +314,54 @@ def print_comparison_report(added, modified, deleted):
     """
     has_changes = False
 
-    print("\n" + "=" * 60)
-    print("数据变化报告")
-    print("=" * 60)
+    safe_print("\n" + "=" * 60)
+    safe_print("数据变化报告")
+    safe_print("=" * 60)
 
     # 新增的卡片
     total_added = sum(len(added[r]) for r in ['SSR', 'SR', 'R'])
     if total_added > 0:
         has_changes = True
-        print(f"\n【新增卡片】共 {total_added} 张")
+        safe_print(f"\n【新增卡片】共 {total_added} 张")
         for rarity in ['SSR', 'SR', 'R']:
             if added[rarity]:
-                print(f"\n  {rarity}:")
+                safe_print(f"\n  {rarity}:")
                 for card in added[rarity]:
-                    print(f"    + {card['卡片名称']}")
-                    print(f"      偶像: {card['偶像名称']} | 歌曲: {card['歌曲名称']}")
-                    print(f"      登场日期: {card.get('登场日期', 'N/A')}")
+                    safe_print(f"    + {card['卡片名称']}")
+                    safe_print(f"      偶像: {card['偶像名称']} | 歌曲: {card['歌曲名称']}")
+                    safe_print(f"      登场日期: {card.get('登场日期', 'N/A')}")
 
     # 修改的卡片
     total_modified = sum(len(modified[r]) for r in ['SSR', 'SR', 'R'])
     if total_modified > 0:
         has_changes = True
-        print(f"\n【修改的卡片】共 {total_modified} 张")
+        safe_print(f"\n【修改的卡片】共 {total_modified} 张")
         for rarity in ['SSR', 'SR', 'R']:
             if modified[rarity]:
-                print(f"\n  {rarity}:")
+                safe_print(f"\n  {rarity}:")
                 for item in modified[rarity]:
                     card = item['card']
                     changes = item['changes']
-                    print(f"    ~ {card['卡片名称']}")
+                    safe_print(f"    ~ {card['卡片名称']}")
                     for change in changes:
-                        print(f"      {change['field']}: {change['old']} → {change['new']}")
+                        safe_print(f"      {change['field']}: {change['old']} → {change['new']}")
 
     # 删除的卡片
     total_deleted = sum(len(deleted[r]) for r in ['SSR', 'SR', 'R'])
     if total_deleted > 0:
         has_changes = True
-        print(f"\n【删除的卡片】共 {total_deleted} 张")
+        safe_print(f"\n【删除的卡片】共 {total_deleted} 张")
         for rarity in ['SSR', 'SR', 'R']:
             if deleted[rarity]:
-                print(f"\n  {rarity}:")
+                safe_print(f"\n  {rarity}:")
                 for card in deleted[rarity]:
-                    print(f"    - {card['卡片名称']}")
-                    print(f"      偶像: {card['偶像名称']} | 歌曲: {card['歌曲名称']}")
+                    safe_print(f"    - {card['卡片名称']}")
+                    safe_print(f"      偶像: {card['偶像名称']} | 歌曲: {card['歌曲名称']}")
 
     if not has_changes:
-        print("\n   数据无变化")
+        safe_print("\n   数据无变化")
 
-    print("\n" + "=" * 60)
+    safe_print("\n" + "=" * 60)
 
 
 def save_to_json(data, filename='cards_data.json'):
