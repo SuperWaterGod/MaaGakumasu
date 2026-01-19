@@ -318,6 +318,12 @@
     "recognition": {
       "type": "NeuralNetworkDetect",
       "param": {
+        "roi": [
+          0,
+          640,
+          720,
+          312
+        ],
         "model": "choose.onnx",
         "labels": [
           "choose",
@@ -326,8 +332,7 @@
         "expected": [
           0,
           1
-        ],
-        "threshold": 0.75
+        ]
       }
     },
     "action": {
