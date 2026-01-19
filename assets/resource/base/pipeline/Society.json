@@ -157,7 +157,7 @@
         "custom_action": "UseCounter",
         "custom_action_param": {
           "name": "Society",
-          "max": 5,
+          "max": 6,
           "text": "社团活动"
         }
       }
@@ -193,7 +193,7 @@
       "BackHome"
     ],
     "focus": {
-      "Node.Action.Succeeded": "[color:blue]社团捐赠物品已完成[/color]"
+      "Node.Recognition.Succeeded": "[color:blue]社团捐赠物品已完成[/color]"
     }
   },
   "SocietyRequest": {

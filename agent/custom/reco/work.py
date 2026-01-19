@@ -28,7 +28,7 @@ class WorkChooseAuto(CustomRecognition):
         def recognize_affinity(image):
             return context.run_recognition("WorkIdolAffinity", image, pipeline_override={"WorkIdolAffinity": {
                 "recognition": "OCR",
-                "expected": "^(0|[1-9]|1[0-9]|20)\\/20$",
+                "expected": "^(?:0|[1-9]\\d?)/[1-9]\\d$",
                 "roi": [70, 788, 558, 240]
             }})
 
@@ -48,7 +48,8 @@ class WorkChooseAuto(CustomRecognition):
                     if len(good_list) > 1:
                         # 笑脸存在且被选中, 选择第二个笑脸
                         logger.info("已选择笑脸")
-                        return CustomRecognition.AnalyzeResult(box=good_list[1], detail={"detail": "笑脸存在且被选中，选择第二个笑脸"})
+                        good_box = [good_list[1][0] - 50, good_list[1][1] + 50, good_list[1][2], good_list[1][3]]
+                        return CustomRecognition.AnalyzeResult(box=good_box, detail={"detail": "笑脸存在且被选中，选择第二个笑脸"})
                     else:
                         # 笑脸存在且被选中
                         logger.debug("第二页")
@@ -57,7 +58,8 @@ class WorkChooseAuto(CustomRecognition):
                 else:
                     # 笑脸存在且未被选中
                     logger.info("已选择笑脸")
-                    return CustomRecognition.AnalyzeResult(box=good_list[0], detail={"detail": "笑脸存在且未被选中"})
+                    good_box = [good_list[0][0] - 50, good_list[0][1] + 50, good_list[0][2], good_list[0][3]]
+                    return CustomRecognition.AnalyzeResult(box=good_box, detail={"detail": "笑脸存在且未被选中"})
             else:
                 # 无笑脸
                 logger.debug("返回第一页")
@@ -80,7 +82,7 @@ class WorkChooseAuto(CustomRecognition):
         affinity_image = context.tasker.controller.post_screencap().wait().get()
         affinity_reco_detail = recognize_affinity(affinity_image)
         if affinity_reco_detail and affinity_reco_detail.hit:
-            affinity_list = [{"box": result.box, "text": int(result.text.replace("/20", ""))} for result in affinity_reco_detail.filtered_results]
+            affinity_list = [{"box": result.box, "text": int(result.text.split('/')[0])} for result in affinity_reco_detail.filtered_results]
             sorted_list = sorted(affinity_list, key=lambda item: item['text'])
             max_affinity = sorted_list[-1]
             second_affinity = sorted_list[-2]
