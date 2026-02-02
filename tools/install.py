@@ -52,7 +52,6 @@ def install_deps(platform: str):
 
 
 def install_resource():
-
     shutil.copytree(
         working_dir / "assets" / "resource",
         install_path / "resource",
@@ -83,7 +82,7 @@ def install_resource():
 
 
 def install_chores():
-    for file in ["README.md", "LICENSE", "requirements.txt"]:
+    for file in ["README.md", "LICENSE", "logo.ico", "requirements.txt"]:
         shutil.copy2(
             working_dir / file,
             install_path,

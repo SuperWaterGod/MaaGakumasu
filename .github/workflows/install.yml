@@ -180,25 +180,6 @@ jobs:
           echo "Cleaning up zip files..."
           find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
 
-          # 复制logo.ico到Assets文件夹
-          if [ -f "logo.ico" ]; then
-            echo "Copying logo.ico to Assets folder..."
-            mkdir -p install/Assets
-            cp logo.ico install/Assets/
-            echo "logo.ico copied to install/Assets/"
-          else
-            echo "Warning: logo.ico not found in project root."
-          fi
-
-          # 复制LICENSE到根目录
-          if [ -f "LICENSE" ]; then
-            echo "Copying LICENSE to root folder..."
-            cp LICENSE install/
-            echo "LICENSE copied to install/"
-          else
-            echo "Warning: LICENSE not found in project root."
-          fi
-
       - uses: actions/upload-artifact@v4
         with:
           name: MaaGakumasu-win-${{ matrix.arch }}
@@ -268,25 +249,6 @@ jobs:
           # 清理zip文件
           echo "Cleaning up zip files..."
           find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
-
-          # 复制logo.ico到Assets文件夹
-          if [ -f "logo.ico" ]; then
-            echo "Copying logo.ico to Assets folder..."
-            mkdir -p install/Assets
-            cp logo.ico install/Assets/
-            echo "logo.ico copied to install/Assets/"
-          else
-            echo "Warning: logo.ico not found in project root."
-          fi
-
-          # 复制LICENSE到根目录
-          if [ -f "LICENSE" ]; then
-            echo "Copying LICENSE to root folder..."
-            cp LICENSE install/
-            echo "LICENSE copied to install/"
-          else
-            echo "Warning: LICENSE not found in project root."
-          fi
 
       - uses: actions/upload-artifact@v4
         with:
