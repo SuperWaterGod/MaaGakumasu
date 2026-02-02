@@ -1,11 +1,12 @@
 {
   "interface_version": 2,
   "name": "MaaGakumasu",
-  "version": "v1.2.7",
+  "version": "v1.2.8",
   "mirrorchyan_rid": "MaaGakumasu",
   "mirrorchyan_multiplatform": true,
   "github": "https://github.com/SuperWaterGod/MaaGakumasu",
   "contact": "QQ群: 799823681",
+  "icon": "./icon.ico",
   "license": "./LICENSE",
   "welcome": "欢迎使用基于全新架构的 学園アイドルマスター(学マス) 小助手。图像技术 + 模拟控制 + 深度学习，解放双手！由 MaaFramework 强力驱动！",
   "description": "学園アイドルマスター（学マス）小助手 | Assistant For Gakuen Idolmaster",
@@ -2673,8 +2674,19 @@
     },
     "篠澤広卡片": {
       "type": "select",
-      "default_case": "篠澤広(ミラクルナナウ(ﾟ∀ﾟ)！)",
+      "default_case": "篠澤広(みちなるひろがる)",
       "cases": [
+        {
+          "name": "篠澤広(みちなるひろがる)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "篠澤広",
+                "song_name": "みちなるひろがる"
+              }
+            }
+          }
+        },
         {
           "name": "篠澤広(ミラクルナナウ(ﾟ∀ﾟ)！)",
           "pipeline_override": {
@@ -3342,8 +3354,19 @@
     },
     "倉本千奈卡片": {
       "type": "select",
-      "default_case": "倉本千奈(空と約束)",
+      "default_case": "倉本千奈(みちなるひろがる)",
       "cases": [
+        {
+          "name": "倉本千奈(みちなるひろがる)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "倉本千奈",
+                "song_name": "みちなるひろがる"
+              }
+            }
+          }
+        },
         {
           "name": "倉本千奈(空と約束)",
           "pipeline_override": {
