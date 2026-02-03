@@ -232,11 +232,9 @@ class ProduceOptionsFlagAuto(CustomRecognition):
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         context.run_task("Click_1")
         options_reco_detail = context.run_recognition("ProduceRecognitionOptions", argv.image)
-        # 通过识别右上角的“审查基准”去除大量场景，但注意N.I.A没有这4个字，适配N.I.A时注意修改判断或增加识别模板
-        parameter_reco_detail = context.run_recognition("ProduceRecognitionParameterFlag", argv.image)
         if (not options_reco_detail or not options_reco_detail.hit or
-                not parameter_reco_detail or not parameter_reco_detail.hit or
-                options_reco_detail.best_result.box[2] < 490):
+            options_reco_detail.best_result.box[1] < 600 or options_reco_detail.best_result.box[1] > 900 or
+                options_reco_detail.best_result.score < 0.8):
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "未识别到选择场景"})
 
         logger.success("事件: 选择冲刺/上课/外出")
