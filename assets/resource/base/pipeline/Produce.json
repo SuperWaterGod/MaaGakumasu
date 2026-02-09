@@ -87,9 +87,109 @@
             "param": {}
         },
         "next": [
+            "ProduceLackAP",
             "ProduceChooseIdolFlag"
         ],
         "post_wait_freezes": 200
+    },
+    "ProduceLackAP": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/ap_lack.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "next": [
+            "ProduceLackAPRestore"
+        ],
+        "post_wait_freezes": 200,
+        "focus": {
+            "Node.Action.Succeeded": "[color:orange]体力不足！[/color]"
+        }
+    },
+    "ProduceLackAPRestore": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/ap_restore.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "ProduceLackAPUse"
+        ],
+        "post_wait_freezes": 200
+    },
+    "ProduceLackAPUse": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/ap_use.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "ProduceLackAPDecide"
+        ],
+        "post_wait_freezes": 200
+    },
+    "ProduceLackAPDecide": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/ap_restore.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "ProduceChooseDifficulty"
+        ],
+        "post_wait_freezes": 200,
+        "focus": {
+            "Node.Action.Succeeded": "[color:green]已使用体力药[/color]"
+        }
+    },
+    "ProduceLackAPCancel": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/cancel.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "BackHome"
+        ],
+        "post_wait_freezes": 200,
+        "focus": {
+            "Node.Action.Succeeded": "[color:green]已放弃使用体力药[/color]"
+        }
     },
     "ProduceChooseIdolFlag": {
         "recognition": {

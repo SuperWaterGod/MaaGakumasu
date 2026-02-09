@@ -250,6 +250,7 @@ class ProduceOptionsFlagAuto(CustomRecognition):
         logger.info(f"选项数量:{choose}/{lesson}")
         if lesson == 0:
             pass
+        time.sleep(0.5)
         context.tasker.controller.post_click(click_point_x, click_point_y).wait()
         time.sleep(0.2)
         context.tasker.controller.post_click(click_point_x, click_point_y).wait()

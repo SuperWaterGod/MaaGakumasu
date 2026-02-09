@@ -132,6 +132,7 @@
       "option": [
         "培育难度",
         "培育偶像",
+        "使用体力药",
         "跳过选择偶像",
         "启用自动回忆",
         "启用关注租借",
@@ -1848,6 +1849,29 @@
       ],
       "label": "$培育难度"
     },
+    "使用体力药": {
+      "type": "switch",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "ProduceLackAP": {
+              "next": "ProduceLackAPRestore"
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "ProduceLackAP": {
+              "next": "ProduceLackAPCancel"
+            }
+          }
+        }
+      ],
+      "label": "$使用体力药"
+    },
     "启用自动回忆": {
       "type": "switch",
       "default_case": "Yes",
@@ -1933,7 +1957,10 @@
           "name": "No",
           "pipeline_override": {
             "ProduceChooseDifficulty": {
-              "next": "ProduceChooseIdolFlag"
+              "next": [
+                "ProduceLackAP",
+                "ProduceChooseIdolFlag"
+              ]
             }
           }
         }
