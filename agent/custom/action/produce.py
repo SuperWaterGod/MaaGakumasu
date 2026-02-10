@@ -549,7 +549,7 @@ class ProduceCardsAuto(CustomAction):
                 image = context.tasker.controller.post_screencap().wait().get()
                 reco_detail = context.run_recognition('ProduceRecognitionChooseMoveCards', image)
                 if not reco_detail.hit:
-                    context.tasker.controller.post_click(360, 1160).wait()
+                    context.run_task("ProduceMoveCards")
                     return True
                 else:
                     y = y + 100
