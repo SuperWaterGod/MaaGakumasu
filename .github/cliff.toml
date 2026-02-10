@@ -17,7 +17,7 @@ body = """
     - {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
         {% if commit.breaking %}[**breaking**] {% endif %}\
         {{ commit.message | upper_first }} \
-        @{{ author.login | default(value=commit.author.name) }}
+        {% if commit.github.username %}@{{ commit.github.username }}{% else %}@{{ commit.author.name }}{% endif %}
 {% endmacro -%}
 
 {% if version %}\
@@ -65,6 +65,8 @@ footer = """
 conventional_commits = true # 使用约定式提交格式
 filter_unconventional = false # 不过滤非约定式提交
 commit_parsers = [
+    { message = "^Merge pull request", skip = true },
+    { message = "^Merge branch", skip = true },
     { message = "^feat", group = "<!-- 0 -->✨ 新功能" },
     { message = "^fix", group = "<!-- 1 -->🐛 Bug修复" },
     { message = "^docs", group = "<!-- 4 -->📚 文档" },
