@@ -258,6 +258,27 @@
       "param": {}
     }
   },
+  "ProduceMoveCards": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/move_1.png",
+          "produce/move_2.png"
+        ],
+        "roi": [
+          0,
+          1100,
+          720,
+          180
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    }
+  },
   "ProduceRecognitionSkipRound": {
     "recognition": {
       "type": "TemplateMatch",
