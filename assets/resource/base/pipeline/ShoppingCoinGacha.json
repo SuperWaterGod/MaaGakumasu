@@ -89,6 +89,7 @@
       }
     },
     "next": [
+      "[JumpBack]CloseButton",
       "BackHome"
     ],
     "focus": {
@@ -129,8 +130,7 @@
       "type": "Click",
       "param": {}
     },
-    "post_wait_freezes": 200,
-    "pre_wait_freezes": 200,
+    "post_wait_freezes": 500,
     "next": [
       "ShoppingCoinButton",
       "[JumpBack]CloseButton",
