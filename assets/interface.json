@@ -1,7 +1,7 @@
 {
   "interface_version": 2,
   "name": "MaaGakumasu",
-  "version": "v1.2.8",
+  "version": "v1.2.9",
   "mirrorchyan_rid": "MaaGakumasu",
   "mirrorchyan_multiplatform": true,
   "github": "https://github.com/SuperWaterGod/MaaGakumasu",
@@ -3286,8 +3286,19 @@
     },
     "十王星南卡片": {
       "type": "select",
-      "default_case": "十王星南(Star-mine)",
+      "default_case": "十王星南(赤裸々)",
       "cases": [
+        {
+          "name": "十王星南(赤裸々)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "十王星南",
+                "song_name": "赤裸々"
+              }
+            }
+          }
+        },
         {
           "name": "十王星南(Star-mine)",
           "pipeline_override": {
