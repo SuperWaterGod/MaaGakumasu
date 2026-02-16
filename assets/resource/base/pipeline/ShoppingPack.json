@@ -1,0 +1,156 @@
+{
+  "ShoppingPack": {
+  "next": [
+    "ShoppingPackMenuClick",
+    "ShoppingPackStart",
+    "[JumpBack]CloseMenu",
+    "[JumpBack]BackHome"
+  ]
+  },
+  "ShoppingPackMenuClick": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "menu.png"
+        ],
+        "roi": [
+          600,
+          1160,
+          120,
+          120
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ShoppingPackClick"
+    ]
+  },
+  "ShoppingPackClick": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_wait_freezes": 500,
+    "next": [
+      "ShoppingPackStart"
+    ]
+  },
+  "ShoppingPackStart": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "shopping_pack.png",
+        "roi": [
+          0,
+          660,
+          720,
+          460
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ShoppingPackBuyFreePack",
+      "ShoppingPackBuyFreePackSoldOut",
+      "[JumpBack]ShoppingPackSwipe"
+    ],
+    "post_wait_freezes": 100
+  },
+  "ShoppingPackBuyFreePack": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "free_pack.png",
+        "method": 10001,
+        "threshold": 0.99,
+        "order_by": "Score"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ShoppingPackBuyFreePackConfirm"
+    ],
+    "post_wait_freezes": 100
+  },
+  "ShoppingPackBuyFreePackSoldOut": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "free_pack_grayed_out.png",
+        "method": 10001,
+        "threshold": 0.99,
+        "order_by": "Score"
+      }
+    },
+    "next": [
+      "BackHome"
+    ]
+  },
+  "ShoppingPackSwipe": {
+    "action": {
+      "type": "Swipe",
+      "param": {
+        "begin": [
+          360,
+          1150
+        ],
+        "end": [
+          360,
+          730
+        ],
+        "duration": 500,
+        "end_hold": 500
+      }
+    },
+    "max_hit": 3,
+    "post_wait_freezes": 100
+  },
+  "ShoppingPackBuyFreePackConfirm": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "decide.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ShoppingPackPurchased"
+    ],
+    "post_wait_freezes": 100
+  },
+  "ShoppingPackPurchased": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "close.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "BackHome"
+    ]
+  }
+}

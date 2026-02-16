@@ -116,6 +116,13 @@
       "label": "$每日兑换"
     },
     {
+      "name": "每周免费初星包",
+      "entry": "ShoppingPack",
+      "default_check": true,
+      "doc": "",
+      "label": "$每周免费初星包"
+    },
+    {
       "name": "领取奖励",
       "entry": "Award",
       "option": [
