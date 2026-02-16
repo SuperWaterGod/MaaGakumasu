@@ -646,11 +646,14 @@ class ProduceShoppingAuto(CustomAction):
                 continue
 
             # 点击购买
-            # 由于模板识别灰色的购买按钮也有0.997的识别分数，所以识别购买按钮是否为灰没有用
-            # 只能直接运行pipeline，如果因为P点不足无法购买，只能等待识别到提示信息或者超时
-            # 目前因为post_wait_freezes的存在，是识别不到提示信息的，只能等待超时
+            # 由于模板识别灰色的购买按钮也有0.997的识别分数，所以识别购买按钮是否为灰没有用，除非使用对颜色敏感的method参数
+            # 目前只能直接运行pipeline，如果因为P点不足无法购买，会直接等待到超时
+            # 因为post_wait_freezes的存在，是识别不到提示信息的，只能等待超时
             context.run_task("ProduceShoppingBuy")
             self._wait_until_animations_end(context)
+
+            if context.tasker.stopping:
+                return False
 
         # 使用独立退出函数，确保退出商店后才结束节点，防止没有命中按钮导致又重复进入商店节点再走一次流程的情况
         self._exit(context)
@@ -695,7 +698,7 @@ class ProduceShoppingAuto(CustomAction):
                 context: maa的Context类
 
             Returns:
-                RecognitionDetail: 识别到的打折销售的饮料
+                list: 识别到的打折销售的饮料列表
         """
         image = context.tasker.controller.post_screencap().wait().get()
         reco_detail = context.run_recognition(
@@ -757,6 +760,9 @@ class ProduceShoppingAuto(CustomAction):
 
             if context.tasker.stopping:
                 return False
+
+            count += 1
+            time.sleep(0.5)
 
         return False
 
