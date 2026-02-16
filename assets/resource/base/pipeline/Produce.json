@@ -21,6 +21,41 @@
             "type": "TemplateMatch",
             "param": {
                 "template": [
+                  "home.png",
+                  "home_1.png"
+                ]
+            }
+        },
+        "next": [
+            "ProduceLoop"
+        ]
+    },
+    "ProduceLoop": {
+        "next": [
+            "[JumpBack]ProduceStartPopUpButtons",
+            "ProduceStart"
+        ]
+    },
+    "ProduceStartPopUpButtons": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "close_icon.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "post_wait_freezes": 500
+    },
+    "ProduceStart": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
                     "home.png",
                     "home_1.png"
                 ]
@@ -875,7 +910,7 @@
             "param": {}
         },
         "next": [
-            "HomeFlag",
+            "ProduceHomeFlag",
             "[JumpBack]ProduceFollow",
             "[JumpBack]ProduceSkip",
             "[JumpBack]CloseRoundButton",

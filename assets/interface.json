@@ -132,6 +132,7 @@
       "option": [
         "培育难度",
         "培育偶像",
+        "培育次数",
         "使用体力药",
         "跳过选择偶像",
         "启用自动回忆",
@@ -1872,6 +1873,90 @@
       ],
       "label": "$使用体力药"
     },
+    "培育次数": {
+      "label": "$培育次数",
+      "type": "select",
+      "default_case": "1",
+      "description": "$培育次数说明",
+      "cases": [
+        {
+          "label": "1",
+          "pipeline_override": {
+            "ProduceLoop": {
+              "max_hit": 1
+            }
+          }
+        },
+        {
+          "label": "2",
+          "pipeline_override": {
+            "ProduceLoop": {
+              "max_hit": 2
+            }
+          }
+        },
+        {
+          "label": "3",
+          "pipeline_override": {
+            "ProduceLoop": {
+              "max_hit": 3
+            }
+          }
+        },
+        {
+          "label": "4",
+          "pipeline_override": {
+            "ProduceLoop": {
+              "max_hit": 4
+            }
+          }
+        },
+        {
+          "label": "5",
+          "pipeline_override": {
+            "ProduceLoop": {
+              "max_hit": 5
+            }
+          }
+        },
+        {
+          "label": "6",
+          "pipeline_override": {
+            "ProduceLoop": {
+              "max_hit": 6
+            }
+          }
+        },
+        {
+          "name": "∞"
+        },
+        {
+          "label": "$手动输入次数",
+          "option": [
+            "手动输入培育次数"
+          ]
+        }
+      ]
+    },
+    "手动输入培育次数": {
+      "type": "input",
+      "default_case": "1",
+      "inputs": [
+        {
+          "name": "produce_times",
+          "label": "$手动输入培育次数",
+          "default": "1",
+          "pipeline_type": "int",
+          "verify": "^[1-9]\\d*$",
+          "pattern_msg": "$手动输入培育次数输入框说明"
+        }
+      ],
+      "pipeline_override": {
+        "ProduceLoop": {
+          "max_hit": "{produce_times}"
+        }
+      }
+    },
     "启用自动回忆": {
       "type": "switch",
       "default_case": "Yes",
@@ -1949,7 +2034,10 @@
           "name": "Yes",
           "pipeline_override": {
             "ProduceChooseDifficulty": {
-              "next": "ProduceChooseIdolNext"
+              "next": [
+                "ProduceLackAP",
+                "ProduceChooseIdolNext"
+              ]
             }
           }
         },
