@@ -8,13 +8,25 @@
             "type": "DoNothing",
             "param": {}
         },
-        "post_wait_freezes": 300,
         "next": [
+            "ProduceLoop"
+        ]
+    },
+    "ProduceLoop": {
+        "next": [
+            "ProduceSkipPreparation",
+            "[JumpBack]ProduceStartPopUpButtons",
             "ProduceHomeFlag",
             "[JumpBack]ReturnHome",
-            "[JumpBack]BackHome",
-            "[JumpBack]CloseRoundButton"
+            "[JumpBack]BackHome"
         ]
+    },
+    "ProduceSkipPreparation": {
+        "next": [
+            "ProduceEntry"
+        ],
+        "enabled": false,
+        "max_hit": 1
     },
     "ProduceHomeFlag": {
         "recognition": {
@@ -27,12 +39,6 @@
             }
         },
         "next": [
-            "ProduceLoop"
-        ]
-    },
-    "ProduceLoop": {
-        "next": [
-            "[JumpBack]ProduceStartPopUpButtons",
             "ProduceStart"
         ]
     },
@@ -66,7 +72,6 @@
             "param": {}
         },
         "next": [
-            "ProduceNextPage",
             "ProduceChooseDifficulty"
         ],
         "post_wait_freezes": 200
@@ -99,10 +104,7 @@
                 ]
             }
         },
-        "enabled": false,
-        "next": [
-            "ProduceChooseDifficulty"
-        ]
+        "enabled": false
     },
     "ProduceChooseDifficulty": {
         "recognition": {
@@ -910,7 +912,7 @@
             "param": {}
         },
         "next": [
-            "ProduceHomeFlag",
+            "ProduceBackToHome",
             "[JumpBack]ProduceFollow",
             "[JumpBack]ProduceSkip",
             "[JumpBack]CloseRoundButton",
@@ -928,6 +930,20 @@
             "type": "Click",
             "param": {}
         }
+    },
+    "ProduceBackToHome": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                  "home.png",
+                  "home_1.png"
+                ]
+            }
+        },
+        "next": [
+            "ProduceLoop"
+        ]
     },
     "ProduceCardsFlag": {
         "recognition": {

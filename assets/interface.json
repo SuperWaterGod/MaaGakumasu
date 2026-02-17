@@ -2017,18 +2017,13 @@
         {
           "name": "Yes",
           "pipeline_override": {
-            "Produce": {
-              "next": "ProduceEntry"
+            "ProduceSkipPreparation": {
+              "enabled": true
             }
           }
         },
         {
-          "name": "No",
-          "pipeline_override": {
-            "Produce": {
-              "next": "ProduceHomeFlag"
-            }
-          }
+          "name": "No"
         }
       ],
       "label": "$跳过准备阶段"
