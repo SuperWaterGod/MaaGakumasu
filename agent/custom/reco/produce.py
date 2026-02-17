@@ -234,7 +234,7 @@ class ProduceOptionsFlagAuto(CustomRecognition):
         options_reco_detail = context.run_recognition("ProduceRecognitionOptions", argv.image)
         if (not options_reco_detail or not options_reco_detail.hit or
             options_reco_detail.best_result.box[1] < 600 or options_reco_detail.best_result.box[1] > 900 or
-                options_reco_detail.best_result.score < 0.8):
+                options_reco_detail.best_result.box[0] > 360 or options_reco_detail.best_result.score < 0.8):
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "未识别到选择场景"})
 
         logger.success("事件: 选择冲刺/上课/外出")
