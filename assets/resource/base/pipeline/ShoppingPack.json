@@ -1,8 +1,8 @@
 {
   "ShoppingPack": {
   "next": [
-    "ShoppingPackMenuClick",
     "ShoppingPackStart",
+    "ShoppingPackMenuClick",
     "[JumpBack]CloseMenu",
     "[JumpBack]BackHome"
   ]
