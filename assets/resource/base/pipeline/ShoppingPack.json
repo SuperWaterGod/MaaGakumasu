@@ -68,7 +68,7 @@
       "ShoppingPackBuyFreePackSoldOut",
       "[JumpBack]ShoppingPackSwipe"
     ],
-    "post_wait_freezes": 100
+    "post_wait_freezes": 200
   },
   "ShoppingPackBuyFreePack": {
     "recognition": {
@@ -76,7 +76,7 @@
       "param": {
         "template": "free_pack.png",
         "method": 10001,
-        "threshold": 0.99,
+        "threshold": 0.98,
         "order_by": "Score"
       }
     },
@@ -95,7 +95,7 @@
       "param": {
         "template": "free_pack_grayed_out.png",
         "method": 10001,
-        "threshold": 0.99,
+        "threshold": 0.98,
         "order_by": "Score"
       }
     },
