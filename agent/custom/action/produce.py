@@ -383,7 +383,7 @@ class ProduceCardsAuto(CustomAction):
         logger.info(f"识别到{3-hit_count}瓶饮料")
         for _ in range(hit_count, 3):
             context.run_task('ProduceUseDrink')
-            self._wait_until_playable(context)
+            self._wait_until_playable(context, 2)
 
         # 开始出牌
         self.start_time = time.time()
@@ -410,7 +410,7 @@ class ProduceCardsAuto(CustomAction):
                 elif cards == 1:
                     if best_box[1] < 840 or best_box[1] > 1150:
                         continue
-                    time.sleep(0.2) # 防止点击过早导致只命中一次
+                    time.sleep(1) # 防止点击过早导致只命中一次
                     self._play_a_card(context, best_box)
                 # 没有可用牌时，先判断是否处于出牌场景，确认处于出牌场景后，再跳过回合
                 elif useless > 0 and suggestions == 0 and cards == 0:
@@ -576,13 +576,13 @@ class ProduceCardsAuto(CustomAction):
         #     return True
         return False
 
-    def _wait_until_playable(self, context: Context, confirmation_count=2):
+    def _wait_until_playable(self, context: Context, confirmation_count=1):
         """
             等待直到处于可出牌状态
 
             Args:
                 context: maa的Context类
-                confirmation_count：重复核对的次数，用来应对识别对象一闪而过的假True情况
+                confirmation_count：重复核对的次数，用来应对识别对象一闪而过的假True情况（主要存在于喝饮料的时候）
 
             Returns:
                 bool: 处于出牌场景时，返回True；不处于出牌场景时，返回False
@@ -598,13 +598,19 @@ class ProduceCardsAuto(CustomAction):
                 count_playable += 1
                 if count_playable >= confirmation_count:
                     return True
+            else:
+                count_playable = 0
 
-            # 检测血条是否存在，如连续三次检查不到血条，则认为已退出出牌场景
+            # 检测血条是否存在，如连续n次检查不到血条，则认为已退出出牌场景
+            # 如果识别时间太长，2次就够了，主要避免CLEAR效果遮住血条的情况
+            # 如果识别时间太短，导致提前出函数，CLEAR转PERFECT的那一回合出牌计时会差很远。如果出现这种情况，就设置为3次
             reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", image)
             if not (reco_detail and reco_detail.hit):
                 count_exit += 1
-                if count_exit >= 3:
+                if count_exit >= 2:
                     return False
+            else:
+                count_exit = 0
 
             # 处理移动卡片界面
             if self._handle_move_cards(context, image):
