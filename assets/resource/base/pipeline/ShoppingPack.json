@@ -68,7 +68,7 @@
       "ShoppingPackBuyFreePackSoldOut",
       "[JumpBack]ShoppingPackSwipe"
     ],
-    "post_wait_freezes": 200
+    "post_wait_freezes": 500
   },
   "ShoppingPackBuyFreePack": {
     "recognition": {
