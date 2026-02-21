@@ -277,7 +277,8 @@
     "action": {
       "type": "Click",
       "param": {}
-    }
+    },
+    "timeout": 5000
   },
   "ProduceRecognitionSkipRound": {
     "recognition": {
@@ -285,14 +286,16 @@
       "param": {
         "template": [
           "produce/skip_round.png",
-          "produce/skip_round_1.png"
+          "produce/skip_round_1.png",
+          "produce/skip_round_2.png"
         ]
       }
     },
     "action": {
       "type": "Click",
       "param": {}
-    }
+    },
+    "post_delay": 500
   },
   "ProduceRecognitionCards": {
     "recognition": {
@@ -461,8 +464,18 @@
     "action": {
       "type": "Click",
       "param": {}
-    },
-    "post_delay": 5000
+    }
+  },
+  "ProduceRecognitionShoppingAnimationsEnd": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "shopping_animation_template"
+        ],
+        "threshold": 0.99
+      }
+    }
   },
   "Click_1": {
     "recognition": {
