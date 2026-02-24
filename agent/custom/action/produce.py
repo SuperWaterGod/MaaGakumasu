@@ -612,6 +612,11 @@ class ProduceCardsAuto(CustomAction):
             else:
                 count_exit = 0
 
+            # 解决莫名其妙的误触问题
+            reco_detail = context.run_recognition("ProduceButton", image)
+            if reco_detail and reco_detail.hit:
+                context.run_task("ProduceButton")
+
             # 处理移动卡片界面
             if self._handle_move_cards(context, image):
                 count_playable = 0
