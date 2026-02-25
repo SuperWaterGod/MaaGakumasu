@@ -910,7 +910,7 @@
             "param": {}
         },
         "next": [
-            "ProduceBackToHome",
+            "ProduceBackHome",
             "[JumpBack]ProduceFollow",
             "[JumpBack]ProduceSkip",
             "[JumpBack]CloseRoundButton",
@@ -929,7 +929,7 @@
             "param": {}
         }
     },
-    "ProduceBackToHome": {
+    "ProduceBackHome": {
         "recognition": {
             "type": "TemplateMatch",
             "param": {
