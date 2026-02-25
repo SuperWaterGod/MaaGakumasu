@@ -144,7 +144,8 @@
         "跳过选择偶像",
         "启用自动回忆",
         "启用关注租借",
-        "跳过准备阶段"
+        "跳过准备阶段",
+        "卡片选择优先级"
       ],
       "default_check": true,
       "doc": "$培育说明",
@@ -2027,6 +2028,37 @@
         }
       ],
       "label": "$跳过准备阶段"
+    },
+    "卡片选择优先级": {
+      "label": "卡片选择优先级",
+      "type": "select",
+      "default_case": "建议卡>活动卡",
+      "description": "建议卡需要在游戏的培育设置中开启指引才会显示<br>活动卡指仅在「亚纱里老师的制作人讲座」活动中出现的活动卡",
+      "cases": [
+        {
+          "label": "建议卡>活动卡",
+          "pipeline_override": {
+            "ProduceChooseCards": {
+              "attach": {
+                "priority": ["suggestion", "event"]
+              }
+            }
+          }
+        },
+        {
+          "label": "活动卡>建议卡",
+          "pipeline_override": {
+            "ProduceChooseCards": {
+              "attach": {
+                "priority": ["event", "suggestion"]
+              }
+            }
+          }
+        },
+        {
+          "label": "无"
+        }
+      ]
     },
     "跳过选择偶像": {
       "type": "switch",

@@ -121,8 +121,13 @@ class ProduceShowEnd(CustomRecognition):
 @AgentServer.custom_recognition("ProduceChooseCardsAuto")
 class ProduceChooseCardsAuto(CustomRecognition):
     """
-        自动识别选择卡牌
-        优先选择推荐，没有推荐则根据培育对象选择
+        根据配置的优先级选择卡牌
+        配置示例:
+        {
+            "attach": {
+                "priority": ["suggestion", "event"]
+            }
+        }
     """
 
     def analyze(
@@ -130,25 +135,59 @@ class ProduceChooseCardsAuto(CustomRecognition):
             context: Context,
             argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
-        reco_detail = context.run_recognition(
+        logger.success("事件: 选择卡牌")
+
+        # 从节点中获取配置的优先级
+        node_data = context.get_node_data("ProduceChooseCards")
+        priority = node_data.get("attach", {}).get("priority", [])
+
+        # 根据优先级遍历
+        for card_type in priority:
+            if card_type == "suggestion":
+                box = self._get_suggestion_card(context, argv)
+                if box:
+                    logger.info("选择建议卡")
+                    return CustomRecognition.AnalyzeResult(box=box, detail={"detail": "选择建议卡"})
+            elif card_type == "event":
+                box = self._get_event_card(context, argv)
+                if box:
+                    logger.info("选择活动卡")
+                    return CustomRecognition.AnalyzeResult(box=box, detail={"detail": "选择活动卡"})
+
+        # 遍历没有结果，只好选择第一张卡
+        logger.info("选择第一张卡")
+        result = [160, 824, 20, 20]
+        return CustomRecognition.AnalyzeResult(box=result, detail={"detail": "选择第一张卡"})
+
+    @staticmethod
+    def _get_event_card(context: Context, argv: CustomRecognition.AnalyzeArg):
+        reco_detail_event = context.run_recognition(
+            "ProduceChooseEventCards", argv.image,
+            pipeline_override={"ProduceChooseEventCards": {
+                "recognition": "TemplateMatch",
+                "template": "produce/event_recommend.png",
+                "roi": [86, 788, 545, 220]
+            }})
+        if reco_detail_event and reco_detail_event.hit:
+            result = reco_detail_event.best_result.box
+            result[1] = result[1] + 80
+            return result
+        return None
+
+    @staticmethod
+    def _get_suggestion_card(context: Context, argv: CustomRecognition.AnalyzeArg):
+        reco_detail_recommend = context.run_recognition(
             "ProduceChooseCardsSuggestion", argv.image,
             pipeline_override={"ProduceChooseCardsSuggestion": {
                 "recognition": "TemplateMatch",
                 "template": "produce/recommed.png",
                 "roi": [86, 788, 545, 220]
             }})
-
-        logger.success("事件: 选择卡牌")
-        if reco_detail and reco_detail.hit:
-            logger.info("选择建议卡")
-            result = reco_detail.best_result.box
+        if reco_detail_recommend and reco_detail_recommend.hit:
+            result = reco_detail_recommend.best_result.box
             result[1] = result[1] - 80
-            return CustomRecognition.AnalyzeResult(box=result, detail={"detail": "选择建议卡"})
-        else:
-            logger.info("选择第一张卡")
-            result = [160, 824, 20, 20]
-            return CustomRecognition.AnalyzeResult(box=result, detail={"detail": "选择第一张卡"})
-
+            return result
+        return None
 
 @AgentServer.custom_recognition("ProduceChooseDrinkAuto")
 class ProduceChooseDrinkAuto(CustomRecognition):
