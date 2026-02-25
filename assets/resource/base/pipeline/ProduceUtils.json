@@ -445,7 +445,15 @@
     "next": [
       "ProduceUseDrinkConfirm"
     ],
-    "post_delay": 1000,
+    "post_wait_freezes": {
+      "time": 100,
+      "target": [
+        400,
+        1130,
+        200,
+        60
+      ]
+    },
     "timeout": 3000
   },
   "ProduceUseDrinkConfirm": {
