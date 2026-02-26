@@ -1888,57 +1888,65 @@
       "description": "$培育次数说明",
       "cases": [
         {
-          "label": "1",
+          "name": "1",
           "pipeline_override": {
             "ProduceLoop": {
               "max_hit": 1
             }
-          }
+          },
+          "label": "1"
         },
         {
-          "label": "2",
+          "name": "2",
           "pipeline_override": {
             "ProduceLoop": {
               "max_hit": 2
             }
-          }
+          },
+          "label": "2"
         },
         {
-          "label": "3",
+          "name": "3",
           "pipeline_override": {
             "ProduceLoop": {
               "max_hit": 3
             }
-          }
+          },
+          "label": "3"
         },
         {
-          "label": "4",
+          "name": "4",
           "pipeline_override": {
             "ProduceLoop": {
               "max_hit": 4
             }
-          }
+          },
+          "label": "4"
         },
         {
-          "label": "5",
+          "name": "5",
           "pipeline_override": {
             "ProduceLoop": {
               "max_hit": 5
             }
-          }
+          },
+          "label": "5"
         },
         {
-          "label": "6",
+          "name": "6",
           "pipeline_override": {
             "ProduceLoop": {
               "max_hit": 6
             }
-          }
+          },
+          "label": "6"
         },
         {
+          "name": "∞",
           "label": "∞"
         },
         {
+          "name": "手动输入次数",
           "label": "$手动输入次数",
           "option": [
             "手动输入培育次数"
@@ -1948,7 +1956,6 @@
     },
     "手动输入培育次数": {
       "type": "input",
-      "default_case": "1",
       "inputs": [
         {
           "name": "produce_times",
@@ -2036,27 +2043,36 @@
       "description": "建议卡需要在游戏的培育设置中开启指引才会显示<br>活动卡指仅在「亚纱里老师的制作人讲座」活动中出现的活动卡",
       "cases": [
         {
-          "label": "建议卡>活动卡",
+          "name": "建议卡>活动卡",
           "pipeline_override": {
             "ProduceChooseCards": {
               "attach": {
-                "priority": ["suggestion", "event"]
+                "priority": [
+                  "suggestion",
+                  "event"
+                ]
               }
             }
-          }
+          },
+          "label": "$建议卡>活动卡"
         },
         {
-          "label": "活动卡>建议卡",
+          "name": "活动卡>建议卡",
           "pipeline_override": {
             "ProduceChooseCards": {
               "attach": {
-                "priority": ["event", "suggestion"]
+                "priority": [
+                  "event",
+                  "suggestion"
+                ]
               }
             }
-          }
+          },
+          "label": "$活动卡>建议卡"
         },
         {
-          "label": "无"
+          "name": "无",
+          "label": "$无"
         }
       ]
     },
