@@ -75,7 +75,7 @@ jobs:
       - name: Download MFAAvalonia
         uses: robinraju/release-downloader@v1
         with:
-          repository: SweetSmellFox/MFAAvalonia
+          repository: MaaXYZ/MFAAvalonia
           fileName: "MFAAvalonia-*-win-x64*"
           latest: true
           out-file-path: "install"
@@ -202,7 +202,7 @@ jobs:
       - name: Download MFAAvalonia
         uses: robinraju/release-downloader@v1
         with:
-          repository: SweetSmellFox/MFAAvalonia
+          repository: MaaXYZ/MFAAvalonia
           fileName: "MFAAvalonia-*-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'osx' }}-${{ matrix.arch == 'x86_64' && 'x64' || 'arm64' }}*"
           latest: true
           out-file-path: "install"
