@@ -21,11 +21,9 @@
             "url": "/deps/tools/interface_config.schema.json"
         }
     ],
-
     "json.schemaDownload.enable": true,
     "json.validate.enable": true,
-
-    "[json]": {
+    "[json][jsonc]": {
         "editor.formatOnSave": true,
         "editor.insertSpaces": true,
         "editor.tabSize": 4,
@@ -38,5 +36,8 @@
     },
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "files.associations": {
+        "*.json": "jsonc"
     }
 }

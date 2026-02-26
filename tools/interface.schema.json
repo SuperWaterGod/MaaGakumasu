@@ -271,7 +271,8 @@
                     "enum": [
                         "Adb",
                         "Win32",
-                        "PlayCover"
+                        "PlayCover",
+                        "Gamepad"
                     ]
                 },
                 "display_short_side": {
@@ -290,6 +291,20 @@
                     "title": "使用原始分辨率",
                     "description": "是否使用原始分辨率进行截图，不进行缩放。与缩放分辨率设置互斥",
                     "default": false
+                },
+                "permission_required": {
+                    "type": "boolean",
+                    "title": "需要管理员权限",
+                    "description": "该控制器是否需要以管理员权限运行（例如某些 Win32 输入方式需要更高权限）。不设置则默认为 false",
+                    "default": false
+                },
+                "attach_resource_path": {
+                    "type": "array",
+                    "title": "附加资源路径",
+                    "description": "可选。附加资源路径数组。将会在 resource.path 加载完成后，额外加载这些路径下的资源",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "adb": {
                     "type": "object",
@@ -323,7 +338,9 @@
                                 "LegacyEvent",
                                 "PostThreadMessage",
                                 "SendMessageWithCursorPos",
-                                "PostMessageWithCursorPos"
+                                "PostMessageWithCursorPos",
+                                "SendMessageWithWindowPos",
+                                "PostMessageWithWindowPos"
                             ]
                         },
                         "keyboard": {
@@ -337,7 +354,9 @@
                                 "LegacyEvent",
                                 "PostThreadMessage",
                                 "SendMessageWithCursorPos",
-                                "PostMessageWithCursorPos"
+                                "PostMessageWithCursorPos",
+                                "SendMessageWithWindowPos",
+                                "PostMessageWithWindowPos"
                             ]
                         },
                         "screencap": {
@@ -367,6 +386,48 @@
                             "description": "可选。目标应用的 Bundle Identifier，不提供则使用默认 maa.playcover，仅作为控制器标识符，与被操控应用无关",
                             "examples": [
                                 "com.hypergryph.arknights"
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "gamepad": {
+                    "type": "object",
+                    "title": "Gamepad 控制器配置",
+                    "description": "虚拟游戏手柄控制器的具体配置（仅 Windows）。需要安装 ViGEm Bus Driver",
+                    "properties": {
+                        "class_regex": {
+                            "type": "string",
+                            "title": "窗口类名正则",
+                            "description": "可选。搜索窗口类名使用的正则表达式，用于截图功能"
+                        },
+                        "window_regex": {
+                            "type": "string",
+                            "title": "窗口标题正则",
+                            "description": "可选。搜索窗口标题使用的正则表达式，用于截图功能"
+                        },
+                        "gamepad_type": {
+                            "type": "string",
+                            "title": "手柄类型",
+                            "description": "可选。虚拟手柄类型，不提供则默认使用 Xbox360",
+                            "enum": [
+                                "Xbox360",
+                                "DualShock4",
+                                "DS4"
+                            ],
+                            "default": "Xbox360"
+                        },
+                        "screencap": {
+                            "type": "string",
+                            "title": "截图方式",
+                            "description": "可选。截图方式，不提供则使用默认。仅当配置了窗口正则时有效",
+                            "enum": [
+                                "GDI",
+                                "FramePool",
+                                "DXGI_DesktopDup",
+                                "DXGI_DesktopDup_Window",
+                                "PrintWindow",
+                                "ScreenDC"
                             ]
                         }
                     },
@@ -479,6 +540,21 @@
                     "title": "任务文档",
                     "description": "任务的详细文档说明，支持字符串或字符串数组"
                 },
+                "desc": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/i18nString"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/i18nString"
+                            }
+                        }
+                    ],
+                    "title": "任务文档",
+                    "description": "任务的详细文档说明，支持字符串或字符串数组"
+                },
                 "icon": {
                     "$ref": "#/definitions/i18nString",
                     "title": "图标路径",
@@ -488,6 +564,14 @@
                     "type": "array",
                     "title": "支持的资源包",
                     "description": "指定该任务支持的资源包列表。数组元素应与 resource 配置中的 name 字段对应。若不指定，则表示该任务在所有资源包中都可用",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "controller": {
+                    "type": "array",
+                    "title": "支持的控制器",
+                    "description": "指定该任务支持的控制器类型列表。数组元素应与 controller 配置中的 name 字段对应。若不指定，则表示该任务在所有控制器类型中都可用",
                     "items": {
                         "type": "string"
                     }
@@ -641,7 +725,19 @@
             }
         },
         "agent": {
-            "$ref": "#/definitions/agentConfig"
+            "oneOf": [
+                {
+                    "$ref": "#/definitions/agentConfig"
+                },
+                {
+                    "type": "array",
+                    "title": "代理配置数组",
+                    "description": "多个子进程（AgentServer）的配置",
+                    "items": {
+                        "$ref": "#/definitions/agentConfig"
+                    }
+                }
+            ]
         },
         "task": {
             "type": "array",
@@ -657,6 +753,14 @@
             "description": "为一个对象映射，包含配置项的信息",
             "additionalProperties": {
                 "$ref": "#/definitions/optionDefinition"
+            }
+        },
+        "import": {
+            "type": "array",
+            "title": "导入其他 PI 文件",
+            "description": "可选。导入其他 PI 文件的路径数组。文件相对路径为 interface.json 同目录下的相对路径。仅支持导入这些文件中的 task 和 option 字段",
+            "items": {
+                "type": "string"
             }
         }
     },
