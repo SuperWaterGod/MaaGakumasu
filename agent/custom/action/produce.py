@@ -222,7 +222,6 @@ class ProduceChooseEventAuto(CustomAction):
         if chat_box:
             logger.info("选择交谈")
             self._double_click(context, chat_box[0] + 80, chat_box[1] + 80)
-            context.run_task("ProduceShoppingFlag")
             time.sleep(self.ACTION_DELAY)
             return True
 
@@ -247,9 +246,6 @@ class ProduceChooseEventAuto(CustomAction):
             if event_box:
                 logger.info(f"选择{description}")
                 self._double_click(context, event_box[0] + 80, event_box[1] + 80)
-
-                if event_type == "交谈":
-                    context.run_task("ProduceShoppingFlag")
 
                 time.sleep(self.ACTION_DELAY)
                 return True
@@ -361,13 +357,13 @@ class ProduceChooseEventAuto(CustomAction):
 class ProduceCardsAuto(CustomAction):
     """
         自动识别根据系统提示出牌
-        10秒未检测到提示牌，则打出最高分的牌
+        15秒未检测到提示牌，则打出最高分的牌
         识别不到体力退出函数
         处理是否打出该牌的弹窗
     """
     # 阈值常量
     CLICK_DELAY = 0.3
-    ACTION_DELAY = 8.0
+    TIME_OUT = 15.0
 
     def __init__(self):
         super().__init__()
@@ -380,28 +376,20 @@ class ProduceCardsAuto(CustomAction):
     ) -> bool:
 
         # 使用饮料
-        time.sleep(2)
+        self._wait_until_playable(context)
         image = context.tasker.controller.post_screencap().wait().get()
         reco_detail = context.run_recognition('ProduceCheckDrinkButton', image)
-        # FeatureMatch的reco_detail.hit返回的是布林值，而不是匹配数目，所以只能用filtered_results
-        hit_count = len(reco_detail.filtered_results)
+        hit_count = len(reco_detail.filtered_results) # 获取饮料数
         logger.info(f"识别到{3-hit_count}瓶饮料")
         for _ in range(hit_count, 3):
             context.run_task('ProduceUseDrink')
-            # 处理移动卡片界面
-            if self._handle_move_cards(context):
-                time.sleep(3)
+            self._wait_until_playable(context, 2)
 
+        # 开始出牌
         self.start_time = time.time()
         while True:
             # 截图
             image = context.tasker.controller.post_screencap().wait().get()
-
-            # 处理移动卡片界面
-            if self._handle_move_cards(context, image):
-                time.sleep(self.ACTION_DELAY)
-                self.start_time = time.time()
-                continue
 
             # 识别手牌
             reco_detail = context.run_recognition("ProduceRecognitionCards", image)
@@ -409,49 +397,39 @@ class ProduceCardsAuto(CustomAction):
                 # 目前模型识别的准确度不够高，暂时使用all_results
                 results = reco_detail.all_results
 
-                label_counts = Counter()
-                suggestions_box = [0, 0, 0, 0]
-                best_box = [0, 0, 0, 0]
-                best_score = 0
-                for result in results:
-                    label_counts[result.label] += 1
-                    if result.label == "suggestions":
-                        suggestions_box = result.box
-                    if result.label == "cards":
-                        # 选出识别分数最高分的卡牌，避免错误
-                        if result.score > best_score:
-                            best_score = result.score
-                            best_box = result.box
-                suggestions = label_counts["suggestions"]
-                useless = label_counts["useless"]
-                cards = label_counts["cards"]
+                # 获取卡牌信息
+                suggestions, useless, cards, suggestions_box, best_box = self._get_card_info(results)
                 # print(f"卡片数量:{suggestions}/{cards}/{useless}")
 
+                # 有推荐牌时，打出推荐牌
                 if suggestions > 0:
-
                     if suggestions_box[1] < 840 or suggestions_box[1] > 1150:
                         continue
-                    # 出牌
                     self._play_a_card(context, suggestions_box)
+                # 只有一张可用牌时，直接打出该牌
+                elif cards == 1:
+                    if best_box[1] < 840 or best_box[1] > 1150:
+                        continue
+                    time.sleep(1) # 防止点击过早导致只命中一次
+                    self._play_a_card(context, best_box)
+                # 没有可用牌时，先判断是否处于出牌场景，确认处于出牌场景后，再跳过回合
                 elif useless > 0 and suggestions == 0 and cards == 0:
-                    # 需要先判断是否处于出牌场景，避免误识别。然后才能确认是否真的无可用牌。
-                    if self._is_playing_card(context) is False:
+                    if not self._is_playing_card(context):
                         logger.info("未检测到可用卡片和体力")
                         logger.success("事件: 退出出牌")
                         break
-                    # 确认处于出牌场景，且无可用牌
                     logger.warning("!!!!!!!!无可用牌!!!!!!!!!!!")
                     context.run_task("ProduceRecognitionSkipRound")
-                    time.sleep(self.ACTION_DELAY)
+                    self._wait_until_playable(context)
                     self.start_time = time.time()
 
                 end_time = time.time()
-                if end_time - self.start_time > 10:
+                if end_time - self.start_time > self.TIME_OUT:
                     if best_box[1] < 840 or best_box[1] > 1150:
                         continue
 
                     # 先判断是否处于出牌场景，避免误识别
-                    if self._is_playing_card(context) is False:
+                    if not self._is_playing_card(context):
                         logger.info("未检测到卡片和体力")
                         logger.success("事件: 退出出牌")
                         break
@@ -467,16 +445,11 @@ class ProduceCardsAuto(CustomAction):
                     logger.success("事件: 退出出牌")
                     break
 
-                reco_detail = context.run_recognition("ProduceYes", image)
-                if reco_detail.hit:
-                    logger.info("点击确认")
-                    context.tasker.controller.post_click(reco_detail.best_result.box[0], reco_detail.best_result.box[1]).wait()
-
                 reco_detail = context.run_recognition("ProduceRecognitionNoCards", image)
                 if reco_detail.hit:
                     logger.info("无手牌")
                     context.run_task("ProduceRecognitionSkipRound")
-                    time.sleep(self.ACTION_DELAY)
+                    self._wait_until_playable(context)
                     self.start_time = time.time()
 
             if context.tasker.stopping:
@@ -485,6 +458,39 @@ class ProduceCardsAuto(CustomAction):
             time.sleep(self.CLICK_DELAY)
 
         return True
+
+    @staticmethod
+    def _get_card_info(results: list):
+        """
+            从识别结果中获取卡牌信息
+
+            Args:
+                results (list): 识别结果列表
+
+            Returns:
+                suggestions (int): 建议牌数量
+                useless (int): 无用牌数量
+                cards (int): 可用牌数量
+                suggestions_box (list): 建议牌区域，格式为[x, y, w, h]（x、y为区域左上角的坐标）
+                best_box (list): 可用牌区域，格式为[x, y, w, h]（x、y为区域左上角的坐标）
+        """
+        label_counts = Counter()
+        suggestions_box = [0, 0, 0, 0]
+        best_box = [0, 0, 0, 0]
+        best_score = 0
+        for result in results:
+            label_counts[result.label] += 1
+            if result.label == "suggestions":
+                suggestions_box = result.box
+            if result.label == "cards":
+                # 选出识别分数最高分的卡牌，避免错误
+                if result.score > best_score:
+                    best_score = result.score
+                    best_box = result.box
+        suggestions = label_counts["suggestions"]
+        useless = label_counts["useless"]
+        cards = label_counts["cards"]
+        return suggestions, useless, cards, suggestions_box, best_box
 
     def _play_a_card(self, context: Context, box: list) -> bool:
         """
@@ -495,8 +501,7 @@ class ProduceCardsAuto(CustomAction):
                 box: 点击范围，格式为[x, y, w, h]（x、y为点击范围左上角的坐标）
 
             Returns:
-                如果执行没有问题，返回True；
-                否则返回False
+                bool: 如果执行没有问题，返回True；否则返回False。
         """
 
         # 出牌
@@ -506,15 +511,9 @@ class ProduceCardsAuto(CustomAction):
         context.tasker.controller.post_click(box[0] + box[2] // 2, box[1] + box[3] // 2).wait()
         logger.info("出牌 耗时:{:.2f}秒".format(time.time() - self.start_time))
 
-        # 等待移动卡牌界面
-        sleep_time = 1
-        time.sleep(sleep_time)
-
-        # 处理移动卡牌界面
-        self._handle_move_cards(context)
-
-        # 等待出牌后动画并重置计时
-        time.sleep(max(0.0, self.ACTION_DELAY - sleep_time))
+        # 等待回到可出牌状态后，重置计时
+        time.sleep(1)
+        self._wait_until_playable(context)
         self.start_time = time.time()
 
         return True
@@ -523,15 +522,14 @@ class ProduceCardsAuto(CustomAction):
     def _handle_move_cards(context: Context, image=None) -> bool:
         """
             一种处理移动卡片界面的笨方法
-            在识别小卡片模型出来前可能都只能这样处理
 
             Args:
                 context: maa的Context类
                 image: 截图
 
             Returns:
-                如果出现了移动卡牌界面并处理成功，返回True；
-                如果没有出现移动卡牌界面或处理过程出现问题，返回False。
+                bool: 如果出现了移动卡牌界面并处理成功，返回True；
+                    如果没有出现移动卡牌界面或处理过程出现问题，返回False。
         """
         if image is None:
             image = context.tasker.controller.post_screencap().wait().get()
@@ -553,6 +551,7 @@ class ProduceCardsAuto(CustomAction):
                     return True
                 else:
                     y = y + 100
+                # 检测任务中止的情况，防止卡死，检测成功时返回False
                 if context.tasker.stopping:
                     return False
         return False
@@ -566,17 +565,69 @@ class ProduceCardsAuto(CustomAction):
                 context: maa的Context类
 
             Returns:
-                如果处于出牌场景，返回True；
-                否则返回False。
+                bool: 如果处于出牌场景，返回True；否则返回False。
         """
         image = context.tasker.controller.post_screencap().wait().get()
         reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", image)
         if reco_detail and reco_detail.hit:
             return True
-        reco_detail = context.run_recognition('ProduceRecognitionChooseMoveCards', image)
-        if reco_detail and reco_detail.hit:
-            return True
+        # reco_detail = context.run_recognition('ProduceRecognitionChooseMoveCards', image)
+        # if reco_detail and reco_detail.hit:
+        #     return True
         return False
+
+    def _wait_until_playable(self, context: Context, confirmation_count=1):
+        """
+            等待直到处于可出牌状态
+
+            Args:
+                context: maa的Context类
+                confirmation_count：重复核对的次数，用来应对识别对象一闪而过的假True情况（主要存在于喝饮料的时候）
+
+            Returns:
+                bool: 处于出牌场景时，返回True；不处于出牌场景时，返回False
+        """
+        count_playable = 0
+        count_exit = 0
+        while True:
+            image = context.tasker.controller.post_screencap().wait().get()
+
+            # 通过跳过回合按钮检测是否处于可出牌状态
+            reco_detail = context.run_recognition("ProduceRecognitionSkipRound", image)
+            if reco_detail and reco_detail.hit:
+                count_playable += 1
+                if count_playable >= confirmation_count:
+                    return True
+            else:
+                count_playable = 0
+
+            # 检测血条是否存在，如连续n次检查不到血条，则认为已退出出牌场景
+            # 如果识别时间太长，2次就够了，主要避免CLEAR效果遮住血条的情况
+            # 如果识别时间太短，导致提前出函数，CLEAR转PERFECT的那一回合出牌计时会差很远。如果出现这种情况，就设置为3次
+            reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", image)
+            if not (reco_detail and reco_detail.hit):
+                count_exit += 1
+                if count_exit >= 2:
+                    return False
+            else:
+                count_exit = 0
+
+            # 解决莫名其妙的误触问题
+            reco_detail = context.run_recognition("ProduceButton", image)
+            if reco_detail and reco_detail.hit:
+                context.run_task("ProduceButton")
+
+            # 处理移动卡片界面
+            if self._handle_move_cards(context, image):
+                count_playable = 0
+                count_exit = 0
+
+            # 检测任务中止的情况，防止卡死，检测成功时返回False
+            if context.tasker.stopping:
+                return False
+
+            # 睡一会
+            time.sleep(1)
 
 
 @AgentServer.custom_action("ProduceShoppingAuto")
@@ -590,6 +641,76 @@ class ProduceShoppingAuto(CustomAction):
             context: Context,
             argv: CustomAction.RunArg,
     ) -> bool:
+        # 处理入场动画
+        self._wait_until_animations_end(context)
+
+        logger.success("事件: 商店购买")
+        filtered_results = self._recognize_sale_items(context)
+        for result in filtered_results:
+            # 点击打折道具
+            box = result.box
+            context.tasker.controller.post_click(box[0], box[1] - 66).wait()
+            time.sleep(0.5)
+
+            if self._is_drink_full(context):
+                logger.info("饮料已满，放弃购买")
+                continue
+
+            # 点击购买
+            # 由于模板识别灰色的购买按钮也有0.997的识别分数，所以识别购买按钮是否为灰没有用，除非使用对颜色敏感的method参数
+            # 目前只能直接运行pipeline，如果因为P点不足无法购买，会直接等待到超时
+            # 因为post_wait_freezes的存在，是识别不到提示信息的，只能等待超时
+            context.run_task("ProduceShoppingBuy")
+            self._wait_until_animations_end(context)
+
+            if context.tasker.stopping:
+                return False
+
+        # 使用独立退出函数，确保退出商店后才结束节点，防止没有命中按钮导致又重复进入商店节点再走一次流程的情况
+        self._exit(context)
+        return True
+
+    @staticmethod
+    def _wait_until_animations_end(context: Context, time_out: int = 20) -> bool:
+        """
+            等待直到回忆效果动画、活动特殊效果动画、购买饮料成功动画结束
+
+            Args:
+                context: maa的Context类
+                time_out: 超时时间，默认20秒
+
+            Returns:
+                bool: 动画结束时，返回True；未结束时，返回False
+        """
+        image = context.tasker.controller.post_screencap().wait().get()
+        start_time = time.time()
+        while time.time() - start_time < time_out:
+            context.override_image("shopping_animation_template", image)
+
+            context.run_task("Click_1")
+            time.sleep(0.5)
+
+            image = context.tasker.controller.post_screencap().wait().get()
+            reco_detail = context.run_recognition("ProduceRecognitionShoppingAnimationsEnd", image)
+            if reco_detail and reco_detail.hit:
+                return True
+
+            if context.tasker.stopping:
+                return False
+
+        return False
+
+    @staticmethod
+    def _recognize_sale_items(context: Context):
+        """
+            识别商店打折销售的饮料
+
+            Args:
+                context: maa的Context类
+
+            Returns:
+                list: 识别到的打折销售的饮料列表
+        """
         image = context.tasker.controller.post_screencap().wait().get()
         reco_detail = context.run_recognition(
             "ProduceRecognitionSale", image, pipeline_override={
@@ -599,34 +720,61 @@ class ProduceShoppingAuto(CustomAction):
                     "roi": [46, 479, 626, 529],
                     "pre_wait_freezes" : 100
                 }})
-        logger.success("事件: 商店购买")
+
         if reco_detail and reco_detail.hit:
-            for result in reco_detail.filtered_results:
-                box = result.box
-                context.tasker.controller.post_click(box[0], box[1] - 66).wait()
-                time.sleep(0.5)
-                image = context.tasker.controller.post_screencap().wait().get()
-                reco_detail = context.run_recognition(
-                    "ProduceRecognitionDrinkFull", image, pipeline_override={
-                        "ProduceRecognitionDrinkFull": {
-                            "recognition": "TemplateMatch",
-                            "template": "produce/drink_full.png",
-                            "roi": [0, 1020, 720, 135]
-                        }})
-                if reco_detail.best_result:
-                    logger.info("饮料已满，放弃购买")
-                    continue
-                reco_detail = context.run_recognition("ProduceShoppingBuy", image)
-                if reco_detail and reco_detail.hit:
-                    context.run_task("ProduceShoppingBuy")
-                    start_time = time.time()
-                    while True:
-                        context.run_task("Click_1")
-                        time.sleep(0.5)
-                        end_time = time.time()
-                        if end_time - start_time > 5:
-                            break
-        return True
+            return reco_detail.filtered_results
+        return []
+
+    @staticmethod
+    def _is_drink_full(context: Context) -> bool:
+        """
+            检查饮料是否已满
+
+            Args:
+                context: maa的Context类
+
+            Returns:
+                bool: 饮料已满时，返回True；未满时，返回False
+        """
+        image = context.tasker.controller.post_screencap().wait().get()
+        reco_detail = context.run_recognition(
+            "ProduceRecognitionDrinkFull", image, pipeline_override={
+                "ProduceRecognitionDrinkFull": {
+                    "recognition": "TemplateMatch",
+                    "template": "produce/drink_full.png",
+                    "roi": [0, 1020, 720, 135]
+                }})
+        if reco_detail and reco_detail.hit:
+            return True
+        return False
+
+    @staticmethod
+    def _exit(context: Context, max_count: int = 10) -> bool:
+        """
+            退出商店，确保退出后才返回
+
+            Args:
+                context: maa的Context类
+                max_count: 最大点击次数，默认10次
+
+            Returns:
+                bool: 退出商店后，返回True；未退出时，返回False
+        """
+        count = 0
+        while count < max_count:
+            context.run_task("ProduceShoppingExit")
+
+            image = context.tasker.controller.post_screencap().wait().get()
+            reco_detail = context.run_recognition("ProduceShoppingExit", image)
+            if not (reco_detail and reco_detail.hit):
+                return True
+
+            if context.tasker.stopping:
+                return False
+
+            count += 1
+
+        return False
 
 
 @AgentServer.custom_action("ProduceStrengthenAuto")

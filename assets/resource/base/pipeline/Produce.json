@@ -8,15 +8,56 @@
             "type": "DoNothing",
             "param": {}
         },
-        "post_wait_freezes": 300,
         "next": [
-            "ProduceHomeFlag",
-            "[JumpBack]ReturnHome",
-            "[JumpBack]BackHome",
-            "[JumpBack]CloseRoundButton"
+            "ProduceLoop"
         ]
     },
+    "ProduceLoop": {
+        "next": [
+            "ProduceSkipPreparation",
+            "[JumpBack]ProduceStartPopUpButtons",
+            "ProduceHomeFlag",
+            "[JumpBack]ReturnHome",
+            "[JumpBack]BackHome"
+        ]
+    },
+    "ProduceSkipPreparation": {
+        "next": [
+            "ProduceEntry"
+        ],
+        "enabled": false,
+        "max_hit": 1
+    },
     "ProduceHomeFlag": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                  "home.png",
+                  "home_1.png"
+                ]
+            }
+        },
+        "next": [
+            "ProduceStart"
+        ]
+    },
+    "ProduceStartPopUpButtons": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "close_icon.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "post_wait_freezes": 500
+    },
+    "ProduceStart": {
         "recognition": {
             "type": "TemplateMatch",
             "param": {
@@ -31,7 +72,6 @@
             "param": {}
         },
         "next": [
-            "ProduceNextPage",
             "ProduceChooseDifficulty"
         ],
         "post_wait_freezes": 200
@@ -64,10 +104,7 @@
                 ]
             }
         },
-        "enabled": false,
-        "next": [
-            "ProduceChooseDifficulty"
-        ]
+        "enabled": false
     },
     "ProduceChooseDifficulty": {
         "recognition": {
@@ -457,15 +494,13 @@
             "type": "TemplateMatch",
             "param": {
                 "template": [
-                    "next.png",
-                    "produce/decide.png",
-                    "produce/yes.png",
-                    "produce/decide.png",
-                    "produce/start.png",
-                    "produce/drink_no.png",
-                    "produce/close.png",
-                    "cancel.png",
-                    "close_icon.png"
+                    "next.png", // (必选)考试成功时需要点next
+                    "produce/decide.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
+                    "produce/yes.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
+                    "produce/start.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
+                    "produce/close.png", // (可选)误触查看当前持有卡片界面时的关闭按钮，如果解决所有误触情况可以删除
+                    "cancel.png", // (可选)REGULAR难度上课失败时，会弹出是否需要进入新手教程的提示框
+                    "produce/round_close_button.png" // (不确定)亲爱度up时好像会弹出圆形关闭按钮？不能裁剪，否则会误触商店的离开按钮
                 ],
                 "order_by": "Score",
                 "roi": [
@@ -722,10 +757,7 @@
             "param": {
                 "custom_action": "ProduceShoppingAuto"
             }
-        },
-        "next": [
-            "ProduceShoppingExit"
-        ]
+        }
     },
     "ProduceShoppingBuy": {
         "recognition": {
@@ -737,8 +769,7 @@
                     1020,
                     720,
                     135
-                ],
-                "threshold": 0.9
+                ]
             }
         },
         "action": {
@@ -746,7 +777,7 @@
             "param": {}
         },
         "post_wait_freezes": 100,
-        "timeout": 5000,
+        "timeout": 3000,
         "next": [
             "ProduceShoppingDecide"
         ]
@@ -784,8 +815,8 @@
             "type": "Click",
             "param": {}
         },
-        "pre_delay": 200,
-        "post_delay": 1000
+        "post_delay": 1000,
+        "timeout": 3000
     },
     "ProduceChooseStrengthenFlag": {
         "recognition": {
@@ -879,7 +910,7 @@
             "param": {}
         },
         "next": [
-            "HomeFlag",
+            "ProduceBackHome",
             "[JumpBack]ProduceFollow",
             "[JumpBack]ProduceSkip",
             "[JumpBack]CloseRoundButton",
@@ -897,6 +928,20 @@
             "type": "Click",
             "param": {}
         }
+    },
+    "ProduceBackHome": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                  "home.png",
+                  "home_1.png"
+                ]
+            }
+        },
+        "next": [
+            "ProduceLoop"
+        ]
     },
     "ProduceCardsFlag": {
         "recognition": {
