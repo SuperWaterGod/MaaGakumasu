@@ -222,7 +222,7 @@
       "type": "DoNothing",
       "param": {}
     },
-    "enabled": true
+    "enabled": false
   },
   "ShoppingDailyExchangeItemsSenseBlue": {
     "recognition": {
@@ -354,7 +354,7 @@
       "type": "DoNothing",
       "param": {}
     },
-    "enabled": true
+    "enabled": false
   },
   "ShoppingDailyExchangeItemsChallengeTicket": {
     "recognition": {
@@ -519,7 +519,7 @@
       "type": "DoNothing",
       "param": {}
     },
-    "enabled": true
+    "enabled": false
   },
   "ShoppingDailyExchangeAPNoteIncreased": {
     "recognition": {
@@ -530,7 +530,7 @@
       "type": "DoNothing",
       "param": {}
     },
-    "enabled": true
+    "enabled": false
   },
   "ShoppingDailyExchangeAPChallengeTicket": {
     "recognition": {
@@ -541,7 +541,7 @@
       "type": "DoNothing",
       "param": {}
     },
-    "enabled": true
+    "enabled": false
   },
   "ShoppingDailyExchangeAPMemoryTicket": {
     "recognition": {
@@ -552,6 +552,6 @@
       "type": "DoNothing",
       "param": {}
     },
-    "enabled": true
+    "enabled": false
   }
 }
