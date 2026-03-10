@@ -2281,8 +2281,19 @@
     },
     "花海佑芽卡片": {
       "type": "select",
-      "default_case": "花海佑芽(グースーピー)",
+      "default_case": "花海佑芽(ENDLESS DANCE)",
       "cases": [
+        {
+          "name": "花海佑芽(ENDLESS DANCE)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "花海佑芽",
+                "song_name": "ENDLESS DANCE"
+              }
+            }
+          }
+        },
         {
           "name": "花海佑芽(グースーピー)",
           "pipeline_override": {
@@ -2621,8 +2632,19 @@
     },
     "秦谷美鈴卡片": {
       "type": "select",
-      "default_case": "秦谷美鈴(Superlative)",
+      "default_case": "秦谷美鈴(ENDLESS DANCE)",
       "cases": [
+        {
+          "name": "秦谷美鈴(ENDLESS DANCE)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "秦谷美鈴",
+                "song_name": "ENDLESS DANCE"
+              }
+            }
+          }
+        },
         {
           "name": "秦谷美鈴(Superlative)",
           "pipeline_override": {
