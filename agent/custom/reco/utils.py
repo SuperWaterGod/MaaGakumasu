@@ -24,5 +24,5 @@ class ScreenRotateCheck(CustomRecognition):
         context.run_task("Click_1")
         if height < width:
             logger.debug("横屏")
-            return CustomRecognition.AnalyzeResult(box=[0, 0, 0, 0], detail={"detail": "屏幕横屏"})
+            return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "屏幕横屏"})
         return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "屏幕竖屏"})

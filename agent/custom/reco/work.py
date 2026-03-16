@@ -140,4 +140,4 @@ class WorkChooseIdol(CustomRecognition):
                 return CustomRecognition.AnalyzeResult(box=box, detail={"detail": "已选中"})
 
         logger.warning("未能找到指定Idol")
-        return CustomRecognition.AnalyzeResult(box=[0, 0, 0, 0], detail={"detail": "无文字"})
+        return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "无文字"})

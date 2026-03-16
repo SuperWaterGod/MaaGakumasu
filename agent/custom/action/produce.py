@@ -475,8 +475,8 @@ class ProduceCardsAuto(CustomAction):
                 best_box (list): 可用牌区域，格式为[x, y, w, h]（x、y为区域左上角的坐标）
         """
         label_counts = Counter()
-        suggestions_box = [0, 0, 0, 0]
-        best_box = [0, 0, 0, 0]
+        suggestions_box = [0, 0, 1, 1]
+        best_box = [0, 0, 1, 1]
         best_score = 0
         for result in results:
             label_counts[result.label] += 1
