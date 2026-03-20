@@ -3,6 +3,7 @@ from typing import Union, Optional
 
 from maa.define import RectType
 from maa.context import Context
+from maa.library import Library
 from maa.agent.agent_server import AgentServer
 from maa.custom_recognition import CustomRecognition
 
@@ -22,6 +23,7 @@ class ScreenRotateCheck(CustomRecognition):
         height = image.shape[0]
         width = image.shape[1]
         context.run_task("Click_1")
+        logger.debug(Library.version())
         if height < width:
             logger.debug("横屏")
             return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "屏幕横屏"})
