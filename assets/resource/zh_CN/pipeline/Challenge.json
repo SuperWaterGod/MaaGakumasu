@@ -1,0 +1,49 @@
+{
+  "ChallengeEnter": {
+    "recognition": {
+      "param": {
+        "expected": [
+          "竞技场"
+        ]
+      }
+    }
+  },
+  "ChallengeReadyPeriod": {
+    "recognition": {
+      "param": {
+        "template": "challenge_ready_period.png"
+      }
+    }
+  },
+  "ChallengeUnformation": {
+    "enabled": true,
+    "recognition": {
+      "param": {
+        "expected": [
+          "未编成回忆"
+        ],
+        "replace": []
+      }
+    }
+  },
+  "ChallengeFormation": {
+    "recognition": {
+      "param": {
+        "expected": [
+          "组合编成"
+        ],
+        "replace": []
+      }
+    }
+  },
+  "ChallengeFormationAuto": {
+    "recognition": {
+      "param": {
+        "expected": [
+          "自动"
+        ],
+        "replace": []
+      }
+    }
+  }
+}

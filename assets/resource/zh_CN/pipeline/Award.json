@@ -1,0 +1,42 @@
+{
+  "AwardGiftClick": {
+    "recognition": {
+      "param": {
+        "expected": [
+          "礼物"
+        ],
+        "replace": []
+      }
+    },
+    "action": {
+      "param": {
+        "target_offset": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "AwardMissionClick": {
+    "recognition": {
+      "param": {
+        "expected": [
+          "任务"
+        ],
+        "replace": []
+      }
+    },
+    "action": {
+      "param": {
+        "target_offset": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}

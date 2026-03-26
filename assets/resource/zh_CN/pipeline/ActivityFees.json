@@ -1,0 +1,12 @@
+{
+  "ActivityFeeClick": {
+    "recognition": {
+      "param": {
+        "expected": [
+          "活动经费"
+        ],
+        "replace": []
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "ProduceRecognitionNoCards": {
+    "recognition": {
+      "param": {
+        "expected": "手牌中的技能卡为0张"
+      }
+    }
+  },
+  "ProduceRecognitionOptions": {
+    "recognition": {
+      "type": "NeuralNetworkDetect",
+      "param": {
+        "model": "choose.onnx",
+        "labels": [
+          "choose",
+          "lesson"
+        ],
+        "expected": [
+          0,
+          1
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    }
+  },
+  "ProduceLanguage": {
+    "attach": {
+      "language": "zh-CN"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "WorkClick": {
+    "recognition": {
+      "param": {
+        "expected": [
+          "工作"
+        ],
+        "replace": []
+      }
+    }
+  }
+}
