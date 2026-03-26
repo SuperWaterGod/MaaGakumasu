@@ -15,6 +15,22 @@ EFFECT_TRANSLATIONS = {
     'ｽアノマリー温存': '非凡·温存',
 }
 
+# 偶像名称翻译映射
+IDOLS_TRANSLATIONS = {
+    '雨夜燕': '雨夜燕',
+    '藤田ことね': '藤田琴音',
+    '葛城リーリヤ': '葛城莉莉娅',
+    '花海咲季': '花海咲季',
+    '花海佑芽': '花海佑芽',
+    '紫雲清夏': '紫云清夏',
+    '篠澤広': '篠泽广',
+    '秦谷美鈴': '秦谷美铃',
+    '有村麻央': '有村麻央',
+    '月村手毬': '月村手毬',
+    '十王星南': '十王星南',
+    '倉本千奈': '仓本千奈'
+}
+
 
 def safe_print(text):
     """安全打印，处理编码问题"""
@@ -59,6 +75,13 @@ def translate_effect(effect_text):
 
     # 如果没有匹配，返回原文
     return effect_text
+
+
+def translate_idol(idol_name):
+    """
+    翻译偶像名称为中文
+    """
+    return IDOLS_TRANSLATIONS.get(idol_name, idol_name)
 
 
 def scrape_cards_from_url(url):
@@ -167,6 +190,8 @@ def parse_table(table, plan_effects_stats):
                     card_data['卡片名称'] = f"{idol_name}({song_name})" if song_name else idol_name
                     card_data['偶像名称'] = idol_name
                     card_data['歌曲名称'] = song_name
+                    card_data['偶像中文'] = translate_idol(idol_name)
+                    card_data['歌曲中文'] = ""
                 # 将Vo、Da、Vi转换为数字
                 elif header in ['Vo', 'Da', 'Vi']:
                     try:
@@ -364,6 +389,27 @@ def print_comparison_report(added, modified, deleted):
     safe_print("\n" + "=" * 60)
 
 
+def merge_with_old_data(sorted_data, old_data):
+    """
+    将旧数据中的歌曲中文合并到新数据中
+    如果新数据中歌曲中文为空，但旧数据中有值，则保留旧数据值
+    """
+    if old_data is None:
+        return sorted_data
+
+    for rarity in ['SSR', 'SR', 'R']:
+        old_cards = {create_card_key(card): card for card in old_data.get(rarity, [])}
+        for card in sorted_data[rarity]:
+            key = create_card_key(card)
+            if key in old_cards:
+                old_card = old_cards[key]
+                # 如果新卡片的歌曲中文为空，但旧卡片有值，则保留旧值
+                if not card.get('歌曲中文') and old_card.get('歌曲中文'):
+                    card['歌曲中文'] = old_card['歌曲中文']
+
+    return sorted_data
+
+
 def save_to_json(data, filename='cards_data.json'):
     """
     将数据保存到JSON文件（覆盖模式），并比较差异
@@ -379,6 +425,9 @@ def save_to_json(data, filename='cards_data.json'):
             'SR': sort_cards(data['SR']),
             'R': sort_cards(data['R'])
         }
+
+        # 合并旧数据中的歌曲中文
+        sorted_data = merge_with_old_data(sorted_data, old_data)
 
         # 比较新旧数据
         if old_data:

@@ -12,7 +12,7 @@ def safe_print(text):
         print(text.encode('gbk', errors='replace').decode('gbk'))
 
 
-def format_cards_data(idols_cards_path, interface_path, output_path, card_types=None):
+def format_cards_data(idols_cards_path, interface_path, output_path, card_types=None, cn_mode=False):
     """
     增量更新interface.json中的option配置
 
@@ -21,9 +21,8 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
     - interface_path: 现有的interface.json文件路径
     - output_path: 输出文件路径
     - card_types: 要包含的卡片类型列表，如['SSR', 'SR', 'R']，None表示全部
+    - cn_mode: 是否使用中文名称（偶像中文、歌曲中文，card_name格式为idol_name(song_name)）
     """
-    if card_types is None:
-        card_types = ['SSR', 'SR', 'R']
 
     # 读取idols_cards.json
     with open(idols_cards_path, 'r', encoding='utf-8') as f:
@@ -47,9 +46,14 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
     for card_type in card_types:
         if card_type in idols_cards_data:
             for card in idols_cards_data[card_type]:
-                idol_name = card['偶像名称']
-                card_name = card['卡片名称']
-                song_name = card['歌曲名称']
+                if cn_mode:
+                    idol_name = card['偶像中文']
+                    song_name = card['歌曲中文']
+                    card_name = f"{idol_name}({song_name})"
+                else:
+                    idol_name = card['偶像名称']
+                    card_name = card['卡片名称']
+                    song_name = card['歌曲名称']
                 date_str = card['登场日期']
 
                 # 解析日期
@@ -71,7 +75,10 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
 
     # 为每个偶像生成或更新配置
     for idol_name, cards in idol_cards.items():
-        key_name = f"{idol_name}卡片"
+        if cn_mode:
+            key_name = f"{idol_name}卡片-zh_CN"
+        else:
+            key_name = f"{idol_name}卡片"
 
         # 按日期排序，最新的在前
         cards_sorted = sorted(cards, key=lambda x: x['date'], reverse=True)
@@ -172,9 +179,20 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
 
 
 if __name__ == "__main__":
+    # 同步到 produce.json（日文版）
     format_cards_data(
         idols_cards_path='../assets/data/idols_cards.json',
-        interface_path='../assets/interface.json',
-        output_path='../assets/interface.json',
-        card_types=['SSR', 'SR', 'R']
+        interface_path='../assets/tasks/produce.json',
+        output_path='../assets/tasks/produce.json',
+        card_types=['SSR', 'SR', 'R'],
+        cn_mode=False
+    )
+
+    # 同步到 produce_cn.json（中文版）
+    format_cards_data(
+        idols_cards_path='../assets/data/idols_cards.json',
+        interface_path='../assets/tasks/produce_cn.json',
+        output_path='../assets/tasks/produce_cn.json',
+        card_types=['SSR', 'SR', 'R'],
+        cn_mode=True
     )
