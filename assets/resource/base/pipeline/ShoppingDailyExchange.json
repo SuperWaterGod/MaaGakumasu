@@ -197,7 +197,8 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "shopping_ap_flag.png"
+        "template": "shopping_ap_flag.png",
+        "threshold": 0.9
       }
     },
     "action": {

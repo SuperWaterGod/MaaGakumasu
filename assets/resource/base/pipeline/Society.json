@@ -74,7 +74,9 @@
           750,
           666,
           250
-        ]
+        ],
+        "method": 10001,
+        "threshold": 0.95
       }
     },
     "action": {
@@ -175,13 +177,15 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
+        "template": "society_commit_already.png",
         "roi": [
           26,
           750,
           666,
           250
         ],
-        "template": "society_commit_already.png"
+        "method": 10001,
+        "threshold": 0.95
       }
     },
     "action": {
@@ -215,7 +219,8 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "society_requests.png"
+        "template": "society_requests.png",
+        "threshold": 0.95
       }
     },
     "action": {
@@ -267,7 +272,8 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "society_requests_already.png"
+        "template": "society_requests_already.png",
+        "threshold": 0.95
       }
     },
     "action": {

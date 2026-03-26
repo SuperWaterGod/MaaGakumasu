@@ -3,7 +3,8 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "produce/decide.png"
+        "template": "produce/decide.png",
+        "threshold": 0.9
       }
     },
     "action": {
@@ -504,5 +505,10 @@
     },
     "pre_delay": 0,
     "post_delay": 0
+  },
+  "ProduceLanguage": {
+    "attach": {
+      "language": "ja-JP"
+    }
   }
 }

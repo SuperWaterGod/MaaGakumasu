@@ -186,7 +186,7 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
                         "ShoppingDailyExchangeMoneyRecognition": {
                             "recognition": "TemplateMatch",
                             "template": file_name,
-                            "roi": [30, 288, 660, 668],
+                            "roi": [30, 330, 660, 668],
                             "threshold": 0.93
                         }})
 

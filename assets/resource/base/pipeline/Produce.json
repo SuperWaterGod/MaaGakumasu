@@ -378,7 +378,9 @@
             "param": {
                 "template": [
                     "next.png"
-                ]
+                ],
+                "method": 10001,
+                "threshold": 0.97
             }
         },
         "action": {
@@ -415,7 +417,9 @@
             "param": {
                 "template": [
                     "next.png"
-                ]
+                ],
+                "method": 10001,
+                "threshold": 0.97
             }
         },
         "action": {
@@ -542,7 +546,7 @@
                     0,
                     800,
                     720,
-                    256
+                    300
                 ]
             }
         },

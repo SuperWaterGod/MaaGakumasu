@@ -24,7 +24,7 @@ class ProduceChooseEventAuto(CustomAction):
         "Da": {"img": "produce/Da.png", "keyword": ["ダンス", "舞蹈"]},
         "Vi": {"img": "produce/Vi.png", "keyword": ["ビジュアル", "视觉"]},
         "体力": {"img": "produce/rest.png", "keyword": ["体力"]},
-        "交谈": {"img": "produce/chat.png", "keyword": ["先生に相談して"]}
+        "交谈": {"img": "produce/chat.png", "keyword": ["先生に相談して", "咨询"]}
     }
 
     EVENT_CONFIG = {
