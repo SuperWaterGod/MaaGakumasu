@@ -1,0 +1,10 @@
+{
+    "task": [
+        {
+            "name": "关闭游戏",
+            "entry": "Shutdown",
+            "default_check": true,
+            "label": "$关闭游戏"
+        }
+    ]
+}
