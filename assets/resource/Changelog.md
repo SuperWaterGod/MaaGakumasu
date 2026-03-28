@@ -4,10 +4,13 @@
 
 * 支持**插件版汉化**
 
+* 支持**DMM**版
+
 * 拆分配置文件
 
 > [!IMPORTANT]
 
+*使用DMM端，需要以管理员身份启动程序*
 
 请详细阅读[官网首页](https://github.com/SuperWaterGod/MaaGakumasu)的使用说明及注意事项
 

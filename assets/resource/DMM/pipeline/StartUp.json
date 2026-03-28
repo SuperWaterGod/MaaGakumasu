@@ -1,0 +1,12 @@
+{
+    "StartUpStartGame": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "DoNothing"
+        },
+        "post_wait_freezes": 0
+    }
+}

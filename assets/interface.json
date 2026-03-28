@@ -18,6 +18,23 @@
     {
       "name": "模拟器",
       "type": "Adb"
+    },
+    {
+      "name": "PC",
+      "label": "PC",
+      "type": "Win32",
+      "win32": {
+        "class_regex": "UnityWndClass",
+        "window_regex": "gakumas",
+        "screencap": "PrintWindow",
+        "mouse": "SendMessageWithCursorPos",
+        "keyboard": "SendMessageWithCursorPos"
+      },
+      "permission_required": true
+    },
+    {
+      "name": "PlayCover",
+      "type": "PlayCover"
     }
   ],
   "resource": [
@@ -25,6 +42,10 @@
       "name": "官服",
       "path": [
         "./resource/base"
+      ],
+      "controller": [
+        "模拟器",
+        "PlayCover"
       ]
     },
     {
@@ -32,6 +53,31 @@
       "path": [
         "./resource/base",
         "./resource/zh_CN"
+      ],
+      "controller": [
+        "模拟器",
+        "PlayCover"
+      ]
+    },
+    {
+      "name": "DMM",
+      "path": [
+        "./resource/base",
+        "./resource/DMM"
+      ],
+      "controller": [
+        "PC"
+      ]
+    },
+    {
+      "name": "DMM插件汉化版",
+      "path": [
+        "./resource/base",
+        "./resource/zh_CN",
+        "./resource/DMM"
+      ],
+      "controller": [
+        "PC"
       ]
     }
   ],
