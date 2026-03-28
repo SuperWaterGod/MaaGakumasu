@@ -81,7 +81,7 @@
             "type": "TemplateMatch",
             "param": {
                 "template": [
-                    "produce/Master.png"
+                    "produce/master.png"
                 ]
             }
         },
@@ -108,14 +108,10 @@
     },
     "ProduceChooseDifficulty": {
         "recognition": {
-            "type": "OCR",
+            "type": "TemplateMatch",
             "param": {
-                "expected": "REGULAR",
-                "roi": [
-                    0,
-                    824,
-                    719,
-                    171
+                "template": [
+                    "produce/master.png"
                 ]
             }
         },
@@ -945,7 +941,16 @@
         },
         "next": [
             "ProduceLoop"
-        ]
+        ],
+        "focus": {
+            "Node.Action.Succeeded": {
+                "content": "✅ 考试通过，成功培育",
+                "display": [
+                    "log",
+                    "notification"
+                ]
+            }
+        }
     },
     "ProduceCardsFlag": {
         "recognition": {
@@ -994,7 +999,13 @@
             "param": {}
         },
         "focus": {
-            "Node.Recognition.Succeeded": "考试失败，停止任务"
+            "Node.Recognition.Succeeded": {
+                "content": "❌ 考试失败，停止任务",
+                "display": [
+                    "log",
+                    "notification"
+                ]
+            }
         }
     },
     "ProduceKeepDrinkFlag": {

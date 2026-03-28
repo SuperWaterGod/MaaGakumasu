@@ -31,7 +31,7 @@
           "name": "REGULAR",
           "pipeline_override": {
             "ProduceChooseDifficulty": {
-              "expected": "REGULAR"
+              "template": "produce/regular.png"
             }
           }
         },
@@ -39,7 +39,7 @@
           "name": "PRO",
           "pipeline_override": {
             "ProduceChooseDifficulty": {
-              "expected": "PRO"
+              "template": "produce/pro.png"
             }
           }
         },
@@ -47,7 +47,7 @@
           "name": "MASTER",
           "pipeline_override": {
             "ProduceChooseDifficulty": {
-              "expected": "MASTER"
+              "template": "produce/master.png"
             }
           }
         }
