@@ -26,6 +26,8 @@ permissions:
 jobs:
   meta:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,6 +64,8 @@ jobs:
   windows:
     needs: meta
     runs-on: windows-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
       matrix:
         arch: [aarch64, x86_64]
@@ -188,6 +192,8 @@ jobs:
   unix:
     needs: meta
     runs-on: ${{ matrix.os }}
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -258,6 +264,8 @@ jobs:
   changelog:
     name: Generate changelog
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     outputs:
       release_body: ${{ steps.git-cliff.outputs.content }}
     steps:
