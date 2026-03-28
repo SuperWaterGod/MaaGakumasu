@@ -15,7 +15,8 @@
         "卡片选择优先级"
       ],
       "resource": [
-        "官服"
+        "官服",
+        "DMM"
       ],
       "default_check": true,
       "doc": "$培育说明",

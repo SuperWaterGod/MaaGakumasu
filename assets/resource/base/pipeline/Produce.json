@@ -310,10 +310,7 @@
         "next": [
             "ProduceChooseSupport"
         ],
-        "post_wait_freezes": 200,
-        "focus": {
-            "Node.Action.Succeeded": "[color:blue]已找到偶像卡[/color]"
-        }
+        "post_wait_freezes": 200
     },
     "ProduceChooseIdolNext": {
         "recognition": {
