@@ -26,6 +26,9 @@
     "post_wait_freezes": 500,
     "next": [
       "StartUpTestScreen"
+    ],
+    "on_error": [
+      "StartUpError"
     ]
   },
   "StartUpTestScreen": {
@@ -205,6 +208,11 @@
     "post_wait_freezes": 500,
     "focus": {
       "Node.Recognition.Succeeded": "[color:red]游戏启动失败，尝试重新启动[/color]"
+    }
+  },
+  "StartUpError": {
+    "focus": {
+      "Node.Action.Starting": "err:启动游戏失败，请检查是否正确选择游戏资源"
     }
   }
 }

@@ -41,7 +41,8 @@
       "param": {}
     },
     "next": [
-      "HomeFlag"
+      "HomeFlag",
+      "[JumpBack]ReturnHome"
     ]
   },
   "CloseMenu": {
