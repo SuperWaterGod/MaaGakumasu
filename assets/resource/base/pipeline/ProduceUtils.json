@@ -341,16 +341,16 @@
   },
   "ProduceRecognitionOptions": {
     "recognition": {
-      "type": "NeuralNetworkDetect",
+      "type": "TemplateMatch",
       "param": {
-        "model": "choose.onnx",
-        "labels": [
-          "choose",
-          "lesson"
-        ],
-        "expected": [
+        "template": "produce/choose.png",
+        "green_mask": true,
+        "threshold": 0.8,
+        "roi": [
           0,
-          1
+          640,
+          720,
+          320
         ]
       }
     },

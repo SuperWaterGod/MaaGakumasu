@@ -271,24 +271,17 @@ class ProduceOptionsFlagAuto(CustomRecognition):
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         context.run_task("Click_1")
         options_reco_detail = context.run_recognition("ProduceRecognitionOptions", argv.image)
-        if (not options_reco_detail or not options_reco_detail.hit or
-            options_reco_detail.best_result.box[1] < 600 or options_reco_detail.best_result.box[1] > 900 or
-                options_reco_detail.best_result.box[0] > 360 or options_reco_detail.best_result.score < 0.7):
+        if (not options_reco_detail or not options_reco_detail.hit):
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "未识别到选择场景"})
 
         logger.success("事件: 选择冲刺/上课/外出")
+        logger.info(f"检测到{len(options_reco_detail.filtered_results)}个选项")
         results = options_reco_detail.all_results
-        label_counts = Counter()
+
         best_box = options_reco_detail.best_result.box
         click_point_x = best_box[0] + best_box[2] // 2
         click_point_y = best_box[1] + best_box[3] // 2
-        for result in results:
-            label_counts[result.label] += 1
-        choose = label_counts["choose"]
-        lesson = label_counts["lesson"]
-        logger.info(f"选项数量:{choose}/{lesson}")
-        if lesson == 0:
-            pass
+
         time.sleep(0.5)
         context.tasker.controller.post_click(click_point_x, click_point_y).wait()
         time.sleep(0.2)
