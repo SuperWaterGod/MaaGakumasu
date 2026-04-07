@@ -8,6 +8,7 @@
         "培育偶像-zh_CN",
         "培育次数",
         "使用体力药",
+        "使用道具",
         "跳过选择偶像",
         "启用自动回忆",
         "启用关注租借",
@@ -290,8 +291,19 @@
     },
     "葛城莉莉娅卡片-zh_CN": {
       "type": "select",
-      "default_case": "葛城莉莉娅(Atmosphere)",
+      "default_case": "葛城莉莉娅(ときめきエモーション)",
       "cases": [
+        {
+          "name": "葛城莉莉娅(ときめきエモーション)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "葛城莉莉娅",
+                "song_name": "ときめきエモーション"
+              }
+            }
+          }
+        },
         {
           "name": "葛城莉莉娅(Atmosphere)",
           "pipeline_override": {
@@ -663,8 +675,19 @@
     },
     "紫云清夏卡片-zh_CN": {
       "type": "select",
-      "default_case": "紫云清夏(奇迹正是现在(ﾟ∀ﾟ)！)",
+      "default_case": "紫云清夏(ときめきエモーション)",
       "cases": [
+        {
+          "name": "紫云清夏(ときめきエモーション)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "紫云清夏",
+                "song_name": "ときめきエモーション"
+              }
+            }
+          }
+        },
         {
           "name": "紫云清夏(奇迹正是现在(ﾟ∀ﾟ)！)",
           "pipeline_override": {

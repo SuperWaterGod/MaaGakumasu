@@ -420,6 +420,72 @@
             "param": {}
         },
         "next": [
+            "ProduceUseItem",
+            "[JumpBack]ProduceDecide",
+            "[JumpBack]ProduceNext"
+        ]
+    },
+    "ProduceUseItem": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/produce_start.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "next": [
+            "ProduceUseNote",
+            "ProduceUsePt",
+            "ProduceLauncher"
+        ]
+    },
+    "ProduceUseNote": {
+        "enabled": false,
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/note.png"
+                ],
+                "roi": [
+                    516,
+                    940,
+                    168,
+                    110
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "ProduceUsePt",
+            "ProduceLauncher"
+        ]
+    },
+    "ProduceUsePt": {
+        "enabled": false,
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "next.png"
+                ],
+                "method": 10001,
+                "threshold": 0.97
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
             "ProduceLauncher",
             "[JumpBack]ProduceDecide",
             "[JumpBack]ProduceNext"
@@ -492,6 +558,7 @@
             "param": {
                 "template": [
                     "next.png", // (必选)考试成功时需要点next
+                    "produce/retry.png", // 失败时重试
                     "produce/decide.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
                     "produce/yes.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
                     "produce/start.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮

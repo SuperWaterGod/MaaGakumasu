@@ -8,6 +8,7 @@
         "培育偶像",
         "培育次数",
         "使用体力药",
+        "使用道具",
         "跳过选择偶像",
         "启用自动回忆",
         "启用关注租借",
@@ -77,6 +78,34 @@
         }
       ],
       "label": "$使用体力药"
+    },
+    "使用道具": {
+      "type": "checkbox",
+      "description": "选择培育要使用的道具",
+      "default_case": [],
+      "cases": [
+        {
+          "name": "支援强化Pt提升",
+          "description": "![](resource/base/image/items/support_point_increased.png)",
+          "pipeline_override": {
+            "ProduceUseNote": {
+              "enabled": true
+            }
+          },
+          "label": "$支援强化Pt提升"
+        },
+        {
+          "name": "笔记数量提升",
+          "description": "![](resource/base/image/items/note_increased.png)",
+          "pipeline_override": {
+            "ProduceUsePt": {
+              "enabled": true
+            }
+          },
+          "label": "$笔记数量提升"
+        }
+      ],
+      "label": "$使用道具"
     },
     "培育次数": {
       "label": "$培育次数",
@@ -568,8 +597,19 @@
     },
     "葛城リーリヤ卡片": {
       "type": "select",
-      "default_case": "葛城リーリヤ(Atmosphere)",
+      "default_case": "葛城リーリヤ(ときめきエモーション)",
       "cases": [
+        {
+          "name": "葛城リーリヤ(ときめきエモーション)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "葛城リーリヤ",
+                "song_name": "ときめきエモーション"
+              }
+            }
+          }
+        },
         {
           "name": "葛城リーリヤ(Atmosphere)",
           "pipeline_override": {
@@ -941,8 +981,19 @@
     },
     "紫雲清夏卡片": {
       "type": "select",
-      "default_case": "紫雲清夏(ミラクルナナウ(ﾟ∀ﾟ)！)",
+      "default_case": "紫雲清夏(ときめきエモーション)",
       "cases": [
+        {
+          "name": "紫雲清夏(ときめきエモーション)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "紫雲清夏",
+                "song_name": "ときめきエモーション"
+              }
+            }
+          }
+        },
         {
           "name": "紫雲清夏(ミラクルナナウ(ﾟ∀ﾟ)！)",
           "pipeline_override": {
