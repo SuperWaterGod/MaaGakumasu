@@ -152,6 +152,12 @@
             "param": {
                 "template": [
                     "produce/ap_restore.png"
+                ],
+                "roi": [
+                    26,
+                    750,
+                    670,
+                    465
                 ]
             }
         },
@@ -160,7 +166,8 @@
             "param": {}
         },
         "next": [
-            "ProduceLackAPUse"
+            "ProduceLackAPDecide",
+            "[JumpBack]ProduceLackAPUse"
         ],
         "post_wait_freezes": 200
     },
@@ -170,6 +177,12 @@
             "param": {
                 "template": [
                     "produce/ap_use.png"
+                ],
+                "roi": [
+                    26,
+                    750,
+                    666,
+                    412
                 ]
             }
         },
@@ -177,9 +190,6 @@
             "type": "Click",
             "param": {}
         },
-        "next": [
-            "ProduceLackAPDecide"
-        ],
         "post_wait_freezes": 200
     },
     "ProduceLackAPDecide": {
@@ -188,6 +198,12 @@
             "param": {
                 "template": [
                     "produce/ap_restore.png"
+                ],
+                "roi": [
+                    26,
+                    750,
+                    670,
+                    465
                 ]
             }
         },
@@ -353,6 +369,12 @@
             "param": {
                 "template": [
                     "produce/auto_support.png"
+                ],
+                "roi": [
+                    510,
+                    948,
+                    210,
+                    100
                 ]
             }
         },
@@ -391,6 +413,12 @@
             "param": {
                 "template": [
                     "produce/auto_support.png"
+                ],
+                "roi": [
+                    510,
+                    948,
+                    210,
+                    100
                 ]
             }
         },

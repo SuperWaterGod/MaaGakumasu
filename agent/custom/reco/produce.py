@@ -52,7 +52,7 @@ class ProduceChooseIdolAuto(CustomRecognition):
             }})
         if name_detail and name_detail.hit:
             recognized_name = "".join([item.text for item in name_detail.all_results]).replace(" ", "")
-            logger.debug(f"识别到偶像名称: {recognized_name}")
+            logger.info(f"识别到偶像名称: {recognized_name}，相似度: {self.similarity_ratio(recognized_name, idol_name)}")
 
         song_detail = context.run_recognition(
             "ProduceChooseIdolSong", argv.image,
@@ -62,7 +62,7 @@ class ProduceChooseIdolAuto(CustomRecognition):
             }})
         if song_detail and song_detail.hit:
             recognized_song = "".join([item.text for item in song_detail.all_results]).replace("[", "").replace("]", "")
-            logger.debug(f"识别到歌曲名称: {recognized_song}")
+            logger.info(f"识别到歌曲名称: {recognized_song}，相似度: {self.similarity_ratio(recognized_song, song_name)}")
 
         if (self.similarity_ratio(recognized_name, idol_name) >= 0.9 and
                 self.similarity_ratio(recognized_song, song_name) >= 0.7):

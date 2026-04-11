@@ -6,26 +6,6 @@
       }
     }
   },
-  "ProduceRecognitionOptions": {
-    "recognition": {
-      "type": "NeuralNetworkDetect",
-      "param": {
-        "model": "choose.onnx",
-        "labels": [
-          "choose",
-          "lesson"
-        ],
-        "expected": [
-          0,
-          1
-        ]
-      }
-    },
-    "action": {
-      "type": "DoNothing",
-      "param": {}
-    }
-  },
   "ProduceLanguage": {
     "attach": {
       "language": "zh-CN"
