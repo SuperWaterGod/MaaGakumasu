@@ -78,9 +78,9 @@
           ]
         },
         {
-          "name": "姫崎莉波",
+          "name": "姬崎莉波",
           "option": [
-            "姫崎莉波卡片-zh_CN"
+            "姬崎莉波卡片-zh_CN"
           ]
         },
         {
@@ -1174,126 +1174,126 @@
       ],
       "label": "$月村手毬卡片"
     },
-    "姫崎莉波卡片-zh_CN": {
+    "姬崎莉波卡片-zh_CN": {
       "type": "select",
-      "default_case": "姫崎莉波(36℃ U･B･U)",
+      "default_case": "姬崎莉波(36℃ U･B･U)",
       "cases": [
         {
-          "name": "姫崎莉波(36℃ U･B･U)",
+          "name": "姬崎莉波(36℃ U･B･U)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "姫崎莉波",
+                "idol_name": "姬崎莉波",
                 "song_name": "36℃ U･B･U"
               }
             }
           }
         },
         {
-          "name": "姫崎莉波(Howling over the World)",
+          "name": "姬崎莉波(Howling over the World)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "姫崎莉波",
+                "idol_name": "姬崎莉波",
                 "song_name": "Howling over the World"
               }
             }
           }
         },
         {
-          "name": "姫崎莉波(幸福千层酥)",
+          "name": "姬崎莉波(幸福千层酥)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "姫崎莉波",
+                "idol_name": "姬崎莉波",
                 "song_name": "幸福千层酥"
               }
             }
           }
         },
         {
-          "name": "姫崎莉波(Campus mode!!)",
+          "name": "姬崎莉波(Campus mode!!)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "姫崎莉波",
+                "idol_name": "姬崎莉波",
                 "song_name": "Campus mode!!"
               }
             }
           }
         },
         {
-          "name": "姫崎莉波(L.U.V)",
+          "name": "姬崎莉波(L.U.V)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "姫崎莉波",
+                "idol_name": "姬崎莉波",
                 "song_name": "L.U.V"
               }
             }
           }
         },
         {
-          "name": "姫崎莉波(欢迎来到初星温泉)",
+          "name": "姬崎莉波(欢迎来到初星温泉)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "姫崎莉波",
+                "idol_name": "姬崎莉波",
                 "song_name": "欢迎来到初星温泉"
               }
             }
           }
         },
         {
-          "name": "姫崎莉波(初心)",
+          "name": "姬崎莉波(初心)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "姫崎莉波",
+                "idol_name": "姬崎莉波",
                 "song_name": "初心"
               }
             }
           }
         },
         {
-          "name": "姫崎莉波(与你共度的湛蓝夏日)",
+          "name": "姬崎莉波(与你共度的湛蓝夏日)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "姫崎莉波",
+                "idol_name": "姬崎莉波",
                 "song_name": "与你共度的湛蓝夏日"
               }
             }
           }
         },
         {
-          "name": "姫崎莉波(clumsy trick)",
+          "name": "姬崎莉波(clumsy trick)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "姫崎莉波",
+                "idol_name": "姬崎莉波",
                 "song_name": "clumsy trick"
               }
             }
           }
         },
         {
-          "name": "姫崎莉波(『自我』的开始)",
+          "name": "姬崎莉波(『自我』的开始)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "姫崎莉波",
+                "idol_name": "姬崎莉波",
                 "song_name": "『自我』的开始"
               }
             }
           }
         },
         {
-          "name": "姫崎莉波(学园生活)",
+          "name": "姬崎莉波(学园生活)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "姫崎莉波",
+                "idol_name": "姬崎莉波",
                 "song_name": "学园生活"
               }
             }
