@@ -569,8 +569,19 @@
     },
     "花海佑芽卡片-zh_CN": {
       "type": "select",
-      "default_case": "花海佑芽(ENDLESS DANCE)",
+      "default_case": "花海佑芽(纯白画页与水彩绘就的主角)",
       "cases": [
+        {
+          "name": "花海佑芽(纯白画页与水彩绘就的主角)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "花海佑芽",
+                "song_name": "纯白画页与水彩绘就的主角"
+              }
+            }
+          }
+        },
         {
           "name": "花海佑芽(ENDLESS DANCE)",
           "pipeline_override": {

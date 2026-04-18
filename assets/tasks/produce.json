@@ -81,7 +81,7 @@
     },
     "使用道具": {
       "type": "checkbox",
-      "description": "选择培育要使用的道具",
+      "description": "$使用道具说明",
       "default_case": [],
       "cases": [
         {
@@ -247,6 +247,7 @@
     "跳过准备阶段": {
       "type": "switch",
       "default_case": "No",
+      "description": "$跳过准备阶段说明",
       "cases": [
         {
           "name": "Yes",
@@ -266,7 +267,7 @@
       "label": "卡片选择优先级",
       "type": "select",
       "default_case": "建议卡>活动卡",
-      "description": "建议卡需要在游戏的培育设置中开启指引才会显示<br>活动卡指仅在「亚纱里老师的制作人讲座」活动中出现的活动卡",
+      "description": "$卡片选择优先级说明",
       "cases": [
         {
           "name": "建议卡>活动卡",
@@ -875,8 +876,19 @@
     },
     "花海佑芽卡片": {
       "type": "select",
-      "default_case": "花海佑芽(ENDLESS DANCE)",
+      "default_case": "花海佑芽(真っ白いページと水彩の主人公)",
       "cases": [
+        {
+          "name": "花海佑芽(真っ白いページと水彩の主人公)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "花海佑芽",
+                "song_name": "真っ白いページと水彩の主人公"
+              }
+            }
+          }
+        },
         {
           "name": "花海佑芽(ENDLESS DANCE)",
           "pipeline_override": {
