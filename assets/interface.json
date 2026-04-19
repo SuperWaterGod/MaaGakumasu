@@ -242,7 +242,7 @@
             "ChallengeChoose": {
               "custom_action_param": {
                 "mode": "fixed",
-                "index": 3
+                "index": 2
               }
             }
           }
