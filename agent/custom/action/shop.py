@@ -254,7 +254,7 @@ class ShoppingDailyExchangeAPAuto(CustomAction):
                         "recognition": "TemplateMatch",
                         "template": file_name,
                         "roi": [27, 311, 669, 230],
-                        "threshold": 0.98
+                        "threshold": 0.93
                     }})
 
             if context.tasker.stopping:
