@@ -388,8 +388,19 @@ class ProduceCardsAuto(CustomAction):
         # 开始出牌
         self.start_time = time.time()
         while True:
+            # 处理手动终止任务
+            if context.tasker.stopping:
+                logger.info("任务中断")
+                return True
+
             # 截图
             image = context.tasker.controller.post_screencap().wait().get()
+
+            # 通过检测体力槽判断是否处于出牌场景
+            if not self._is_playing_card(context, image):
+                logger.info("未检测到体力")
+                logger.success("事件: 退出出牌")
+                break
 
             # 识别手牌
             reco_detail = context.run_recognition("ProduceRecognitionCards", image)
@@ -414,10 +425,6 @@ class ProduceCardsAuto(CustomAction):
                     self._play_a_card(context, best_box)
                 # 没有可用牌时，先判断是否处于出牌场景，确认处于出牌场景后，再跳过回合
                 elif useless > 0 and suggestions == 0 and cards == 0:
-                    if not self._is_playing_card(context):
-                        logger.info("未检测到可用卡片和体力")
-                        logger.success("事件: 退出出牌")
-                        break
                     logger.warning("!!!!!!!!无可用牌!!!!!!!!!!!")
                     context.run_task("ProduceRecognitionSkipRound")
                     self._wait_until_playable(context)
@@ -428,23 +435,10 @@ class ProduceCardsAuto(CustomAction):
                     if best_box[1] < 840 or best_box[1] > 1150:
                         continue
 
-                    # 先判断是否处于出牌场景，避免误识别
-                    if not self._is_playing_card(context):
-                        logger.info("未检测到卡片和体力")
-                        logger.success("事件: 退出出牌")
-                        break
-                    else:
-                        # 确认处于出牌场景且卡牌识别超时
-                        logger.warning("检测超时")
-                        self._play_a_card(context, best_box)
+                    logger.warning("检测超时")
+                    self._play_a_card(context, best_box)
 
             else:
-                reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", image)
-                if not (reco_detail and reco_detail.hit):
-                    logger.info("未检测到卡片和体力")
-                    logger.success("事件: 退出出牌")
-                    break
-
                 reco_detail = context.run_recognition("ProduceRecognitionNoCards", image)
                 if reco_detail.hit:
                     logger.info("无手牌")
@@ -452,9 +446,6 @@ class ProduceCardsAuto(CustomAction):
                     self._wait_until_playable(context)
                     self.start_time = time.time()
 
-            if context.tasker.stopping:
-                logger.info("任务中断")
-                return True
             time.sleep(self.CLICK_DELAY)
 
         return True
@@ -557,17 +548,20 @@ class ProduceCardsAuto(CustomAction):
         return False
 
     @staticmethod
-    def _is_playing_card(context: Context) -> bool:
+    def _is_playing_card(context: Context, image=None) -> bool:
         """
             判断是否处于出牌场景
 
             Args:
                 context: maa的Context类
+                image: 截图
 
             Returns:
                 bool: 如果处于出牌场景，返回True；否则返回False。
         """
-        image = context.tasker.controller.post_screencap().wait().get()
+        if image is None:
+            image = context.tasker.controller.post_screencap().wait().get()
+
         reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", image)
         if reco_detail and reco_detail.hit:
             return True
@@ -598,8 +592,6 @@ class ProduceCardsAuto(CustomAction):
                 count_playable += 1
                 if count_playable >= confirmation_count:
                     return True
-            else:
-                count_playable = 0
 
             # 检测血条是否存在，如连续n次检查不到血条，则认为已退出出牌场景
             # 如果识别时间太长，2次就够了，主要避免CLEAR效果遮住血条的情况
@@ -609,8 +601,6 @@ class ProduceCardsAuto(CustomAction):
                 count_exit += 1
                 if count_exit >= 2:
                     return False
-            else:
-                count_exit = 0
 
             # 解决莫名其妙的误触问题
             reco_detail = context.run_recognition("ProduceButton", image)
