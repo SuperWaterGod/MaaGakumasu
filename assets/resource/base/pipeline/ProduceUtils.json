@@ -289,6 +289,12 @@
           "produce/skip_round.png",
           "produce/skip_round_1.png",
           "produce/skip_round_2.png"
+        ],
+        "roi": [
+          590,
+          720,
+          130,
+          120
         ]
       }
     },
