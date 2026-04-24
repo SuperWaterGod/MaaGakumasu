@@ -160,6 +160,18 @@
       "default_check": true,
       "doc": "",
       "label": "$领取奖励"
+    },
+    {
+      "name": "支援卡识别",
+      "entry": "SupportCards",
+      "option": [],
+      "default_check": true,
+      "doc": "$支援卡识别说明",
+      "resource": [
+        "插件版汉化",
+        "DMM插件汉化版"
+      ],
+      "label": "$支援卡识别"
     }
   ],
   "option": {

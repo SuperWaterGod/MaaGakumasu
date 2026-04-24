@@ -1,0 +1,120 @@
+{
+    "SupportCards": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "next": [
+            "SupportCardsHomeFlag",
+            "[JumpBack]ReturnHome",
+            "[JumpBack]BackHome",
+            "[JumpBack]CloseRoundButton"
+        ]
+    },
+    "SupportCardsHomeFlag": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "home.png",
+                    "home_1.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "next": [
+            "IdolsClick"
+        ]
+    },
+    "IdolsClick": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "idol.png"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "SupportCardsEnter"
+        ],
+        "post_wait_freezes": 200
+    },
+    "SupportCardsEnter": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "support_cards.png"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "post_wait_freezes": 200,
+        "next": [
+            "SupportCardsAuto"
+        ]
+    },
+    "SupportCardsAuto": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "SupportCardsAuto"
+            }
+        },
+        "next": [
+            "ReturnHome",
+            "BackHome"
+        ]
+    },
+    "SupportCardsOCR": {
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [],
+                "roi": [
+                    310,
+                    0,
+                    410,
+                    50
+                ]
+            }
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        }
+    },
+    "SupportCardsStar": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "star.png",
+                "roi": [
+                    8,
+                    300,
+                    135,
+                    45
+                ]
+            }
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        }
+    }
+}
