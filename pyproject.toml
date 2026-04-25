@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "MaaGakumasu"
+version = "1.3.8"
+description = "学園アイドルマスター(学マス)小助手 | Assistant For Gakuen Idolmaster"
+readme = "README.md"
+license = {text = "AGPL-3.0 license"}
+requires-python = ">=3.12"
+authors = [
+    {name = "SuperWaterGod"}
+]
+keywords = ["maa", "maaframework", "gakumas", "automation", "image-recognition"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games",
+]
+
+dependencies = [
+    "maafw",
+    "loguru",
+]
+
+[project.urls]
+Homepage = "https://github.com/SuperWaterGod/MaaGakumasu"
+Repository = "https://github.com/SuperWaterGod/MaaGakumasu"
+Issues = "https://github.com/SuperWaterGod/MaaGakumasu/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agent*"]
+
+[tool.ruff]
+select = ["I"]
+line-length = 144 
+target-version = "py312"
+
+[tool.ruff.lint.isort]
+length-sort = true
+length-sort-straight = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

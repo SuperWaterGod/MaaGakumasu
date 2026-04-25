@@ -33,9 +33,18 @@
         }
     },
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter"
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.rulers": [
+            144
+        ]
     },
     "files.associations": {
         "*.json": "jsonc"
+    },
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportAttributeAccessIssue": "none",
+        "reportOptionalMemberAccess": "none",
+        "reportArgumentType": "warning"
     }
 }
