@@ -4,7 +4,7 @@ import time
 from typing import Tuple, Union, Optional
 from difflib import SequenceMatcher
 
-import cv2
+from PIL import Image
 from utils import logger
 from maa.define import RectType
 from maa.context import Context
@@ -177,7 +177,7 @@ class ProduceChooseCardsAuto(CustomRecognition):
             box = reco_detail_event.best_result.box
             box_list = list(box)
             box_list[1] = box_list[1] + 80
-            return (box_list[0], box_list[1], box_list[2], box_list[3])
+            return box_list[0], box_list[1], box_list[2], box_list[3]
         return None
 
     @staticmethod
@@ -197,7 +197,7 @@ class ProduceChooseCardsAuto(CustomRecognition):
             box = reco_detail_recommend.best_result.box
             box_list = list(box)
             box_list[1] = box_list[1] - 80
-            return (box_list[0], box_list[1], box_list[2], box_list[3])
+            return box_list[0], box_list[1], box_list[2], box_list[3]
         return None
 
 
@@ -300,7 +300,7 @@ class ProduceOptionsFlagAuto(CustomRecognition):
             )
             os.makedirs(debug_dir, exist_ok=True)
             debug_path = os.path.join(debug_dir, f"{int(time.time() * 1000)}.png")
-            cv2.imwrite(debug_path, argv.image)
+            Image.fromarray(argv.image[:, :, ::-1]).save(debug_path)
             logger.info(f"已保存调试图片至: {debug_path}")
 
         best_box = options_reco_detail.best_result.box
