@@ -296,7 +296,7 @@ class ProduceOptionsFlagAuto(CustomRecognition):
             debug_dir = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
                 "debug",
-                "vision",
+                "options",
             )
             os.makedirs(debug_dir, exist_ok=True)
             debug_path = os.path.join(debug_dir, f"{int(time.time() * 1000)}.png")
