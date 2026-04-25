@@ -1,3 +1,4 @@
+import os
 import json
 import time
 import base64
@@ -27,7 +28,7 @@ class SupportCardsAuto(CustomAction):
     ACTION_DELAY = 0.5
 
     # 支持卡牌数据文件路径
-    SUPPORT_CARDS_FILE = "assets/data/support_cards.json"
+    SUPPORT_CARDS_FILE = "data/support_cards.json" if os.path.exists("data/support_cards.json") else "assets/data/support_cards.json"
     # 相似度阈值
     SIMILARITY_THRESHOLD = 0.7
 
