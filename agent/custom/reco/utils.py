@@ -1,6 +1,6 @@
-from utils import logger
 from typing import Union, Optional
 
+from utils import logger
 from maa.define import RectType
 from maa.context import Context
 from maa.library import Library
@@ -11,13 +11,13 @@ from maa.custom_recognition import CustomRecognition
 @AgentServer.custom_recognition("ScreenRotateCheck")
 class ScreenRotateCheck(CustomRecognition):
     """
-        检测通过屏幕是否旋转判
+    检测通过屏幕是否旋转判
     """
 
     def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         image = argv.image
         height = image.shape[0]

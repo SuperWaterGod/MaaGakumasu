@@ -1,8 +1,8 @@
 import json
 import time
-from utils import logger
 from typing import Union, Optional
 
+from utils import logger
 from maa.define import RectType
 from maa.context import Context
 from maa.agent.agent_server import AgentServer
@@ -12,30 +12,31 @@ from maa.custom_recognition import CustomRecognition
 @AgentServer.custom_recognition("WorkChooseAuto")
 class WorkChooseAuto(CustomRecognition):
     """
-        自动识别选择工作
-        优先选择笑脸，没有笑脸则按照好感度选择
+    自动识别选择工作
+    优先选择笑脸，没有笑脸则按照好感度选择
     """
 
     def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
-
         def recognize_smile(image, roi):
             return context.run_recognition("WorkChooseGood", image, pipeline_override={"WorkChooseGood": {"roi": roi}})
 
         def recognize_affinity(image):
-            return context.run_recognition("WorkIdolAffinity", image, pipeline_override={"WorkIdolAffinity": {
-                "recognition": "OCR",
-                "expected": "^(?:0|[1-9]\\d?)/[1-9]\\d$",
-                "roi": [70, 788, 558, 240]
-            }})
+            return context.run_recognition(
+                "WorkIdolAffinity",
+                image,
+                pipeline_override={
+                    "WorkIdolAffinity": {"recognition": "OCR", "expected": "^(?:0|[1-9]\\d?)/[1-9]\\d$", "roi": [70, 788, 558, 240]}
+                },
+            )
 
         def recognize_work(image, box):
-            return context.run_recognition("WorkAlready", image, pipeline_override={"WorkAlready": {
-                "roi": [box[0] - 100, box[1] - 10, 150, 150]
-            }})
+            return context.run_recognition(
+                "WorkAlready", image, pipeline_override={"WorkAlready": {"roi": [box[0] - 100, box[1] - 10, 150, 150]}}
+            )
 
         def handle_smile_page(page_image, roi, swipe_coords):
             smile_reco_detail = recognize_smile(page_image, roi)
@@ -82,8 +83,8 @@ class WorkChooseAuto(CustomRecognition):
         affinity_image = context.tasker.controller.post_screencap().wait().get()
         affinity_reco_detail = recognize_affinity(affinity_image)
         if affinity_reco_detail and affinity_reco_detail.hit:
-            affinity_list = [{"box": result.box, "text": int(result.text.split('/')[0])} for result in affinity_reco_detail.filtered_results]
-            sorted_list = sorted(affinity_list, key=lambda item: item['text'])
+            affinity_list = [{"box": result.box, "text": int(result.text.split("/")[0])} for result in affinity_reco_detail.filtered_results]
+            sorted_list = sorted(affinity_list, key=lambda item: item["text"])
             max_affinity = sorted_list[-1]
             second_affinity = sorted_list[-2]
             new_affinity_image = context.tasker.controller.post_screencap().wait().get()
@@ -104,23 +105,21 @@ class WorkChooseAuto(CustomRecognition):
 @AgentServer.custom_recognition("WorkChooseIdol")
 class WorkChooseIdol(CustomRecognition):
     """
-        选择指定Idol
+    选择指定Idol
     """
 
     def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
-
         idol = json.loads(argv.custom_recognition_param)["idol"]
 
         reco_detail = context.run_recognition(
-            "WorkChooseIdolRecognition", argv.image,
-            pipeline_override={"WorkChooseIdolRecognition": {
-                "recognition": "TemplateMatch",
-                "template": idol
-            }})
+            "WorkChooseIdolRecognition",
+            argv.image,
+            pipeline_override={"WorkChooseIdolRecognition": {"recognition": "TemplateMatch", "template": idol}},
+        )
         if reco_detail and reco_detail.hit:
             box = reco_detail.filtered_results[0].box
             return CustomRecognition.AnalyzeResult(box=box, detail={"detail": "已选中"})
@@ -130,11 +129,10 @@ class WorkChooseIdol(CustomRecognition):
             image = context.tasker.controller.post_screencap().wait().get()
 
             reco_detail = context.run_recognition(
-                "WorkChooseIdolRecognition", image,
-                pipeline_override={"WorkChooseIdolRecognition": {
-                    "recognition": "TemplateMatch",
-                    "template": idol
-                }})
+                "WorkChooseIdolRecognition",
+                image,
+                pipeline_override={"WorkChooseIdolRecognition": {"recognition": "TemplateMatch", "template": idol}},
+            )
             if reco_detail and reco_detail.hit:
                 box = reco_detail.filtered_results[0].box
                 return CustomRecognition.AnalyzeResult(box=box, detail={"detail": "已选中"})

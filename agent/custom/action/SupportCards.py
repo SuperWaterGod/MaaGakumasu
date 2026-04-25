@@ -1,9 +1,9 @@
 import json
 import time
 import base64
-from utils import logger
 from difflib import SequenceMatcher
 
+from utils import logger
 from maa.context import Context
 from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
@@ -118,17 +118,19 @@ class SupportCardsAuto(CustomAction):
                 best_card_id = card_id
                 best_card_name = card_name
 
-        if best_similarity >= self.SIMILARITY_THRESHOLD:
+        if best_similarity >= self.SIMILARITY_THRESHOLD and best_card_id is not None:
             logger.info(f"模糊匹配: '{name}' -> '{best_card_name}' (相似度: {best_similarity:.2f})")
             return self.process_card_id(best_card_id, star)
 
         return None
 
-    def calculate_similarity(self, name1: str, name2: str) -> float:
+    @staticmethod
+    def calculate_similarity(name1: str, name2: str) -> float:
         """计算两个字符串的相似度"""
         return SequenceMatcher(None, name1, name2).ratio()
 
-    def process_card_id(self, card_id: str, star: int) -> str:
+    @staticmethod
+    def process_card_id(card_id: str, star: int) -> str:
         """处理卡牌ID，格式: s_card-X-XXXX -> X-XX-star"""
         # s_card-1-0004 -> 1-4-1
         # s_card-3-0029 -> 3-29-star
@@ -178,16 +180,19 @@ class SupportCardsAuto(CustomAction):
             else:
                 seen_names.add(card_name)
                 matched_id = self.match_card(card_name, star_count, card_data)
-                page_cards.append({
-                    "name": card_name,
-                    "star": star_count,
-                    "matched_id": matched_id,
-                    "page": page_index + 1,
-                })
+                page_cards.append(
+                    {
+                        "name": card_name,
+                        "star": star_count,
+                        "matched_id": matched_id,
+                        "page": page_index + 1,
+                    }
+                )
 
         return page_cards, should_stop
 
-    def _recognize_card_name(self, context: Context) -> str:
+    @staticmethod
+    def _recognize_card_name(context: Context) -> str:
         """识别卡牌右上角的文字"""
         image = context.tasker.controller.post_screencap().wait().get()
         reco_detail = context.run_recognition("SupportCardsOCR", image)
@@ -196,7 +201,8 @@ class SupportCardsAuto(CustomAction):
             return text.strip()
         return ""
 
-    def _recognize_star_count(self, context: Context) -> int:
+    @staticmethod
+    def _recognize_star_count(context: Context) -> int:
         """识别卡牌star数量"""
         image = context.tasker.controller.post_screencap().wait().get()
         reco_detail = context.run_recognition("SupportCardsStar", image)
@@ -204,7 +210,8 @@ class SupportCardsAuto(CustomAction):
             return len(reco_detail.filtered_results)
         return 0
 
-    def _swipe_to_next_page(self, context: Context) -> bool:
+    @staticmethod
+    def _swipe_to_next_page(context: Context) -> bool:
         """滑动到下一页"""
         context.tasker.controller.post_swipe(247, 920, 247, 485, 1500).wait()
         return True

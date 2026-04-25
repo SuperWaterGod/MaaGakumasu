@@ -1,7 +1,7 @@
 import json
 import random
-from utils import logger
 
+from utils import logger
 from maa.context import Context
 from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
@@ -14,11 +14,10 @@ class ChallengeAuto(CustomAction):
     """
 
     def run(
-            self,
-            context: Context,
-            argv: CustomAction.RunArg,
+        self,
+        context: Context,
+        argv: CustomAction.RunArg,
     ) -> bool:
-
         params = json.loads(argv.custom_action_param)
 
         mode_allowed = ["fixed", "random", "auto", "max", "min"]
@@ -43,12 +42,13 @@ class ChallengeAuto(CustomAction):
 
         elif mode in ["auto", "max", "min"]:
             image = context.tasker.controller.post_screencap().wait().get()
-            reco_detail = context.run_recognition("ChallengeRating", image, pipeline_override={"ChallengeRating": {
-                "recognition": "OCR",
-                "expected": "^\\d{3,6}$",
-                "roi": [54, 634, 233, 447],
-                "order_by": "Vertical"
-            }})
+            reco_detail = context.run_recognition(
+                "ChallengeRating",
+                image,
+                pipeline_override={
+                    "ChallengeRating": {"recognition": "OCR", "expected": "^\\d{3,6}$", "roi": [54, 634, 233, 447], "order_by": "Vertical"}
+                },
+            )
             if reco_detail and reco_detail.hit:
                 ratings = [result.text for result in reco_detail.filtered_results]
                 index = 1
@@ -69,17 +69,23 @@ class ChallengeAuto(CustomAction):
                     index = ratings_int.index(min(ratings_int))
                     logger.info(f"选择挑战评分最低的第 {index + 1} 位")
                 else:  # auto
-                    reco_detail = context.run_recognition("ChallengeRating", image, pipeline_override={"ChallengeRating": {
-                        "recognition": "OCR",
-                        "expected": "^\\d{3,6}$",
-                        "roi": [172, 505, 195, 69],
-                        "order_by": "Vertical"
-                    }})
+                    reco_detail = context.run_recognition(
+                        "ChallengeRating",
+                        image,
+                        pipeline_override={
+                            "ChallengeRating": {
+                                "recognition": "OCR",
+                                "expected": "^\\d{3,6}$",
+                                "roi": [172, 505, 195, 69],
+                                "order_by": "Vertical",
+                            }
+                        },
+                    )
                     if reco_detail and reco_detail.hit:
                         self_rating_score = reco_detail.best_result.text
                         try:
                             self_rating_int = int(self_rating_score)
-                            diffs = [abs(rating - self_rating_int) if rating != -1 else float('inf') for rating in ratings_int]
+                            diffs = [abs(rating - self_rating_int) if rating != -1 else float("inf") for rating in ratings_int]
                             index = diffs.index(min(diffs))
                             logger.info(f"自动选择挑战第 {index + 1} 位")
                         except ValueError:

@@ -1,9 +1,9 @@
 import json
-from utils import logger
 
-from maa.agent.agent_server import AgentServer
-from maa.custom_action import CustomAction
+from utils import logger
 from maa.context import Context
+from maa.custom_action import CustomAction
+from maa.agent.agent_server import AgentServer
 
 
 class Counter:
@@ -53,9 +53,7 @@ counter_manager = CounterManager()
 
 @AgentServer.custom_action("InitCounter")
 class InitCounter(CustomAction):
-    def run(
-            self, context: Context, argv: CustomAction.RunArg
-    ) -> CustomAction.RunResult | bool:
+    def run(self, context: Context, argv: CustomAction.RunArg) -> CustomAction.RunResult | bool:
         try:
             # 解析 JSON 字符串参数
             params = json.loads(argv.custom_action_param) if argv.custom_action_param else {}
@@ -72,9 +70,7 @@ class InitCounter(CustomAction):
 
 @AgentServer.custom_action("UseCounter")
 class UseCounter(CustomAction):
-    def run(
-            self, context: Context, argv: CustomAction.RunArg
-    ) -> CustomAction.RunResult | bool:
+    def run(self, context: Context, argv: CustomAction.RunArg) -> CustomAction.RunResult | bool:
         try:
             # 解析 JSON 字符串参数
             params = json.loads(argv.custom_action_param) if argv.custom_action_param else {}

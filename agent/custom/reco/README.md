@@ -1,6 +1,8 @@
 
 # 运行逻辑
+
 ## WorkChooseAuto
+
 ```mermaid
 flowchart LR
     A[选择页面] --> B{检测第一页是否有笑脸}
@@ -22,6 +24,7 @@ flowchart LR
 ```
 
 ## WorkChooseIdol
+
 ```mermaid
 flowchart LR
     A[选择页面] --> B{检测是否存在指定Idol}

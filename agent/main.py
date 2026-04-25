@@ -2,8 +2,8 @@ import os
 import sys
 import json
 import subprocess
-from pathlib import Path
 from typing import Optional
+from pathlib import Path
 
 # 获取当前main.py所在路径并设置上级目录为工作目录
 current_file_path = os.path.abspath(__file__)
@@ -22,9 +22,7 @@ except ImportError:
     # 如果logger不存在，创建一个简单的logger
     import logging
 
-    logging.basicConfig(
-        format="%(asctime)s | %(levelname)s | %(message)s", level=logging.INFO
-    )
+    logging.basicConfig(format="%(asctime)s | %(levelname)s | %(message)s", level=logging.INFO)
     logger = logging
 
 
@@ -61,10 +59,12 @@ def read_pip_config() -> dict:
         return default_config
 
 
-def get_available_mirror(pip_config: dict) -> Optional[str]:
+def get_available_mirror(pip_config: dict | None) -> Optional[str]:
     """
     检查镜像源可用性并返回一个可用的镜像源
     """
+    if pip_config is None:
+        return None
     mirrors = [pip_config.get("mirror")] + pip_config.get("backup_mirrors", [])
     for mirror in mirrors:
         try:
@@ -171,9 +171,7 @@ def check_and_install_dependencies():
     logger.info(f"启用 pip 安装依赖: {enable_pip_install}")
     logger.info(f"当前版本: {current_version}, 上次运行版本: {last_version}")
 
-    if enable_pip_install and (
-            current_version != last_version or current_version == "unknown"
-    ):
+    if enable_pip_install and (current_version != last_version or current_version == "unknown"):
         if install_requirements(pip_config=pip_config):
             update_pip_config(current_version)
             logger.info("依赖检查完成")
@@ -221,11 +219,10 @@ def update_pip_config(version) -> bool:
 
 def agent():
     try:
-        from maa.agent.agent_server import AgentServer
-        from maa.toolkit import Toolkit
-
         import custom
         from utils import logger
+        from maa.toolkit import Toolkit
+        from maa.agent.agent_server import AgentServer
 
         Toolkit.init_option("./")
 

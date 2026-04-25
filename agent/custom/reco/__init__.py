@@ -1,7 +1,7 @@
 from .work import *
-from .society import *
-from .produce import *
 from .utils import *
+from .produce import *
+from .society import *
 
 __all__ = [
     "WorkChooseAuto",
@@ -15,5 +15,5 @@ __all__ = [
     "ProduceCardsFlagAuto",
     "ProduceOptionsFlagAuto",
     "ProduceChooseItemAuto",
-    "ScreenRotateCheck"
+    "ScreenRotateCheck",
 ]

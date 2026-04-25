@@ -10,11 +10,13 @@
 """
 
 import json
+from typing import Any
 from pathlib import Path
 from collections import OrderedDict
 
 try:
     from opencc import OpenCC
+
     HAS_OPENCC = True
 except ImportError:
     HAS_OPENCC = False
@@ -44,7 +46,7 @@ def resolve_interface_paths(paths: list[Path]) -> list[Path]:
 # ========================
 # 原有逻辑（基本不动）
 # ========================
-def _extract_dollar_keys_ordered(value: any, keys: list) -> None:
+def _extract_dollar_keys_ordered(value: Any, keys: list) -> None:
     if isinstance(value, str):
         if value.startswith("$"):
             key = value[1:]
@@ -64,7 +66,7 @@ def _extract_dollar_keys_ordered(value: any, keys: list) -> None:
                 _extract_dollar_keys_ordered(v, keys)
 
 
-def _extract_doc_key_ordered(doc: any, keys: list) -> None:
+def _extract_doc_key_ordered(doc: Any, keys: list) -> None:
     if isinstance(doc, list):
         cleaned_items = []
         for item in doc:
@@ -179,12 +181,7 @@ def main():
     parser = argparse.ArgumentParser(description="同步翻译文件")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--langs", nargs="+")
-    parser.add_argument(
-        "--interfaces",
-        nargs="+",
-        metavar="PATH",
-        help="interface 文件或目录（支持多个）"
-    )
+    parser.add_argument("--interfaces", nargs="+", metavar="PATH", help="interface 文件或目录（支持多个）")
 
     args = parser.parse_args()
 
@@ -195,10 +192,7 @@ def main():
     if args.interfaces:
         interface_inputs = [Path(p) for p in args.interfaces]
     else:
-        interface_inputs = [
-            project_root / "assets" / "interface.json",
-            project_root / "assets" / "tasks"
-        ]
+        interface_inputs = [project_root / "assets" / "interface.json", project_root / "assets" / "tasks"]
 
     interface_paths = resolve_interface_paths(interface_inputs)
 

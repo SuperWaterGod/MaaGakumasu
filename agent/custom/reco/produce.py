@@ -1,10 +1,11 @@
-import time
+import os
 import json
-from utils import logger
-from collections import Counter
-from typing import Union, Optional
+import time
+from typing import Tuple, Union, Optional
 from difflib import SequenceMatcher
 
+import cv2
+from utils import logger
 from maa.define import RectType
 from maa.context import Context
 from maa.agent.agent_server import AgentServer
@@ -14,27 +15,30 @@ from maa.custom_recognition import CustomRecognition
 @AgentServer.custom_recognition("ProduceChooseIdolAuto")
 class ProduceChooseIdolAuto(CustomRecognition):
     """
-        自动识别当前偶像名称和歌曲
+    自动识别当前偶像名称和歌曲
     """
 
     def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
-
         idol_name = json.loads(argv.custom_recognition_param)["idol_name"]
         song_name = json.loads(argv.custom_recognition_param)["song_name"]
         recognized_name = ""
         recognized_song = ""
 
         true_end_detail = context.run_recognition(
-            "ProduceChooseIdolTrueEnd", argv.image,
-            pipeline_override={"ProduceChooseIdolTrueEnd": {
-                "recognition": "OCR",
-                "expected": ["True", "End"],
-                "roi": [430, 34, 266, 48]
-            }})
+            "ProduceChooseIdolTrueEnd",
+            argv.image,
+            pipeline_override={
+                "ProduceChooseIdolTrueEnd": {
+                    "recognition": "OCR",
+                    "expected": ["True", "End"],
+                    "roi": [430, 34, 266, 48],
+                }
+            },
+        )
         if true_end_detail and true_end_detail.hit:
             logger.debug("识别到True End")
             idol_name_roi = [440, 128, 280, 64]
@@ -45,27 +49,24 @@ class ProduceChooseIdolAuto(CustomRecognition):
             song_name_roi = [340, 60, 380, 45]
 
         name_detail = context.run_recognition(
-            "ProduceChooseIdolName", argv.image,
-            pipeline_override={"ProduceChooseIdolName": {
-                "recognition": "OCR",
-                "roi": idol_name_roi
-            }})
+            "ProduceChooseIdolName",
+            argv.image,
+            pipeline_override={"ProduceChooseIdolName": {"recognition": "OCR", "roi": idol_name_roi}},
+        )
         if name_detail and name_detail.hit:
             recognized_name = "".join([item.text for item in name_detail.all_results]).replace(" ", "")
             logger.info(f"识别到偶像名称: {recognized_name}，相似度: {self.similarity_ratio(recognized_name, idol_name)}")
 
         song_detail = context.run_recognition(
-            "ProduceChooseIdolSong", argv.image,
-            pipeline_override={"ProduceChooseIdolSong": {
-                "recognition": "OCR",
-                "roi": song_name_roi
-            }})
+            "ProduceChooseIdolSong",
+            argv.image,
+            pipeline_override={"ProduceChooseIdolSong": {"recognition": "OCR", "roi": song_name_roi}},
+        )
         if song_detail and song_detail.hit:
             recognized_song = "".join([item.text for item in song_detail.all_results]).replace("[", "").replace("]", "")
             logger.info(f"识别到歌曲名称: {recognized_song}，相似度: {self.similarity_ratio(recognized_song, song_name)}")
 
-        if (self.similarity_ratio(recognized_name, idol_name) >= 0.9 and
-                self.similarity_ratio(recognized_song, song_name) >= 0.7):
+        if self.similarity_ratio(recognized_name, idol_name) >= 0.9 and self.similarity_ratio(recognized_song, song_name) >= 0.7:
             return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "识别偶像卡成功"})
         else:
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "识别偶像卡失败"})
@@ -79,13 +80,13 @@ class ProduceChooseIdolAuto(CustomRecognition):
 @AgentServer.custom_recognition("ProduceShowStart")
 class ProduceShowStart(CustomRecognition):
     """
-        检测通过屏幕是否旋转判断演出开始
+    检测通过屏幕是否旋转判断演出开始
     """
 
     def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         image = argv.image
         height = image.shape[0]
@@ -100,13 +101,13 @@ class ProduceShowStart(CustomRecognition):
 @AgentServer.custom_recognition("ProduceShowEnd")
 class ProduceShowEnd(CustomRecognition):
     """
-        检测屏幕是否旋转
+    检测屏幕是否旋转
     """
 
     def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         image = argv.image
         height = image.shape[0]
@@ -121,19 +122,19 @@ class ProduceShowEnd(CustomRecognition):
 @AgentServer.custom_recognition("ProduceChooseCardsAuto")
 class ProduceChooseCardsAuto(CustomRecognition):
     """
-        根据配置的优先级选择卡牌
-        配置示例:
-        {
-            "attach": {
-                "priority": ["suggestion", "event"]
-            }
+    根据配置的优先级选择卡牌
+    配置示例:
+    {
+        "attach": {
+            "priority": ["suggestion", "event"]
         }
+    }
     """
 
     def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         logger.success("事件: 选择卡牌")
 
@@ -160,54 +161,69 @@ class ProduceChooseCardsAuto(CustomRecognition):
         return CustomRecognition.AnalyzeResult(box=result, detail={"detail": "选择第一张卡"})
 
     @staticmethod
-    def _get_event_card(context: Context, argv: CustomRecognition.AnalyzeArg):
+    def _get_event_card(context: Context, argv: CustomRecognition.AnalyzeArg) -> Optional[Tuple[int, int, int, int]]:
         reco_detail_event = context.run_recognition(
-            "ProduceChooseEventCards", argv.image,
-            pipeline_override={"ProduceChooseEventCards": {
-                "recognition": "TemplateMatch",
-                "template": "produce/event_recommend.png",
-                "roi": [86, 788, 545, 220]
-            }})
+            "ProduceChooseEventCards",
+            argv.image,
+            pipeline_override={
+                "ProduceChooseEventCards": {
+                    "recognition": "TemplateMatch",
+                    "template": "produce/event_recommend.png",
+                    "roi": [86, 788, 545, 220],
+                }
+            },
+        )
         if reco_detail_event and reco_detail_event.hit:
-            result = reco_detail_event.best_result.box
-            result[1] = result[1] + 80
-            return result
+            box = reco_detail_event.best_result.box
+            box_list = list(box)
+            box_list[1] = box_list[1] + 80
+            return (box_list[0], box_list[1], box_list[2], box_list[3])
         return None
 
     @staticmethod
-    def _get_suggestion_card(context: Context, argv: CustomRecognition.AnalyzeArg):
+    def _get_suggestion_card(context: Context, argv: CustomRecognition.AnalyzeArg) -> Optional[Tuple[int, int, int, int]]:
         reco_detail_recommend = context.run_recognition(
-            "ProduceChooseCardsSuggestion", argv.image,
-            pipeline_override={"ProduceChooseCardsSuggestion": {
-                "recognition": "TemplateMatch",
-                "template": "produce/recommed.png",
-                "roi": [86, 788, 545, 220]
-            }})
+            "ProduceChooseCardsSuggestion",
+            argv.image,
+            pipeline_override={
+                "ProduceChooseCardsSuggestion": {
+                    "recognition": "TemplateMatch",
+                    "template": "produce/recommed.png",
+                    "roi": [86, 788, 545, 220],
+                }
+            },
+        )
         if reco_detail_recommend and reco_detail_recommend.hit:
-            result = reco_detail_recommend.best_result.box
-            result[1] = result[1] - 80
-            return result
+            box = reco_detail_recommend.best_result.box
+            box_list = list(box)
+            box_list[1] = box_list[1] - 80
+            return (box_list[0], box_list[1], box_list[2], box_list[3])
         return None
+
 
 @AgentServer.custom_recognition("ProduceChooseDrinkAuto")
 class ProduceChooseDrinkAuto(CustomRecognition):
     """
-        自动识别选择饮料
-        优先选择第一个
+    自动识别选择饮料
+    优先选择第一个
     """
 
     def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         reco_detail = context.run_recognition(
-            "ProduceChooseDrinkFull", argv.image,
-            pipeline_override={"ProduceChooseDrinkFull": {
-                "recognition": "TemplateMatch",
-                "template": "produce/drink_reject.png",
-                "roi": [54, 950, 610, 98]
-            }})
+            "ProduceChooseDrinkFull",
+            argv.image,
+            pipeline_override={
+                "ProduceChooseDrinkFull": {
+                    "recognition": "TemplateMatch",
+                    "template": "produce/drink_reject.png",
+                    "roi": [54, 950, 610, 98],
+                }
+            },
+        )
         logger.success("事件: 选择饮料")
         if reco_detail and reco_detail.hit:
             logger.info("放弃饮料")
@@ -221,14 +237,14 @@ class ProduceChooseDrinkAuto(CustomRecognition):
 @AgentServer.custom_recognition("ProduceChooseItemAuto")
 class ProduceChooseItemAuto(CustomRecognition):
     """
-        自动识别选择饮料
-        优先选择第一个
+    自动识别选择饮料
+    优先选择第一个
     """
 
     def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         logger.success("事件: 选择物品")
         logger.info("选择第一个物品")
@@ -239,15 +255,14 @@ class ProduceChooseItemAuto(CustomRecognition):
 @AgentServer.custom_recognition("ProduceCardsFlagAuto")
 class ProduceCardsFlagAuto(CustomRecognition):
     """
-        自动识别出牌场景
+    自动识别出牌场景
     """
 
     def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
-
         context.run_task("Click_1")
         cards_reco_detail = context.run_recognition("ProduceRecognitionCards", argv.image)
         health_reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", argv.image)
@@ -261,22 +276,32 @@ class ProduceCardsFlagAuto(CustomRecognition):
 @AgentServer.custom_recognition("ProduceOptionsFlagAuto")
 class ProduceOptionsFlagAuto(CustomRecognition):
     """
-        自动识别选择冲刺/上课/外出场景
+    自动识别选择冲刺/上课/外出场景
     """
 
     def analyze(
-            self,
-            context: Context,
-            argv: CustomRecognition.AnalyzeArg,
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         context.run_task("Click_1")
         options_reco_detail = context.run_recognition("ProduceRecognitionOptions", argv.image)
-        if (not options_reco_detail or not options_reco_detail.hit):
+        if not options_reco_detail or not options_reco_detail.hit:
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "未识别到选择场景"})
 
         logger.success("事件: 选择冲刺/上课/外出")
         logger.info(f"检测到{len(options_reco_detail.filtered_results)}个选项")
-        results = options_reco_detail.all_results
+
+        if len(options_reco_detail.filtered_results) <= 2:
+            debug_dir = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                "debug",
+                "vision",
+            )
+            os.makedirs(debug_dir, exist_ok=True)
+            debug_path = os.path.join(debug_dir, f"{int(time.time() * 1000)}.png")
+            cv2.imwrite(debug_path, argv.image)
+            logger.info(f"已保存调试图片至: {debug_path}")
 
         best_box = options_reco_detail.best_result.box
         click_point_x = best_box[0] + best_box[2] // 2

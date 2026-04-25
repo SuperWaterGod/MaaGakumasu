@@ -1,7 +1,7 @@
 from .shop import *
+from .Counter import *
 from .produce import *
 from .challenge import *
-from .Counter import *
 from .SupportCards import *
 
 __all__ = [
@@ -15,5 +15,5 @@ __all__ = [
     "ProduceStrengthenAuto",
     "SupportCardsAuto",
     "InitCounter",
-    "UseCounter"
+    "UseCounter",
 ]

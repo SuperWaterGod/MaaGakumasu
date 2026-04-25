@@ -1,6 +1,6 @@
 import time
-from utils import logger
 
+from utils import logger
 from maa.context import Context
 from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
@@ -9,19 +9,22 @@ from maa.agent.agent_server import AgentServer
 @AgentServer.custom_action("ShoppingCoinGachaAuto")
 class ShoppingCoinGachaAuto(CustomAction):
     def run(
-            self,
-            context: Context,
-            argv: CustomAction.RunArg,
+        self,
+        context: Context,
+        argv: CustomAction.RunArg,
     ) -> bool:
-
         image = context.tasker.controller.post_screencap().wait().get()
         reco_detail = context.run_recognition(
-            "ShoppingCoinGachaCheckActivity", image,
-            pipeline_override={"ShoppingCoinGachaCheckActivity": {
-                "recognition": "TemplateMatch",
-                "template": "shopping_gacha_anomaly_coin.png",
-                "roi": [296, 135, 62, 66]
-            }})
+            "ShoppingCoinGachaCheckActivity",
+            image,
+            pipeline_override={
+                "ShoppingCoinGachaCheckActivity": {
+                    "recognition": "TemplateMatch",
+                    "template": "shopping_gacha_anomaly_coin.png",
+                    "roi": [296, 135, 62, 66],
+                }
+            },
+        )
         if reco_detail and reco_detail.hit:
             logger.info("检测到活动扭蛋")
             has_activity = True
@@ -52,8 +55,8 @@ class ShoppingCoinGachaAuto(CustomAction):
                 "logic": (1, 0),
                 "anomaly": (1, 1),
             }
-            if not has_activity else
-            {
+            if not has_activity
+            else {
                 # 有 activity 时（5 项）
                 "activity": (0, 0),
                 "friend": (0, 1),
@@ -91,31 +94,34 @@ class ShoppingCoinGachaAuto(CustomAction):
 
             if params[key]["enabled"]:
                 reco_detail = context.run_recognition(
-                    "ShoppingCoinGachaCount", image,
-                    pipeline_override={"ShoppingCoinGachaCount": {
-                        "recognition": "OCR",
-                        "expected": "^\\d{1,3}(,\\d{3})*$",
-                        "roi": params[key]["roi"],
-                        "order_by": "Horizontal"
-                    }})
+                    "ShoppingCoinGachaCount",
+                    image,
+                    pipeline_override={
+                        "ShoppingCoinGachaCount": {
+                            "recognition": "OCR",
+                            "expected": "^\\d{1,3}(,\\d{3})*$",
+                            "roi": params[key]["roi"],
+                            "order_by": "Horizontal",
+                        }
+                    },
+                )
                 if reco_detail and reco_detail.hit:
                     params[key]["count"] = int("".join([item.text for item in reco_detail.all_results]).replace(",", ""))
                 else:
                     params[key]["count"] = 0
                 logger.info(f"{params[key]['name']}扭蛋数量:{params[key]['count']}")
                 if params[key]["count"] < 10:
-                    logger.info(f"扭蛋数量不足10，跳过购买")
+                    logger.info("扭蛋数量不足10，跳过购买")
                     continue
                 if params[key]["page"] > page:
                     page = params[key]["page"]
                     logger.debug(f"切换到第{page}页")
                     context.run_task("ShoppingNextPage")
                 logger.info(f"开始购买 {params[key]['name']}")
-                context.run_task("ShoppingCoinGachaBuy", pipeline_override={
-                    "ShoppingCoinGachaBuy": {
-                        "template": f"shopping_gacha_{key}.png"
-                    }
-                })
+                context.run_task(
+                    "ShoppingCoinGachaBuy",
+                    pipeline_override={"ShoppingCoinGachaBuy": {"template": f"shopping_gacha_{key}.png"}},
+                )
 
         logger.debug("结束扭蛋购买")
         return True
@@ -123,13 +129,11 @@ class ShoppingCoinGachaAuto(CustomAction):
 
 @AgentServer.custom_action("ShoppingDailyExchangeMoneyAuto")
 class ShoppingDailyExchangeMoneyAuto(CustomAction):
-
     def run(
-            self,
-            context: Context,
-            argv: CustomAction.RunArg,
+        self,
+        context: Context,
+        argv: CustomAction.RunArg,
     ) -> bool:
-
         params = {
             "recommend": context.get_node_data("ShoppingDailyExchangeItemsRecommend").get("enabled", True),
             "sense_blue": context.get_node_data("ShoppingDailyExchangeItemsSenseBlue").get("enabled", False),
@@ -176,19 +180,23 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
             for key, value in wishlist:
                 if key == "recommend":
                     logger.info("购买推荐物品")
-                    file_name = f"shopping_recommend.png"
+                    file_name = "shopping_recommend.png"
                 else:
                     logger.info(f"购买{key}")
                     file_name = f"items/{key}.png"
 
                 reco_detail = context.run_recognition(
-                    "ShoppingDailyExchangeMoneyRecognition", image, pipeline_override={
+                    "ShoppingDailyExchangeMoneyRecognition",
+                    image,
+                    pipeline_override={
                         "ShoppingDailyExchangeMoneyRecognition": {
                             "recognition": "TemplateMatch",
                             "template": file_name,
                             "roi": [30, 300, 660, 698],
-                            "threshold": 0.93
-                        }})
+                            "threshold": 0.93,
+                        }
+                    },
+                )
 
                 if context.tasker.stopping:
                     logger.error("任务中断")
@@ -222,18 +230,16 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
 
 @AgentServer.custom_action("ShoppingDailyExchangeAPAuto")
 class ShoppingDailyExchangeAPAuto(CustomAction):
-
     def run(
-            self,
-            context: Context,
-            argv: CustomAction.RunArg,
+        self,
+        context: Context,
+        argv: CustomAction.RunArg,
     ) -> bool:
-
         params = {
             "support_point_increased": context.get_node_data("ShoppingDailyExchangeAPSupportPointIncreased").get("enabled", False),
             "note_increased": context.get_node_data("ShoppingDailyExchangeAPNoteIncreased").get("enabled", False),
             "challenge_ticket": context.get_node_data("ShoppingDailyExchangeAPChallengeTicket").get("enabled", False),
-            "memory_ticket": context.get_node_data("ShoppingDailyExchangeAPMemoryTicket").get("enabled", False)
+            "memory_ticket": context.get_node_data("ShoppingDailyExchangeAPMemoryTicket").get("enabled", False),
         }
 
         wishlist = []
@@ -249,13 +255,17 @@ class ShoppingDailyExchangeAPAuto(CustomAction):
             logger.info(f"购买{key}")
             file_name = f"items/{key}.png"
             reco_detail = context.run_recognition(
-                "ShoppingDailyExchangeAPRecognition", items_image, pipeline_override={
+                "ShoppingDailyExchangeAPRecognition",
+                items_image,
+                pipeline_override={
                     "ShoppingDailyExchangeAPRecognition": {
                         "recognition": "TemplateMatch",
                         "template": file_name,
                         "roi": [27, 311, 669, 230],
-                        "threshold": 0.93
-                    }})
+                        "threshold": 0.93,
+                    }
+                },
+            )
 
             if context.tasker.stopping:
                 logger.error("任务中断")

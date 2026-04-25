@@ -1,7 +1,7 @@
-import urllib.request
-import json
 import os
+import json
 import difflib
+import urllib.request
 
 URL = "https://raw.githubusercontent.com/chinosk6/GakumasTranslationData/main/local-files/masterTrans/SupportCard.json"
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "data")
