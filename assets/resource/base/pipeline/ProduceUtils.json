@@ -19,6 +19,25 @@
       }
     }
   },
+  "ProduceClose": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "produce/close.png",
+        "threshold": 0.9,
+        "roi": [
+          0,
+          780,
+          720,
+          500
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    }
+  },
   "ProduceEventResultButton": {
     "recognition": {
       "type": "TemplateMatch",

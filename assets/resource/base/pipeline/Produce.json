@@ -39,7 +39,8 @@
             }
         },
         "next": [
-            "ProduceStart"
+            "ProduceStart",
+            "ProduceContinue"
         ]
     },
     "ProduceStartPopUpButtons": {
@@ -62,8 +63,7 @@
             "type": "TemplateMatch",
             "param": {
                 "template": [
-                    "home.png",
-                    "home_1.png"
+                    "home.png"
                 ]
             }
         },
@@ -75,6 +75,41 @@
             "ProduceChooseDifficulty"
         ],
         "post_wait_freezes": 200
+    },
+    "ProduceContinue": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "home_1.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "ProduceChooseContinue"
+        ],
+        "post_wait_freezes": 200
+    },
+    "ProduceChooseContinue": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/continue.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "ProduceEntry"
+        ]
     },
     "ProduceNextPage": {
         "recognition": {
@@ -503,10 +538,14 @@
             "type": "TemplateMatch",
             "param": {
                 "template": [
-                    "next.png"
+                    "produce/pt.png"
                 ],
-                "method": 10001,
-                "threshold": 0.97
+                "roi": [
+                    516,
+                    940,
+                    168,
+                    110
+                ]
             }
         },
         "action": {
@@ -688,7 +727,8 @@
             "param": {}
         },
         "next": [
-            "ProduceGetCards"
+            "ProduceGetCards",
+            "[JumpBack]ProduceClose"
         ]
     },
     "ProduceGetCards": {
@@ -1068,7 +1108,7 @@
             }
         },
         "pre_delay": 200,
-        "post_delay": 2000
+        "post_delay": 200
     },
     "ProduceFailedFlag": {
         "recognition": {
