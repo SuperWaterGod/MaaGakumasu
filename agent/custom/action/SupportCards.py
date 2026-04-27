@@ -214,5 +214,5 @@ class SupportCardsAuto(CustomAction):
     @staticmethod
     def _swipe_to_next_page(context: Context) -> bool:
         """滑动到下一页"""
-        context.tasker.controller.post_swipe(247, 920, 247, 485, 1500).wait()
+        context.run_action("SupportCardsNextPage")
         return True

@@ -116,5 +116,26 @@
             "type": "DoNothing",
             "param": {}
         }
+    },
+    "SupportCardsNextPage": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "Swipe",
+            "param": {
+                "begin": [
+                    248,
+                    920
+                ],
+                "end": [
+                    248,
+                    388
+                ],
+                "duration": 500,
+                "end_hold": 600
+            }
+        }
     }
 }
