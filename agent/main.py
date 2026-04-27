@@ -124,8 +124,17 @@ def install_requirements(req_file="requirements.txt", pip_config=None) -> bool:
         if process.stdout:
             for line in process.stdout:
                 line = line.strip()
-                if line:
-                    print(line)
+                if not line:
+                    continue
+                if "Collecting" in line:
+                    pkg = line.replace("Collecting", "").strip()
+                    logger.info(f"正在安装: {pkg}")
+                elif "Downloading" in line:
+                    pkg = line.replace("Downloading", "").strip().split()[0]
+                    logger.info(f"下载: {pkg}")
+                elif "Installing collected packages" in line:
+                    pkg = line.replace("Installing collected packages:", "").strip()
+                    logger.info(f"安装完成: {pkg}")
         process.wait()
         if process.returncode == 0:
             logger.info("依赖安装完成")
