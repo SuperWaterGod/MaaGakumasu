@@ -114,9 +114,25 @@ def install_requirements(req_file="requirements.txt", pip_config=None) -> bool:
             mirror,
         ]
 
-        subprocess.check_call(cmd)
-        logger.info("依赖安装完成")
-        return True
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+        if process.stdout:
+            for line in process.stdout:
+                line = line.strip()
+                if line:
+                    print(line)
+        process.wait()
+        if process.returncode == 0:
+            logger.info("依赖安装完成")
+            return True
+        else:
+            logger.error("依赖安装失败")
+            return False
     except Exception as e:
         logger.exception("pip 安装依赖时出错")
         return False
