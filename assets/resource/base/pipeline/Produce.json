@@ -939,8 +939,7 @@
         "recognition": {
             "type": "TemplateMatch",
             "param": {
-                "template": "produce/shop_exit.png",
-                "threshold": 0.9
+                "template": "produce/shop_exit.png"
             }
         },
         "action": {
