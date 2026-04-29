@@ -728,7 +728,8 @@
         },
         "next": [
             "ProduceGetCards",
-            "[JumpBack]ProduceClose"
+            "[JumpBack]ProduceClose",
+            "[JumpBack]CloseRoundButton"
         ]
     },
     "ProduceGetCards": {
