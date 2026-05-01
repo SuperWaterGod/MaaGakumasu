@@ -13,7 +13,7 @@ from maa.agent.agent_server import AgentServer
 class ProduceChooseEventAuto(CustomAction):
     """
     自动识别选择培育事件
-    优先选择SP，没有SP则根据老师意见选择
+    优先根据老师建议选择，没有建议则选择SP
     然后检测体力和点数
     最后根据偏好设置选择事件
     """
@@ -49,12 +49,12 @@ class ProduceChooseEventAuto(CustomAction):
         # 获取屏幕截图
         image = self._get_screenshot(context)
 
-        # 1. 优先检查SP课程
-        if self._handle_sp_course(context, image):
+        # 1. 优先检查老师建议
+        if self._handle_teacher_suggestion(context, image):
             return True
 
-        # 2. 检查老师建议
-        if self._handle_teacher_suggestion(context, image):
+        # 2. 检查SP课程
+        if self._handle_sp_course(context, image):
             return True
 
         # 3. 获取可用事件列表
