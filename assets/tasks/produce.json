@@ -1249,8 +1249,19 @@
     },
     "秦谷美鈴卡片": {
       "type": "select",
-      "default_case": "秦谷美鈴(ENDLESS DANCE)",
+      "default_case": "秦谷美鈴(VEIL)",
       "cases": [
+        {
+          "name": "秦谷美鈴(VEIL)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "秦谷美鈴",
+                "song_name": "VEIL"
+              }
+            }
+          }
+        },
         {
           "name": "秦谷美鈴(ENDLESS DANCE)",
           "pipeline_override": {
@@ -1717,8 +1728,19 @@
     },
     "十王星南卡片": {
       "type": "select",
-      "default_case": "十王星南(赤裸々)",
+      "default_case": "十王星南(ENDLESS DANCE)",
       "cases": [
+        {
+          "name": "十王星南(ENDLESS DANCE)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "十王星南",
+                "song_name": "ENDLESS DANCE"
+              }
+            }
+          }
+        },
         {
           "name": "十王星南(赤裸々)",
           "pipeline_override": {
