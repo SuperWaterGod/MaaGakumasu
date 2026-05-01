@@ -383,7 +383,7 @@
       "type": "Click",
       "param": {}
     },
-    "post_wait_freezes": 500,
+    "post_wait_freezes": 200,
     "next": [
       "ChallengeBack",
       "[JumpBack]CloseButton"
@@ -406,6 +406,7 @@
       "type": "Click",
       "param": {}
     },
+    "post_wait_freezes": 500,
     "next": [
       "ChallengeRestart"
     ]
