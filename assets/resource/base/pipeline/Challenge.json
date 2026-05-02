@@ -368,6 +368,7 @@
       "type": "Click",
       "param": {}
     },
+    "post_wait_freezes": 200,
     "next": [
       "ChallengeFormationAutoDecide"
     ]
@@ -406,7 +407,7 @@
       "type": "Click",
       "param": {}
     },
-    "post_wait_freezes": 500,
+    "post_wait_freezes": 200,
     "next": [
       "ChallengeRestart"
     ]

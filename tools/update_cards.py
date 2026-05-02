@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+import os
 import re
 import json
 from datetime import datetime
@@ -27,7 +29,7 @@ IDOLS_TRANSLATIONS = {
     "花海咲季": "花海咲季",
     "花海佑芽": "花海佑芽",
     "紫雲清夏": "紫云清夏",
-    "篠澤広": "篠泽广",
+    "篠澤広": "筱泽广",
     "秦谷美鈴": "秦谷美铃",
     "有村麻央": "有村麻央",
     "月村手毬": "月村手毬",
@@ -400,8 +402,8 @@ def merge_with_old_data(sorted_data, old_data):
             key = create_card_key(card)
             if key in old_cards:
                 old_card = old_cards[key]
-                # 如果新卡片的歌曲中文为空，但旧卡片有值，则保留旧值
-                if not card.get("歌曲中文") and old_card.get("歌曲中文"):
+                # 如果旧卡片有歌曲中文，则保留（不应当修改为空）
+                if old_card.get("歌曲中文"):
                     card["歌曲中文"] = old_card["歌曲中文"]
 
     return sorted_data
@@ -433,11 +435,15 @@ def save_to_json(data, filename="cards_data.json"):
         else:
             print("\n首次创建文件，无旧数据可比较")
 
-        # 使用'w'模式覆盖写入
-        with open(filename, "w", encoding="utf-8") as f:
+        # 确保目录存在（相对于项目根目录）
+        output_dir = os.path.join(os.path.dirname(__file__), "..", "assets", "data")
+        os.makedirs(output_dir, exist_ok=True)
+        filepath = os.path.join(output_dir, "idols_cards.json")
+
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(sorted_data, f, ensure_ascii=False, indent=2)
 
-        print(f"\n数据已成功保存到 {filename} (覆盖模式)")
+        print(f"\n数据已成功保存到 {filepath} (覆盖模式)")
         print(f"保存时间: {sorted_data['保存时间']}")
         print(f"SSR卡片数量: {len(sorted_data['SSR'])}")
         print(f"SR卡片数量: {len(sorted_data['SR'])}")
@@ -460,7 +466,7 @@ def main():
 
     if cards_data:
         print("\n采集完成！")
-        save_to_json(cards_data, filename="../assets/data/idols_cards.json")
+        save_to_json(cards_data, filename="assets/data/idols_cards.json")
 
     else:
         print("采集失败，请检查网络连接或URL是否正确")

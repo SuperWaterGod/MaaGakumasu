@@ -1,6 +1,13 @@
+import os
 import json
 from datetime import datetime
 from collections import defaultdict
+
+
+def get_project_path(*relative_parts):
+    """获取项目根目录下的文件路径"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(script_dir, "..", *relative_parts)
 
 
 def safe_print(text):
@@ -167,20 +174,23 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
 
 
 if __name__ == "__main__":
+    # 获取项目路径
+    idols_cards_path = get_project_path("assets", "data", "idols_cards.json")
+
     # 同步到 produce.json（日文版）
     format_cards_data(
-        idols_cards_path="../assets/data/idols_cards.json",
-        interface_path="../assets/tasks/produce.json",
-        output_path="../assets/tasks/produce.json",
+        idols_cards_path=idols_cards_path,
+        interface_path=get_project_path("assets", "tasks", "produce.json"),
+        output_path=get_project_path("assets", "tasks", "produce.json"),
         card_types=["SSR", "SR", "R"],
         cn_mode=False,
     )
 
     # 同步到 produce_cn.json（中文版）
     format_cards_data(
-        idols_cards_path="../assets/data/idols_cards.json",
-        interface_path="../assets/tasks/produce_cn.json",
-        output_path="../assets/tasks/produce_cn.json",
+        idols_cards_path=idols_cards_path,
+        interface_path=get_project_path("assets", "tasks", "produce_cn.json"),
+        output_path=get_project_path("assets", "tasks", "produce_cn.json"),
         card_types=["SSR", "SR", "R"],
         cn_mode=True,
     )

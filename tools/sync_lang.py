@@ -136,12 +136,13 @@ def sync_zh_cn(required_keys: list, zh_cn_path: Path, dry_run: bool = False) -> 
 
     if not dry_run:
         _save_translations(new_translations, zh_cn_path)
-        print(f"✓ 已更新 {zh_cn_path.name}\n")
+        print(f"[OK] 已更新 {zh_cn_path.name}\n")
 
     return new_translations
 
 
 def get_all_lang_configs():
+    # 仅默认导出 zh-Hant，其他语言需通过 --langs 手动指定
     return {
         "zh-Hant": {"name": "繁体中文", "converter": "s2twp" if HAS_OPENCC else None},
         "en": {"name": "英文", "converter": None},
@@ -153,7 +154,7 @@ def translate_to_other_langs(zh_cn_translations, lang_dir, target_langs=None, dr
     configs = get_all_lang_configs()
 
     if target_langs is None:
-        target_langs = list(configs.keys())
+        target_langs = ["zh-Hant"]
 
     for lang in target_langs:
         if lang not in configs:
@@ -169,7 +170,7 @@ def translate_to_other_langs(zh_cn_translations, lang_dir, target_langs=None, dr
         if not dry_run:
             _save_translations(new_data, path)
 
-        print(f"✓ {lang}.json 已同步")
+        print(f"[OK] {lang}.json 已同步")
 
 
 # ========================
@@ -207,7 +208,7 @@ def main():
 
     print("步骤 1: 提取 key")
     keys = extract_keys_from_interfaces(interface_paths)
-    print(f"✓ 共 {len(keys)} 个\n")
+    print(f"[OK] 共 {len(keys)} 个\n")
 
     print("步骤 2: 同步 zh-CN")
     zh_cn_path = lang_dir / "zh-CN.json"
@@ -216,7 +217,7 @@ def main():
     print("步骤 3: 同步其他语言")
     translate_to_other_langs(zh_cn, lang_dir, args.langs, args.dry_run)
 
-    print("\n✓ 完成")
+    print("\n[OK] 完成")
 
 
 if __name__ == "__main__":

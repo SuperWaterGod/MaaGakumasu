@@ -72,9 +72,9 @@
           ]
         },
         {
-          "name": "篠泽广",
+          "name": "筱泽广",
           "option": [
-            "篠泽广卡片-zh_CN"
+            "筱泽广卡片-zh_CN"
           ]
         },
         {
@@ -812,126 +812,126 @@
       ],
       "label": "$紫雲清夏卡片"
     },
-    "篠泽广卡片-zh_CN": {
+    "筱泽广卡片-zh_CN": {
       "type": "select",
-      "default_case": "篠泽广(未知万千 广阔无限)",
+      "default_case": "筱泽广(未知万千 广阔无限)",
       "cases": [
         {
-          "name": "篠泽广(未知万千 广阔无限)",
+          "name": "筱泽广(未知万千 广阔无限)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "篠泽广",
+                "idol_name": "筱泽广",
                 "song_name": "未知万千 广阔无限"
               }
             }
           }
         },
         {
-          "name": "篠泽广(奇迹正是现在(ﾟ∀ﾟ)！)",
+          "name": "筱泽广(奇迹正是现在(ﾟ∀ﾟ)！)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "篠泽广",
+                "idol_name": "筱泽广",
                 "song_name": "奇迹正是现在(ﾟ∀ﾟ)！"
               }
             }
           }
         },
         {
-          "name": "篠泽广(褪色)",
+          "name": "筱泽广(褪色)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "篠泽广",
+                "idol_name": "筱泽广",
                 "song_name": "褪色"
               }
             }
           }
         },
         {
-          "name": "篠泽广(幸福千层酥)",
+          "name": "筱泽广(幸福千层酥)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "篠泽广",
+                "idol_name": "筱泽广",
                 "song_name": "幸福千层酥"
               }
             }
           }
         },
         {
-          "name": "篠泽广(Campus mode!!)",
+          "name": "筱泽广(Campus mode!!)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "篠泽广",
+                "idol_name": "筱泽广",
                 "song_name": "Campus mode!!"
               }
             }
           }
         },
         {
-          "name": "篠泽广(初恋)",
+          "name": "筱泽广(初恋)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "篠泽广",
+                "idol_name": "筱泽广",
                 "song_name": "初恋"
               }
             }
           }
         },
         {
-          "name": "篠泽广(变装狂想曲)",
+          "name": "筱泽广(变装狂想曲)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "篠泽广",
+                "idol_name": "筱泽广",
                 "song_name": "变装狂想曲"
               }
             }
           }
         },
         {
-          "name": "篠泽广(反差)",
+          "name": "筱泽广(反差)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "篠泽广",
+                "idol_name": "筱泽广",
                 "song_name": "反差"
               }
             }
           }
         },
         {
-          "name": "篠泽广(光景)",
+          "name": "筱泽广(光景)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "篠泽广",
+                "idol_name": "筱泽广",
                 "song_name": "光景"
               }
             }
           }
         },
         {
-          "name": "篠泽广(最不适合的事)",
+          "name": "筱泽广(最不适合的事)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "篠泽广",
+                "idol_name": "筱泽广",
                 "song_name": "最不适合的事"
               }
             }
           }
         },
         {
-          "name": "篠泽广(学园生活)",
+          "name": "筱泽广(学园生活)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
-                "idol_name": "篠泽广",
+                "idol_name": "筱泽广",
                 "song_name": "学园生活"
               }
             }

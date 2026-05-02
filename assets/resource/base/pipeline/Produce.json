@@ -630,8 +630,7 @@
                     "produce/yes.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
                     "produce/start.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
                     "produce/close.png", // (可选)误触查看当前持有卡片界面时的关闭按钮，如果解决所有误触情况可以删除
-                    "cancel.png", // (可选)REGULAR难度上课失败时，会弹出是否需要进入新手教程的提示框
-                    "produce/round_close_button.png" // (不确定)亲爱度up时好像会弹出圆形关闭按钮？不能裁剪，否则会误触商店的离开按钮
+                    "cancel.png" // (可选)REGULAR难度上课失败时，会弹出是否需要进入新手教程的提示框
                 ],
                 "order_by": "Score",
                 "roi": [
@@ -787,7 +786,9 @@
             "param": {}
         },
         "next": [
-            "ProduceGetDrink"
+            "ProduceGetDrink",
+            "[JumpBack]ProduceClose",
+            "[JumpBack]CloseRoundButton"
         ]
     },
     "ProduceGetDrink": {
@@ -795,7 +796,6 @@
             "type": "TemplateMatch",
             "param": {
                 "template": [
-                    "produce/drink_get.png",
                     "produce/cards_get.png"
                 ],
                 "roi": [
