@@ -4,17 +4,17 @@
       "type": "TemplateMatch",
       "param": {
         "template": "produce/decide.png",
-        "threshold": 0.9
+        "threshold": 0.8
       }
     },
     "action": {
       "type": "Click",
       "param": {
         "target_offset": [
-          0,
+          10,
+          -10,
           -20,
-          0,
-          0
+          -20
         ]
       }
     }
