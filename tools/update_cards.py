@@ -3,6 +3,7 @@ import os
 import re
 import json
 from datetime import datetime
+from collections import OrderedDict
 
 import requests
 from bs4 import BeautifulSoup
@@ -217,7 +218,7 @@ def parse_table(table, plan_effects_stats):
                         card_data["奖励加成"] = text
                 # 体力
                 elif header == "体力":
-                    card_data["体力"] = text
+                    card_data["体力"] = int(text) if text else 0
                 # 登场日期
                 elif header == "登場日" or "登場" in header:
                     card_data["登场日期"] = text
@@ -262,12 +263,23 @@ def sort_cards(cards):
     )
 
 
+def get_cards_filepath():
+    """获取卡片数据文件的完整路径"""
+    output_dir = os.path.join(os.path.dirname(__file__), "..", "assets", "data")
+    return os.path.join(output_dir, "idols_cards.json")
+
+
 def load_old_data(filename):
     """
     加载旧的JSON数据
     """
     try:
-        with open(filename, "r", encoding="utf-8") as f:
+        # 如果传入的是相对路径，转换为完整路径
+        if not os.path.isabs(filename):
+            filepath = get_cards_filepath()
+        else:
+            filepath = filename
+        with open(filepath, "r", encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         return None
@@ -409,13 +421,13 @@ def merge_with_old_data(sorted_data, old_data):
     return sorted_data
 
 
-def save_to_json(data, filename="cards_data.json"):
+def save_to_json(data):
     """
     将数据保存到JSON文件（覆盖模式），并比较差异
     """
     try:
         # 加载旧数据
-        old_data = load_old_data(filename)
+        old_data = load_old_data(get_cards_filepath())
 
         # 对每个稀有度的卡片进行排序
         sorted_data = {
@@ -427,6 +439,11 @@ def save_to_json(data, filename="cards_data.json"):
 
         # 合并旧数据中的歌曲中文
         sorted_data = merge_with_old_data(sorted_data, old_data)
+
+        # 按指定顺序排列每个卡片的字段顺序
+        FIELD_ORDER = ["卡片名称", "偶像名称", "歌曲名称", "偶像中文", "歌曲中文", "推荐效果", "Vo", "Da", "Vi", "体力", "奖励加成", "登场日期"]
+        for rarity in ["SSR", "SR", "R"]:
+            sorted_data[rarity] = [OrderedDict((field, card.get(field, "")) for field in FIELD_ORDER) for card in sorted_data[rarity]]
 
         # 比较新旧数据
         if old_data:
@@ -466,7 +483,7 @@ def main():
 
     if cards_data:
         print("\n采集完成！")
-        save_to_json(cards_data, filename="assets/data/idols_cards.json")
+        save_to_json(cards_data)
 
     else:
         print("采集失败，请检查网络连接或URL是否正确")
