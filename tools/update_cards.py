@@ -421,6 +421,26 @@ def merge_with_old_data(sorted_data, old_data):
     return sorted_data
 
 
+def prompt_for_song_chinese(cards):
+    """
+    提示用户为没有歌曲中文的卡片输入中文
+    返回修改后的卡片列表
+    """
+    modified_cards = []
+    for card in cards:
+        if not card.get("歌曲中文"):
+            idol_name = card.get("偶像名称", "")
+            song_name = card.get("歌曲名称", "")
+            print(f"\n卡片: {card.get('卡片名称', '未知')}")
+            print(f"  偶像: {idol_name}")
+            print(f"  歌曲: {song_name}")
+            song_chinese = input("  请输入歌曲中文名称 (直接回车跳过): ").strip()
+            if song_chinese:
+                card["歌曲中文"] = song_chinese
+                modified_cards.append(card)
+    return modified_cards
+
+
 def save_to_json(data):
     """
     将数据保存到JSON文件（覆盖模式），并比较差异
@@ -440,17 +460,54 @@ def save_to_json(data):
         # 合并旧数据中的歌曲中文
         sorted_data = merge_with_old_data(sorted_data, old_data)
 
-        # 按指定顺序排列每个卡片的字段顺序
-        FIELD_ORDER = ["卡片名称", "偶像名称", "歌曲名称", "偶像中文", "歌曲中文", "推荐效果", "Vo", "Da", "Vi", "体力", "奖励加成", "登场日期"]
-        for rarity in ["SSR", "SR", "R"]:
-            sorted_data[rarity] = [OrderedDict((field, card.get(field, "")) for field in FIELD_ORDER) for card in sorted_data[rarity]]
-
         # 比较新旧数据
         if old_data:
             added, modified, deleted = compare_data(old_data, sorted_data)
             print_comparison_report(added, modified, deleted)
+
+            # 提示用户为新增卡片和歌曲中文为空的卡片输入中文
+            all_cards = []
+            for rarity in ["SSR", "SR", "R"]:
+                all_cards.extend(added[rarity])
+                for item in modified[rarity]:
+                    all_cards.append(item["card"])
+
+            # 收集所有需要填写歌曲中文的卡片（新增 + 歌曲中文为空的修改卡）
+            cards_need_input = [card for card in all_cards if not card.get("歌曲中文")]
+            if cards_need_input:
+                print("\n" + "=" * 60)
+                print(f"共有 {len(cards_need_input)} 张卡片缺少歌曲中文，请依次输入:")
+                print("=" * 60)
+                for card in cards_need_input:
+                    idol_name = card.get("偶像名称", "")
+                    song_name = card.get("歌曲名称", "")
+                    print(f"\n卡片: {card.get('卡片名称', '未知')}")
+                    print(f"  偶像: {idol_name} | 歌曲: {song_name}")
+                    song_chinese = input("  请输入歌曲中文名称 (直接回车跳过): ").strip()
+                    if song_chinese:
+                        card["歌曲中文"] = song_chinese
         else:
             print("\n首次创建文件，无旧数据可比较")
+            # 首次创建时也检查缺少歌曲中文的卡片
+            all_cards = data["SSR"] + data["SR"] + data["R"]
+            cards_need_input = [card for card in all_cards if not card.get("歌曲中文")]
+            if cards_need_input:
+                print("\n" + "=" * 60)
+                print(f"共有 {len(cards_need_input)} 张卡片缺少歌曲中文，请依次输入:")
+                print("=" * 60)
+                for card in cards_need_input:
+                    idol_name = card.get("偶像名称", "")
+                    song_name = card.get("歌曲名称", "")
+                    print(f"\n卡片: {card.get('卡片名称', '未知')}")
+                    print(f"  偶像: {idol_name} | 歌曲: {song_name}")
+                    song_chinese = input("  请输入歌曲中文名称 (直接回车跳过): ").strip()
+                    if song_chinese:
+                        card["歌曲中文"] = song_chinese
+
+        # 按指定顺序排列每个卡片的字段顺序
+        FIELD_ORDER = ["卡片名称", "偶像名称", "歌曲名称", "偶像中文", "歌曲中文", "推荐效果", "Vo", "Da", "Vi", "体力", "奖励加成", "登场日期"]
+        for rarity in ["SSR", "SR", "R"]:
+            sorted_data[rarity] = [OrderedDict((field, card.get(field, "")) for field in FIELD_ORDER) for card in sorted_data[rarity]]
 
         # 确保目录存在（相对于项目根目录）
         output_dir = os.path.join(os.path.dirname(__file__), "..", "assets", "data")
