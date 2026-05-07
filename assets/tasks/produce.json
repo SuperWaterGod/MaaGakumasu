@@ -27,34 +27,106 @@
   "option": {
     "培育难度": {
       "type": "select",
+      "default_case": "初",
+      "cases": [
+        {
+          "name": "初",
+          "option": [
+            "「初」难度"
+          ]
+        },
+        {
+          "name": "NIA",
+          "option": [
+            "「NIA」难度"
+          ]
+        }
+      ],
+      "label": "$培育难度"
+    },
+    "「初」难度": {
+      "type": "select",
       "default_case": "REGULAR",
       "cases": [
         {
           "name": "REGULAR",
           "pipeline_override": {
+            "ProduceStart": {
+              "next": "ProduceLastPage"
+            },
             "ProduceChooseDifficulty": {
-              "template": "produce/regular.png"
+              "expected": "REGULAR"
+            },
+            "ProduceEntryFlag": {
+              "next": "ProduceEntry"
             }
           }
         },
         {
           "name": "PRO",
           "pipeline_override": {
+            "ProduceStart": {
+              "next": "ProduceLastPage"
+            },
             "ProduceChooseDifficulty": {
-              "template": "produce/pro.png"
+              "expected": "PRO"
+            },
+            "ProduceEntryFlag": {
+              "next": "ProduceEntry"
             }
           }
         },
         {
           "name": "MASTER",
           "pipeline_override": {
+            "ProduceStart": {
+              "next": "ProduceLastPage"
+            },
             "ProduceChooseDifficulty": {
-              "template": "produce/master.png"
+              "expected": "MASTER"
+            },
+            "ProduceEntryFlag": {
+              "next": "ProduceEntry"
             }
           }
         }
       ],
-      "label": "$培育难度"
+      "label": "$「初」难度"
+    },
+    "「NIA」难度": {
+      "type": "select",
+      "default_case": "PRO",
+      "cases": [
+        {
+          "name": "PRO",
+          "pipeline_override": {
+            "ProduceStart": {
+              "next": "ProduceNextPage"
+            },
+            "ProduceChooseDifficulty": {
+              "expected": "PRO"
+            },
+            "ProduceEntryFlag": {
+              "next": "ProduceEntryNIA"
+            }
+          }
+        },
+        {
+          "name": "MASTER",
+          "pipeline_override": {
+            "ProduceStart": {
+              "next": "ProduceNextPage"
+            },
+            "ProduceChooseDifficulty": {
+              "expected": "MASTER"
+            },
+            "ProduceEntryFlag": {
+              "next": "ProduceEntryNIA"
+            }
+          }
+        }
+      ],
+      "label": "$「NIA」难度"
     },
     "使用体力药": {
       "type": "switch",
