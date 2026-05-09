@@ -355,6 +355,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
         "Da": {"img": "produce/NIA/Da.png", "keyword": ["ダンス", "舞蹈"]},
         "Vi": {"img": "produce/NIA/Vi.png", "keyword": ["ビジュアル", "视觉"]},
         "体力": {"img": "produce/rest.png", "keyword": ["体力"]},
+        "指导": {"img": "produce/NIA/guide.png", "keyword": ["特别指導", "特别指导"]},
         "交谈": {"img": "produce/NIA/chat.png", "keyword": ["先生に相談して", "咨询"]},
     }
 
@@ -411,7 +412,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
         logger.info(f"选择事件: {best_event['name']}, 坐标: ({best_event['box'][0]}, {best_event['box'][1]})")
 
         # 执行事件
-        # return self._execute_event(context, best_event)
+        return self._execute_event(context, best_event)
         return True
 
     def _choose_best_event(self, suggestion: str, health_data: dict, points: int, score: dict, events: list) -> Optional[dict]:
@@ -506,11 +507,9 @@ class ProduceChooseNIAEventAuto(CustomAction):
 
     def _execute_event(self, context: Context, event: dict) -> bool:
         """执行事件"""
-        event_name = event["name"]
         run_task = event.get("run_task")
         box = event["box"]
 
-        logger.info(f"选择{event_name}")
         x = box[0] + box[2] // 2
         y = box[1] + box[3] // 2
         context.tasker.controller.post_click(x, y).wait()
@@ -1203,6 +1202,147 @@ class ProduceChooseWorkAuto(CustomAction):
                     position.append(2)
             return position
         return None
+
+
+@AgentServer.custom_action("ProduceChooseOptionsAuto")
+class ProduceChooseOptionsAuto(CustomAction):
+    """
+    处理选择选项的窗口
+
+    根据当前得分自动选择属性选项：
+    1. 获取第一、第二属性的当前分数
+    2. 根据判断逻辑选择：分数差不多或第一属性较小则选第一属性，否则选第二属性
+    3. 在可用选项中执行双击选择
+    4. 若目标选项不可用，依次尝试 fallback 到第一属性或第一个可用选项
+    """
+
+    OPTIONS_CONFIG = {"Vo": "produce/choose_Vo.png", "Da": "produce/choose_Da.png", "Vi": "produce/choose_Vi.png"}
+    CLICK_DELAY = 0.5
+
+    def run(
+        self,
+        context: Context,
+        argv: CustomAction.RunArg,
+    ) -> bool:
+        """
+        执行自动选择选项
+
+        Returns:
+            bool: 选择成功返回 True，否则返回 False
+        """
+        preference = (
+            context.get_node_data("ProduceChooseNIAEventFlag")
+            .get("action", {})
+            .get("param", {})
+            .get("custom_action_param", {"first": "Vo", "second": "Vi"})
+        )
+        self.first = preference["first"]
+        self.second = preference["second"]
+        image = context.tasker.controller.post_screencap().wait().get()
+        score = self._get_current_score(context, image) or {"Vo": 0, "Da": 0, "Vi": 0, "max": 1}
+        options = self._get_available_options(context, image)
+
+        # 计算选择
+        first_score = score.get(self.first, 0)
+        second_score = score.get(self.second, 0)
+        logger.info(f"第一属性 {self.first}={first_score}, 第二属性 {self.second}={second_score}")
+
+        # 判断逻辑：差不多或第一属性小于等于第二属性则选第一属性，否则选第二属性
+        if first_score <= second_score * 1.4:
+            choice = self.first
+            logger.debug(f"第一属性分数 <= 第二属性（约等于），选择: {choice}")
+        else:
+            choice = self.second
+            logger.debug(f"第一属性分数远大于第二属性，选择: {choice}")
+
+        # 找到目标选项
+        target_box = None
+        for opt in options:
+            if choice in opt:
+                target_box = opt[choice]
+                break
+
+        # 如果目标选项不可用，尝试 fallback
+        if target_box is None:
+            logger.warning(f"选项 {choice} 不可用，尝试 fallback")
+            if options:
+                # 优先选择第一属性
+                for opt in options:
+                    if self.first in opt:
+                        target_box = opt[self.first]
+                        choice = self.first
+                        logger.debug(f"Fallback 选择第一属性: {choice}")
+                        break
+            if target_box is None and options:
+                # 最后选择第一个可用选项
+                first_opt = options[0]
+                choice = next(iter(first_opt.keys()))
+                target_box = first_opt[choice]
+                logger.debug(f"Fallback 选择第一个可用选项: {choice}")
+
+        # 执行双击
+        if target_box:
+            # box 格式为 [x, y, w, h]，计算中心点
+            center_x = target_box[0] + target_box[2] // 2
+            center_y = target_box[1] + target_box[3] // 2
+            self._double_click(context, center_x, center_y)
+            logger.info(f"已选择选项 {choice} at ({center_x}, {center_y})")
+        else:
+            logger.error("没有可用选项，无法选择")
+            return False
+        return True
+
+    @staticmethod
+    def _get_current_score(context: Context, image) -> Optional[dict]:
+        """获取当前得分"""
+        score = {
+            "Vo": 0,
+            "Da": 0,
+            "Vi": 0,
+            "max": 0,
+        }
+        for i in range(3):
+            reco_detail = context.run_recognition(
+                "ProduceRecognitionScore",
+                image,
+                pipeline_override={"ProduceRecognitionScore": {"roi": [150 + i * 150, 325, 136, 80]}},
+            )
+            if reco_detail and reco_detail.hit and len(reco_detail.filtered_results) == 2:
+                current_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[0].text)))
+                max_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[1].text.replace("/", ""))))
+                logger.debug(f"第{i + 1}列得分: {current_score} / {max_score}")
+                score[next(itertools.islice(score.keys(), i, None))] = current_score
+                score["max"] = max_score if max_score > score["max"] and max_score < 9999 else score["max"]
+        try:
+            logger.info(f"当前得分: Vo={score['Vo']}, Da={score['Da']}, Vi={score['Vi']}, Max={score['max']}")
+            return score
+        except ValueError:
+            logger.warning("积分数据解析失败")
+            return None
+
+    def _get_available_options(self, context: Context, image) -> List[Dict[str, Any]]:
+        """获取可用选项列表"""
+        available_options = []
+        available_options_name = ""
+
+        for option_name, option_img in self.OPTIONS_CONFIG.items():
+            reco_detail = context.run_recognition(
+                "ProduceRecognitionWorkOptions",
+                image,
+                pipeline_override={"ProduceRecognitionWorkOptions": {"template": option_img}},
+            )
+            if reco_detail and reco_detail.hit:
+                available_options.append({option_name: reco_detail.best_result.box})
+                available_options_name += f"{option_name}, "
+
+        logger.info(f"可用选项: {available_options_name.rstrip(', ')}")
+        return available_options
+
+    def _double_click(self, context: Context, x: int, y: int):
+        """执行双击操作"""
+        context.tasker.controller.post_click(x, y).wait()
+        time.sleep(self.CLICK_DELAY)
+        context.tasker.controller.post_click(x, y).wait()
 
 
 @AgentServer.custom_action("ProduceKeepDrinkAuto")
