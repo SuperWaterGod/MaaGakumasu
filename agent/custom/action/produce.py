@@ -1224,7 +1224,12 @@ class ProduceChooseOptionsAuto(CustomAction):
     4. 若目标选项不可用，依次尝试 fallback 到第一属性或第一个可用选项
     """
 
-    OPTIONS_CONFIG = {"Vo": "produce/choose_Vo.png", "Da": "produce/choose_Da.png", "Vi": "produce/choose_Vi.png"}
+    OPTIONS_CONFIG = {
+        "Vo": "produce/choose_Vo.png",
+        "Da": "produce/choose_Da.png",
+        "Vi": "produce/choose_Vi.png",
+        "null": "produce/choose_null.png",
+    }
     CLICK_DELAY = 0.5
 
     def run(
