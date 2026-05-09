@@ -346,7 +346,25 @@ class ProduceChooseEventAuto(CustomAction):
 @AgentServer.custom_action("ProduceChooseNIAEventAuto")
 class ProduceChooseNIAEventAuto(CustomAction):
     """
-    自动选择NIA培育事件
+    自动选择NIA培育事件。
+
+    选择优先级顺序（从高到低）：
+    1. 低体力保护：体力 < 20% 或体力值 < 8时，优先外出恢复体力，其次休息
+    2. 老师建议：根据OCR结果匹配Vo/Da/Vi属性关键词
+    3. SP课程（第一属性）
+    4. SP课程（第二属性）
+    5. 营业：获得score
+    6. 活动：获得points
+    7. 第一属性课程
+    8. 第二属性课程（仅当第一属性分数占比 >= 85%时）
+    9. 外出：恢复体力
+    10. 指导：点击后需执行ProduceGuideEntry任务
+    11. SP课程（非第一/第二属性）
+    12. 商店：点击后需执行ProduceShoppingEntry任务
+
+    事件数据结构：
+    - 属性事件：{"Vo": [x,y,w,h], "SP": bool}，SP为True表示该属性有SP课程
+    - 其他事件：{"事件名称": [x,y,w,h]}
     """
 
     # 常量定义
@@ -371,12 +389,12 @@ class ProduceChooseNIAEventAuto(CustomAction):
     }
 
     # 阈值常量
-    LOW_HEALTH_THRESHOLD = 0.3
-    HIGH_POINT_THRESHOLD = 300
     CLICK_DELAY = 0.5
     ACTION_DELAY = 3.0
     PREFERENCE_LIST = ["Da", "Vi", "Vo"]
     FIRST_NEAR_FULL_RATIO = 0.85
+    LOW_HEALTH_RATIO = 0.2
+    LOW_HEALTH_VALUE = 8
 
     def __init__(self):
         super().__init__()
@@ -413,24 +431,22 @@ class ProduceChooseNIAEventAuto(CustomAction):
 
         # 执行事件
         return self._execute_event(context, best_event)
-        return True
 
     def _choose_best_event(self, suggestion: str, health_data: dict, points: int, score: dict, events: list) -> Optional[dict]:
         """
-        根据信息选择最佳事件
+        根据获取到的信息从可用事件中选择最佳事件。
 
         Returns:
-            dict: {"name": str, "box": [x, y, w, h], "run_task": str} 或 None
+            dict: {"name": str, "box": [x, y, w, h], "run_task": str}，None表示无事件可选
         """
-        logger.debug(f"suggestion={suggestion}, points={points}, events={events}")
         max_score = score.get("max", 1)
         first_ratio = score.get(self.first, 0) / max_score if max_score > 0 else 0
         is_first_near_full = first_ratio >= self.FIRST_NEAR_FULL_RATIO
 
-        # 0. 低体力处理（体力 < 20% 或 体力值 < 8，优先外出，其次休息）
+        # 0. 低体力处理
         current_health = health_data["current"] if health_data else 0
         ratio_health = health_data["ratio"] if health_data else 1.0
-        if current_health < 8 or ratio_health < 0.2:
+        if current_health < self.LOW_HEALTH_VALUE or ratio_health < self.LOW_HEALTH_RATIO:
             go_out = self._find_event_by_name(events, "外出")
             if go_out and points >= 100:
                 return self._make_event("外出", go_out)
@@ -449,47 +465,41 @@ class ProduceChooseNIAEventAuto(CustomAction):
         if event:
             return self._make_event(f"{self.first}_SP", event)
 
-        # 3. SP（第二属性） > 第一属性课程
-        second_sp = self._find_attr_event(events, self.second, need_sp=True)
-        first_attr = self._find_attr_event(events, self.first, need_sp=False)
+        # 3. SP（第二属性）
+        event = self._find_attr_event(events, self.second, need_sp=True)
+        if event:
+            return self._make_event(f"{self.second}_SP", event)
 
-        if second_sp:
-            return self._make_event(f"{self.second}_SP", second_sp)
-        elif first_attr:
-            return self._make_event(self.first, first_attr)
-
-        # 4. 第二属性课程（仅当第一属性快满时）
-        if is_first_near_full:
-            event = self._find_attr_event(events, self.second, need_sp=False)
-            if event:
-                return self._make_event(self.second, event)
-
-        # 5. 营业
+        # 4. 营业
         event = self._find_event_by_name(events, "工作")
         if event:
             return self._make_event("工作", event)
 
-        # 6. 活动
+        # 5. 活动
         event = self._find_event_by_name(events, "活动")
         if event:
             return self._make_event("活动", event)
 
-        # 7. 第一属性课程
+        # 6. 第一属性课程
         event = self._find_attr_event(events, self.first, need_sp=False)
         if event:
             return self._make_event(self.first, event)
 
-        # 8. 第二属性课程（仅当第一属性快满时）
+        # 7. 第二属性课程（仅当第一属性快满时）
         if is_first_near_full:
             event = self._find_attr_event(events, self.second, need_sp=False)
             if event:
                 return self._make_event(self.second, event)
 
-        # 9. 外出/指导
-        for name in ["外出", "指导"]:
-            event = self._find_event_by_name(events, name)
-            if event:
-                return self._make_event(name, event)
+        # 8. 外出
+        event = self._find_event_by_name(events, "外出")
+        if event:
+            return self._make_event("外出", event)
+
+        # 9. 指导（点击后需执行任务）
+        event = self._find_event_by_name(events, "指导")
+        if event:
+            return self._make_event("指导", event, run_task="ProduceGuideEntry")
 
         # 10. SP（其他属性）
         for attr in ["Vo", "Da", "Vi"]:
@@ -498,7 +508,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
                 if event:
                     return self._make_event(f"{attr}_SP", event)
 
-        # 10. 商店
+        # 11. 商店（点击后需执行任务）
         event = self._find_event_by_name(events, "商店")
         if event:
             return self._make_event("商店", event, run_task="ProduceShoppingEntry")
@@ -506,7 +516,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
         return None
 
     def _execute_event(self, context: Context, event: dict) -> bool:
-        """执行事件"""
+        """执行事件：双击坐标，等待动画后执行后续任务（如果有）。"""
         run_task = event.get("run_task")
         box = event["box"]
 
@@ -522,7 +532,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
         return True
 
     def _find_attr_event(self, events: list, attr: str, need_sp: bool = False) -> Optional[list]:
-        """从事件列表中查找指定属性的坐标"""
+        """查找指定属性事件的坐标。need_sp=True时只返回有SP标记的属性事件。"""
         for event in events:
             if attr in event:
                 if need_sp and not event.get("SP"):
@@ -531,7 +541,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
         return None
 
     def _find_event_by_name(self, events: list, event_name: str) -> Optional[list]:
-        """从事件列表中查找指定事件名称的坐标"""
+        """从事件列表中查找指定名称事件的坐标。"""
         for event in events:
             for key in event:
                 if event_name in key:
@@ -539,11 +549,11 @@ class ProduceChooseNIAEventAuto(CustomAction):
         return None
 
     def _make_event(self, name: str, box: list, run_task: str = "") -> dict:
-        """创建事件字典"""
+        """创建事件字典。"""
         return {"name": name, "box": box, "run_task": run_task}
 
     def _parse_suggestion(self, suggestion: str) -> Optional[str]:
-        """从老师建议中解析属性"""
+        """从老师建议中解析属性名称，匹配SUGGESTION_CONFIG中的关键词。"""
         if not suggestion:
             return None
         for attr in ["Vo", "Da", "Vi"]:
@@ -1145,8 +1155,6 @@ class ProduceChooseWorkAuto(CustomAction):
             if health_position and len(health_position) == 1:
                 box = second_roi if health_position[0] == 2 else third_roi
             else:
-                import random
-
                 box = random.choice([first_roi, second_roi, third_roi])
         else:
             if health_position == [2]:
