@@ -1,5 +1,6 @@
 import json
 import time
+import random
 import itertools
 from typing import Any, Dict, List, Optional
 from collections import Counter
@@ -433,7 +434,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
             if go_out and points >= 100:
                 return self._make_event("外出", go_out)
             logger.info("体力过低，选择休息")
-            return {"name": "rest", "box": [0, 0, 0, 0], "run_task": "ProduceChooseRest"}
+            return {"name": "rest", "box": [0, 0, 0, 0], "run_task": "ProduceTakeRest"}
 
         # 1. 老师建议
         suggestion_attr = self._parse_suggestion(suggestion)
@@ -499,7 +500,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
         # 10. 商店
         event = self._find_event_by_name(events, "商店")
         if event:
-            return self._make_event("商店", event, run_task="ProduceWait")
+            return self._make_event("商店", event, run_task="ProduceShoppingEntry")
 
         return None
 
@@ -1110,6 +1111,98 @@ class ProduceShoppingAuto(CustomAction):
             count += 1
 
         return False
+
+
+@AgentServer.custom_action("ProduceChooseWorkAuto")
+class ProduceChooseWorkAuto(CustomAction):
+    """
+    处理选择工作类型的窗口
+
+    选择逻辑：
+    - 体力 > 10 时：选择会扣除体力对应的工作（health_position 指定的位置）
+      - 单个位置 [2] 或 [3]：选择对应的工作
+      - 无位置或多位置 [2,3]：随机选择
+    - 体力 <= 10 时：选择不扣除体力对应的工作
+      - [2] → 选择第三个（位置3不扣体力）
+      - [3] → 选择第二个（位置2不扣体力）
+      - 其他情况 → 选择第一个
+    """
+
+    def run(
+        self,
+        context: Context,
+        argv: CustomAction.RunArg,
+    ) -> bool:
+        first_roi = [100, 760]
+        second_roi = [100, 880]
+        third_roi = [100, 1000]
+        image = context.tasker.controller.post_screencap().wait().get()
+        health_data = self._get_health(context, image)
+        current = health_data["current"] if health_data else 0
+
+        health_position = self._get_health_position(context, image)
+
+        if current > 10:
+            if health_position and len(health_position) == 1:
+                box = second_roi if health_position[0] == 2 else third_roi
+            else:
+                import random
+
+                box = random.choice([first_roi, second_roi, third_roi])
+        else:
+            if health_position == [2]:
+                box = third_roi
+            elif health_position == [3]:
+                box = second_roi
+            else:
+                box = first_roi
+        context.tasker.controller.post_click(box[0], box[1]).wait()
+        return True
+
+    @staticmethod
+    def _get_health(context: Context, image) -> Optional[dict]:
+        """获取当前体力数值"""
+        reco_detail = context.run_recognition("ProduceRecognitionHealth", image)
+        if not (reco_detail and reco_detail.hit):
+            return None
+
+        try:
+            health_parts = reco_detail.best_result.text.split("/")
+            current_health = int(health_parts[0])
+            max_health = int(health_parts[1])
+            ratio = current_health / max_health
+            logger.info(f"体力: {current_health}/{max_health} ({ratio:.2%})")
+            return {"current": current_health, "max": max_health, "ratio": ratio}
+        except (ValueError, IndexError, ZeroDivisionError):
+            logger.warning("体力数据解析失败")
+            return None
+
+    @staticmethod
+    def _get_health_position(context: Context, image) -> Optional[list]:
+        """
+        获取扣除体力的图标位置
+
+        Returns:
+            None: 未检测到扣体力图标
+            [2]: 第二个位置扣体力
+            [3]: 第三个位置扣体力
+            [2,3]: 第二和第三个位置都扣体力
+        """
+        reco_detail = context.run_recognition(
+            "ProduceRecognitionHealthFlag",
+            image,
+            pipeline_override={"ProduceRecognitionHealthFlag": {"roi": [370, 830, 320, 290]}},
+        )
+        if reco_detail.hit:
+            position = []
+            for result in reco_detail.filtered_results:
+                health_box_y = result.box[1]
+                if health_box_y > 970:
+                    position.append(3)
+                else:
+                    position.append(2)
+            return position
+        return None
 
 
 @AgentServer.custom_action("ProduceKeepDrinkAuto")
