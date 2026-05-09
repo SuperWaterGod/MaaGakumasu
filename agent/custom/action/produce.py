@@ -1,5 +1,6 @@
 import json
 import time
+import itertools
 from typing import Any, Dict, List, Optional
 from collections import Counter
 
@@ -339,6 +340,353 @@ class ProduceChooseEventAuto(CustomAction):
             if event_name in event_dict:
                 return event_dict[event_name]
         return None
+
+
+@AgentServer.custom_action("ProduceChooseNIAEventAuto")
+class ProduceChooseNIAEventAuto(CustomAction):
+    """
+    自动选择NIA培育事件
+    """
+
+    # 常量定义
+    SUGGESTION_CONFIG = {
+        "Vo": {"img": "produce/NIA/Vo.png", "keyword": ["ボーカル", "唱歌"]},
+        "Da": {"img": "produce/NIA/Da.png", "keyword": ["ダンス", "舞蹈"]},
+        "Vi": {"img": "produce/NIA/Vi.png", "keyword": ["ビジュアル", "视觉"]},
+        "体力": {"img": "produce/rest.png", "keyword": ["体力"]},
+        "交谈": {"img": "produce/NIA/chat.png", "keyword": ["先生に相談して", "咨询"]},
+    }
+
+    EVENT_CONFIG = {
+        "Vo": "produce/NIA/Vo.png",
+        "Da": "produce/NIA/Da.png",
+        "Vi": "produce/NIA/Vi.png",
+        "交谈": "produce/NIA/chat.png",
+        "活动": "produce/NIA/activity.png",
+        "指导": "produce/NIA/guide.png",
+        "外出": "produce/NIA/go_out.png",
+        "工作": "produce/NIA/work.png",
+    }
+
+    # 阈值常量
+    LOW_HEALTH_THRESHOLD = 0.3
+    HIGH_POINT_THRESHOLD = 300
+    CLICK_DELAY = 0.5
+    ACTION_DELAY = 3.0
+    PREFERENCE_LIST = ["Da", "Vi", "Vo"]
+    FIRST_NEAR_FULL_RATIO = 0.85
+
+    def __init__(self):
+        super().__init__()
+        self.first = "Vi"
+        self.second = "Da"
+
+    def run(self, context: Context, argv: CustomAction.RunArg) -> bool:
+        logger.success("事件: 选择事件")
+
+        preference = self._get_preference(argv)
+        self.first = preference["first"]
+        self.second = preference["second"]
+        logger.info(f"第一属性: {self.first}, 第二属性: {self.second}")
+
+        # 获取屏幕截图
+        image = self._get_screenshot(context)
+
+        suggestion = ""
+        if context.get_node_data("ProduceSuggestion").get("enabled", True):
+            suggestion = self._get_suggestion(context, image)
+
+        health_data = self._get_health(context, image) or {"current": 34, "max": 34, "ratio": 1.0}
+        points = self._get_current_points(context, image) or 0
+        score = self._get_current_score(context, image) or {"Vo": 0, "Da": 0, "Vi": 0, "max": 1}
+        events = self._get_available_events(context, image)
+
+        # 选择最佳事件
+        best_event = self._choose_best_event(suggestion, health_data, points, score, events)
+        if not best_event:
+            logger.info("无可用事件")
+            return True
+
+        logger.info(f"选择事件: {best_event['name']}, 坐标: ({best_event['box'][0]}, {best_event['box'][1]})")
+
+        # 执行事件
+        # return self._execute_event(context, best_event)
+        return True
+
+    def _choose_best_event(self, suggestion: str, health_data: dict, points: int, score: dict, events: list) -> Optional[dict]:
+        """
+        根据信息选择最佳事件
+
+        Returns:
+            dict: {"name": str, "box": [x, y, w, h], "run_task": str} 或 None
+        """
+        logger.debug(f"suggestion={suggestion}, points={points}, events={events}")
+        max_score = score.get("max", 1)
+        first_ratio = score.get(self.first, 0) / max_score if max_score > 0 else 0
+        is_first_near_full = first_ratio >= self.FIRST_NEAR_FULL_RATIO
+
+        # 0. 低体力处理（体力 < 20% 或 体力值 < 8，优先外出，其次休息）
+        current_health = health_data["current"] if health_data else 0
+        ratio_health = health_data["ratio"] if health_data else 1.0
+        if current_health < 8 or ratio_health < 0.2:
+            go_out = self._find_event_by_name(events, "外出")
+            if go_out and points >= 100:
+                return self._make_event("外出", go_out)
+            logger.info("体力过低，选择休息")
+            return {"name": "rest", "box": [0, 0, 0, 0], "run_task": "ProduceChooseRest"}
+
+        # 1. 老师建议
+        suggestion_attr = self._parse_suggestion(suggestion)
+        if suggestion_attr:
+            event = self._find_attr_event(events, suggestion_attr)
+            if event:
+                return self._make_event(suggestion_attr, event)
+
+        # 2. SP（第一属性）
+        event = self._find_attr_event(events, self.first, need_sp=True)
+        if event:
+            return self._make_event(f"{self.first}_SP", event)
+
+        # 3. SP（第二属性） > 第一属性课程
+        second_sp = self._find_attr_event(events, self.second, need_sp=True)
+        first_attr = self._find_attr_event(events, self.first, need_sp=False)
+
+        if second_sp:
+            return self._make_event(f"{self.second}_SP", second_sp)
+        elif first_attr:
+            return self._make_event(self.first, first_attr)
+
+        # 4. 第二属性课程（仅当第一属性快满时）
+        if is_first_near_full:
+            event = self._find_attr_event(events, self.second, need_sp=False)
+            if event:
+                return self._make_event(self.second, event)
+
+        # 5. 营业
+        event = self._find_event_by_name(events, "工作")
+        if event:
+            return self._make_event("工作", event)
+
+        # 6. 活动
+        event = self._find_event_by_name(events, "活动")
+        if event:
+            return self._make_event("活动", event)
+
+        # 7. 第一属性课程
+        event = self._find_attr_event(events, self.first, need_sp=False)
+        if event:
+            return self._make_event(self.first, event)
+
+        # 8. 第二属性课程（仅当第一属性快满时）
+        if is_first_near_full:
+            event = self._find_attr_event(events, self.second, need_sp=False)
+            if event:
+                return self._make_event(self.second, event)
+
+        # 9. 外出/指导
+        for name in ["外出", "指导"]:
+            event = self._find_event_by_name(events, name)
+            if event:
+                return self._make_event(name, event)
+
+        # 10. SP（其他属性）
+        for attr in ["Vo", "Da", "Vi"]:
+            if attr not in [self.first, self.second]:
+                event = self._find_attr_event(events, attr, need_sp=True)
+                if event:
+                    return self._make_event(f"{attr}_SP", event)
+
+        # 10. 商店
+        event = self._find_event_by_name(events, "商店")
+        if event:
+            return self._make_event("商店", event, run_task="ProduceWait")
+
+        return None
+
+    def _execute_event(self, context: Context, event: dict) -> bool:
+        """执行事件"""
+        event_name = event["name"]
+        run_task = event.get("run_task")
+        box = event["box"]
+
+        logger.info(f"选择{event_name}")
+        x = box[0] + box[2] // 2
+        y = box[1] + box[3] // 2
+        context.tasker.controller.post_click(x, y).wait()
+        time.sleep(self.CLICK_DELAY)
+        context.tasker.controller.post_click(x, y).wait()
+        time.sleep(self.ACTION_DELAY)
+        if run_task:
+            logger.info(f"执行任务{run_task}")
+            context.run_task(run_task)
+        return True
+
+    def _find_attr_event(self, events: list, attr: str, need_sp: bool = False) -> Optional[list]:
+        """从事件列表中查找指定属性的坐标"""
+        for event in events:
+            if attr in event:
+                if need_sp and not event.get("SP"):
+                    continue
+                return event[attr]
+        return None
+
+    def _find_event_by_name(self, events: list, event_name: str) -> Optional[list]:
+        """从事件列表中查找指定事件名称的坐标"""
+        for event in events:
+            for key in event:
+                if event_name in key:
+                    return event[key]
+        return None
+
+    def _make_event(self, name: str, box: list, run_task: str = "") -> dict:
+        """创建事件字典"""
+        return {"name": name, "box": box, "run_task": run_task}
+
+    def _parse_suggestion(self, suggestion: str) -> Optional[str]:
+        """从老师建议中解析属性"""
+        if not suggestion:
+            return None
+        for attr in ["Vo", "Da", "Vi"]:
+            for keyword in self.SUGGESTION_CONFIG[attr].get("keyword", []):
+                if keyword in suggestion:
+                    return attr
+        return None
+
+    @staticmethod
+    def _get_screenshot(context: Context):
+        """获取屏幕截图"""
+        return context.tasker.controller.post_screencap().wait().get()
+
+    def _get_preference(self, argv) -> dict:
+        """获取偏好设置"""
+        try:
+            params = json.loads(argv.custom_action_param)
+            first = params.get("first") if isinstance(params, dict) else None
+            second = params.get("second") if isinstance(params, dict) else None
+            return {"first": first if first in self.PREFERENCE_LIST else "Vi", "second": second if second in self.PREFERENCE_LIST else "Da"}
+        except (json.JSONDecodeError, AttributeError):
+            logger.warning("偏好设置解析失败，使用默认值")
+            return {"first": "Vi", "second": "Da"}
+
+    def _get_suggestion(self, context: Context, image) -> str:
+        """获取建议课程"""
+        reco_detail = context.run_recognition(
+            "ProduceChooseEventSuggestion",
+            image,
+            pipeline_override={"ProduceChooseEventSuggestion": {"recognition": "OCR", "roi": [270, 170, 350, 80]}},
+        )
+
+        if not (reco_detail and reco_detail.hit):
+            return ""
+
+        suggestion_text = "".join(item.text for item in reco_detail.filtered_results)
+        logger.info(f"老师建议: {suggestion_text}")
+        return suggestion_text
+
+    @staticmethod
+    def _get_health(context: Context, image) -> Optional[dict]:
+        """获取体力比例"""
+        reco_detail = context.run_recognition("ProduceRecognitionHealth", image)
+        if not (reco_detail and reco_detail.hit):
+            return None
+
+        try:
+            health_parts = reco_detail.best_result.text.split("/")
+            current_health = int(health_parts[0])
+            max_health = int(health_parts[1])
+            ratio = current_health / max_health
+            logger.info(f"体力: {current_health}/{max_health} ({ratio:.2%})")
+            return {"current": current_health, "max": max_health, "ratio": ratio}
+        except (ValueError, IndexError, ZeroDivisionError):
+            logger.warning("体力数据解析失败")
+            return None
+
+    @staticmethod
+    def _get_current_points(context: Context, image) -> Optional[int]:
+        """获取当前积分"""
+        reco_detail = context.run_recognition(
+            "ProduceRecognitionPoint",
+            image,
+            pipeline_override={"ProduceRecognitionPoint": {"roi": [320, 90, 130, 54]}},
+        )
+        if not (reco_detail and reco_detail.hit):
+            return None
+        try:
+            points = int(reco_detail.best_result.text.replace(",", ""))
+            logger.info(f"积分: {points}")
+            return points
+        except ValueError:
+            logger.warning("积分数据解析失败")
+            return None
+
+    @staticmethod
+    def _get_current_score(context: Context, image) -> Optional[dict]:
+        """获取当前得分"""
+        score = {
+            "Vo": 0,
+            "Da": 0,
+            "Vi": 0,
+            "max": 0,
+        }
+        for i in range(3):
+            reco_detail = context.run_recognition(
+                "ProduceRecognitionScore",
+                image,
+                pipeline_override={"ProduceRecognitionScore": {"roi": [150 + i * 150, 668, 136, 80]}},
+            )
+            if reco_detail and reco_detail.hit and len(reco_detail.filtered_results) == 2:
+                current_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[0].text)))
+                max_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[1].text.replace("/", ""))))
+                logger.debug(f"第{i + 1}列得分: {current_score} / {max_score}")
+                score[next(itertools.islice(score.keys(), i, None))] = current_score
+                score["max"] = max_score if max_score > score["max"] and max_score < 9999 else score["max"]
+        try:
+            logger.info(f"当前得分: Vo={score['Vo']}, Da={score['Da']}, Vi={score['Vi']}, Max={score['max']}")
+            return score
+        except ValueError:
+            logger.warning("积分数据解析失败")
+            return None
+
+    def _get_available_events(self, context: Context, image) -> List[Dict[str, Any]]:
+        """获取可用事件列表"""
+        available_events = []
+        available_events_name = ""
+
+        for event_name, event_img in self.EVENT_CONFIG.items():
+            reco_detail = context.run_recognition(
+                "ProduceRecognitionEvent",
+                image,
+                pipeline_override={
+                    "ProduceRecognitionEvent": {"recognition": "TemplateMatch", "template": event_img, "roi": [0, 880, 720, 220]}
+                },
+            )
+            if reco_detail and reco_detail.hit:
+                if event_name in ["Da", "Vi", "Vo"]:
+                    available_events_name = "Vo, Da, Vi"
+                    available_events = [
+                        {"Vo": [190, 1000, 1, 1], "SP": self._get_sp_course(context, image, [70, 900, 80, 80])},
+                        {"Da": [360, 1000, 1, 1], "SP": self._get_sp_course(context, image, [250, 900, 80, 80])},
+                        {"Vi": [530, 1000, 1, 1], "SP": self._get_sp_course(context, image, [430, 900, 80, 80])},
+                    ]
+                    break
+                available_events.append({event_name: reco_detail.best_result.box})
+                available_events_name += f"{event_name}, "
+
+        logger.info(f"可用事件: {available_events_name.rstrip(', ')}")
+        logger.debug(available_events)
+        return available_events
+
+    def _get_sp_course(self, context: Context, image, sp_roi: List[int]) -> bool:
+        """获取SP课程选择"""
+        reco_detail = context.run_recognition(
+            "ProduceChooseEventSp",
+            image,
+            pipeline_override={"ProduceChooseEventSp": {"recognition": "TemplateMatch", "template": "produce/sp.png", "roi": sp_roi}},
+        )
+        if reco_detail and reco_detail.hit:
+            logger.debug(f"{sp_roi}存在SP课程")
+            return True
+        return False
 
 
 @AgentServer.custom_action("ProduceCardsAuto")
@@ -762,24 +1110,6 @@ class ProduceShoppingAuto(CustomAction):
             count += 1
 
         return False
-
-
-@AgentServer.custom_action("ProduceStrengthenAuto")
-class ProduceStrengthenAuto(CustomAction):
-    """
-    自动选择卡牌强化
-    默认选择第一张
-    """
-
-    def run(
-        self,
-        context: Context,
-        argv: CustomAction.RunArg,
-    ) -> bool:
-        logger.success("事件: 选择强化")
-        context.tasker.controller.post_click(140, 760).wait()
-        context.run_task("ProduceChooseStrengthen")
-        return True
 
 
 @AgentServer.custom_action("ProduceKeepDrinkAuto")

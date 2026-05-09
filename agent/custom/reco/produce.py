@@ -292,7 +292,7 @@ class ProduceOptionsFlagAuto(CustomRecognition):
         logger.success("事件: 选择冲刺/上课/外出")
         logger.info(f"检测到{len(options_reco_detail.filtered_results)}个选项")
 
-        if len(options_reco_detail.filtered_results) <= 2:
+        if len(options_reco_detail.filtered_results) < 2:
             debug_dir = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
                 "debug",
@@ -311,4 +311,4 @@ class ProduceOptionsFlagAuto(CustomRecognition):
         context.tasker.controller.post_click(click_point_x, click_point_y).wait()
         time.sleep(0.2)
         context.tasker.controller.post_click(click_point_x, click_point_y).wait()
-        return CustomRecognition.AnalyzeResult(box=best_box, detail={"detail": "选择加最佳选项"})
+        return CustomRecognition.AnalyzeResult(box=best_box, detail={"detail": "选择冲刺/上课/外出"})
