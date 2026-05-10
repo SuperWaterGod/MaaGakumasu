@@ -3,6 +3,22 @@ import json
 from datetime import datetime
 from collections import defaultdict
 
+preference = {
+    "雨夜燕": {"first": "Da", "second": "Vo"},
+    "藤田琴音": {"first": "Da", "second": "Vi"},
+    "葛城莉莉娅": {"first": "Vi", "second": "Da"},
+    "花海咲季": {"first": "Vi", "second": "Da"},
+    "花海佑芽": {"first": "Da", "second": "Vo"},
+    "紫云清夏": {"first": "Da", "second": "Vi"},
+    "筱泽广": {"first": "Vo", "second": "Da"},
+    "秦谷美铃": {"first": "Vo", "second": "Vi"},
+    "有村麻央": {"first": "Vi", "second": "Vo"},
+    "月村手毬": {"first": "Vo", "second": "Da"},
+    "十王星南": {"first": "Vi", "second": "Vo"},
+    "仓本千奈": {"first": "Da", "second": "Vi"},
+    "姬崎莉波": {"first": "Vi", "second": "Da"},
+}
+
 
 def get_project_path(*relative_parts):
     """获取项目根目录下的文件路径"""
@@ -70,7 +86,16 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
                 except:
                     card_date = datetime.min
 
-                idol_cards[idol_name].append({"card_name": card_name, "idol_name": idol_name, "song_name": song_name, "date": card_date})
+                idol_cards[idol_name].append(
+                    {
+                        "card_name": card_name,
+                        "idol_name": idol_name,
+                        "idol_cn": card["偶像中文"],
+                        "song_name": song_name,
+                        "effect": card.get("推荐效果", ""),
+                        "date": card_date,
+                    }
+                )
 
     # 记录新增的卡片
     new_cards_log = defaultdict(list)
@@ -97,11 +122,21 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
         # 生成新的cases
         new_cases = []
         for card in unique_cards:
+            idol_cn = card.get("idol_cn", "")
+            effect = card.get("effect", "")
+            pref = preference.get(idol_cn, {})
             new_cases.append(
                 {
                     "name": card["card_name"],
                     "pipeline_override": {
-                        "ProduceChooseIdol": {"custom_recognition_param": {"idol_name": card["idol_name"], "song_name": card["song_name"]}}
+                        "ProduceChooseIdol": {"custom_recognition_param": {"idol_name": card["idol_name"], "song_name": card["song_name"]}},
+                        "ProduceChooseNIAEventFlag": {
+                            "custom_action_param": {
+                                "effect": effect,
+                                "first": pref.get("first", ""),
+                                "second": pref.get("second", ""),
+                            }
+                        },
                     },
                 }
             )
