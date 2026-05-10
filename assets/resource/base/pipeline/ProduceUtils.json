@@ -589,17 +589,6 @@
       "param": {}
     }
   },
-  "ProduceRecognitionShoppingAnimationsEnd": {
-    "recognition": {
-      "type": "TemplateMatch",
-      "param": {
-        "template": [
-          "shopping_animation_template"
-        ],
-        "threshold": 0.99
-      }
-    }
-  },
   "Click_1": {
     "recognition": {
       "type": "DirectHit",
