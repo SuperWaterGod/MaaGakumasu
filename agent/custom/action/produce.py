@@ -451,7 +451,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
             if go_out and points >= 100:
                 return self._make_event("外出", go_out)
             logger.info("体力过低，选择休息")
-            return {"name": "rest", "box": [0, 0, 0, 0], "run_task": "ProduceTakeRest"}
+            return {"name": "rest", "box": [0, 0, 0, 0], "run_task": "ProduceChooseRest"}
 
         # 1. 老师建议
         suggestion_attr = self._parse_suggestion(suggestion)
@@ -473,7 +473,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
         # 4. 营业
         event = self._find_event_by_name(events, "工作")
         if event:
-            return self._make_event("工作", event)
+            return self._make_event("工作", event, run_task="ProduceWorkEntry")
 
         # 5. 活动
         event = self._find_event_by_name(events, "活动")
@@ -966,162 +966,6 @@ class ProduceCardsAuto(CustomAction):
             time.sleep(1)
 
 
-@AgentServer.custom_action("ProduceShoppingAuto")
-class ProduceShoppingAuto(CustomAction):
-    """
-    自动购买商店打折销售的饮料
-    异常处理P点数不够
-    """
-
-    def run(
-        self,
-        context: Context,
-        argv: CustomAction.RunArg,
-    ) -> bool:
-        # 处理入场动画
-        self._wait_until_animations_end(context)
-
-        logger.success("事件: 商店购买")
-        filtered_results = self._recognize_sale_items(context)
-        for result in filtered_results:
-            # 点击打折道具
-            box = result.box
-            context.tasker.controller.post_click(box[0], box[1] - 66).wait()
-            time.sleep(0.5)
-
-            if self._is_drink_full(context):
-                logger.info("饮料已满，放弃购买")
-                continue
-
-            # 点击购买
-            # 由于模板识别灰色的购买按钮也有0.997的识别分数，所以识别购买按钮是否为灰没有用，除非使用对颜色敏感的method参数
-            # 目前只能直接运行pipeline，如果因为P点不足无法购买，会直接等待到超时
-            # 因为post_wait_freezes的存在，是识别不到提示信息的，只能等待超时
-            context.run_task("ProduceShoppingBuy")
-            self._wait_until_animations_end(context)
-
-            if context.tasker.stopping:
-                return False
-
-        # 使用独立退出函数，确保退出商店后才结束节点，防止没有命中按钮导致又重复进入商店节点再走一次流程的情况
-        self._exit(context)
-        return True
-
-    @staticmethod
-    def _wait_until_animations_end(context: Context, time_out: int = 20) -> bool:
-        """
-        等待直到回忆效果动画、活动特殊效果动画、购买饮料成功动画结束
-
-        Args:
-            context: maa的Context类
-            time_out: 超时时间，默认20秒
-
-        Returns:
-            bool: 动画结束时，返回True；未结束时，返回False
-        """
-        image = context.tasker.controller.post_screencap().wait().get()
-        start_time = time.time()
-        while time.time() - start_time < time_out:
-            context.override_image("shopping_animation_template", image)
-
-            context.run_task("Click_1")
-            time.sleep(0.5)
-
-            image = context.tasker.controller.post_screencap().wait().get()
-            reco_detail = context.run_recognition("ProduceRecognitionShoppingAnimationsEnd", image)
-            if reco_detail and reco_detail.hit:
-                return True
-
-            if context.tasker.stopping:
-                return False
-
-        return False
-
-    @staticmethod
-    def _recognize_sale_items(context: Context):
-        """
-        识别商店打折销售的饮料
-
-        Args:
-            context: maa的Context类
-
-        Returns:
-            list: 识别到的打折销售的饮料列表
-        """
-        image = context.tasker.controller.post_screencap().wait().get()
-        reco_detail = context.run_recognition(
-            "ProduceRecognitionSale",
-            image,
-            pipeline_override={
-                "ProduceRecognitionSale": {
-                    "recognition": "TemplateMatch",
-                    "template": "produce/Sale.png",
-                    "roi": [46, 479, 626, 529],
-                    "pre_wait_freezes": 100,
-                }
-            },
-        )
-
-        if reco_detail and reco_detail.hit:
-            return reco_detail.filtered_results
-        return []
-
-    @staticmethod
-    def _is_drink_full(context: Context) -> bool:
-        """
-        检查饮料是否已满
-
-        Args:
-            context: maa的Context类
-
-        Returns:
-            bool: 饮料已满时，返回True；未满时，返回False
-        """
-        image = context.tasker.controller.post_screencap().wait().get()
-        reco_detail = context.run_recognition(
-            "ProduceRecognitionDrinkFull",
-            image,
-            pipeline_override={
-                "ProduceRecognitionDrinkFull": {
-                    "recognition": "TemplateMatch",
-                    "template": "produce/drink_full.png",
-                    "roi": [0, 1020, 720, 135],
-                }
-            },
-        )
-        if reco_detail and reco_detail.hit:
-            return True
-        return False
-
-    @staticmethod
-    def _exit(context: Context, max_count: int = 10) -> bool:
-        """
-        退出商店，确保退出后才返回
-
-        Args:
-            context: maa的Context类
-            max_count: 最大点击次数，默认10次
-
-        Returns:
-            bool: 退出商店后，返回True；未退出时，返回False
-        """
-        count = 0
-        while count < max_count:
-            context.run_task("ProduceShoppingExit")
-
-            image = context.tasker.controller.post_screencap().wait().get()
-            reco_detail = context.run_recognition("ProduceShoppingExit", image)
-            if not (reco_detail and reco_detail.hit):
-                return True
-
-            if context.tasker.stopping:
-                return False
-
-            count += 1
-
-        return False
-
-
 @AgentServer.custom_action("ProduceChooseWorkAuto")
 class ProduceChooseWorkAuto(CustomAction):
     """
@@ -1277,7 +1121,7 @@ class ProduceChooseOptionsAuto(CustomAction):
 
         # 如果目标选项不可用，尝试 fallback
         if target_box is None:
-            logger.warning(f"选项 {choice} 不可用，尝试 fallback")
+            logger.debug(f"选项 {choice} 不可用，尝试 fallback")
             if options:
                 # 优先选择第一属性
                 for opt in options:
