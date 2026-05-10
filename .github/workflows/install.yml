@@ -29,7 +29,7 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - id: set_tag
@@ -72,7 +72,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
 
@@ -184,7 +184,7 @@ jobs:
           echo "Cleaning up zip files..."
           find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: MaaGakumasu-win-${{ matrix.arch }}
           path: "install"
@@ -201,7 +201,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
 
@@ -256,7 +256,7 @@ jobs:
           echo "Cleaning up zip files..."
           find install -name "MFAAvalonia-*.zip" -delete 2>/dev/null || true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: MaaGakumasu-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'macos' }}-${{ matrix.arch }}
           path: "install"
@@ -270,7 +270,7 @@ jobs:
       release_body: ${{ steps.git-cliff.outputs.content }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -289,7 +289,7 @@ jobs:
     needs: [meta, windows, unix, changelog]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: assets
 
