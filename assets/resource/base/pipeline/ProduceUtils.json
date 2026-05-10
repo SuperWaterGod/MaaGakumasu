@@ -149,6 +149,50 @@
       "param": {}
     }
   },
+  "ProduceError": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/error.png"
+        ],
+        "roi": [
+          0,
+          700,
+          720,
+          250
+        ],
+        "threshold": 0.9
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ProduceCancel"
+    ]
+  },
+  "ProduceCancel": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/cancel.png"
+        ],
+        "roi": [
+          0,
+          1080,
+          720,
+          200
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    }
+  },
   "ProduceChooseRest": {
     "recognition": {
       "type": "TemplateMatch",
@@ -160,10 +204,10 @@
       "type": "Click",
       "param": {}
     },
-    "post_delay": 1000,
     "next": [
       "ProduceTakeRest"
-    ]
+    ],
+    "post_wait_freezes": 200
   },
   "ProduceTakeRest": {
     "recognition": {
@@ -220,6 +264,55 @@
       "param": {}
     }
   },
+  "ProduceRecognitionScore": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": "\\d{3,}|/\\d{3,}",
+        "order_by": "Vertical"
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    }
+  },
+  "ProduceRecognitionVote": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": "\\b\\d{1,3}(?:,\\d{3})*(?:\\.\\d+)?\\b",
+        "roi": [
+          540,
+          120,
+          120,
+          56
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    }
+  },
+  "ProduceRecognitionMirror": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "expected": "\\b\\d{1,3}(?:,\\d{3})*(?:\\.\\d+)?\\b",
+        "roi": [
+          12,
+          630,
+          696,
+          530
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    }
+  },
   "ProduceRecognitionNoCards": {
     "recognition": {
       "type": "OCR",
@@ -243,7 +336,7 @@
       "type": "TemplateMatch",
       "param": {
         "template": [
-          "produce/move_cards.png"
+          "produce/move_icon.png"
         ],
         "roi": [
           0,
@@ -356,7 +449,8 @@
           168,
           130
         ],
-        "threshold": 0.5
+        "green_mask": true,
+        "threshold": 0.7
       }
     },
     "action": {
@@ -364,13 +458,18 @@
       "param": {}
     }
   },
-  "ProduceRecognitionOptions": {
+  "ProduceRecognitionWorkOptions": {
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "produce/choose.png",
+        "template": [
+          "produce/choose_null.png",
+          "produce/choose_Vi.png",
+          "produce/choose_Vo.png",
+          "produce/choose_Da.png"
+        ],
         "green_mask": true,
-        "threshold": 0.6,
+        "threshold": 0.9,
         "roi": [
           0,
           640,
@@ -380,25 +479,13 @@
       }
     },
     "action": {
-      "type": "DoNothing",
-      "param": {}
-    }
-  },
-  "ProduceRecognitionOptionsEvents": {
-    "recognition": {
-      "type": "TemplateMatch",
+      "type": "Custom",
       "param": {
-        "template": [
-          "produce/week_1.png",
-          "produce/week_7.png",
-          "produce/week_lesson.png"
-        ],
-        "threshold": 0.9
+        "custom_action": "ProduceChooseOptionsAuto"
       }
     },
-    "action": {
-      "type": "DoNothing",
-      "param": {}
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:green]事件: 选择冲刺/上课/外出[/color]"
     }
   },
   "ProduceRecognitionUncheckedMark": {
@@ -444,7 +531,8 @@
           1150,
           300,
           100
-        ]
+        ],
+        "green_mask": true
       }
     },
     "action": {
@@ -535,5 +623,17 @@
     "attach": {
       "language": "ja-JP"
     }
+  },
+  "ProduceSuggestion": {
+    //是否遵循老师建议
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "enabled": false
   }
 }

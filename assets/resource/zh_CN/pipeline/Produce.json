@@ -10,5 +10,12 @@
             "type": "Click",
             "param": {}
         }
+    },
+    "ProduceChooseGetFlag": {
+        "recognition": {
+            "param": {
+                "expected": "请选择要领取的(.+)"
+            }
+        }
     }
 }

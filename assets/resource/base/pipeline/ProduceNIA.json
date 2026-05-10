@@ -1,0 +1,390 @@
+{
+  "ProduceEntryNIA": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ProduceExit",
+      "ProduceFailedFlag",
+      "[JumpBack]ProduceChooseNIAEventFlag",
+      "[JumpBack]ProduceCardsFlag",
+      "[JumpBack]ProduceRecognitionWorkOptions",
+      "[JumpBack]ProduceChooseGetFlag",
+      "[JumpBack]ProduceChooseStrengthenFlag",
+      "[JumpBack]ProduceChooseDeleteFlag",
+      "[JumpBack]ProduceMirrorFlag",
+      "[JumpBack]ProduceNIAButton",
+      "[JumpBack]ProduceSkip",
+      "[JumpBack]Click_1"
+    ]
+  },
+  "ProduceChooseNIAEventFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/NIA/activity.png",
+          "produce/NIA/chat.png",
+          "produce/NIA/Da.png",
+          "produce/NIA/go_out.png",
+          "produce/NIA/guide.png",
+          "produce/NIA/Vi.png",
+          "produce/NIA/Vo.png",
+          "produce/NIA/work.png"
+        ],
+        "roi": [
+          0,
+          800,
+          720,
+          300
+        ]
+      }
+    },
+    "action": {
+      "type": "Custom",
+      "param": {
+        "custom_action": "ProduceChooseNIAEventAuto",
+        "custom_action_param": {
+          "effect": "非凡·强气",
+          "first": "Vo",
+          "second": "Vi"
+        }
+      }
+    }
+  },
+  "ProduceNIAButton": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "next.png", // (必选)考试成功时需要点next
+          "produce/retry.png", // 失败时重试
+          "produce/decide.png", // 辅助模式似乎必出现
+          "produce/skip_confirm.png", // 跳过按钮
+          "produce/drink_no.png" // 选择奖励时拒绝饮料
+        ],
+        "order_by": "Score",
+        "roi": [
+          0,
+          780,
+          720,
+          500
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {
+        "target_offset": [
+          0,
+          0,
+          0,
+          -10
+        ]
+      }
+    },
+    "pre_delay": 100,
+    "post_delay": 100
+  },
+  "ProduceWorkEntry": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ProduceWorkFlag",
+      "[JumpBack]Click_1"
+    ],
+    "post_wait_freezes": 200
+  },
+  "ProduceWorkFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/NIA/work_choose.png"
+        ],
+        "roi": [
+          150,
+          380,
+          420,
+          200
+        ],
+        "green_mask": true
+      }
+    },
+    "action": {
+      "type": "Custom",
+      "param": {
+        "custom_action": "ProduceChooseWorkAuto"
+      }
+    },
+    "next": [
+      "ProduceWorkConfirm"
+    ],
+    "pre_wait_freezes": {
+      "time": 500,
+      "target": [
+        54,
+        563,
+        611,
+        514
+      ]
+    },
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:green]事件: 选择工作[/color]"
+    }
+  },
+  "ProduceWorkConfirm": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/NIA/work_start.png"
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    }
+  },
+  "ProduceShoppingEntry": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ProduceShoppingFlag",
+      "[JumpBack]Click_1"
+    ],
+    "post_wait_freezes": 200
+  },
+  "ProduceShoppingFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "produce/shopping.png",
+        "roi": [
+          30,
+          166,
+          660,
+          288
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ProduceShoppingBuySale",
+      "ProduceShoppingExit"
+    ],
+    "post_wait_freezes": 200,
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:green]事件: 商店购买[/color]"
+    }
+  },
+  "ProduceShoppingBuySale": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "produce/Sale.png",
+        "roi": [
+          46,
+          480,
+          626,
+          530
+        ],
+        "order_by": "Random"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {
+        "target_offset": [
+          0,
+          -65,
+          0,
+          0
+        ]
+      }
+    },
+    "next": [
+      "ProduceShoppingDrinkFull",
+      "ProduceShoppingBuy",
+      "ProduceShoppingExit"
+    ],
+    "post_wait_freezes": 100
+  },
+  "ProduceShoppingBuy": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "produce/shopping_buy.png",
+        "roi": [
+          0,
+          1020,
+          720,
+          135
+        ],
+        "method": 10001,
+        "threshold": 0.95
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_wait_freezes": 100,
+    "next": [
+      "ProduceShoppingDecide"
+    ]
+  },
+  "ProduceShoppingDecide": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/shopping_exchange.png",
+          "produce/point_runout.png"
+        ],
+        "roi": [
+          0,
+          1020,
+          720,
+          260
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ProduceShoppingExit",
+      "[JumpBack]Click_1"
+    ]
+  },
+  "ProduceShoppingDrinkFull": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "produce/drink_full.png",
+        "roi": [
+          0,
+          1020,
+          720,
+          135
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "post_delay": 1000,
+    "next": [
+      "ProduceShoppingExit"
+    ]
+  },
+  "ProduceShoppingExit": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "produce/shop_exit.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_delay": 1000
+  },
+  "ProduceGuideEntry": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ProduceGuideFlag",
+      "[JumpBack]Click_1"
+    ],
+    "post_wait_freezes": 200
+  },
+  "ProduceGuideFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "produce/NIA/guide_choose.png",
+        "roi": [
+          30,
+          180,
+          650,
+          400
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ProduceGuideExit"
+    ]
+  },
+  "ProduceGuideExit": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "produce/shop_exit.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    }
+  },
+  "ProduceMirrorFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/NIA/mirror_1.png",
+          "produce/NIA/mirror_2.png",
+          "produce/NIA/mirror_3.png"
+        ],
+        "roi": [
+          12,
+          630,
+          696,
+          530
+        ]
+      }
+    },
+    "action": {
+      "type": "Custom",
+      "param": {
+        "custom_action": "ProduceChooseMirrorAuto"
+      }
+    }
+  }
+}
