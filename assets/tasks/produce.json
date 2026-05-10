@@ -13,7 +13,8 @@
         "启用自动回忆",
         "启用关注租借",
         "跳过准备阶段",
-        "卡片选择优先级"
+        "卡片选择优先级",
+        "跟随老师的建议"
       ],
       "resource": [
         "官服",
@@ -411,6 +412,29 @@
         }
       ],
       "label": "$跳过选择偶像"
+    },
+    "跟随老师的建议": {
+      "type": "switch",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "ProduceSuggestion": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "ProduceSuggestion": {
+              "enabled": false
+            }
+          }
+        }
+      ],
+      "label": "$跟随老师的建议"
     },
     "培育偶像": {
       "type": "select",
