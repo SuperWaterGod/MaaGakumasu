@@ -13,6 +13,14 @@
         ]
     },
     "ProduceLoop": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
         "next": [
             "ProduceSkipPreparation",
             "[JumpBack]ProduceStartPopUpButtons",
@@ -22,8 +30,16 @@
         ]
     },
     "ProduceSkipPreparation": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
         "next": [
-            "ProduceEntry"
+            "ProduceEntryFlag"
         ],
         "enabled": false,
         "max_hit": 1
@@ -72,7 +88,7 @@
             "param": {}
         },
         "next": [
-            "ProduceChooseDifficulty"
+            "ProduceLastPage"
         ],
         "post_wait_freezes": 200
     },
@@ -108,15 +124,56 @@
             "param": {}
         },
         "next": [
-            "ProduceEntry"
+            "ProduceEntryFlag"
+        ]
+    },
+    "ProduceLastPage": {
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": "PRO",
+                "roi": [
+                    0,
+                    824,
+                    719,
+                    171
+                ]
+            }
+        },
+        "action": {
+            "type": "Swipe",
+            "param": {
+                "begin": [
+                    120,
+                    600,
+                    1,
+                    1
+                ],
+                "end": [
+                    [
+                        600,
+                        600,
+                        1,
+                        1
+                    ]
+                ]
+            }
+        },
+        "post_wait_freezes": 200,
+        "next": [
+            "ProduceChooseDifficulty"
         ]
     },
     "ProduceNextPage": {
         "recognition": {
-            "type": "TemplateMatch",
+            "type": "OCR",
             "param": {
-                "template": [
-                    "produce/master.png"
+                "expected": "MASTER",
+                "roi": [
+                    0,
+                    824,
+                    719,
+                    171
                 ]
             }
         },
@@ -139,14 +196,21 @@
                 ]
             }
         },
-        "enabled": false
+        "post_wait_freezes": 200,
+        "next": [
+            "ProduceChooseDifficulty"
+        ]
     },
     "ProduceChooseDifficulty": {
         "recognition": {
-            "type": "TemplateMatch",
+            "type": "OCR",
             "param": {
-                "template": [
-                    "produce/master.png"
+                "expected": "MASTER",
+                "roi": [
+                    0,
+                    824,
+                    719,
+                    171
                 ]
             }
         },
@@ -572,8 +636,21 @@
             "param": {}
         },
         "next": [
-            "ProduceEntry",
+            "ProduceEntryFlag",
             "[JumpBack]ProduceNext"
+        ]
+    },
+    "ProduceEntryFlag": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "next": [
+            "ProduceEntry"
         ]
     },
     "ProduceEntry": {
@@ -587,16 +664,15 @@
         },
         "next": [
             "ProduceExit",
+            "ProduceFailedFlag",
             "[JumpBack]ProduceChooseEventFlag",
             "[JumpBack]ProduceCardsFlag",
-            "[JumpBack]ProduceChooseCardsFlag",
-            "[JumpBack]ProduceChooseDrinkFlag",
-            "[JumpBack]ProduceChooseItemFlag",
+            "[JumpBack]ProduceChooseGetFlag",
             "[JumpBack]ProduceChooseStrengthenFlag",
+            "[JumpBack]ProduceChooseDeleteFlag",
             "[JumpBack]ProduceShoppingFlag",
             "[JumpBack]ProduceKeepDrinkFlag",
-            "[JumpBack]ProduceOptionsFlag",
-            "ProduceFailedFlag",
+            "[JumpBack]ProduceRecognitionWorkOptions",
             "[JumpBack]ProduceButton",
             "[JumpBack]ProduceSkip",
             "[JumpBack]Click_1"
@@ -626,7 +702,6 @@
                 "template": [
                     "next.png", // (必选)考试成功时需要点next
                     "produce/retry.png", // 失败时重试
-                    "produce/decide.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
                     "produce/yes.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
                     "produce/start.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
                     "produce/close.png", // (可选)误触查看当前持有卡片界面时的关闭按钮，如果解决所有误触情况可以删除
@@ -688,19 +763,18 @@
         "pre_delay": 100,
         "post_delay": 100
     },
-    "ProduceChooseCardsFlag": {
+    "ProduceChooseGetFlag": {
         "recognition": {
-            "type": "TemplateMatch",
+            "type": "OCR",
             "param": {
-                "template": [
-                    "produce/choose_cards.png"
+                "expected": [
+                    "受け取る(.+)を選んでください"
                 ],
-                "threshold": 0.9,
                 "roi": [
                     80,
                     530,
-                    561,
-                    197
+                    560,
+                    200
                 ]
             }
         },
@@ -708,17 +782,121 @@
             "type": "DoNothing",
             "param": {}
         },
+        "next": [
+            "ProduceChooseSkip",
+            "ProduceChooseRecommend",
+            "ProduceChooseEventRecommend",
+            "ProduceChooseFirst"
+        ],
         "pre_delay": 100,
         "post_delay": 100,
-        "next": [
-            "ProduceChooseCards"
-        ]
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:green]事件: 选择饮料/物品/卡牌[/color]"
+        }
     },
-    "ProduceChooseCards": {
+    "ProduceChooseFirst": {
         "recognition": {
-            "type": "Custom",
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "Click",
             "param": {
-                "custom_recognition": "ProduceChooseCardsAuto"
+                "target": [
+                    160,
+                    824,
+                    124,
+                    124
+                ]
+            }
+        },
+        "next": [
+            "ProduceChooseConfirm"
+        ],
+        "focus": {
+            "Node.Action.Succeeded": "已领取第一项奖励"
+        }
+    },
+    "ProduceChooseRecommend": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/recommend.png"
+                ],
+                "roi": [
+                    54,
+                    476,
+                    614,
+                    620
+                ],
+                "order_by": "Random"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {
+                "target_offset": [
+                    0,
+                    -80,
+                    0,
+                    0
+                ]
+            }
+        },
+        "next": [
+            "ProduceChooseConfirm"
+        ],
+        "focus": {
+            "Node.Action.Succeeded": "已领取推荐奖励"
+        }
+    },
+    "ProduceChooseEventRecommend": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/event_recommend.png"
+                ],
+                "roi": [
+                    54,
+                    476,
+                    614,
+                    620
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {
+                "target_offset": [
+                    0,
+                    80,
+                    0,
+                    0
+                ]
+            }
+        },
+        "next": [
+            "ProduceChooseConfirm"
+        ],
+        "focus": {
+            "Node.Action.Succeeded": "已领取活动推荐奖励"
+        }
+    },
+    "ProduceChooseSkip": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/drink_reject.png"
+                ],
+                "roi": [
+                    75,
+                    944,
+                    576,
+                    135
+                ]
             }
         },
         "action": {
@@ -726,12 +904,10 @@
             "param": {}
         },
         "next": [
-            "ProduceGetCards",
-            "[JumpBack]ProduceClose",
-            "[JumpBack]CloseRoundButton"
+            "ProduceChooseConfirm"
         ]
     },
-    "ProduceGetCards": {
+    "ProduceChooseConfirm": {
         "recognition": {
             "type": "TemplateMatch",
             "param": {
@@ -749,214 +925,14 @@
         "action": {
             "type": "Click",
             "param": {}
-        },
-        "next": [
-            "Click_1"
-        ]
-    },
-    "ProduceChooseDrinkFlag": {
-        "recognition": {
-            "type": "TemplateMatch",
-            "param": {
-                "template": [
-                    "produce/choose_drink.png"
-                ],
-                "threshold": 0.9
-            }
-        },
-        "action": {
-            "type": "DoNothing",
-            "param": {}
-        },
-        "pre_delay": 100,
-        "post_delay": 100,
-        "next": [
-            "ProduceChooseDrink"
-        ]
-    },
-    "ProduceChooseDrink": {
-        "recognition": {
-            "type": "Custom",
-            "param": {
-                "custom_recognition": "ProduceChooseDrinkAuto"
-            }
-        },
-        "action": {
-            "type": "Click",
-            "param": {}
-        },
-        "next": [
-            "ProduceGetDrink",
-            "[JumpBack]ProduceClose",
-            "[JumpBack]CloseRoundButton"
-        ]
-    },
-    "ProduceGetDrink": {
-        "recognition": {
-            "type": "TemplateMatch",
-            "param": {
-                "template": [
-                    "produce/cards_get.png"
-                ],
-                "roi": [
-                    0,
-                    980,
-                    720,
-                    300
-                ]
-            }
-        },
-        "action": {
-            "type": "Click",
-            "param": {}
         }
-    },
-    "ProduceChooseItemFlag": {
-        "recognition": {
-            "type": "TemplateMatch",
-            "param": {
-                "template": [
-                    "produce/choose_item.png"
-                ],
-                "roi": [
-                    80,
-                    530,
-                    561,
-                    197
-                ],
-                "threshold": 0.9
-            }
-        },
-        "action": {
-            "type": "DoNothing",
-            "param": {}
-        },
-        "pre_delay": 100,
-        "post_delay": 100,
-        "next": [
-            "ProduceChooseItem"
-        ]
-    },
-    "ProduceChooseItem": {
-        "recognition": {
-            "type": "Custom",
-            "param": {
-                "custom_recognition": "ProduceChooseItemAuto"
-            }
-        },
-        "action": {
-            "type": "Click",
-            "param": {}
-        },
-        "next": [
-            "ProduceGetItem"
-        ]
-    },
-    "ProduceGetItem": {
-        "recognition": {
-            "type": "TemplateMatch",
-            "param": {
-                "template": [
-                    "produce/cards_get.png"
-                ],
-                "roi": [
-                    0,
-                    1020,
-                    720,
-                    135
-                ]
-            }
-        },
-        "action": {
-            "type": "Click",
-            "param": {}
-        }
-    },
-    "ProduceShoppingFlag": {
-        "recognition": {
-            "type": "TemplateMatch",
-            "param": {
-                "template": "produce/shopping.png",
-                "roi": [
-                    30,
-                    166,
-                    660,
-                    288
-                ]
-            }
-        },
-        "action": {
-            "type": "Custom",
-            "param": {
-                "custom_action": "ProduceShoppingAuto"
-            }
-        }
-    },
-    "ProduceShoppingBuy": {
-        "recognition": {
-            "type": "TemplateMatch",
-            "param": {
-                "template": "produce/shopping_buy.png",
-                "roi": [
-                    0,
-                    1020,
-                    720,
-                    135
-                ]
-            }
-        },
-        "action": {
-            "type": "Click",
-            "param": {}
-        },
-        "post_wait_freezes": 100,
-        "timeout": 3000,
-        "next": [
-            "ProduceShoppingDecide"
-        ]
-    },
-    "ProduceShoppingDecide": {
-        "recognition": {
-            "type": "TemplateMatch",
-            "param": {
-                "template": [
-                    "produce/shopping_exchange.png",
-                    "produce/point_runout.png"
-                ],
-                "roi": [
-                    0,
-                    1020,
-                    720,
-                    260
-                ]
-            }
-        },
-        "action": {
-            "type": "Click",
-            "param": {}
-        }
-    },
-    "ProduceShoppingExit": {
-        "recognition": {
-            "type": "TemplateMatch",
-            "param": {
-                "template": "produce/shop_exit.png"
-            }
-        },
-        "action": {
-            "type": "Click",
-            "param": {}
-        },
-        "post_delay": 1000,
-        "timeout": 3000
     },
     "ProduceChooseStrengthenFlag": {
         "recognition": {
             "type": "TemplateMatch",
             "param": {
                 "template": [
-                    "produce/strengthen_icon.png",
-                    "produce/exchange_icon.png"
+                    "produce/strengthen_icon.png"
                 ],
                 "roi": [
                     0,
@@ -967,11 +943,19 @@
             }
         },
         "action": {
-            "type": "Custom",
+            "type": "Click",
             "param": {
-                "custom_action": "ProduceStrengthenAuto"
+                "target": [
+                    140,
+                    760,
+                    1,
+                    1
+                ]
             }
         },
+        "next": [
+            "ProduceChooseStrengthen"
+        ],
         "pre_delay": 100,
         "post_delay": 100
     },
@@ -980,6 +964,50 @@
             "type": "TemplateMatch",
             "param": {
                 "template": "produce/strengthen.png"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        }
+    },
+    "ProduceChooseDeleteFlag": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/delete_icon.png"
+                ],
+                "roi": [
+                    0,
+                    28,
+                    182,
+                    58
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {
+                "target": [
+                    140,
+                    450,
+                    1,
+                    1
+                ]
+            }
+        },
+        "next": [
+            "ProduceChooseDeleteClick"
+        ],
+        "pre_delay": 100,
+        "post_delay": 100
+    },
+    "ProduceChooseDeleteClick": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "produce/delete.png"
             }
         },
         "action": {
@@ -1003,6 +1031,7 @@
             "[JumpBack]ProduceNext",
             "[JumpBack]ProduceSkip",
             "[JumpBack]ProduceDecide",
+            "[JumpBack]ProduceError",
             "[JumpBack]Click_1"
         ]
     },
@@ -1046,7 +1075,8 @@
             "[JumpBack]ProduceFollow",
             "[JumpBack]ProduceSkip",
             "[JumpBack]CloseRoundButton",
-            "[JumpBack]ProduceEventResultButton"
+            "[JumpBack]ProduceEventResultButton",
+            "[JumpBack]Click_1"
         ]
     },
     "ProduceFollow": {
@@ -1099,16 +1129,6 @@
         },
         "pre_delay": 100,
         "post_delay": 100
-    },
-    "ProduceOptionsFlag": {
-        "recognition": {
-            "type": "Custom",
-            "param": {
-                "custom_recognition": "ProduceOptionsFlagAuto"
-            }
-        },
-        "pre_delay": 200,
-        "post_delay": 200
     },
     "ProduceFailedFlag": {
         "recognition": {
