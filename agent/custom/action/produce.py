@@ -649,7 +649,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
                 max_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[1].text.replace("/", ""))))
                 logger.debug(f"第{i + 1}列得分: {current_score} / {max_score}")
                 score[next(itertools.islice(score.keys(), i, None))] = current_score
-                score["max"] = max_score if max_score > score["max"] and max_score < 9999 else score["max"]
+                score["max"] = max_score if score["max"] < max_score < 9999 else score["max"]
         try:
             logger.info(f"当前得分: Vo={score['Vo']}, Da={score['Da']}, Vi={score['Vi']}, Max={score['max']}")
             return score
@@ -1287,11 +1287,11 @@ class ProduceChooseOptionsAuto(CustomAction):
                         logger.debug(f"Fallback 选择第一属性: {choice}")
                         break
             if target_box is None and options:
-                # 最后选择第一个可用选项
-                first_opt = options[0]
-                choice = next(iter(first_opt.keys()))
-                target_box = first_opt[choice]
-                logger.debug(f"Fallback 选择第一个可用选项: {choice}")
+                # 从所有可用选项中随机选择
+                random_opt = random.choice(options)
+                choice = next(iter(random_opt.keys()))
+                target_box = random_opt[choice]
+                logger.debug(f"Fallback 随机选择: {choice}")
 
         # 执行双击
         if target_box:
@@ -1314,18 +1314,27 @@ class ProduceChooseOptionsAuto(CustomAction):
             "Vi": 0,
             "max": 0,
         }
+        roi0_list = [[70 + i * 230, 430, 136, 80] for i in range(3)]
+        roi1_list = [[150 + i * 150, 325, 136, 80] for i in range(3)]
+        first_reco = context.run_recognition(
+            "ProduceRecognitionScore",
+            image,
+            pipeline_override={"ProduceRecognitionScore": {"roi": roi0_list[0]}},
+        )
+        use_roi_list = roi1_list if not (first_reco and first_reco.hit) else roi0_list
+
         for i in range(3):
             reco_detail = context.run_recognition(
                 "ProduceRecognitionScore",
                 image,
-                pipeline_override={"ProduceRecognitionScore": {"roi": [150 + i * 150, 325, 136, 80]}},
+                pipeline_override={"ProduceRecognitionScore": {"roi": use_roi_list[i]}},
             )
             if reco_detail and reco_detail.hit and len(reco_detail.filtered_results) == 2:
                 current_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[0].text)))
                 max_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[1].text.replace("/", ""))))
                 logger.debug(f"第{i + 1}列得分: {current_score} / {max_score}")
                 score[next(itertools.islice(score.keys(), i, None))] = current_score
-                score["max"] = max_score if max_score > score["max"] and max_score < 9999 else score["max"]
+                score["max"] = max_score if score["max"] < max_score < 9999 else score["max"]
         try:
             logger.info(f"当前得分: Vo={score['Vo']}, Da={score['Da']}, Vi={score['Vi']}, Max={score['max']}")
             return score
