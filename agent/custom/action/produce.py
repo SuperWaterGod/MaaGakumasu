@@ -1076,6 +1076,11 @@ class ProduceChooseOptionsAuto(CustomAction):
     }
     CLICK_DELAY = 0.5
 
+    def __init__(self):
+        super().__init__()
+        self.first = "Vi"
+        self.second = "Da"
+
     def run(
         self,
         context: Context,
