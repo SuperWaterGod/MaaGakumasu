@@ -17,6 +17,7 @@
       "[JumpBack]ProduceChooseGetFlag",
       "[JumpBack]ProduceChooseStrengthenFlag",
       "[JumpBack]ProduceChooseDeleteFlag",
+      "[JumpBack]ProduceKeepDrinkFlag",
       "[JumpBack]ProduceMirrorFlag",
       "[JumpBack]ProduceNIAButton",
       "[JumpBack]ProduceSkip",
@@ -141,7 +142,7 @@
       ]
     },
     "focus": {
-      "Node.Recognition.Succeeded": "[color:green]事件: 选择工作[/color]"
+      "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择工作[/color]"
     }
   },
   "ProduceWorkConfirm": {
@@ -196,7 +197,7 @@
     ],
     "post_wait_freezes": 200,
     "focus": {
-      "Node.Recognition.Succeeded": "[color:green]事件: 商店购买[/color]"
+      "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 商店购买[/color]"
     }
   },
   "ProduceShoppingBuySale": {

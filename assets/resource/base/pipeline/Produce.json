@@ -791,7 +791,7 @@
         "pre_delay": 100,
         "post_delay": 100,
         "focus": {
-            "Node.Recognition.Succeeded": "[color:green]事件: 选择饮料/物品/卡牌[/color]"
+            "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择饮料/物品/卡牌[/color]"
         }
     },
     "ProduceChooseFirst": {

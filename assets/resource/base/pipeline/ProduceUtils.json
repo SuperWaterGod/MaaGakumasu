@@ -485,7 +485,7 @@
       }
     },
     "focus": {
-      "Node.Recognition.Succeeded": "[color:green]事件: 选择冲刺/上课/外出[/color]"
+      "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择冲刺/上课/外出[/color]"
     },
     "post_delay": 1000
   },
