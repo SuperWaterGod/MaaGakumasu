@@ -1200,7 +1200,7 @@ class ProduceChooseOptionsAuto(CustomAction):
             reco_detail = context.run_recognition(
                 "ProduceRecognitionWorkOptions",
                 image,
-                pipeline_override={"ProduceRecognitionWorkOptions": {"template": option_img}},
+                pipeline_override={"ProduceRecognitionWorkOptions": {"template": option_img, "focus": None}},
             )
             if reco_detail and reco_detail.hit:
                 available_options.append({option_name: reco_detail.best_result.box})
@@ -1248,11 +1248,10 @@ class ProduceChooseMirrorAuto(CustomAction):
         current_mirror, none_box = self._get_current_mirror(context, image) or ("first", [360, 1050, 1, 1])
 
         thresholds = self.mirror.get(current_mirror, [0])
-        option_idx = len(thresholds) - 1
+        option_idx = 0
         for i, threshold in enumerate(thresholds):
-            if vote < threshold:
+            if vote >= threshold:
                 option_idx = i
-                break
 
         target_threshold = thresholds[option_idx]
         if target_threshold == 0:
