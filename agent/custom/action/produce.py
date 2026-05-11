@@ -1145,8 +1145,8 @@ class ProduceChooseOptionsAuto(CustomAction):
             self._double_click(context, center_x, center_y)
             logger.info(f"已选择选项 {choice} at ({center_x}, {center_y})")
         else:
-            logger.error("没有可用选项，无法选择")
-            return False
+            logger.warning("没有可用选项，无法选择")
+            return True  # 没有选项可选时默认返回True，避免卡死在这里
         return True
 
     @staticmethod
