@@ -4,7 +4,6 @@ import time
 from typing import Tuple, Union, Optional
 from difflib import SequenceMatcher
 
-from PIL import Image
 from utils import logger
 from maa.define import RectType
 from maa.context import Context
