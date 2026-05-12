@@ -12,7 +12,7 @@ preference = {
     "紫云清夏": {"first": "Da", "second": "Vi"},
     "筱泽广": {"first": "Vo", "second": "Da"},
     "秦谷美铃": {"first": "Vo", "second": "Vi"},
-    "有村麻央": {"first": "Vi", "second": "Vo"},
+    "有村麻央": {"first": "Vo", "second": "Vi"},
     "月村手毬": {"first": "Vo", "second": "Da"},
     "十王星南": {"first": "Vi", "second": "Vo"},
     "仓本千奈": {"first": "Da", "second": "Vi"},
