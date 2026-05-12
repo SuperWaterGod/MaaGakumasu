@@ -1453,8 +1453,8 @@
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
                 "effect": "感性·集中",
-                "first": "Vi",
-                "second": "Vo"
+                "first": "Vo",
+                "second": "Vi"
               }
             }
           }
@@ -1471,8 +1471,8 @@
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
                 "effect": "理性·干劲",
-                "first": "Vi",
-                "second": "Vo"
+                "first": "Vo",
+                "second": "Vi"
               }
             }
           }
@@ -1489,8 +1489,8 @@
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
                 "effect": "非凡·全力",
-                "first": "Vi",
-                "second": "Vo"
+                "first": "Vo",
+                "second": "Vi"
               }
             }
           }
@@ -1507,8 +1507,8 @@
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
                 "effect": "非凡·强气",
-                "first": "Vi",
-                "second": "Vo"
+                "first": "Vo",
+                "second": "Vi"
               }
             }
           }
@@ -1525,8 +1525,8 @@
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
                 "effect": "理性·好印象",
-                "first": "Vi",
-                "second": "Vo"
+                "first": "Vo",
+                "second": "Vi"
               }
             }
           }
@@ -1543,8 +1543,8 @@
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
                 "effect": "理性·好印象",
-                "first": "Vi",
-                "second": "Vo"
+                "first": "Vo",
+                "second": "Vi"
               }
             }
           }
@@ -1561,8 +1561,8 @@
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
                 "effect": "感性·集中",
-                "first": "Vi",
-                "second": "Vo"
+                "first": "Vo",
+                "second": "Vi"
               }
             }
           }
@@ -1579,8 +1579,8 @@
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
                 "effect": "感性·好调",
-                "first": "Vi",
-                "second": "Vo"
+                "first": "Vo",
+                "second": "Vi"
               }
             }
           }
@@ -1597,8 +1597,8 @@
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
                 "effect": "感性·好调",
-                "first": "Vi",
-                "second": "Vo"
+                "first": "Vo",
+                "second": "Vi"
               }
             }
           }
@@ -1615,8 +1615,8 @@
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
                 "effect": "感性·好调",
-                "first": "Vi",
-                "second": "Vo"
+                "first": "Vo",
+                "second": "Vi"
               }
             }
           }
