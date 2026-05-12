@@ -18,7 +18,10 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "homeflag_black.png"
+        "template": [
+          "homeflag_black.png",
+          "homeflag_grey.png"
+        ]
       }
     },
     "action": {

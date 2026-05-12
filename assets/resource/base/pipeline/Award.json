@@ -125,7 +125,11 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "homeflag_grey.png"
+        "template": [
+          "homeflag_grey.png",
+          "homeflag_black.png"
+        ],
+        "threshold": 0.8
       }
     },
     "action": {
