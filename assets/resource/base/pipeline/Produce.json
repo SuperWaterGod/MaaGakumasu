@@ -65,6 +65,12 @@
             "param": {
                 "template": [
                     "close_icon.png"
+                ],
+                "roi": [
+                    264,
+                    1080,
+                    200,
+                    186
                 ]
             }
         },
@@ -1131,36 +1137,6 @@
         "pre_delay": 100,
         "post_delay": 100
     },
-    "ProduceFailedFlag": {
-        "recognition": {
-            "type": "TemplateMatch",
-            "param": {
-                "template": [
-                    "produce/exam_failed.png"
-                ],
-                "roi": [
-                    0,
-                    700,
-                    720,
-                    250
-                ],
-                "threshold": 0.9
-            }
-        },
-        "action": {
-            "type": "StopTask",
-            "param": {}
-        },
-        "focus": {
-            "Node.Recognition.Succeeded": {
-                "content": "❌ 考试失败，停止任务",
-                "display": [
-                    "log",
-                    "notification"
-                ]
-            }
-        }
-    },
     "ProduceKeepDrinkFlag": {
         "recognition": {
             "type": "TemplateMatch",
@@ -1184,5 +1160,108 @@
             }
         },
         "post_delay": 100
+    },
+    "ProduceFailedFlag": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/exam_failed.png"
+                ],
+                "roi": [
+                    0,
+                    700,
+                    720,
+                    250
+                ],
+                "threshold": 0.9
+            }
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "next": [
+            "ProduceFailedRetry"
+        ],
+        "focus": {
+            "Node.Recognition.Succeeded": {
+                "content": "❌ 考试失败",
+                "display": [
+                    "log",
+                    "notification"
+                ]
+            }
+        }
+    },
+    "ProduceFailedStop": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/stop.png"
+                ],
+                "roi": [
+                    16,
+                    1040,
+                    688,
+                    220
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "ProduceExit",
+            "[JumpBack]Click_1"
+        ]
+    },
+    "ProduceFailedRetry": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/challenge.png"
+                ],
+                "roi": [
+                    16,
+                    1040,
+                    688,
+                    220
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "ProduceFailedRetryConfirm"
+        ]
+    },
+    "ProduceFailedRetryConfirm": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/decide.png"
+                ],
+                "roi": [
+                    16,
+                    1040,
+                    688,
+                    220
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "ProduceEntry"
+        ]
     }
 }

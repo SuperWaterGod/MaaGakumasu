@@ -10,7 +10,7 @@
     },
     "next": [
       "ProduceExit",
-      "ProduceFailedFlag",
+      "ProduceNIAFailedFlag",
       "[JumpBack]ProduceChooseNIAEventFlag",
       "[JumpBack]ProduceCardsFlag",
       "[JumpBack]ProduceRecognitionWorkOptions",
@@ -385,6 +385,36 @@
       "type": "Custom",
       "param": {
         "custom_action": "ProduceChooseMirrorAuto"
+      }
+    }
+  },
+  "ProduceNIAFailedFlag": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/exam_failed.png"
+        ],
+        "roi": [
+          0,
+          700,
+          720,
+          250
+        ],
+        "threshold": 0.9
+      }
+    },
+    "action": {
+      "type": "StopTask",
+      "param": {}
+    },
+    "focus": {
+      "Node.Recognition.Succeeded": {
+        "content": "❌ 考试失败",
+        "display": [
+          "log",
+          "notification"
+        ]
       }
     }
   }

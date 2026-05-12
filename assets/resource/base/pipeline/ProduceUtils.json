@@ -524,7 +524,7 @@
   },
   "ProduceCheckDrinkButton": {
     "recognition": {
-      "type": "FeatureMatch",
+      "type": "TemplateMatch",
       "param": {
         "template": "produce/empty_drink.png",
         "roi": [
