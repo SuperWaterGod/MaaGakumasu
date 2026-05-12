@@ -356,12 +356,12 @@ class ProduceChooseNIAEventAuto(CustomAction):
     选择优先级顺序（从高到低）：
     1. 低体力保护：体力 < 20% 或体力值 < 8时，优先外出恢复体力，其次休息
     2. 老师建议：根据OCR结果匹配Vo/Da/Vi属性关键词
-    3. SP课程（第一属性）
-    4. SP课程（第二属性）
+    3. SP课程（第一属性，仅当该属性分数占比 < 80%时）
+    4. SP课程（第二属性，仅当该属性分数占比 < 80%时）
     5. 营业：获得score
     6. 活动：获得points
-    7. 第一属性课程
-    8. 第二属性课程（仅当第一属性分数占比 >= 85%时）
+    7. 第一属性课程（仅当该属性分数占比 < 80%时）
+    8. 第二属性课程（仅当第一属性分数占比 >= 85%时，且第二属性占比 < 80%）
     9. 外出：恢复体力
     10. 指导：点击后需执行ProduceGuideEntry任务
     11. SP课程（非第一/第二属性）
@@ -398,6 +398,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
     ACTION_DELAY = 3.0
     PREFERENCE_LIST = ["Da", "Vi", "Vo"]
     FIRST_NEAR_FULL_RATIO = 0.85
+    ATTR_STOP_RATIO = 0.8
     LOW_HEALTH_RATIO = 0.2
     LOW_HEALTH_VALUE = 8
 
@@ -446,7 +447,10 @@ class ProduceChooseNIAEventAuto(CustomAction):
         """
         max_score = score.get("max", 1)
         first_ratio = score.get(self.first, 0) / max_score if max_score > 0 else 0
+        second_ratio = score.get(self.second, 0) / max_score if max_score > 0 else 0
         is_first_near_full = first_ratio >= self.FIRST_NEAR_FULL_RATIO
+        is_first_stopped = first_ratio >= self.ATTR_STOP_RATIO
+        is_second_stopped = second_ratio >= self.ATTR_STOP_RATIO
 
         # 0. 低体力处理
         current_health = health_data["current"] if health_data else 0
@@ -465,15 +469,17 @@ class ProduceChooseNIAEventAuto(CustomAction):
             if event:
                 return self._make_event(suggestion_attr, event)
 
-        # 2. SP（第一属性）
-        event = self._find_attr_event(events, self.first, need_sp=True)
-        if event:
-            return self._make_event(f"{self.first}_SP", event)
+        # 2. SP（第一属性，仅当属性未达80%时）
+        if not is_first_stopped:
+            event = self._find_attr_event(events, self.first, need_sp=True)
+            if event:
+                return self._make_event(f"{self.first}_SP", event)
 
-        # 3. SP（第二属性）
-        event = self._find_attr_event(events, self.second, need_sp=True)
-        if event:
-            return self._make_event(f"{self.second}_SP", event)
+        # 3. SP（第二属性，仅当属性未达80%时）
+        if not is_second_stopped:
+            event = self._find_attr_event(events, self.second, need_sp=True)
+            if event:
+                return self._make_event(f"{self.second}_SP", event)
 
         # 4. 营业
         event = self._find_event_by_name(events, "工作")
@@ -485,13 +491,14 @@ class ProduceChooseNIAEventAuto(CustomAction):
         if event:
             return self._make_event("活动", event)
 
-        # 6. 第一属性课程
-        event = self._find_attr_event(events, self.first, need_sp=False)
-        if event:
-            return self._make_event(self.first, event)
+        # 6. 第一属性课程（属性未达80%时）
+        if not is_first_stopped:
+            event = self._find_attr_event(events, self.first, need_sp=False)
+            if event:
+                return self._make_event(self.first, event)
 
-        # 7. 第二属性课程（仅当第一属性快满时）
-        if is_first_near_full:
+        # 7. 第二属性课程（仅当第一属性快满时，且第二属性未达80%）
+        if is_first_near_full and not is_second_stopped:
             event = self._find_attr_event(events, self.second, need_sp=False)
             if event:
                 return self._make_event(self.second, event)
@@ -1067,10 +1074,10 @@ class ProduceChooseOptionsAuto(CustomAction):
     处理选择选项的窗口
 
     根据当前得分自动选择属性选项：
-    1. 获取第一、第二属性的当前分数
-    2. 根据判断逻辑选择：分数差不多或第一属性较小则选第一属性，否则选第二属性
+    1. 获取第一、第二、第三属性的当前分数
+    2. 70% 概率选择第三属性，30% 概率选择第二属性
     3. 在可用选项中执行双击选择
-    4. 若目标选项不可用，依次尝试 fallback 到第一属性或第一个可用选项
+    4. 若目标选项不可用，按优先级 fallback：null > 第二属性 > 第三属性 > 随机
     """
 
     OPTIONS_CONFIG = {
@@ -1112,15 +1119,19 @@ class ProduceChooseOptionsAuto(CustomAction):
         # 计算选择
         first_score = score.get(self.first, 0)
         second_score = score.get(self.second, 0)
-        logger.info(f"第一属性 {self.first}={first_score}, 第二属性 {self.second}={second_score}")
+        # 计算第三属性（Vo、Da、Vi 中非 first/second 的那个）
+        all_attrs = ["Vo", "Da", "Vi"]
+        third = next(attr for attr in all_attrs if attr != self.first and attr != self.second)
+        third_score = score.get(third, 0)
+        logger.info(f"第一属性 {self.first}={first_score}, 第二属性 {self.second}={second_score}, 第三属性 {third}={third_score}")
 
-        # 判断逻辑：差不多或第一属性小于等于第二属性则选第一属性，否则选第二属性
-        if first_score <= second_score * 1.4:
-            choice = self.first
-            logger.debug(f"第一属性分数 <= 第二属性（约等于），选择: {choice}")
+        # 判断逻辑：70% 概率选择第三属性，30% 概率选择第二属性
+        if random.random() < 0.7:
+            choice = third
+            logger.debug(f"随机数 < 0.7，选择第三属性: {choice}")
         else:
             choice = self.second
-            logger.debug(f"第一属性分数远大于第二属性，选择: {choice}")
+            logger.debug(f"随机数 >= 0.7，选择第二属性: {choice}")
 
         # 找到目标选项
         target_box = None
@@ -1129,23 +1140,28 @@ class ProduceChooseOptionsAuto(CustomAction):
                 target_box = opt[choice]
                 break
 
-        # 如果目标选项不可用，尝试 fallback
+        # 如果目标选项不可用，尝试 fallback（null 优先）
         if target_box is None:
             logger.debug(f"选项 {choice} 不可用，尝试 fallback")
-            if options:
-                # 优先选择第一属性
+            # 按 null > 第二属性 > 第三属性 > 随机的优先级选择
+            priority = ["null", self.second, third, None]
+            for p in priority:
+                if p is None:
+                    # 最后从所有可用选项中随机选择
+                    if options:
+                        random_opt = random.choice(options)
+                        choice = next(iter(random_opt.keys()))
+                        target_box = random_opt[choice]
+                        logger.debug(f"Fallback 随机选择: {choice}")
+                    break
                 for opt in options:
-                    if self.first in opt:
-                        target_box = opt[self.first]
-                        choice = self.first
-                        logger.debug(f"Fallback 选择第一属性: {choice}")
+                    if p in opt:
+                        target_box = opt[p]
+                        choice = p
+                        logger.debug(f"Fallback 选择 {p}")
                         break
-            if target_box is None and options:
-                # 从所有可用选项中随机选择
-                random_opt = random.choice(options)
-                choice = next(iter(random_opt.keys()))
-                target_box = random_opt[choice]
-                logger.debug(f"Fallback 随机选择: {choice}")
+                if target_box:
+                    break
 
         # 执行双击
         if target_box:
