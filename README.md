@@ -11,7 +11,7 @@
 基于全新架构的 **学園アイドルマスター(学マス)** 小助手。图像技术 + 模拟控制 + 深度学习，解放双手！  
 由 [MaaFramework](https://github.com/MaaXYZ/MaaFramework) 强力驱动！
 
-✨ 如果喜欢 MaaGakumasu，欢迎在项目右上角点亮 Star 支持 ✨
+如果 MaaGakumasu 对你有帮助，欢迎在项目右上角点亮 Star 支持。
 
 </div>
 
@@ -28,106 +28,91 @@
   <a href="https://mirrorchyan.com/zh/projects?rid=MaaGakumasu" target="_blank"><img alt="mirrorc" src="https://img.shields.io/badge/Mirror%E9%85%B1-%239af3f6?logo=countingworkspro&logoColor=4f46e5"></a>
 </p>
 
-## 功能列表
+## 功能概览
 
-- 目前已实现
+详细说明请查看 [功能说明](docs/zh_cn/功能说明.md)。当前 README 以 v1.4.0 更新公告与任务配置为准。
 
-- [x] 启动游戏
-- [x] 领取活动费
-- [x] 竞赛挑战
-  - [x] 指定挑战
-  - [x] 自动选择
-  - [x] 无编队时自动编队
-- [x] 社团互动
-  - [x] `自动/指定` 请求
-- [x] 安排工作
-  - [x] 领取奖励
-  - [x] `自动/指定` 选择偶像
-  - [x] 指定时长
-- [x] 商店购买
-  - [x] 扭蛋购买
-  - [x] 金币购买
-  - [x] 自动免费刷新
-  - [X] AP购买
-- [x] 领取邮箱礼物
-- [x] 领取任务奖励
-- [x] 领取每周免费礼包
-- [x] 自动培育(测试阶段)
-  - [x] 初 `REGULAR/PRO/MASTER` 难度
-  - [x] 指定SSR偶像
-  - [x] 自动选择
-  - [x] 使用体力药
-  - [x] 出牌偏好(仅限活动牌)
-  - [x] **中断继续**
-- [x] 支持从Mirror酱更新
-- [x] 插件版汉化
-- [x] DMM版适配
-- [x] 支援卡库存识别
-- [x] i18n适配(已支持繁体，更多语言等待补充……)
+| 模块 | 当前支持 |
+| --- | --- |
+| 启动与日常 | 启动游戏、领取活动费、邮箱礼物、任务奖励、每周免费礼包 |
+| 竞赛挑战 | 指定挑战、自动选择分差最小的对手、无编队时自动编队 |
+| 社团互动 | 自动请求库存较少的物品，或按配置指定请求 |
+| 安排工作 | 领取奖励、自动或指定偶像、指定工作时长 |
+| 商店购买 | 扭蛋、金币、AP 购买，支持自动免费刷新 |
+| 自动培育 | 初 `REGULAR/PRO/MASTER`，NIA `PRO/MASTER`，支持中断继续、初流程失败重试、老师建议、道具与卡片优先级 |
+| 适配能力 | Mirror 酱更新、插件版汉化、DMM 版、支援卡库存识别、繁体 i18n |
 
-详细内容见 [功能说明](docs/zh_cn/功能说明.md)
+### 自动培育
 
-- 等待实现
-- [ ] NIA 适配
-- [ ] 初 LEGEND 培育适配
-- [ ] …………
+> [!IMPORTANT]
+> 自动培育仍处于测试阶段。一次完整培育通常约 `30min`，可能产生大量日志，也可能因弹窗、识别样本不足或游戏 UI 变化而卡住。
 
-### 版本适配情况
+当前自动培育支持：
 
-|       | 模拟器       | DMM         |
-|-------|-----------|-------------|
-| 原版日语  | 已适配，已完全测试 | 已适配，已通过测试 |
-| 插件版汉化 | 已适配，已通过测试 | 已适配，未经过完全测试     |
+- `初` 难度：`REGULAR`、`PRO`、`MASTER`
+- `NIA` 难度：`PRO`、`MASTER`
+- 指定偶像卡、自动选择偶像、跳过选择偶像
+- 培育次数设置、手动输入次数、无限循环
+- 使用体力药、使用道具、自动回忆、关注租借
+- 中断后通过“跳过准备阶段”继续培育
+- 卡片选择优先级：`建议卡 > 活动卡`、`活动卡 > 建议卡`、`无`
+- 初流程考试失败自动重试
+- 跟随老师的建议
+- NIA 事件、镜像挑战、指导事件等自动选择逻辑
+
+### 后续计划
+
+- [ ] 初 `LEGEND` 培育适配
+- [ ] 更多语言补充
+- [ ] 更多自动培育样本覆盖
+
+## 版本适配
+
+| 环境 | 模拟器 | DMM |
+| --- | --- | --- |
+| 原版日语 | 已适配，已完全测试 | 已适配，已通过测试 |
+| 插件版汉化 | 已适配，已通过测试 | 已适配，未完全测试 |
 
 ## 注意事项
 
 > [!NOTE]  
-> 大部分测试都是在 Windows 系统上测试的，因此其他操作系统若有运行问题，请提 Issues 或加群讨论。  
-> 开发是基于 MuMu12 模拟器测试的，因此推荐使用 MuMu12 运行游戏。
-> 其他模拟器若出现问题，请第一时间把脚本根目录下`debug\maa.log` 文件保存并截图进行反馈。
+> 项目主要在 Windows 与 MuMu 模拟器 12 上开发和测试。其他系统或模拟器若出现问题，请优先保存 `debug\maa.log` 并附带截图反馈。
 
-1. 默认用户的操作系统为 Windows 系统，其他平台未经测试
-2. 推荐使用`MuMu模拟器12`运行游戏，[模拟器支持情况](https://maa.plus/docs/zh-cn/manual/device/windows.html)请查看官方文档。
-3. 模拟器分辨率建议设置为`1280*720(240DPI)`，其他`16:9`分辨率未经过详细测试，DMM端同理。
-4. **DMM版**本需要以管理员身份启动程序，**插件版汉化**已支持，并未完全测试。
-5. 本项目部分功能使用了 `深度学习Yolov11` 模型进行识别，请确保电脑有显卡且开启GPU加速。
-6. 本项目仅用于学习交流，请勿用于商业用途，否则后果自负。
-7. 本项目仅提供脚本，不提供任何游戏资源，如需要游戏资源，请自行购买。
+1. 推荐使用 `MuMu 模拟器 12`，模拟器支持情况请查看 [MaaFramework 官方文档](https://maa.plus/docs/zh-cn/manual/device/windows.html)。
+2. 推荐分辨率为 `1280x720 (240DPI)`；其他 `16:9` 分辨率和 DMM 端未做完整覆盖测试。
+3. 使用 DMM 版时，需要以管理员身份启动程序。
+4. 自动培育使用 `YOLOv11` 深度学习模型进行识别，请确保设备支持并启用 GPU 加速。
+5. 培育前建议在游戏设置中开启所有跳过对话和弹窗选项，并勾选常见弹窗的“次回以降表示しない”。
+6. 本项目仅用于学习交流，请勿用于商业用途。
+7. 本项目仅提供自动化脚本，不提供任何游戏资源。
 
 ## 使用说明
 
 ### Windows
 
-- 对于绝大部分用户，请下载 `MaaGakumasu-win-x86_64-vXXX.zip`
-- 若确定自己的电脑是 arm 架构，请下载 `MaaGakumasu-win-aarch64-vXXX.zip`
+| 架构 | 下载文件 |
+| --- | --- |
+| 绝大多数 Windows 电脑 | `MaaGakumasu-win-x86_64-vXXX.zip` |
+| Windows on ARM | `MaaGakumasu-win-aarch64-vXXX.zip` |
 
-请注意！Windows 的电脑几乎全都是 x86_64 的，可能占 **99.999%**，除非你非常确定自己是 arm，否则别下这个！
+解压后运行 `MaaGakumasu.exe` 即可。压缩包已自带 `Python 3.12.9` 环境，无需额外安装。
 
-解压后运行 `MaaGakumasu.exe` 即可。
+首次启动会自动安装相关依赖。如果无法运行，请先安装 [`Visual C++ 可再发行程序包`](https://aka.ms/vs/17/release/vc_redist.x64.exe) 和 [`.NET 桌面运行时 10`](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)，然后重启电脑。
 
-压缩包已自带`Python 3.12.9`环境，无需额外安装。
+Windows 10 或 11 用户也可以使用 `winget` 安装运行库：
 
-首次启动，将会自动安装相关依赖
+```bash
+winget install Microsoft.VCRedist.2015+.x64 Microsoft.DotNet.DesktopRuntime.10
+```
 
-如果无法运行则按照如下的方案尝试解决:
+### macOS
 
-> MAA 本家提供的解决方案 ⬇️
->
-> 请安装 [`Visual C++ 可再发行程序包`](https://aka.ms/vs/17/release/vc_redist.x64.exe) 和 [`.NET 桌面运行时 10`](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0) 并 **重新启动计算机** 。
->
-> 推荐使用 Windows 10 或 11 的用户使用 winget 工具进行安装，只需在终端中运行以下命令。
->
-> ```bash
-> winget install Microsoft.VCRedist.2015+.x64 Microsoft.DotNet.DesktopRuntime.10
-> ```
+| 架构 | 下载文件 |
+| --- | --- |
+| Intel 处理器 | `MaaGakumasu-macos-x86_64-vXXX.zip` |
+| Apple Silicon | `MaaGakumasu-macos-aarch64-vXXX.zip` |
 
-### MacOS
-
-- 若使用 Intel 处理器，请下载 `MaaGakumasu-macos-x86_64-vXXX.zip`
-- 若使用 M1, M2 等 arm 处理器，请下载 `MaaGakumasu-macos-aarch64-vXXX.zip`
-- 压缩包已自带 `Python 3.12.9` 环境，无需额外安装。
-- 解压缩之后，右击文件夹，点击"新建位于文件夹位置的终端窗口"
-- 在终端窗口内逐行输入以下指令
+压缩包已自带 `Python 3.12.9` 环境。解压后，在文件夹内打开终端并执行：
 
 ```bash
 chmod a+x MFAAvalonia
@@ -135,50 +120,40 @@ chmod a+x python/bin/python3
 ./MFAAvalonia
 ```
 
-> 注：需要安装.NET 运行库（使用上面的命令启动失败时会直接返回下载地址）
-
-- Mac 可能会提示：因为 Apple 无法检查其是否包含恶意软件
-
-此时进入选择   设置  -  隐私与安全性，下方出现"已阻止…"点击   仍要打开。
-多重复以上步骤，因为有很多文件会被检查。
+若启动失败并提示缺少运行库，请按提示安装 `.NET` 运行库。若系统提示“Apple 无法检查其是否包含恶意软件”，请在“系统设置”中的“隐私与安全性”里选择“仍要打开”。由于文件较多，可能需要重复确认。
 
 ### Linux
 
-Linux大佬自有办法
+Linux 版本提供基础包体，但当前主要测试仍集中在 Windows。遇到问题请携带日志反馈。
 
 ## 开发相关
 
-- 等待完善
+MaaGakumasu 基于 [MaaFramework](https://github.com/MaaXYZ/MaaFramework) 开发，采用 `JSON + 自定义逻辑扩展` 模式。开发前建议先阅读：
 
-### 深度学习YOLOv11训练相关
+- [功能说明](docs/zh_cn/功能说明.md)
+- [开发相关](docs/zh_cn/开发相关.md)
+- [MaaFramework 文档](https://maa.plus/docs/zh-cn/)
 
-主要用于 `自动培育` 相关功能
+### YOLOv11 训练
 
-模型训练参考[MFW](https://github.com/MaaXYZ/MaaNeuralNetworkCookbook/tree/main/NeuralNetworkDetect)官方文档
+YOLOv11 主要用于自动培育识别。模型训练参考 [MaaNeuralNetworkCookbook](https://github.com/MaaXYZ/MaaNeuralNetworkCookbook/tree/main/NeuralNetworkDetect)，数据集标注使用 [Roboflow](https://app.roboflow.com/gakumasu)。
 
-数据集标注使用 [roboflow](https://app.roboflow.com/gakumasu) 网站
+| 数据集 | 用途 | 当前样本 |
+| --- | --- | --- |
+| `cards` | 出牌识别 | 约 902 份，已标注完成，并强化多卡重叠场景 |
 
-- `cards` 集用于识别*出牌*
-- `button` 集用于识别*上课/冲刺选项*
+> [!NOTE]
+> 早期用于上课、冲刺选项识别的 `button` 数据集已废弃；相关按钮识别已改为普通模板匹配，不再使用 YOLOv11。
 
-> [!IMPORTANT]
-> `cards` 集 目前902份样本，均已标注完成，对多卡重叠的情况进行了额外强化训练。
->
-> `button` 集 目前131份样本，均已标注完成。基本满足当前需求。
->
-> 若您有兴趣参与标注或者提供样本，欢迎联系开发组。
+欢迎参与标注或提供样本，具体说明请查看 [开发相关](docs/zh_cn/开发相关.md)。
 
-详细内容见 [开发相关](docs/zh_cn/开发相关.md)
+## Mirror 酱
 
-### Mirror酱相关
+自 `2025/11/08` 起，MaaGakumasu 已全面支持 Mirror 酱，在其他地方购买的 CDK 同样可以在此使用。
 
-> 自2025/11/08起，MaaGakumasu已全面支持Mirror酱，在其他地方购买的CDK同样可以在此使用。
+Mirror 酱是第三方应用分发平台，用于简化开源应用更新。用户付费使用，收益与开发者共享，Mirror 酱本身也是开源项目。
 
-Mirror酱是一个第三方应用分发平台，让开源应用的**更新**更简单。
-
-用户付费使用，收益与开发者共享。此外，Mirror酱本身也是开源的。
-
-CDK 购买连接: [官网](https://mirrorchyan.com/zh/projects?rid=MaaGakumasu)
+CDK 购买入口：[Mirror 酱官网](https://mirrorchyan.com/zh/projects?rid=MaaGakumasu)
 
 ## 免责声明
 
