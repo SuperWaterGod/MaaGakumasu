@@ -158,12 +158,7 @@ class ProduceChooseEventAuto(CustomAction):
                 "ProduceRecognitionEvent",
                 image,
                 pipeline_override={
-                    "ProduceRecognitionEvent": {
-                        "recognition": "TemplateMatch",
-                        "template": event_img,
-                        "roi": [0, 880, 720, 220],
-                        "threshold": 0.64,
-                    }
+                    "ProduceRecognitionEvent": {"recognition": "TemplateMatch", "template": event_img, "roi": [0, 880, 720, 220]}
                 },
             )
             if reco_detail and reco_detail.hit:
