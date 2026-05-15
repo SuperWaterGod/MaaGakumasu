@@ -7,7 +7,7 @@ body:
     attributes:
       label: 在提问之前...
       description: |
-        请确认自己完成了要求之后再进行勾选
+        请先阅读 [提问与反馈指南](https://github.com/SuperWaterGod/MaaGakumasu/blob/main/docs/zh_cn/提问与反馈指南.md)，确认自己完成了要求之后再进行勾选
       options:
         - label: 我理解 Issue 是用于反馈和解决问题的，而非吐槽评论区，将尽可能提供更多信息帮助问题解决
           required: true

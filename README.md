@@ -76,7 +76,7 @@
 ## 注意事项
 
 > [!NOTE]  
-> 项目主要在 Windows 与 MuMu 模拟器 12 上开发和测试。其他系统或模拟器若出现问题，请优先保存 `debug\maa.log` 并附带截图反馈。
+> 项目主要在 Windows 与 MuMu 模拟器 12 上开发和测试。其他系统或模拟器若出现问题，请参考 [提问与反馈指南](docs/zh_cn/提问与反馈指南.md) 并优先保存 `debug\maa.log` 附带截图反馈。
 
 1. 推荐使用 `MuMu 模拟器 12`，模拟器支持情况请查看 [MaaFramework 官方文档](https://maa.plus/docs/zh-cn/manual/device/windows.html)。
 2. 推荐分辨率为 `1280x720 (240DPI)`；其他 `16:9` 分辨率和 DMM 端未做完整覆盖测试。
@@ -132,6 +132,7 @@ MaaGakumasu 基于 [MaaFramework](https://github.com/MaaXYZ/MaaFramework) 开发
 
 - [功能说明](docs/zh_cn/功能说明.md)
 - [开发相关](docs/zh_cn/开发相关.md)
+- [提问与反馈指南](docs/zh_cn/提问与反馈指南.md)
 - [MaaFramework 文档](https://maa.plus/docs/zh-cn/)
 
 ### YOLOv11 训练
