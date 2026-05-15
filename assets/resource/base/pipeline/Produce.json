@@ -1294,15 +1294,25 @@
         "recognition": {
             "type": "TemplateMatch",
             "param": {
-                "template": "produce/shop_exit.png",
-                "threshold": 0.99
+                "template": "produce/shop_exit.png"
             }
         },
         "action": {
             "type": "Click",
             "param": {}
         },
+        "next": [
+            "ProduceShoppingExit",
+            "ProduceShoppingExitConfirm"
+        ],
         "post_delay": 1000
+    },
+    "ProduceShoppingExitConfirm": {
+        "action": {
+            "type": "DoNothing"
+        },
+        "pre_delay": 0,
+        "post_delay": 0
     },
     "ProduceFailedFlag": {
         "recognition": {
