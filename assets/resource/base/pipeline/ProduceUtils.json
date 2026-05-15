@@ -528,7 +528,7 @@
       "param": {
         "template": "produce/empty_drink.png",
         "roi": [
-          30,
+          10,
           1150,
           300,
           100
@@ -550,10 +550,10 @@
       "type": "Click",
       "param": {
         "target": [
-          65,
-          1180,
-          45,
-          40
+          42,
+          1185,
+          40,
+          35
         ]
       }
     },

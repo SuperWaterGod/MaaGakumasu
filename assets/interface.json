@@ -692,8 +692,9 @@
           "description": "![](resource/base/image/items/sense_red.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
-              "recognition": "FeatureMatch",
-              "template": "items/sense_red.png"
+              "recognition": "TemplateMatch",
+              "template": "items/sense_red.png",
+              "order_by": "Score"
             }
           }
         },
@@ -703,8 +704,9 @@
           "description": "![](resource/base/image/items/sense_blue.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
-              "recognition": "FeatureMatch",
-              "template": "items/sense_blue.png"
+              "recognition": "TemplateMatch",
+              "template": "items/sense_blue.png",
+              "order_by": "Score"
             }
           }
         },
@@ -714,8 +716,9 @@
           "description": "![](resource/base/image/items/sense_yellow.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
-              "recognition": "FeatureMatch",
-              "template": "items/sense_yellow.png"
+              "recognition": "TemplateMatch",
+              "template": "items/sense_yellow.png",
+              "order_by": "Score"
             }
           }
         },
@@ -725,8 +728,9 @@
           "description": "![](resource/base/image/items/logic_red.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
-              "recognition": "FeatureMatch",
-              "template": "items/logic_red.png"
+              "recognition": "TemplateMatch",
+              "template": "items/logic_red.png",
+              "order_by": "Score"
             }
           }
         },
@@ -736,8 +740,9 @@
           "description": "![](resource/base/image/items/logic_blue.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
-              "recognition": "FeatureMatch",
-              "template": "items/logic_blue.png"
+              "recognition": "TemplateMatch",
+              "template": "items/logic_blue.png",
+              "order_by": "Score"
             }
           }
         },
@@ -747,8 +752,9 @@
           "description": "![](resource/base/image/items/logic_yellow.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
-              "recognition": "FeatureMatch",
-              "template": "items/logic_yellow.png"
+              "recognition": "TemplateMatch",
+              "template": "items/logic_yellow.png",
+              "order_by": "Score"
             }
           }
         },
@@ -758,8 +764,9 @@
           "description": "![](resource/base/image/items/anomaly_red.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
-              "recognition": "FeatureMatch",
-              "template": "items/anomaly_red.png"
+              "recognition": "TemplateMatch",
+              "template": "items/anomaly_red.png",
+              "order_by": "Score"
             }
           }
         },
@@ -769,8 +776,9 @@
           "description": "![](resource/base/image/items/anomaly_blue.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
-              "recognition": "FeatureMatch",
-              "template": "items/anomaly_blue.png"
+              "recognition": "TemplateMatch",
+              "template": "items/anomaly_blue.png",
+              "order_by": "Score"
             }
           }
         },
@@ -780,8 +788,9 @@
           "description": "![](resource/base/image/items/anomaly_yellow.png)",
           "pipeline_override": {
             "SocietyRequestChoose": {
-              "recognition": "FeatureMatch",
-              "template": "items/anomaly_yellow.png"
+              "recognition": "TemplateMatch",
+              "template": "items/anomaly_yellow.png",
+              "order_by": "Score"
             }
           }
         }
