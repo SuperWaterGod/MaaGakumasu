@@ -53,8 +53,14 @@
         {
           "name": "REGULAR",
           "pipeline_override": {
-            "ProduceStart": {
-              "next": "ProduceLastPage"
+            "ProduceChooseScenario": {
+              "recognition": {
+                "param": {
+                  "template": [
+                    "produce/produce_mainpage_hajime.png"
+                  ]
+                }
+              }
             },
             "ProduceChooseDifficulty": {
               "expected": "REGULAR"
@@ -67,8 +73,14 @@
         {
           "name": "PRO",
           "pipeline_override": {
-            "ProduceStart": {
-              "next": "ProduceLastPage"
+            "ProduceChooseScenario": {
+              "recognition": {
+                "param": {
+                  "template": [
+                    "produce/produce_mainpage_hajime.png"
+                  ]
+                }
+              }
             },
             "ProduceChooseDifficulty": {
               "expected": "PRO"
@@ -81,8 +93,14 @@
         {
           "name": "MASTER",
           "pipeline_override": {
-            "ProduceStart": {
-              "next": "ProduceLastPage"
+            "ProduceChooseScenario": {
+              "recognition": {
+                "param": {
+                  "template": [
+                    "produce/produce_mainpage_hajime.png"
+                  ]
+                }
+              }
             },
             "ProduceChooseDifficulty": {
               "expected": "MASTER"
@@ -102,8 +120,14 @@
         {
           "name": "PRO",
           "pipeline_override": {
-            "ProduceStart": {
-              "next": "ProduceNextPage"
+            "ProduceChooseScenario": {
+              "recognition": {
+                "param": {
+                  "template": [
+                    "produce/produce_mainpage_nia.png"
+                  ]
+                }
+              }
             },
             "ProduceChooseDifficulty": {
               "expected": "PRO"
@@ -116,8 +140,14 @@
         {
           "name": "MASTER",
           "pipeline_override": {
-            "ProduceStart": {
-              "next": "ProduceNextPage"
+            "ProduceChooseScenario": {
+              "recognition": {
+                "param": {
+                  "template": [
+                    "produce/produce_mainpage_nia.png"
+                  ]
+                }
+              }
             },
             "ProduceChooseDifficulty": {
               "expected": "MASTER"

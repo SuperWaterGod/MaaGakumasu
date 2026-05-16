@@ -94,7 +94,7 @@
             "param": {}
         },
         "next": [
-            "ProduceLastPage"
+            "ProduceMainPage"
         ],
         "post_wait_freezes": 200
     },
@@ -133,19 +133,47 @@
             "ProduceEntryFlag"
         ]
     },
-    "ProduceLastPage": {
+    "ProduceMainPage": {
         "recognition": {
-            "type": "OCR",
+            "type": "TemplateMatch",
             "param": {
-                "expected": "PRO",
+                "template": [
+                    "produce/produce_mainpage_ranking.png"
+                ],
                 "roi": [
-                    0,
-                    824,
-                    719,
-                    171
+                    500,
+                    1050,
+                    200,
+                    80
                 ]
             }
         },
+        "next": [
+            "ProduceChooseScenario",
+            "[JumpBack]ProduceLastPage",
+            "[JumpBack]ProduceNextPage"
+        ]
+    },
+    "ProduceChooseScenario": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/produce_mainpage_hajime.png"
+                ],
+                "roi": [
+                    120,
+                    120,
+                    480,
+                    480
+                ]
+            }
+        },
+        "next": [
+            "ProduceChooseDifficulty"
+        ]
+    },
+    "ProduceLastPage": {
         "action": {
             "type": "Swipe",
             "param": {
@@ -165,24 +193,10 @@
                 ]
             }
         },
-        "post_wait_freezes": 200,
-        "next": [
-            "ProduceChooseDifficulty"
-        ]
+        "max_hit": 2,
+        "post_wait_freezes": 200
     },
     "ProduceNextPage": {
-        "recognition": {
-            "type": "OCR",
-            "param": {
-                "expected": "MASTER",
-                "roi": [
-                    0,
-                    824,
-                    719,
-                    171
-                ]
-            }
-        },
         "action": {
             "type": "Swipe",
             "param": {
@@ -202,10 +216,8 @@
                 ]
             }
         },
-        "post_wait_freezes": 200,
-        "next": [
-            "ProduceChooseDifficulty"
-        ]
+        "max_hit": 2,
+        "post_wait_freezes": 200
     },
     "ProduceChooseDifficulty": {
         "recognition": {
@@ -706,12 +718,18 @@
             "type": "TemplateMatch",
             "param": {
                 "template": [
-                    "next.png", // (必选)考试成功时需要点next
-                    "produce/retry.png", // 失败时重试
-                    "produce/yes.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
-                    "produce/start.png", // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
-                    "produce/close.png", // (可选)误触查看当前持有卡片界面时的关闭按钮，如果解决所有误触情况可以删除
-                    "cancel.png" // (可选)REGULAR难度上课失败时，会弹出是否需要进入新手教程的提示框
+                    "next.png",
+                    // (必选)考试成功时需要点next
+                    "produce/retry.png",
+                    // 失败时重试
+                    "produce/yes.png",
+                    // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
+                    "produce/start.png",
+                    // (不确定)在关闭所有可选提示框后，培育阶段没出现过该按钮
+                    "produce/close.png",
+                    // (可选)误触查看当前持有卡片界面时的关闭按钮，如果解决所有误触情况可以删除
+                    "cancel.png"
+                    // (可选)REGULAR难度上课失败时，会弹出是否需要进入新手教程的提示框
                 ],
                 "order_by": "Score",
                 "roi": [
