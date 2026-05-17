@@ -711,7 +711,10 @@
             "ProduceEnd",
             "[JumpBack]ProduceSkipShowConfirm",
             "[JumpBack]ProduceSkipShow"
-        ]
+        ],
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 演出开始[/color]"
+        }
     },
     "ProduceButton": {
         "recognition": {
@@ -1052,12 +1055,38 @@
         },
         "next": [
             "ProduceGeneration",
+            "[JumpBack]ProduceSkipED",
             "[JumpBack]ProduceNext",
             "[JumpBack]ProduceSkip",
             "[JumpBack]ProduceDecide",
             "[JumpBack]ProduceError",
             "[JumpBack]Click_1"
-        ]
+        ],
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 演出结束[/color]"
+        }
+    },
+    "ProduceSkipED": {
+        "recognition": {
+            "type": "Custom",
+            "param": {
+                "custom_recognition": "ProduceShowStart"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {
+                "target": [
+                    1192,
+                    80,
+                    1,
+                    1
+                ]
+            }
+        },
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 播放ED[/color]"
+        }
     },
     "ProduceGeneration": {
         "recognition": {

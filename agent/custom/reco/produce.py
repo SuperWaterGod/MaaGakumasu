@@ -92,7 +92,6 @@ class ProduceShowStart(CustomRecognition):
         width = image.shape[1]
         context.run_task("Click_1")
         if height < width:
-            logger.success("事件: 演出开始")
             return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "屏幕旋转"})
         return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "屏幕未旋转"})
 
@@ -100,7 +99,7 @@ class ProduceShowStart(CustomRecognition):
 @AgentServer.custom_recognition("ProduceShowEnd")
 class ProduceShowEnd(CustomRecognition):
     """
-    检测屏幕是否旋转
+    检测通过屏幕是否旋转判断演出结束
     """
 
     def analyze(
@@ -113,7 +112,6 @@ class ProduceShowEnd(CustomRecognition):
         width = image.shape[1]
         context.run_task("Click_1")
         if height > width:
-            logger.success("事件: 演出结束")
             return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "屏幕旋转"})
         return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "屏幕未旋转"})
 
