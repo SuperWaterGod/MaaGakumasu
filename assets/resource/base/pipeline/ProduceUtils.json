@@ -526,14 +526,19 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "produce/empty_drink.png",
+        "template": [
+          "produce/drink_1.png",
+          "produce/drink_2.png",
+          "produce/drink_3.png"
+        ],
         "roi": [
           10,
           1150,
-          300,
+          350,
           100
         ],
-        "green_mask": true
+        "green_mask": true,
+        "threshold": 0.8
       }
     },
     "action": {

@@ -733,8 +733,8 @@ class ProduceCardsAuto(CustomAction):
         image = context.tasker.controller.post_screencap().wait().get()
         reco_detail = context.run_recognition("ProduceCheckDrinkButton", image)
         hit_count = len(reco_detail.filtered_results)  # 获取饮料数
-        logger.info(f"识别到{3 - hit_count}瓶饮料")
-        for _ in range(hit_count, 3):
+        logger.info(f"识别到{hit_count}瓶饮料")
+        for _ in range(hit_count):
             context.run_task("ProduceUseDrink")
             self._wait_until_playable(context, 2)
 
