@@ -1,7 +1,9 @@
+import importlib.util
 import json
 import sys
-import importlib.util
 from pathlib import Path
+from socket import timeout as SocketTimeout
+from urllib.error import HTTPError, URLError
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "agent"))
@@ -49,6 +51,30 @@ def test_parse_decision_response_rejects_invalid_candidate():
     assert produce_llm.parse_decision_response(response, {"event_1"}) is None
 
 
+def test_parse_decision_response_should_fallback_true_returns_none():
+    response = {"output_text": '{"candidate_id":"event_1","confidence":0.5,"reason":"fallback","should_fallback":true}'}
+
+    assert produce_llm.parse_decision_response(response, {"event_1"}) is None
+
+
+def test_parse_decision_response_malformed_json_returns_none():
+    response = {"output_text": '{"candidate_id":"event_1","confidence":0.9,"reason":"bad json","should_fallback":false'}
+
+    assert produce_llm.parse_decision_response(response, {"event_1"}) is None
+
+
+def test_parse_decision_response_non_object_json_returns_none_for_list():
+    response = {"output_text": '["event_1", "event_2"]'}
+
+    assert produce_llm.parse_decision_response(response, {"event_1"}) is None
+
+
+def test_parse_decision_response_non_object_json_returns_none_for_string():
+    response = {"output_text": '"just a string, not an object"'}
+
+    assert produce_llm.parse_decision_response(response, {"event_1"}) is None
+
+
 def test_request_llm_decision_uses_structured_response(monkeypatch):
     captured = {}
 
@@ -91,6 +117,53 @@ def test_request_llm_decision_uses_structured_response(monkeypatch):
     assert "box" not in llm_candidate
     assert "click_point" not in llm_candidate
     assert "rule_node" not in llm_candidate
+
+
+def test_request_llm_decision_retries_on_http_error_and_strips_cache_keys(monkeypatch):
+    calls = {"count": 0, "payloads": []}
+
+    def fake_post_payload(payload, api_key, timeout, opener=None):
+        calls["count"] += 1
+        calls["payloads"].append(dict(payload))
+        if calls["count"] == 1:
+            raise HTTPError(produce_llm.OPENAI_RESPONSES_URL, 400, "Bad Request", hdrs=None, fp=None)
+        return {"output_text": '{"candidate_id":"candidate_1","confidence":0.9,"reason":"ok","should_fallback":false}'}
+
+    monkeypatch.setattr(produce_llm, "_post_payload", fake_post_payload)
+
+    decision = produce_llm.request_llm_decision(
+        "reward_choice",
+        {},
+        [{"candidate_id": "event_1"}],
+        "fallback",
+        api_key="test-key",
+    )
+
+    assert decision["candidate_id"] == "event_1"
+    assert calls["count"] == 2
+    first_payload, second_payload = calls["payloads"]
+    assert "prompt_cache_key" in first_payload
+    assert "prompt_cache_retention" in first_payload
+    assert "prompt_cache_key" not in second_payload
+    assert "prompt_cache_retention" not in second_payload
+
+
+def test_request_llm_decision_returns_none_on_timeout(monkeypatch):
+    def fake_post_payload(*args, **kwargs):
+        raise SocketTimeout("timed out")
+
+    monkeypatch.setattr(produce_llm, "_post_payload", fake_post_payload)
+
+    assert produce_llm.request_llm_decision("reward_choice", {}, [{"candidate_id": "event_1"}], "fallback", api_key="test-key") is None
+
+
+def test_request_llm_decision_returns_none_on_urlerror(monkeypatch):
+    def fake_post_payload(*args, **kwargs):
+        raise URLError("connection failed")
+
+    monkeypatch.setattr(produce_llm, "_post_payload", fake_post_payload)
+
+    assert produce_llm.request_llm_decision("reward_choice", {}, [{"candidate_id": "event_1"}], "fallback", api_key="test-key") is None
 
 
 def test_choose_candidate_uses_gui_api_key(monkeypatch):

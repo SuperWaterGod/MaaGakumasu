@@ -11,6 +11,8 @@ from maa.context import Context
 from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
 
+from .skill_cards import REPO_ROOT
+
 
 SOURCE_REPOSITORY = "https://github.com/surisuririsu/gakumas-tools/tree/master/packages/gakumas-data"
 SKILL_CARDS_RAW_URL = "https://raw.githubusercontent.com/surisuririsu/gakumas-tools/master/packages/gakumas-data/json/skill_cards.json"
@@ -142,9 +144,8 @@ def download_skill_card_rows(url: str = SKILL_CARDS_RAW_URL, timeout: int = 20) 
 
 
 def _output_database_path() -> Path:
-    cwd = Path.cwd()
-    packaged_path = cwd / "data" / "produce_skill_cards.json"
-    source_path = cwd / "assets" / "data" / "produce_skill_cards.json"
+    packaged_path = REPO_ROOT / "data" / "produce_skill_cards.json"
+    source_path = REPO_ROOT / "assets" / "data" / "produce_skill_cards.json"
     if packaged_path.parent.exists():
         return packaged_path
     return source_path

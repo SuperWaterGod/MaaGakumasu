@@ -119,7 +119,7 @@ def _upscaled_roi_image(image: Any, roi: List[int], scale: int = 3) -> Optional[
         import numpy as np
 
         return np.asarray(scaled), [0, 0, scaled.width, scaled.height]
-    except Exception:
+    except ImportError:
         return None
 
 
