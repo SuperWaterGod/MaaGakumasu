@@ -10,6 +10,9 @@ from maa.context import Context
 from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
 
+from .produce_llm import choose_candidate, is_llm_enabled
+from .skill_cards import build_hand_card_candidates
+
 
 @AgentServer.custom_action("ProduceChooseEventAuto")
 class ProduceChooseEventAuto(CustomAction):
@@ -51,6 +54,9 @@ class ProduceChooseEventAuto(CustomAction):
         # 获取屏幕截图
         image = self._get_screenshot(context)
 
+        if self._handle_llm_decision(context, image, argv):
+            return True
+
         # 1. 优先检查老师建议
         if self._handle_teacher_suggestion(context, image):
             return True
@@ -72,6 +78,69 @@ class ProduceChooseEventAuto(CustomAction):
     def _get_screenshot(context: Context):
         """获取屏幕截图"""
         return context.tasker.controller.post_screencap().wait().get()
+
+    def _handle_llm_decision(self, context: Context, image, argv) -> bool:
+        if not is_llm_enabled(context):
+            return False
+        available_events = self._get_available_events(context, image)
+        candidates = []
+        for index, event in enumerate(available_events, start=1):
+            name, box = next(iter(event.items()))
+            candidates.append(
+                {
+                    "candidate_id": f"event_{index}",
+                    "kind": "event",
+                    "name": name,
+                    "box": box,
+                    "recommended": False,
+                    "playable": True,
+                }
+            )
+        rest_reco = context.run_recognition("ProduceChooseRest", image)
+        if rest_reco and rest_reco.hit:
+            candidates.append(
+                {
+                    "candidate_id": "rest",
+                    "kind": "event",
+                    "name": "rest",
+                    "box": list(rest_reco.best_result.box),
+                    "run_task": "ProduceChooseRest",
+                    "recommended": False,
+                    "playable": True,
+                }
+            )
+        teacher_suggestion = self._get_teacher_suggestion_text(context, image) if context.get_node_data("ProduceSuggestion").get("enabled", True) else ""
+        state = {
+            "mode": "hajime",
+            "teacher_suggestion": teacher_suggestion,
+            "health_ratio": self._get_health_ratio(context, image),
+            "points": self._get_current_points(context, image),
+            "preference": self._get_preference(argv),
+        }
+        choice = choose_candidate(context, "event_hajime", state, candidates, "current rule-based event selection")
+        if not choice:
+            return False
+        run_task = choice.get("run_task")
+        if run_task:
+            context.run_task(run_task)
+            time.sleep(self.ACTION_DELAY)
+            return True
+        box = choice.get("box")
+        if not box:
+            return False
+        self._double_click(context, box[0] + box[2] // 2, box[1] + box[3] // 2)
+        time.sleep(self.ACTION_DELAY)
+        return True
+
+    def _get_teacher_suggestion_text(self, context: Context, image) -> str:
+        reco_detail = context.run_recognition(
+            "ProduceChooseEventSuggestion",
+            image,
+            pipeline_override={"ProduceChooseEventSuggestion": {"recognition": "OCR", "expected": self._get_ocr_keywords(), "roi": [270, 160, 350, 56]}},
+        )
+        if not (reco_detail and reco_detail.hit):
+            return ""
+        return "".join(item.text for item in reco_detail.filtered_results)
 
     def _handle_sp_course(self, context: Context, image) -> bool:
         """处理SP课程选择"""
@@ -423,7 +492,9 @@ class ProduceChooseNIAEventAuto(CustomAction):
         events = self._get_available_events(context, image)
 
         # 选择最佳事件
-        best_event = self._choose_best_event(suggestion, health_data, points, score, events)
+        best_event = self._choose_llm_event(context, suggestion, health_data, points, score, events) or self._choose_best_event(
+            suggestion, health_data, points, score, events
+        )
         if not best_event:
             logger.info("无可用事件")
             return True
@@ -432,6 +503,51 @@ class ProduceChooseNIAEventAuto(CustomAction):
 
         # 执行事件
         return self._execute_event(context, best_event)
+
+    def _choose_llm_event(self, context: Context, suggestion: str, health_data: dict, points: int, score: dict, events: list) -> Optional[dict]:
+        if not is_llm_enabled(context):
+            return None
+        candidates = []
+        for index, event in enumerate(events, start=1):
+            name = next((key for key in event if key != "SP"), "")
+            if not name:
+                continue
+            candidates.append(
+                {
+                    "candidate_id": f"nia_event_{index}",
+                    "kind": "event",
+                    "name": name,
+                    "box": event[name],
+                    "sp": bool(event.get("SP")),
+                    "run_task": "ProduceWorkEntry" if name == "工作" else "ProduceGuideEntry" if name == "指导" else "",
+                    "recommended": suggestion and name in suggestion,
+                    "playable": True,
+                }
+            )
+        candidates.append(
+            {
+                "candidate_id": "rest",
+                "kind": "event",
+                "name": "rest",
+                "box": [0, 0, 0, 0],
+                "run_task": "ProduceChooseRest",
+                "recommended": False,
+                "playable": True,
+            }
+        )
+        state = {
+            "mode": "nia",
+            "teacher_suggestion": suggestion,
+            "health": health_data,
+            "points": points,
+            "score": score,
+            "first_attribute": self.first,
+            "second_attribute": self.second,
+        }
+        choice = choose_candidate(context, "event_nia", state, candidates, "current NIA rule-based event selection")
+        if not choice:
+            return None
+        return {"name": choice.get("name", ""), "box": choice.get("box", [0, 0, 0, 0]), "run_task": choice.get("run_task", "")}
 
     def _choose_best_event(self, suggestion: str, health_data: dict, points: int, score: dict, events: list) -> Optional[dict]:
         """
@@ -706,6 +822,97 @@ class ProduceChooseNIAEventAuto(CustomAction):
         return False
 
 
+@AgentServer.custom_action("ProduceChooseRewardAuto")
+class ProduceChooseRewardAuto(CustomAction):
+    """LLM-aware reward picker with the existing reward priority as fallback."""
+
+    CLICK_DELAY = 0.5
+
+    def run(
+        self,
+        context: Context,
+        argv: CustomAction.RunArg,
+    ) -> bool:
+        image = context.tasker.controller.post_screencap().wait().get()
+        candidates = self._get_reward_candidates(context, image)
+        state = {"screen": "reward_choice"}
+        choice = choose_candidate(context, "reward_choice", state, candidates, "current reward priority pipeline") or self._fallback_choice(
+            context, candidates
+        )
+        if not choice:
+            logger.warning("未找到可领取奖励，回退点击第一项")
+            choice = self._first_candidate()
+        self._click_candidate(context, choice)
+        return True
+
+    def _get_reward_candidates(self, context: Context, image) -> List[Dict[str, Any]]:
+        candidates = []
+        skip = self._recognize_reward(context, image, "ProduceChooseSkip", "reward_skip", "skip", 0)
+        if skip:
+            candidates.append(skip)
+        recommend = self._recognize_reward(context, image, "ProduceChooseRecommend", "reward_recommend", "recommended", -80)
+        if recommend:
+            candidates.append(recommend)
+        event_recommend = self._recognize_reward(context, image, "ProduceChooseEventRecommend", "reward_event_recommend", "event_recommended", 80)
+        if event_recommend:
+            candidates.append(event_recommend)
+        candidates.append(self._first_candidate())
+        return candidates
+
+    @staticmethod
+    def _recognize_reward(context: Context, image, node: str, candidate_id: str, name: str, offset_y: int) -> Optional[Dict[str, Any]]:
+        reco_detail = context.run_recognition(node, image)
+        if not (reco_detail and reco_detail.hit):
+            return None
+        box = list(reco_detail.best_result.box)
+        return {
+            "candidate_id": candidate_id,
+            "rule_node": node,
+            "kind": "reward",
+            "name": name,
+            "box": box,
+            "click_point": [box[0] + box[2] // 2, box[1] + box[3] // 2 + offset_y],
+            "recommended": "recommend" in candidate_id,
+            "playable": True,
+        }
+
+    @staticmethod
+    def _first_candidate() -> Dict[str, Any]:
+        box = [160, 824, 124, 124]
+        return {
+            "candidate_id": "reward_first",
+            "rule_node": "ProduceChooseFirst",
+            "kind": "reward",
+            "name": "first",
+            "box": box,
+            "click_point": [box[0] + box[2] // 2, box[1] + box[3] // 2],
+            "recommended": False,
+            "playable": True,
+        }
+
+    @staticmethod
+    def _get_rule_priority(context: Context) -> List[str]:
+        priority = context.get_node_data("ProduceChooseGetFlag").get(
+            "next",
+            ["ProduceChooseSkip", "ProduceChooseRecommend", "ProduceChooseEventRecommend", "ProduceChooseFirst"],
+        )
+        if isinstance(priority, str):
+            return [priority]
+        return list(priority or [])
+
+    def _fallback_choice(self, context: Context, candidates: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        by_node = {candidate.get("rule_node"): candidate for candidate in candidates}
+        for node in self._get_rule_priority(context):
+            if node in by_node:
+                return by_node[node]
+        return candidates[0] if candidates else None
+
+    def _click_candidate(self, context: Context, candidate: Dict[str, Any]) -> None:
+        x, y = candidate.get("click_point", [0, 0])
+        context.tasker.controller.post_click(x, y).wait()
+        time.sleep(self.CLICK_DELAY)
+
+
 @AgentServer.custom_action("ProduceCardsAuto")
 class ProduceCardsAuto(CustomAction):
     """
@@ -765,6 +972,9 @@ class ProduceCardsAuto(CustomAction):
                 suggestions, useless, cards, suggestions_box, best_box = self._get_card_info(results)
                 # print(f"卡片数量:{suggestions}/{cards}/{useless}")
 
+                if self._handle_llm_card_choice(context, image, results):
+                    continue
+
                 # 有推荐牌时，打出推荐牌
                 if suggestions > 0:
                     if suggestions_box[1] < 840 or suggestions_box[1] > 1150:
@@ -801,6 +1011,45 @@ class ProduceCardsAuto(CustomAction):
 
             time.sleep(self.CLICK_DELAY)
 
+        return True
+
+    def _handle_llm_card_choice(self, context: Context, image, results: list) -> bool:
+        if not is_llm_enabled(context):
+            return False
+        candidates = build_hand_card_candidates(context, image, results)
+        candidates.append(
+            {
+                "candidate_id": "skip_round",
+                "kind": "skip",
+                "name": "skip_round",
+                "effect": {},
+                "confidence": 1.0,
+                "recommended": False,
+                "playable": True,
+            }
+        )
+        state = {
+            "screen": "card_play",
+            "elapsed_sec": round(time.time() - self.start_time, 2),
+        }
+        choice = choose_candidate(context, "card_play", state, candidates, "legacy card-play fallback rules")
+        if not choice:
+            return False
+        if choice.get("candidate_id") == "skip_round":
+            logger.info("LLM选择跳过回合")
+            context.run_task("ProduceRecognitionSkipRound")
+            self._wait_until_playable(context)
+            self.start_time = time.time()
+            return True
+        if not choice.get("playable", False):
+            logger.warning(f"LLM选择了不可出牌候选，回退规则: {choice.get('candidate_id')}")
+            return False
+        box = choice.get("box")
+        if not box:
+            return False
+        if box[1] < 840 or box[1] > 1150:
+            return False
+        self._play_a_card(context, box)
         return True
 
     @staticmethod
@@ -1001,6 +1250,10 @@ class ProduceChooseWorkAuto(CustomAction):
         current = health_data["current"] if health_data else 0
 
         health_position = self._get_health_position(context, image)
+        llm_box = self._choose_llm_work(context, current, health_data, health_position)
+        if llm_box:
+            context.tasker.controller.post_click(llm_box[0], llm_box[1]).wait()
+            return True
 
         if current > 10:
             if health_position and len(health_position) == 1:
@@ -1016,6 +1269,43 @@ class ProduceChooseWorkAuto(CustomAction):
                 box = first_roi
         context.tasker.controller.post_click(box[0], box[1]).wait()
         return True
+
+    @staticmethod
+    def _choose_llm_work(context: Context, current: int, health_data: Optional[dict], health_position: Optional[list]) -> Optional[list]:
+        if not is_llm_enabled(context):
+            return None
+        candidates = [
+            {
+                "candidate_id": "work_1",
+                "kind": "work",
+                "name": "work_1",
+                "box": [100, 760],
+                "health_cost": False,
+                "recommended": False,
+                "playable": True,
+            },
+            {
+                "candidate_id": "work_2",
+                "kind": "work",
+                "name": "work_2",
+                "box": [100, 880],
+                "health_cost": health_position is not None and 2 in health_position,
+                "recommended": False,
+                "playable": True,
+            },
+            {
+                "candidate_id": "work_3",
+                "kind": "work",
+                "name": "work_3",
+                "box": [100, 1000],
+                "health_cost": health_position is not None and 3 in health_position,
+                "recommended": False,
+                "playable": True,
+            },
+        ]
+        state = {"health": health_data, "current_health": current, "health_cost_positions": health_position or []}
+        choice = choose_candidate(context, "work_choice", state, candidates, "current health-aware work rules")
+        return choice.get("box") if choice else None
 
     @staticmethod
     def _get_health(context: Context, image) -> Optional[dict]:
@@ -1110,6 +1400,8 @@ class ProduceChooseOptionsAuto(CustomAction):
         image = context.tasker.controller.post_screencap().wait().get()
         score = self._get_current_score(context, image) or {"Vo": 0, "Da": 0, "Vi": 0, "max": 1}
         options = self._get_available_options(context, image)
+        if self._handle_llm_options(context, score, options):
+            return True
 
         # 计算选择
         first_score = score.get(self.first, 0)
@@ -1168,6 +1460,33 @@ class ProduceChooseOptionsAuto(CustomAction):
         else:
             logger.warning("没有可用选项，无法选择")
             return True  # 没有选项可选时默认返回True，避免卡死在这里
+        return True
+
+    def _handle_llm_options(self, context: Context, score: dict, options: List[Dict[str, Any]]) -> bool:
+        if not is_llm_enabled(context):
+            return False
+        candidates = []
+        for index, option in enumerate(options, start=1):
+            name, box = next(iter(option.items()))
+            candidates.append(
+                {
+                    "candidate_id": f"option_{index}",
+                    "kind": "attribute_option",
+                    "name": name,
+                    "box": box,
+                    "recommended": False,
+                    "playable": True,
+                }
+            )
+        state = {"score": score, "first_attribute": self.first, "second_attribute": self.second}
+        choice = choose_candidate(context, "attribute_option", state, candidates, "current attribute-option rules")
+        if not choice:
+            return False
+        box = choice.get("box")
+        if not box:
+            return False
+        self._double_click(context, box[0] + box[2] // 2, box[1] + box[3] // 2)
+        logger.info(f"LLM选择选项 {choice.get('name')}")
         return True
 
     @staticmethod
@@ -1264,6 +1583,13 @@ class ProduceChooseMirrorAuto(CustomAction):
         current_mirror, none_box = self._get_current_mirror(context, image) or ("first", [360, 1050, 1, 1])
 
         thresholds = self.mirror.get(current_mirror, [0])
+        llm_target = self._choose_llm_mirror(context, image, vote, current_mirror, none_box, thresholds)
+        if llm_target:
+            x, y, target_threshold = llm_target
+            logger.info(f"LLM选择镜像: {current_mirror}, 当前投票: {vote}, 目标分数: {target_threshold:,}, 点击坐标: ({x}, {y - 20})")
+            self._double_click(context, x, y - 20)
+            return True
+
         option_idx = 0
         for i, threshold in enumerate(thresholds):
             if vote >= threshold:
@@ -1293,6 +1619,58 @@ class ProduceChooseMirrorAuto(CustomAction):
         self._double_click(context, x, y - 20)
 
         return True
+
+    def _choose_llm_mirror(
+        self,
+        context: Context,
+        image,
+        vote: int,
+        current_mirror: str,
+        none_box: list,
+        thresholds: list,
+    ) -> Optional[tuple]:
+        if not is_llm_enabled(context):
+            return None
+        candidates = [
+            {
+                "candidate_id": "mirror_none",
+                "kind": "mirror",
+                "name": "none",
+                "threshold": 0,
+                "box": none_box,
+                "recommended": False,
+                "playable": True,
+            }
+        ]
+        for threshold in thresholds:
+            if threshold == 0 or vote < threshold:
+                continue
+            expected = f".*{threshold:,}.*"
+            reco_detail = context.run_recognition(
+                "ProduceRecognitionMirror",
+                image,
+                pipeline_override={"ProduceRecognitionMirror": {"expected": expected}},
+            )
+            if reco_detail and reco_detail.hit:
+                candidates.append(
+                    {
+                        "candidate_id": f"mirror_{threshold}",
+                        "kind": "mirror",
+                        "name": f"{threshold:,}",
+                        "threshold": threshold,
+                        "box": reco_detail.best_result.box,
+                        "recommended": False,
+                        "playable": True,
+                    }
+                )
+        state = {"vote": vote, "current_mirror": current_mirror, "thresholds": thresholds}
+        choice = choose_candidate(context, "mirror_choice", state, candidates, "current threshold-based mirror rules")
+        if not choice:
+            return None
+        box = choice.get("box")
+        if not box:
+            return None
+        return box[0] + box[2] // 2, box[1] + box[3] // 2, int(choice.get("threshold", 0))
 
     def _get_current_mirror(self, context: Context, image) -> Optional[tuple]:
         """获取当前镜像"""

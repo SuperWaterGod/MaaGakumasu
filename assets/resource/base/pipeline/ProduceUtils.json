@@ -438,6 +438,23 @@
       "param": {}
     }
   },
+  "ProduceRecognitionSkillCardName": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "roi": [
+          0,
+          0,
+          1,
+          1
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    }
+  },
   "ProduceRecognitionHealthFlag": {
     "recognition": {
       "type": "TemplateMatch",
@@ -630,5 +647,20 @@
       "param": {}
     },
     "enabled": false
+  },
+  "ProduceLLMDecision": {
+    //Enable opt-in LLM produce decisions
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "enabled": false,
+    "custom_action_param": {
+      "api_key": ""
+    }
   }
 }

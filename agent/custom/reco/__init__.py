@@ -11,5 +11,6 @@ __all__ = [
     "ProduceShowStart",
     "ProduceShowEnd",
     "ProduceCardsFlagAuto",
+    "ProduceLLMDecisionEnabled",
     "ScreenRotateCheck",
 ]

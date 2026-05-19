@@ -81,6 +81,13 @@
       ]
     }
   ],
+  "group": [
+    {
+      "name": "更新设置",
+      "label": "$更新设置",
+      "default_expand": false
+    }
+  ],
   "agent": {
     "child_exec": "python",
     "child_args": [
@@ -172,6 +179,17 @@
         "DMM插件汉化版"
       ],
       "label": "$支援卡识别"
+    },
+    {
+      "name": "更新gakumas-data",
+      "entry": "UpdateGakumasData",
+      "option": [],
+      "default_check": false,
+      "group": [
+        "更新设置"
+      ],
+      "doc": "$更新gakumas-data说明",
+      "label": "$更新gakumas-data"
     }
   ],
   "option": {

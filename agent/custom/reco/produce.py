@@ -135,3 +135,21 @@ class ProduceCardsFlagAuto(CustomRecognition):
             return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "识别到出牌场景"})
         else:
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "未识别到选择场景"})
+
+
+@AgentServer.custom_recognition("ProduceLLMDecisionEnabled")
+class ProduceLLMDecisionEnabled(CustomRecognition):
+    """Detects whether the opt-in LLM decision layer is enabled."""
+
+    def analyze(
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
+    ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
+        try:
+            enabled = bool(context.get_node_data("ProduceLLMDecision").get("enabled", False))
+        except Exception:
+            enabled = False
+        if enabled:
+            return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "LLM decision enabled"})
+        return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "LLM decision disabled"})
