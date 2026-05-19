@@ -810,6 +810,7 @@
             "param": {}
         },
         "next": [
+            "ProduceChooseRewardLLM",
             "ProduceChooseSkip",
             "ProduceChooseRecommend",
             "ProduceChooseEventRecommend",
@@ -820,6 +821,23 @@
         "focus": {
             "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择饮料/物品/卡牌[/color]"
         }
+    },
+    "ProduceChooseRewardLLM": {
+        "recognition": {
+            "type": "Custom",
+            "param": {
+                "custom_recognition": "ProduceLLMDecisionEnabled"
+            }
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ProduceChooseRewardAuto"
+            }
+        },
+        "next": [
+            "ProduceChooseConfirm"
+        ]
     },
     "ProduceChooseFirst": {
         "recognition": {

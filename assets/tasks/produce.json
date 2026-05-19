@@ -15,7 +15,8 @@
         "启用培育失败重试",
         "跳过准备阶段",
         "卡片选择优先级",
-        "跟随老师的建议"
+        "跟随老师的建议",
+        "启用LLM决策"
       ],
       "resource": [
         "官服",
@@ -378,6 +379,7 @@
           "pipeline_override": {
             "ProduceChooseGetFlag": {
               "next": [
+                "ProduceChooseRewardLLM",
                 "ProduceChooseSkip",
                 "ProduceChooseRecommend",
                 "ProduceChooseEventRecommend",
@@ -392,6 +394,7 @@
           "pipeline_override": {
             "ProduceChooseGetFlag": {
               "next": [
+                "ProduceChooseRewardLLM",
                 "ProduceChooseSkip",
                 "ProduceChooseEventRecommend",
                 "ProduceChooseRecommend",
@@ -406,6 +409,7 @@
           "pipeline_override": {
             "ProduceChooseGetFlag": {
               "next": [
+                "ProduceChooseRewardLLM",
                 "ProduceChooseSkip",
                 "ProduceChooseFirst"
               ]
@@ -466,6 +470,79 @@
         }
       ],
       "label": "$跟随老师的建议"
+    },
+    "启用LLM决策": {
+      "type": "switch",
+      "default_case": "No",
+      "description": "$启用LLM决策说明",
+      "cases": [
+        {
+          "name": "Yes",
+          "option": [
+            "LLM API Key设置"
+          ],
+          "pipeline_override": {
+            "ProduceLLMDecision": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "ProduceLLMDecision": {
+              "enabled": false
+            }
+          }
+        }
+      ],
+      "label": "$启用LLM决策"
+    },
+    "LLM API Key设置": {
+      "type": "select",
+      "default_case": "使用环境变量",
+      "description": "$LLM API Key设置说明",
+      "cases": [
+        {
+          "name": "使用环境变量",
+          "pipeline_override": {
+            "ProduceLLMDecision": {
+              "custom_action_param": {
+                "api_key": ""
+              }
+            }
+          },
+          "label": "$使用环境变量"
+        },
+        {
+          "name": "手动输入",
+          "option": [
+            "OpenAI_API_Key输入"
+          ],
+          "label": "$手动输入"
+        }
+      ],
+      "label": "$LLM API Key设置"
+    },
+    "OpenAI_API_Key输入": {
+      "type": "input",
+      "description": "$OpenAI_API_Key输入说明",
+      "inputs": [
+        {
+          "name": "openai_api_key",
+          "label": "$OpenAI API Key",
+          "default": "sk-",
+          "pipeline_type": "string"
+        }
+      ],
+      "pipeline_override": {
+        "ProduceLLMDecision": {
+          "custom_action_param": {
+            "api_key": "{openai_api_key}"
+          }
+        }
+      },
+      "label": "$OpenAI API Key"
     },
     "启用培育失败重试": {
       "type": "switch",

@@ -1,0 +1,19 @@
+{
+  "UpdateGakumasData": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "Custom",
+      "param": {
+        "custom_action": "UpdateGakumasData"
+      }
+    },
+    "focus": {
+      "Node.Action.Starting": "[color:blue]开始更新 gakumas-data[/color]",
+      "Node.Action.Succeeded": "[color:green]gakumas-data 更新完成[/color]",
+      "Node.Action.Failed": "[color:red]gakumas-data 更新失败，请检查网络[/color]"
+    }
+  }
+}
