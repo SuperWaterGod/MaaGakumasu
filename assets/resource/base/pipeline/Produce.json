@@ -607,12 +607,20 @@
         },
         "action": {
             "type": "Click",
-            "param": {}
+            "param": {
+                "target_offset": [
+                    5,
+                    5,
+                    -10,
+                    -10
+                ]
+            }
         },
         "next": [
             "ProduceUsePt",
             "ProduceLauncher"
-        ]
+        ],
+        "post_wait_freezes": 200
     },
     "ProduceUsePt": {
         "enabled": false,
@@ -632,13 +640,21 @@
         },
         "action": {
             "type": "Click",
-            "param": {}
+            "param": {
+                "target_offset": [
+                    5,
+                    5,
+                    -10,
+                    -10
+                ]
+            }
         },
         "next": [
             "ProduceLauncher",
             "[JumpBack]ProduceDecide",
             "[JumpBack]ProduceNext"
-        ]
+        ],
+        "post_wait_freezes": 200
     },
     "ProduceLauncher": {
         "recognition": {
