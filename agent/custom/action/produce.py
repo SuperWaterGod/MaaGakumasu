@@ -1242,6 +1242,7 @@ class ProduceChooseMirrorAuto(CustomAction):
     - 获取当前投票数
     - 遍历阈值列表，找到第一个大于投票数的门槛，选择对应的选项
     - 若投票数低于所有阈值（threshold=0），则选择"无"选项
+    - 点击前检测目标分数旁是否有锁定图标，若有则自动降档
 
     阈值配置（mirror）：
     - first:  [0, 4000, 9000]       -> 投票<4000选索引0，<9000选索引1，>=9000选索引2
@@ -1269,11 +1270,13 @@ class ProduceChooseMirrorAuto(CustomAction):
             if vote >= threshold:
                 option_idx = i
 
-        target_threshold = thresholds[option_idx]
-        if target_threshold == 0:
-            x = none_box[0] + none_box[2] // 2
-            y = none_box[1] + none_box[3] // 2
-        else:
+        while option_idx >= 0:
+            target_threshold = thresholds[option_idx]
+            if target_threshold == 0:
+                x = none_box[0] + none_box[2] // 2
+                y = none_box[1] + none_box[3] // 2
+                break
+
             expected = f".*{target_threshold:,}.*"
             reco_detail = context.run_recognition(
                 "ProduceRecognitionMirror",
@@ -1284,15 +1287,45 @@ class ProduceChooseMirrorAuto(CustomAction):
                 logger.warning(f"未识别到目标分数: {target_threshold:,}")
                 x = none_box[0] + none_box[2] // 2
                 y = none_box[1] + none_box[3] // 2
-            else:
-                target = reco_detail.best_result.box
-                x = target[0] + target[2] // 2
-                y = target[1] + target[3] // 2
+                break
+
+            target = reco_detail.best_result.box
+            if self._check_lock(context, image, target):
+                logger.info(f"分数 {target_threshold:,} 已锁定，降档重试")
+                option_idx -= 1
+                continue
+
+            x = target[0] + target[2] // 2
+            y = target[1] + target[3] // 2
+            break
 
         logger.info(f"当前镜像: {current_mirror}, 当前投票: {vote}, 目标分数: {target_threshold:,}, 点击坐标: ({x}, {y - 20})")
         self._double_click(context, x, y - 20)
 
         return True
+
+    @staticmethod
+    def _check_lock(context: Context, image, target_box) -> bool:
+        """检查目标分数附近是否有锁定图标"""
+        roi = [
+            target_box[0] + 330,
+            target_box[1] - 80,
+            100,
+            100,
+        ]
+        reco_detail = context.run_recognition(
+            "ProduceRecognitionLock",
+            image,
+            pipeline_override={
+                "ProduceRecognitionLock": {
+                    "recognition": "TemplateMatch",
+                    "roi": roi,
+                    "template": "produce/lock.png",
+                    "green_mask": True,
+                }
+            },
+        )
+        return reco_detail is not None and reco_detail.hit
 
     def _get_current_mirror(self, context: Context, image) -> Optional[tuple]:
         """获取当前镜像"""
