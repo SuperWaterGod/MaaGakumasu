@@ -341,7 +341,7 @@
           "name": "No",
           "pipeline_override": {
             "ProduceFollow": {
-              "template": "produce/follow.png"
+              "template": "produce/cancel.png"
             }
           }
         }
