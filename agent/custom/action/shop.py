@@ -106,7 +106,7 @@ class ShoppingCoinGachaAuto(CustomAction):
                     },
                 )
                 if reco_detail and reco_detail.hit:
-                    params[key]["count"] = int("".join([item.text for item in reco_detail.all_results]).replace(",", ""))
+                    params[key]["count"] = int("".join([item.text for item in reco_detail.filtered_results]).replace(",", ""))
                 else:
                     params[key]["count"] = 0
                 logger.info(f"{params[key]['name']}扭蛋数量:{params[key]['count']}")
