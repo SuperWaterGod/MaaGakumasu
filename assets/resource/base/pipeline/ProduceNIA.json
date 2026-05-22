@@ -64,11 +64,12 @@
       "param": {
         "template": [
           "next.png", // (必选)考试成功时需要点next
+          "produce/round_close_button.png", // 试镜解锁后关闭按钮
           "produce/retry.png", // 失败时重试
           "produce/decide.png", // 辅助模式似乎必出现
           "produce/skip_confirm.png", // 跳过按钮
           "produce/drink_no.png", // 选择奖励时拒绝饮料
-          "produce/close.png"// ProduceNIAButton识别太快，偶尔会连续识别两次右边的按钮造成误触，然后打开卡包
+          "produce/close.png" // ProduceNIAButton识别太快，偶尔会连续识别两次右边的按钮造成误触，然后打开卡包
         ],
         "order_by": "Score",
         "roi": [
@@ -237,7 +238,8 @@
           630,
           696,
           530
-        ]
+        ],
+        "threshold": 0.9
       }
     },
     "action": {

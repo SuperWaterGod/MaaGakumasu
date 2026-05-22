@@ -1125,6 +1125,7 @@
             "ProduceFinished",
             "[JumpBack]ProduceNext",
             "[JumpBack]CloseRoundButton",
+            "[JumpBack]DecideButton",
             "[JumpBack]Click_1"
         ]
     },
@@ -1136,7 +1137,8 @@
                     "produce/finished.png",
                     "home.png",
                     "home_1.png"
-                ]
+                ],
+                "threshold": 0.9
             }
         },
         "action": {
