@@ -102,6 +102,7 @@ class ShoppingCoinGachaAuto(CustomAction):
                             "expected": "^\\d{1,3}(,\\d{3})*$",
                             "roi": params[key]["roi"],
                             "order_by": "Horizontal",
+                            "only_rec": True,
                         }
                     },
                 )
