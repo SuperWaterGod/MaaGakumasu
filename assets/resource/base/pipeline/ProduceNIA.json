@@ -11,6 +11,7 @@
     "next": [
       "ProduceExit",
       "ProduceNIAFailedFlag",
+      "ProduceGeneration",
       "[JumpBack]ProduceChooseNIAEventFlag",
       "[JumpBack]ProduceCardsFlag",
       "[JumpBack]ProduceRecognitionWorkOptions",
@@ -65,6 +66,7 @@
         "template": [
           "next.png", // (必选)考试成功时需要点next
           "produce/round_close_button.png", // 试镜解锁后关闭按钮
+          "produce/ok.png", // 好感度提升后确认按钮
           "produce/retry.png", // 失败时重试
           "produce/decide.png", // 辅助模式似乎必出现
           "produce/skip_confirm.png", // 跳过按钮
@@ -245,7 +247,10 @@
     "action": {
       "type": "Custom",
       "param": {
-        "custom_action": "ProduceChooseMirrorAuto"
+        "custom_action": "ProduceChooseMirrorAuto",
+        "custom_action_param": {
+          "level": null
+        }
       }
     }
   },
@@ -266,9 +271,12 @@
       }
     },
     "action": {
-      "type": "StopTask",
+      "type": "DoNothing",
       "param": {}
     },
+    "next": [
+      "ProduceNIAFailedRetry"
+    ],
     "focus": {
       "Node.Recognition.Succeeded": {
         "content": "❌ 考试失败",
@@ -278,5 +286,83 @@
         ]
       }
     }
+  },
+  "ProduceNIAFailedRetry": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/challenge.png"
+        ],
+        "roi": [
+          16,
+          1040,
+          688,
+          220
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ProduceNIAFailedRetryLastChallenge"
+    ],
+    "post_wait_freezes": 200
+  },
+  "ProduceNIAFailedRetryLastChallenge": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/last_challenge.png"
+        ],
+        "roi": [
+          470,
+          340,
+          240,
+          560
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {
+        "target_offset": [
+          -236,
+          130,
+          0,
+          0
+        ]
+      }
+    },
+    "next": [
+      "ProduceNIAFailedRetryConfirm"
+    ],
+    "post_wait_freezes": 200
+  },
+  "ProduceNIAFailedRetryConfirm": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/decide.png"
+        ],
+        "roi": [
+          16,
+          1040,
+          688,
+          220
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ProduceEntryNIA"
+    ]
   }
 }
