@@ -40,7 +40,8 @@
         {
           "name": "NIA",
           "option": [
-            "「NIA」难度"
+            "「NIA」难度",
+            "启用试镜难度降低"
           ]
         }
       ],
@@ -368,7 +369,6 @@
       "label": "$跳过准备阶段"
     },
     "卡片选择优先级": {
-      "label": "卡片选择优先级",
       "type": "select",
       "default_case": "建议卡>活动卡",
       "description": "$卡片选择优先级说明",
@@ -413,7 +413,8 @@
           },
           "label": "$无"
         }
-      ]
+      ],
+      "label": "卡片选择优先级"
     },
     "跳过选择偶像": {
       "type": "switch",
@@ -503,6 +504,45 @@
         }
       ],
       "label": "$启用培育失败重试"
+    },
+    "启用试镜难度降低": {
+      "type": "select",
+      "default_case": "关闭",
+      "description": "$试镜难度降低说明",
+      "cases": [
+        {
+          "name": "关闭",
+          "pipeline_override": {
+            "ProduceMirrorFlag": {
+              "custom_action_param": null
+            }
+          },
+          "label": "$关闭"
+        },
+        {
+          "name": "降低一档",
+          "pipeline_override": {
+            "ProduceMirrorFlag": {
+              "custom_action_param": {
+                "level": 1
+              }
+            }
+          },
+          "label": "$降低一档"
+        },
+        {
+          "name": "降低两档",
+          "pipeline_override": {
+            "ProduceMirrorFlag": {
+              "custom_action_param": {
+                "level": 2
+              }
+            }
+          },
+          "label": "$降低两档"
+        }
+      ],
+      "label": "$启用试镜难度降低"
     },
     "培育偶像": {
       "type": "select",

@@ -1235,25 +1235,16 @@ class ProduceChooseOptionsAuto(CustomAction):
 @AgentServer.custom_action("ProduceChooseMirrorAuto")
 class ProduceChooseMirrorAuto(CustomAction):
     """
-    自动选择镜像挑战难度
+    自动选择试镜挑战难度
 
-    根据当前投票数在对应镜的阈值列表中选择合适的难度选项：
-    - 获取当前镜（第一/第二/第三镜）
-    - 获取当前投票数
-    - 遍历阈值列表，找到第一个大于投票数的门槛，选择对应的选项
-    - 若投票数低于所有阈值（threshold=0），则选择"无"选项
-    - 点击前检测目标分数旁是否有锁定图标，若有则自动降档
-
-    阈值配置（mirror）：
-    - first:  [0, 4000, 9000]       -> 投票<4000选索引0，<9000选索引1，>=9000选索引2
-    - second: [0, 14000, 25000]     -> 投票<14000选索引0，<25000选索引1，>=25000选索引2
-    - third:  [0, 28000, 40000, 57000] -> 投票<28000选索引0，<40000选索引1，<57000选索引2，>=57000选索引3
-
-    识别失败时回退到"无"选项
+    根据当前投票数在对应试镜的阈值列表中选择满足条件的最高难度：
+    - 获取当前投票数和试镜各门槛分数及坐标
+    - 选取满足 vote >= threshold 的最高门槛
+    - 根据降档配置先跳过指定档数，再检测锁定，锁定则继续降档
+    - 降档至 threshold=0 或找到未锁定选项为止
     """
 
     CLICK_DELAY = 0.5
-    mirror = {"first": [0, 4000, 9000], "second": [0, 14000, 25000], "third": [0, 28000, 40000, 57000]}
 
     def run(
         self,
@@ -1262,44 +1253,36 @@ class ProduceChooseMirrorAuto(CustomAction):
     ) -> bool:
         image = context.tasker.controller.post_screencap().wait().get()
         vote = self._get_current_vote(context, image) or 1
-        current_mirror, none_box = self._get_current_mirror(context, image) or ("first", [360, 1050, 1, 1])
+        mirror = self._get_current_mirror(context, image)
+        lowering_difficulty = self._get_lowering_difficulty(context, argv)
 
-        thresholds = self.mirror.get(current_mirror, [0])
-        option_idx = 0
+        # 门槛分数降序排列
+        thresholds = sorted((int(k) for k in mirror.keys()), reverse=True)
+
+        # 找到满足当前投票的最高门槛索引
+        start_idx = 0
         for i, threshold in enumerate(thresholds):
             if vote >= threshold:
-                option_idx = i
+                start_idx = i
+                break
 
-        while option_idx >= 0:
-            target_threshold = thresholds[option_idx]
+        # 先降指定档数，再检查锁定，锁定则继续降档直至成功或为0档
+        target_threshold = 0
+        start = min(start_idx + lowering_difficulty, len(thresholds) - 1)
+        for i in range(start, len(thresholds)):
+            target_threshold = thresholds[i]
+            target_box = mirror[str(target_threshold)]
+            x = target_box[0] + target_box[2] // 2
+            y = target_box[1] + target_box[3] // 2
+
             if target_threshold == 0:
-                x = none_box[0] + none_box[2] // 2
-                y = none_box[1] + none_box[3] // 2
+                break
+            if not self._check_lock(context, image, target_box):
                 break
 
-            expected = f".*{target_threshold:,}.*"
-            reco_detail = context.run_recognition(
-                "ProduceRecognitionMirror",
-                image,
-                pipeline_override={"ProduceRecognitionMirror": {"expected": expected}},
-            )
-            if not reco_detail or not reco_detail.hit:
-                logger.warning(f"未识别到目标分数: {target_threshold:,}")
-                x = none_box[0] + none_box[2] // 2
-                y = none_box[1] + none_box[3] // 2
-                break
+            logger.info(f"分数 {target_threshold:,} 已锁定，继续降档")
 
-            target = reco_detail.best_result.box
-            if self._check_lock(context, image, target):
-                logger.info(f"分数 {target_threshold:,} 已锁定，降档重试")
-                option_idx -= 1
-                continue
-
-            x = target[0] + target[2] // 2
-            y = target[1] + target[3] // 2
-            break
-
-        logger.info(f"当前镜像: {current_mirror}, 当前投票: {vote}, 目标分数: {target_threshold:,}, 点击坐标: ({x}, {y - 20})")
+        logger.info(f"当前投票: {vote:,}, 目标分数: {target_threshold:,}, 点击坐标: ({x}, {y - 20})")
         self._double_click(context, x, y - 20)
 
         return True
@@ -1327,22 +1310,30 @@ class ProduceChooseMirrorAuto(CustomAction):
         )
         return reco_detail is not None and reco_detail.hit
 
-    def _get_current_mirror(self, context: Context, image) -> Optional[tuple]:
-        """获取当前镜像"""
-        mirror_list = {
-            "first": "produce/NIA/mirror_1.png",
-            "second": "produce/NIA/mirror_2.png",
-            "third": "produce/NIA/mirror_3.png",
-        }
-        mirror_name = None
-        for mirror_name, mirror_img in mirror_list.items():
-            reco_detail = context.run_recognition(
-                "ProduceMirrorFlag",
-                image,
-                pipeline_override={"ProduceMirrorFlag": {"template": mirror_img, "threshold": 0.9}},
-            )
-            if reco_detail and reco_detail.hit:
-                return mirror_name, reco_detail.best_result.box
+    @staticmethod
+    def _get_lowering_difficulty(context: Context, argv) -> int:
+        """检查是否启动降档"""
+        params = json.loads(argv.custom_action_param)
+        lowering_level = params.get("level") if isinstance(params, dict) else None
+        if not lowering_level:
+            return 0
+        else:
+            logger.info(f"检测到启动降档，降低{lowering_level}档")
+            return int(lowering_level)
+
+    @staticmethod
+    def _get_current_mirror(context: Context, image):
+        """获取当前试镜"""
+        mirror = {"0": [360, 1050, 1, 1]}
+        reco_detail = context.run_recognition("ProduceRecognitionMirror", image)
+        if reco_detail and reco_detail.hit:
+            for result in reco_detail.filtered_results:
+                box = result.box
+                text = "".join(filter(str.isdigit, result.text.replace(",", "")))
+                mirror[text] = [box[0], box[1], box[2], box[3]]
+        mirror = dict(sorted(mirror.items(), key=lambda x: int(x[0])))
+        logger.info(f"当前试镜门槛分数: {list(mirror.keys())}")
+        return mirror
 
     @staticmethod
     def _get_current_vote(context: Context, image) -> Optional[int]:
