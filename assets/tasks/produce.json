@@ -478,6 +478,11 @@
               "next": [
                 "ProduceFailedRetry"
               ]
+            },
+            "ProduceNIAFailedFlag": {
+              "next": [
+                "ProduceNIAFailedRetry"
+              ]
             }
           }
         },
@@ -485,6 +490,11 @@
           "name": "No",
           "pipeline_override": {
             "ProduceFailedFlag": {
+              "next": [
+                "ProduceFailedStop"
+              ]
+            },
+            "ProduceNIAFailedFlag": {
               "next": [
                 "ProduceFailedStop"
               ]
@@ -1921,7 +1931,7 @@
             },
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
-                "effect": "ｽアノマリー強気",
+                "effect": "非凡·强气",
                 "first": "Vo",
                 "second": "Vi"
               }
@@ -2264,8 +2274,26 @@
     },
     "月村手毬卡片": {
       "type": "select",
-      "default_case": "月村手毬(一体いつから)",
+      "default_case": "月村手毬(ガラクタロード)",
       "cases": [
+        {
+          "name": "月村手毬(ガラクタロード)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "月村手毬",
+                "song_name": "ガラクタロード"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "理性·干劲",
+                "first": "Vo",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "月村手毬(一体いつから)",
           "pipeline_override": {
@@ -2469,8 +2497,26 @@
     },
     "姫崎莉波卡片": {
       "type": "select",
-      "default_case": "姫崎莉波(36℃ U･B･U)",
+      "default_case": "姫崎莉波(ガラクタロード)",
       "cases": [
+        {
+          "name": "姫崎莉波(ガラクタロード)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "姫崎莉波",
+                "song_name": "ガラクタロード"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·好调",
+                "first": "Vi",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "姫崎莉波(36℃ U･B･U)",
           "pipeline_override": {

@@ -1628,8 +1628,26 @@
     },
     "月村手毬卡片-zh_CN": {
       "type": "select",
-      "default_case": "月村手毬(究竟从何时起)",
+      "default_case": "月村手毬(荆棘之路)",
       "cases": [
+        {
+          "name": "月村手毬(荆棘之路)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "月村手毬",
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "理性·干劲",
+                "first": "Vo",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "月村手毬(究竟从何时起)",
           "pipeline_override": {
@@ -1833,8 +1851,26 @@
     },
     "姬崎莉波卡片-zh_CN": {
       "type": "select",
-      "default_case": "姬崎莉波(36℃ U･B･U)",
+      "default_case": "姬崎莉波(荆棘之路)",
       "cases": [
+        {
+          "name": "姬崎莉波(荆棘之路)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "姬崎莉波",
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·好调",
+                "first": "Vi",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "姬崎莉波(36℃ U･B･U)",
           "pipeline_override": {
@@ -2461,7 +2497,7 @@
             },
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
-                "effect": "ｽアノマリー強気",
+                "effect": "非凡·强气",
                 "first": "Vo",
                 "second": "Vi"
               }
