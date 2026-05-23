@@ -699,6 +699,7 @@
         "next": [
             "ProduceExit",
             "ProduceFailedFlag",
+            "ProduceGeneration",
             "[JumpBack]ProduceChooseEventFlag",
             "[JumpBack]ProduceCardsFlag",
             "[JumpBack]ProduceChooseGetFlag",
@@ -1019,7 +1020,8 @@
             "type": "TemplateMatch",
             "param": {
                 "template": [
-                    "produce/delete_icon.png"
+                    "produce/delete_icon.png",
+                    "produce/copy_icon.png"
                 ],
                 "roi": [
                     0,
@@ -1050,7 +1052,10 @@
         "recognition": {
             "type": "TemplateMatch",
             "param": {
-                "template": "produce/delete.png"
+                "template": [
+                    "produce/delete.png",
+                    "produce/copy.png"
+                ]
             }
         },
         "action": {
@@ -1126,6 +1131,7 @@
             "[JumpBack]ProduceNext",
             "[JumpBack]CloseRoundButton",
             "[JumpBack]DecideButton",
+            "[JumpBack]ProduceEventResultButton",
             "[JumpBack]Click_1"
         ]
     },
@@ -1421,7 +1427,7 @@
             "type": "TemplateMatch",
             "param": {
                 "template": [
-                    "produce/stop.png"
+                    "produce/end.png"
                 ],
                 "roi": [
                     16,
@@ -1438,6 +1444,7 @@
         "next": [
             "ProduceGeneration",
             "ProduceExit",
+            "[JumpBack]ProduceChooseDeleteFlag",
             "[JumpBack]Click_1"
         ]
     },
