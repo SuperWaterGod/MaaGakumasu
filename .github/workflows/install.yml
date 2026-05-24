@@ -128,20 +128,25 @@ jobs:
       - name: Generate multi-resolution ICO
         shell: bash
         run: |
-          # 检查 logo.ico 是否存在
-          if [ ! -f "logo.ico" ]; then
-            echo "Warning: logo.ico not found in project root."
+          # 优先使用高分辨率源 PNG（1024x1024），回退到 logo.ico
+          source_file="logo.png"
+          if [ ! -f "$source_file" ]; then
+            source_file="logo.ico"
+          fi
+          if [ ! -f "$source_file" ]; then
+            echo "Warning: No icon source file found."
             exit 0
           fi
+          echo "Using source: $source_file"
 
-          # 安装 Pillow 并生成多分辨率 ICO（16~256）
+          # 安装 Pillow 并从高分辨率源生成多分辨率 ICO
           pip install Pillow
           python -c "
           from PIL import Image
-          img = Image.open('logo.ico')
-          sizes = [(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)]
+          img = Image.open('$source_file')
+          sizes = [(16,16), (24,24), (32,32), (48,48), (64,64), (128,128), (256,256)]
           img.save('logo_multi.ico', format='ICO', sizes=sizes)
-          print('Generated multi-resolution ICO with sizes:', sizes)
+          print(f'Generated multi-resolution ICO from {img.size} source with sizes:', sizes)
           "
 
       - name: Modify MaaGakumasu exe icon
