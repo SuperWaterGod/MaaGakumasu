@@ -424,7 +424,7 @@
       "param": {}
     },
     "focus": {
-      "Node.Action.Succeeded": "[color:blue]自动编队完成[/color]"
+      "Node.Action.Succeeded": "[color:DeepSkyBlue]自动编队完成[/color]"
     }
   }
 }

@@ -124,7 +124,7 @@
       "ShoppingDailyExchangeAPController"
     ],
     "focus": {
-      "Node.Action.Succeeded": "[color:blue]金币兑换已完成[/color]"
+      "Node.Action.Succeeded": "[color:DeepSkyBlue]金币兑换已完成[/color]"
     }
   },
   "ShoppingFreeRefresh": {
@@ -211,7 +211,7 @@
       "BackHome"
     ],
     "focus": {
-      "Node.Action.Succeeded": "[color:blue]AP兑换已完成[/color]"
+      "Node.Action.Succeeded": "[color:DeepSkyBlue]AP兑换已完成[/color]"
     }
   },
   "ShoppingDailyExchangeItemsRecommend": {

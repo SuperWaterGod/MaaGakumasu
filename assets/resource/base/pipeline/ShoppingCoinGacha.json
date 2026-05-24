@@ -93,7 +93,7 @@
       "BackHome"
     ],
     "focus": {
-      "Node.Action.Succeeded": "[color:blue]扭蛋已兑换[/color]"
+      "Node.Action.Succeeded": "[color:DeepSkyBlue]扭蛋已兑换[/color]"
     }
   },
   "ShoppingCoinGachaBuy": {

@@ -168,8 +168,8 @@
       "WorkChooseShowConfirm"
     ],
     "focus": {
-      "Node.Recognition.Succeeded": "[color:blue]演出角色识别成功[/color]",
-      "Node.Recognition.Failed": "[color:red]演出角色识别失败[/color]"
+      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]演出角色识别成功[/color]",
+      "Node.Recognition.Failed": "[color:OrangeRed]演出角色识别失败[/color]"
     }
   },
   "WorkChooseLive": {
@@ -190,8 +190,8 @@
       "WorkChooseLiveConfirm"
     ],
     "focus": {
-      "Node.Recognition.Succeeded": "[color:blue]直播角色识别成功[/color]",
-      "Node.Recognition.Failed": "[color:red]直播角色识别失败[/color]"
+      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]直播角色识别成功[/color]",
+      "Node.Recognition.Failed": "[color:OrangeRed]直播角色识别失败[/color]"
     }
   },
   "WorkChooseShowConfirm": {
@@ -322,7 +322,7 @@
       "BackHome"
     ],
     "focus": {
-      "Node.Action.Succeeded": "[color:blue]开始工作[/color]"
+      "Node.Action.Succeeded": "[color:DeepSkyBlue]开始工作[/color]"
     }
   },
   "WorkChooseGood": {

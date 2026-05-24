@@ -212,7 +212,10 @@
     },
     "next": [
       "ProduceGuideExit"
-    ]
+    ],
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 特别指导[/color]"
+    }
   },
   "ProduceGuideExit": {
     "recognition": {
@@ -252,6 +255,9 @@
           "level": null
         }
       }
+    },
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择试镜难度[/color]"
     }
   },
   "ProduceNIAFailedFlag": {
@@ -279,7 +285,7 @@
     ],
     "focus": {
       "Node.Recognition.Succeeded": {
-        "content": "❌ 考试失败",
+        "content": "[color:OrangeRed]❌ 考试失败[/color]",
         "display": [
           "log",
           "notification"
@@ -340,7 +346,10 @@
     "next": [
       "ProduceNIAFailedRetryConfirm"
     ],
-    "post_wait_freezes": 200
+    "post_wait_freezes": 200,
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]尝试降低试镜难度[/color]"
+    }
   },
   "ProduceNIAFailedRetryConfirm": {
     "recognition": {
@@ -363,6 +372,9 @@
     },
     "next": [
       "ProduceEntryNIA"
-    ]
+    ],
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]已再次开始挑战[/color]"
+    }
   }
 }

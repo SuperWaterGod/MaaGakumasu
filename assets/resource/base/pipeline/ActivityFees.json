@@ -82,7 +82,7 @@
       "HomeFlag"
     ],
     "focus": {
-      "Node.Action.Succeeded": "[color:green]活动费用已领取[/color]"
+      "Node.Action.Succeeded": "[color:LimeGreen]活动费用已领取[/color]"
     }
   },
   "ActivityWithoutFee": {

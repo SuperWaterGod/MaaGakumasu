@@ -118,7 +118,7 @@
       "[JumpBack]CloseButton"
     ],
     "focus": {
-      "Node.Action.Succeeded": "[color:green]礼物已领取[/color]"
+      "Node.Action.Succeeded": "[color:LimeGreen]礼物已领取[/color]"
     }
   },
   "AwardBackHome": {
@@ -242,7 +242,7 @@
       "[JumpBack]AwardMissionUp"
     ],
     "focus": {
-      "Node.Action.Succeeded": "[color:green]奖励已领取[/color]"
+      "Node.Action.Succeeded": "[color:LimeGreen]奖励已领取[/color]"
     }
   },
   "AwardMissionUp": {
