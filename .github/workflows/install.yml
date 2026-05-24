@@ -125,6 +125,25 @@ jobs:
             exit 1
           fi
 
+      - name: Generate multi-resolution ICO
+        shell: bash
+        run: |
+          # 检查 logo.ico 是否存在
+          if [ ! -f "logo.ico" ]; then
+            echo "Warning: logo.ico not found in project root."
+            exit 0
+          fi
+
+          # 安装 Pillow 并生成多分辨率 ICO（16~256）
+          pip install Pillow
+          python -c "
+          from PIL import Image
+          img = Image.open('logo.ico')
+          sizes = [(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)]
+          img.save('logo_multi.ico', format='ICO', sizes=sizes)
+          print('Generated multi-resolution ICO with sizes:', sizes)
+          "
+
       - name: Modify MaaGakumasu exe icon
         shell: bash
         run: |
@@ -134,30 +153,31 @@ jobs:
           else
             rcedit_url="https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x86.exe"
           fi
-          
+
           # 下载 rcedit
           echo "Downloading rcedit for ${{ matrix.arch }}..."
           curl -L "$rcedit_url" -o rcedit.exe
-          
-          # 检查 logo.ico 是否存在
-          if [ ! -f "logo.ico" ]; then
-            echo "Warning: logo.ico not found in project root."
-            exit 0
-          fi
-          
+
           # 查找 MaaGakumasu.exe 的位置
           exe_path=$(find install -name "MaaGakumasu.exe" | head -n 1)
-          
+
           if [ -z "$exe_path" ]; then
             echo "Warning: MaaGakumasu.exe not found in install directory."
             exit 0
           fi
-          
+
           echo "Found MaaGakumasu.exe at: $exe_path"
-          
+
+          # 使用多分辨率 ICO（优先）或原始 ICO
+          icon_file="logo.ico"
+          if [ -f "logo_multi.ico" ]; then
+            icon_file="logo_multi.ico"
+            echo "Using multi-resolution ICO"
+          fi
+
           # 修改 exe 图标
-          ./rcedit.exe "$exe_path" --set-icon "logo.ico"
-          
+          ./rcedit.exe "$exe_path" --set-icon "$icon_file"
+
           if [ $? -eq 0 ]; then
             echo "MaaGakumasu icon modified successfully"
           else
