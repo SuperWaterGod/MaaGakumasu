@@ -333,7 +333,7 @@
         ],
         "post_wait_freezes": 200,
         "focus": {
-            "Node.Action.Succeeded": "[color:green]已使用体力药[/color]"
+            "Node.Action.Succeeded": "[color:LimeGreen]已使用体力药[/color]"
         }
     },
     "ProduceLackAPCancel": {
@@ -354,7 +354,7 @@
         ],
         "post_wait_freezes": 200,
         "focus": {
-            "Node.Action.Succeeded": "[color:green]已放弃使用体力药[/color]"
+            "Node.Action.Succeeded": "[color:LimeGreen]已放弃使用体力药[/color]"
         }
     },
     "ProduceChooseIdolFlag": {
@@ -415,7 +415,7 @@
         ],
         "post_wait_freezes": 200,
         "focus": {
-            "Node.Action.Succeeded": "[color:blue]已找到偶像卡[/color]"
+            "Node.Action.Succeeded": "[color:DeepSkyBlue]已找到偶像卡[/color]"
         }
     },
     "ProduceChooseIdol": {
@@ -1001,7 +1001,10 @@
             "ProduceChooseStrengthen"
         ],
         "pre_delay": 100,
-        "post_delay": 100
+        "post_delay": 100,
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]选择强化[/color]"
+        }
     },
     "ProduceChooseStrengthen": {
         "recognition": {
@@ -1021,7 +1024,8 @@
             "param": {
                 "template": [
                     "produce/delete_icon.png",
-                    "produce/copy_icon.png"
+                    "produce/copy_icon.png",
+                    "produce/exchange_icon.png"
                 ],
                 "roi": [
                     0,
@@ -1046,7 +1050,10 @@
             "ProduceChooseDeleteClick"
         ],
         "pre_delay": 100,
-        "post_delay": 100
+        "post_delay": 100,
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]选择删除/复制/变换[/color]"
+        }
     },
     "ProduceChooseDeleteClick": {
         "recognition": {
@@ -1054,7 +1061,8 @@
             "param": {
                 "template": [
                     "produce/delete.png",
-                    "produce/copy.png"
+                    "produce/copy.png",
+                    "produce/exchange.png"
                 ]
             }
         },
@@ -1187,7 +1195,7 @@
         ],
         "focus": {
             "Node.Action.Succeeded": {
-                "content": "✅ 考试通过，成功培育",
+                "content": "[color:LimeGreen]✅ 考试通过，成功培育[/color]",
                 "display": [
                     "log",
                     "notification"
@@ -1233,7 +1241,10 @@
                 "custom_action": "ProduceKeepDrinkAuto"
             }
         },
-        "post_delay": 100
+        "post_delay": 100,
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:orange]饮料已满[/color]"
+        }
     },
     "ProduceShoppingFlag": {
         "recognition": {
@@ -1414,7 +1425,7 @@
         ],
         "focus": {
             "Node.Recognition.Succeeded": {
-                "content": "❌ 考试失败",
+                "content": "[color:OrangeRed]❌ 考试失败[/color]",
                 "display": [
                     "log",
                     "notification"
@@ -1446,7 +1457,10 @@
             "ProduceExit",
             "[JumpBack]ProduceChooseDeleteFlag",
             "[JumpBack]Click_1"
-        ]
+        ],
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:orange]已终止培育[/color]"
+        }
     },
     "ProduceFailedRetry": {
         "recognition": {
@@ -1492,6 +1506,9 @@
         },
         "next": [
             "ProduceEntry"
-        ]
+        ],
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]已再次开始挑战[/color]"
+        }
     }
 }
