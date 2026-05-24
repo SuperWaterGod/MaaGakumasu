@@ -492,8 +492,8 @@ class ProduceChooseNIAEventAuto(CustomAction):
             if event:
                 return self._make_event(self.first, event)
 
-        # 7. 第二属性课程（仅当第一属性快满时，且第二属性未达80%）
-        if is_first_near_full and not is_second_stopped:
+        # 7. 第二属性课程（第一属性停止或快满时，且第二属性未达80%）
+        if (is_first_stopped or is_first_near_full) and not is_second_stopped:
             event = self._find_attr_event(events, self.second, need_sp=False)
             if event:
                 return self._make_event(self.second, event)
