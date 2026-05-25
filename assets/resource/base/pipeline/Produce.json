@@ -1141,7 +1141,10 @@
             "[JumpBack]DecideButton",
             "[JumpBack]ProduceEventResultButton",
             "[JumpBack]Click_1"
-        ]
+        ],
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]回忆已生成[/color]"
+        }
     },
     "ProduceFinished": {
         "recognition": {
