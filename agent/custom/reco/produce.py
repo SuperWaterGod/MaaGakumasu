@@ -88,10 +88,9 @@ class ProduceShowStart(CustomRecognition):
         argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         image = argv.image
-        height = image.shape[0]
-        width = image.shape[1]
-        context.run_task("Click_1")
+        height, width = image.shape[0], image.shape[1]
         if height < width:
+            context.run_task("Click_1")
             return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "屏幕旋转"})
         return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "屏幕未旋转"})
 
@@ -108,10 +107,9 @@ class ProduceShowEnd(CustomRecognition):
         argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         image = argv.image
-        height = image.shape[0]
-        width = image.shape[1]
-        context.run_task("Click_1")
+        height, width = image.shape[0], image.shape[1]
         if height > width:
+            context.run_task("Click_1")
             return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "屏幕旋转"})
         return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "屏幕未旋转"})
 
