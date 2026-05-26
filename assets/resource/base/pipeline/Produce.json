@@ -138,7 +138,8 @@
             "type": "TemplateMatch",
             "param": {
                 "template": [
-                    "produce/produce_mainpage_ranking.png"
+                    "produce/produce_mainpage_ranking.png",
+                    "produce/produce_mainpage_ranking_1.png"
                 ],
                 "roi": [
                     500,
@@ -771,8 +772,8 @@
                 ]
             }
         },
-        "pre_delay": 100,
-        "post_delay": 100
+        "pre_delay": 0,
+        "post_delay": 0
     },
     "ProduceChooseEventFlag": {
         "recognition": {
@@ -798,14 +799,11 @@
         "action": {
             "type": "Custom",
             "param": {
-                "custom_action": "ProduceChooseEventAuto",
-                "custom_action_param": {
-                    "preference": "Vi"
-                }
+                "custom_action": "ProduceChooseEventAuto"
             }
         },
-        "pre_delay": 100,
-        "post_delay": 100
+        "pre_delay": 0,
+        "post_delay": 0
     },
     "ProduceChooseGetFlag": {
         "recognition": {
@@ -832,8 +830,7 @@
             "ProduceChooseEventRecommend",
             "ProduceChooseFirst"
         ],
-        "pre_delay": 100,
-        "post_delay": 100,
+        "post_wait_freezes": 200,
         "focus": {
             "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择饮料/物品/卡牌[/color]"
         }
@@ -1144,7 +1141,9 @@
         ],
         "focus": {
             "Node.Recognition.Succeeded": "[color:DeepSkyBlue]回忆已生成[/color]"
-        }
+        },
+        "pre_delay": 0,
+        "post_delay": 0
     },
     "ProduceFinished": {
         "recognition": {

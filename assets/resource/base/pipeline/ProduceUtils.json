@@ -86,8 +86,8 @@
       "type": "Click",
       "param": {}
     },
-    "pre_delay": 100,
-    "post_delay": 100
+    "pre_delay": 0,
+    "post_delay": 0
   },
   "ProduceSkipShow": {
     "recognition": {
@@ -486,8 +486,7 @@
     },
     "focus": {
       "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择冲刺/上课/外出[/color]"
-    },
-    "post_delay": 1000
+    }
   },
   "ProduceRecognitionUncheckedMark": {
     "recognition": {
@@ -604,8 +603,8 @@
       "type": "Click",
       "param": {
         "target": [
-          25,
-          25,
+          20,
+          20,
           5,
           5
         ]
