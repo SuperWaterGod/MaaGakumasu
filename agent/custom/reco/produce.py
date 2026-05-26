@@ -88,9 +88,9 @@ class ProduceShowStart(CustomRecognition):
         argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         image = argv.image
+        context.run_action("Click_1")
         height, width = image.shape[0], image.shape[1]
         if height < width:
-            context.run_task("Click_1")
             return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "屏幕旋转"})
         return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "屏幕未旋转"})
 
@@ -108,8 +108,8 @@ class ProduceShowEnd(CustomRecognition):
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
         image = argv.image
         height, width = image.shape[0], image.shape[1]
+        context.run_action("Click_1")
         if height > width:
-            context.run_task("Click_1")
             return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "屏幕旋转"})
         return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "屏幕未旋转"})
 
@@ -125,7 +125,7 @@ class ProduceCardsFlagAuto(CustomRecognition):
         context: Context,
         argv: CustomRecognition.AnalyzeArg,
     ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
-        context.run_task("Click_1")
+        context.run_action("Click_1")
         cards_reco_detail = context.run_recognition("ProduceRecognitionCards", argv.image)
         health_reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", argv.image)
         if cards_reco_detail and cards_reco_detail.hit and health_reco_detail and health_reco_detail.hit:
