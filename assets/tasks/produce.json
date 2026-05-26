@@ -1753,8 +1753,26 @@
     },
     "篠澤広卡片": {
       "type": "select",
-      "default_case": "篠澤広(みちなるひろがる)",
+      "default_case": "篠澤広(ガラクタロード)",
       "cases": [
+        {
+          "name": "篠澤広(ガラクタロード)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "篠澤広",
+                "song_name": "ガラクタロード"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·集中",
+                "first": "Vo",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "篠澤広(みちなるひろがる)",
           "pipeline_override": {

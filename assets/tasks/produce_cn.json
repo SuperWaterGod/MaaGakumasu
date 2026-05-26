@@ -1236,8 +1236,26 @@
     },
     "筱泽广卡片-zh_CN": {
       "type": "select",
-      "default_case": "筱泽广(未知万千 广阔无限)",
+      "default_case": "筱泽广(荆棘之路)",
       "cases": [
+        {
+          "name": "筱泽广(荆棘之路)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "筱泽广",
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·集中",
+                "first": "Vo",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "筱泽广(未知万千 广阔无限)",
           "pipeline_override": {
