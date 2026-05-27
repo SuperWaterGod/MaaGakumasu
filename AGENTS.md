@@ -10,7 +10,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 
 ## 当前进度
 
-最近更新以 `assets/resource/Changelog.md` 的 v1.4.0 公告和最近提交为准；`README.md` 中“等待 NIA 适配”等描述可能滞后。
+最近更新以 `assets/resource/Changelog.md` 的 v1.4.3 公告和最近提交为准；`README.md` 中”等待 NIA 适配”等描述可能滞后。
 
 已实现的主要功能包括：
 
@@ -19,15 +19,17 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - 社团互动，支持自动或指定请求。
 - 安排工作，支持领取奖励、自动或指定偶像、指定时长。
 - 商店购买，支持扭蛋、金币、AP 购买和自动免费刷新。
-- 自动培育处于测试阶段，支持初 `REGULAR/PRO/MASTER`、NIA `PRO/MASTER`、指定偶像、自动选择、体力药、道具、卡片选择优先级、跟随老师建议、初流程失败重试和中断继续。
+- 自动培育处于测试阶段，支持初 `REGULAR/PRO/MASTER`、NIA `PRO/MASTER`、指定偶像、自动选择、体力药、道具、卡片选择优先级、跟随老师建议、培育失败重试（初 + NIA）、试镜难度降低和中断继续。
 - Mirror 酱更新、插件版汉化、DMM 版适配、支援卡库存识别、i18n 繁体适配。
 
 近期自动培育重点更新：
 
 - NIA 培育流程已上线，任务配置中通过 `培育难度` 选择 `初` 或 `NIA`。
-- 新增考试失败自动重试开关 `启用培育失败重试`，当前覆盖初流程的 `ProduceFailedFlag`。
-- 新增 `跟随老师的建议` 开关；事件选择逻辑优先参考老师建议，其次检查 SP 课程，再按角色状态、属性阈值、偏好和随机选择机制决策。
+- 新增考试失败自动重试开关 `启用培育失败重试`，覆盖初流程 `ProduceFailedFlag` 和 NIA 流程 `ProduceNIAFailedFlag`。
+- 新增 `启用试镜难度降低` 选项（NIA 模式），支持降低一档或两档，检测到锁定图标后自动降档。
+- 新增 `跟随老师的建议` 开关；事件选择逻辑引入优先级系统，提取基类 `ProduceChooseEventBase`，增加事件保底选择机制。
 - 培育行动优先级、选秀逻辑、工作类型自动选择、商店购买流程、投票阈值、颜色识别和 `homeflag` 黑白模板识别都有近期修复。
+- 剧本选择重构为模板匹配（替代 OCR），支持 Ranking/NIA/HIF 三种剧本；饮料识别升级为多模板匹配。
 - 培育界面资源图片在 `assets/resource/base/image/produce/` 有最近更新。
 
 待实现或未完全完成的内容包括：
@@ -37,20 +39,20 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 
 截至最近更新本文件时，工作区存在未提交修改：
 
-- `assets/resource/Changelog.md`
+- `assets/interface.json`
 
 不要覆盖或回退这些文件中的现有改动，除非用户明确要求。
 
 ## 目录职责
 
 - `agent/`：Python 自定义逻辑扩展，供 MaaFramework 的 Custom recognition/action 调用。
-- `agent/custom/action/produce.py`：自动培育事件、商店、选项等自定义动作逻辑，近期改动集中在行动优先级和 NIA 选择策略。
+- `agent/custom/action/produce.py`：自动培育事件、商店、选项等自定义动作逻辑，近期改动集中在事件优先级系统、`ProduceChooseEventBase` 基类提取、保底选择机制和试镜难度降低。
 - `assets/resource/base/pipeline/`：MaaFramework 任务流水线。自动培育通用核心逻辑在 `Produce.json`，NIA 相关流程在 `ProduceNIA.json`，共用节点在 `ProduceUtils.json`。
 - `assets/resource/base/image/` 或相邻资源目录：模板匹配、图像识别所需素材。
 - `assets/data/`：结构化数据，例如偶像卡片数据 `idols_cards.json`。
 - `assets/tasks/`：MFA/MaaFramework 任务入口与选项定义。培育任务入口在 `assets/tasks/produce.json`，中文任务配置在 `produce_cn.json`。
 - `assets/lang/`：界面与任务选项翻译。新增任务选项时同步 `zh-CN` 和 `zh-Hant` 等已有语言。
-- `assets/resource/Changelog.md`：发布给用户看的资源更新公告；当前内容已进入 v1.4.0 说明。
+- `assets/resource/Changelog.md`：发布给用户看的资源更新公告；当前内容已进入 v1.4.3 说明。
 - `docs/zh_cn/`：中文用户与开发文档。
 - `tools/`：维护脚本，例如 README 中提到的偶像素材或卡片数据更新脚本。
 - `debug/`：运行日志和调试输出，不应作为功能改动的一部分提交。
@@ -62,7 +64,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - Python 依赖：`maafw`、`loguru`、`Pillow`。
 - 可选开发依赖：`pytest>=7.0`、`ruff>=0.1.0`。
 - Node 侧仅用于工具链，当前 `package.json` 包含 `prettier-plugin-multiline-arrays`。
-- Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源公告已更新到 `assets/resource/Changelog.md` 的 `v1.4.0`。
+- Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源公告已更新到 `assets/resource/Changelog.md` 的 `v1.4.3`。
 
 常用检查命令：
 
@@ -97,14 +99,15 @@ npx maa-tools check
   - 难度入口：`初` 走 `ProduceEntry`，`NIA` 走 `ProduceEntryNIA`；不要把 NIA 覆盖项误合到初流程。
   - 准备阶段：难度、偶像、支援、回忆、道具选择。
   - 培育阶段：事件选择、卡牌选择、饮料、道具、商店、强化、考试失败和结束流程。
-  - 失败处理：初流程的 `ProduceFailedFlag` 可根据 `启用培育失败重试` 跳转到重试或停止流程；NIA 流程使用 `ProduceNIAFailedFlag`，当前失败后停止任务。
+  - 失败处理：初流程的 `ProduceFailedFlag` 和 NIA 流程的 `ProduceNIAFailedFlag` 均可根据 `启用培育失败重试` 跳转到重试或停止流程。
+  - 试镜难度降低：NIA 模式通过 `ProduceMirrorFlag` 节点的 `custom_action_param` 控制降档逻辑，`启用试镜难度降低` 选项覆盖该参数。
   - NIA 事件参数：每张卡片通过 `ProduceChooseNIAEventFlag.custom_action_param` 设置 `effect`、`first`、`second`，字段顺序和语义都要保持一致。
   - 弹窗和通用按钮处理：不要扩大 ROI 到容易误触的位置。
 
 ## 任务配置规则
 
 - 培育任务定义在 `assets/tasks/produce.json`，中文版本在 `assets/tasks/produce_cn.json`；新增或重命名选项时两边都要同步。
-- 当前培育选项包括 `培育难度`、`培育偶像`、`培育次数`、`使用体力药`、`使用道具`、`跳过选择偶像`、`启用自动回忆`、`启用关注租借`、`启用培育失败重试`、`跳过准备阶段`、`卡片选择优先级`、`跟随老师的建议`。
+- 当前培育选项包括 `培育难度`、`培育偶像`、`培育次数`、`使用体力药`、`使用道具`、`跳过选择偶像`、`启用自动回忆`、`启用关注租借`、`启用培育失败重试`、`启用试镜难度降低`、`跳过准备阶段`、`卡片选择优先级`、`跟随老师的建议`。
 - `培育难度` 下 `初` 支持 `REGULAR/PRO/MASTER`，`NIA` 支持 `PRO/MASTER`。
 - 任务选项通过 `pipeline_override` 调整节点属性；改选项时必须检查被覆盖节点在 `Produce.json`、`ProduceNIA.json` 或 `ProduceUtils.json` 中是否存在且语义匹配。
 - `preset.json` 的一键培育默认仍以 `初` `PRO` 为主；新增默认项前先确认不会增加普通用户误触或长流程失败风险。
@@ -134,7 +137,7 @@ npx maa-tools check
 - 不要回退用户已有修改。当前工作区若有不相关改动，保持原样。
 - 不要在未确认的情况下调整发布、安装、依赖打包或 Mirror 酱相关配置。
 - 不要把 README 中标注为测试阶段的自动培育描述成稳定功能。
-- README、功能说明与 Changelog 若存在冲突，先检查最近提交和 `assets/tasks/produce.json`；当前 NIA 状态应以 v1.4.0 Changelog 和任务配置为准。
+- README、功能说明与 Changelog 若存在冲突，先检查最近提交和 `assets/tasks/produce.json`；当前 NIA 状态应以 v1.4.3 Changelog 和任务配置为准。
 - 不要改变项目许可证、免责声明或商业用途限制。
 - 需要联网查询 MaaFramework、MFAAvalonia、Mirror 酱或 OpenAI 等外部信息时，优先使用官方文档，并在回复中说明来源。
 - 对用户报告的运行问题，优先索要或检查 `debug/maa.log`、模拟器类型、分辨率、系统平台、游戏版本、是否 DMM/插件版汉化。
