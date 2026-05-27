@@ -88,7 +88,14 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "close_icon.png"
+        "template": "close_icon.png",
+        "threshold": 0.8,
+        "roi": [
+          0,
+          780,
+          720,
+          500
+        ]
       }
     },
     "action": {
