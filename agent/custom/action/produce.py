@@ -329,8 +329,8 @@ class ProduceChooseEventAuto(CustomAction):
                 pipeline_override={"ProduceRecognitionScore": {"roi": [150 + i * 150, 668, 136, 80]}},
             )
             if reco_detail and reco_detail.hit and len(reco_detail.filtered_results) == 2:
-                current_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[0].text)))
-                max_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[1].text.replace("/", ""))))
+                current_score = int("".join(filter(lambda c: c.isdigit(), reco_detail.filtered_results[0].text)))
+                max_score = int("".join(filter(lambda c: c.isdigit(), reco_detail.filtered_results[1].text.replace("/", ""))))
                 logger.debug(f"第{i + 1}列得分: {current_score} / {max_score}")
                 score[next(itertools.islice(score.keys(), i, None))] = current_score
                 score["max"] = max_score if score["max"] < max_score < 9999 else score["max"]
@@ -717,8 +717,8 @@ class ProduceChooseNIAEventAuto(CustomAction):
                 pipeline_override={"ProduceRecognitionScore": {"roi": [150 + i * 150, 668, 136, 80]}},
             )
             if reco_detail and reco_detail.hit and len(reco_detail.filtered_results) == 2:
-                current_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[0].text)))
-                max_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[1].text.replace("/", ""))))
+                current_score = int("".join(filter(lambda c: c.isdigit(), reco_detail.filtered_results[0].text)))
+                max_score = int("".join(filter(lambda c: c.isdigit(), reco_detail.filtered_results[1].text.replace("/", ""))))
                 logger.debug(f"第{i + 1}列得分: {current_score} / {max_score}")
                 score[next(itertools.islice(score.keys(), i, None))] = current_score
                 score["max"] = max_score if score["max"] < max_score < 9999 else score["max"]
@@ -1260,8 +1260,8 @@ class ProduceChooseOptionsAuto(CustomAction):
                 pipeline_override={"ProduceRecognitionScore": {"roi": use_roi_list[i]}},
             )
             if reco_detail and reco_detail.hit and len(reco_detail.filtered_results) == 2:
-                current_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[0].text)))
-                max_score = int("".join(filter(str.isdigit, reco_detail.filtered_results[1].text.replace("/", ""))))
+                current_score = int("".join(filter(lambda c: c.isdigit(), reco_detail.filtered_results[0].text)))
+                max_score = int("".join(filter(lambda c: c.isdigit(), reco_detail.filtered_results[1].text.replace("/", ""))))
                 logger.debug(f"第{i + 1}列得分: {current_score} / {max_score}")
                 score[next(itertools.islice(score.keys(), i, None))] = current_score
                 score["max"] = max_score if score["max"] < max_score < 9999 else score["max"]
@@ -1394,7 +1394,7 @@ class ProduceChooseMirrorAuto(CustomAction):
         if reco_detail and reco_detail.hit:
             for result in reco_detail.filtered_results:
                 box = result.box
-                text = "".join(filter(str.isdigit, result.text.replace(",", "")))
+                text = "".join(filter(lambda c: c.isdigit(), result.text.replace(",", "")))
                 mirror[text] = [box[0], box[1], box[2], box[3]]
         mirror = dict(sorted(mirror.items(), key=lambda x: int(x[0])))
         logger.info(f"当前试镜门槛分数: {list(mirror.keys())}")
