@@ -27,10 +27,13 @@ class ProduceChooseEventAuto(CustomAction):
     8. 上课：提升Vo/Da/Vi
     9. 外出：恢复体力
     10. SP课程（非第一/第二属性）
+    保底：以上均未命中时，从剩余事件中任选一个
 
     事件数据结构：
     - 属性事件：{"Vo": [x,y,w,h], "SP": bool}，SP为True表示该属性有SP课程
     - 其他事件：{"事件名称": [x,y,w,h]}
+
+    RUN_TASK_MAP：交谈需后续执行ProduceShoppingEntry
     """
 
     # 常量定义
@@ -60,6 +63,11 @@ class ProduceChooseEventAuto(CustomAction):
     ATTR_STOP_RATIO = 0.8
     LOW_HEALTH_RATIO = 0.2
     LOW_HEALTH_VALUE = 8
+
+    # 需要执行run_task的事件
+    RUN_TASK_MAP = {
+        "交谈": "ProduceShoppingEntry",
+    }
 
     def __init__(self):
         super().__init__()
@@ -184,6 +192,13 @@ class ProduceChooseEventAuto(CustomAction):
                 if event:
                     return self._make_event(f"{attr}_SP", event)
 
+        # 保底：从剩余事件中随机选择
+        if events:
+            fallback = self._find_any_event(events)
+            if fallback:
+                logger.warning(f"所有优先级未命中，保底选择: {fallback['name']}")
+                return fallback
+
         return None
 
     def _execute_event(self, context: Context, event: dict) -> bool:
@@ -219,9 +234,18 @@ class ProduceChooseEventAuto(CustomAction):
                     return event[key]
         return None
 
+    def _find_any_event(self, events: list) -> Optional[dict]:
+        """从事件列表中获取任意第一个可用事件。"""
+        for event in events:
+            for key in event:
+                if key not in ["SP"] and isinstance(event[key], list):
+                    run_task = self.RUN_TASK_MAP.get(key, "")
+                    return self._make_event(key, event[key], run_task=run_task)
+        return None
+
     def _make_event(self, name: str, box: list, run_task: str = "") -> dict:
-        """创建事件字典。"""
-        return {"name": name, "box": box, "run_task": run_task}
+        """创建事件字典，run_task默认为空时从RUN_TASK_MAP自动获取。"""
+        return {"name": name, "box": box, "run_task": run_task or self.RUN_TASK_MAP.get(name, "")}
 
     def _parse_suggestion(self, suggestion: str) -> Optional[str]:
         """从老师建议中解析属性名称，匹配SUGGESTION_CONFIG中的关键词。"""
@@ -374,13 +398,15 @@ class ProduceChooseNIAEventAuto(CustomAction):
     7. 第二属性课程（仅当第一属性分数占比 >= 85%时，且第二属性占比 < 80%）
     8. 交谈/活动：优先交谈消耗points获得物品（需points >= 100），不满足则活动获得points
     9. 外出：恢复体力
-    10. 指导：点击后需执行ProduceGuideEntry任务
+    10. 指导
     11. SP课程（非第一/第二属性）
-    12. 商店：点击后需执行ProduceShoppingEntry任务
+    保底：以上均未命中时，从剩余事件中任选一个
 
     事件数据结构：
     - 属性事件：{"Vo": [x,y,w,h], "SP": bool}，SP为True表示该属性有SP课程
     - 其他事件：{"事件名称": [x,y,w,h]}
+
+    RUN_TASK_MAP：交谈→ProduceShoppingEntry, 工作→ProduceWorkEntry, 指导→ProduceGuideEntry
     """
 
     # 常量定义
@@ -412,6 +438,13 @@ class ProduceChooseNIAEventAuto(CustomAction):
     ATTR_STOP_RATIO = 0.8
     LOW_HEALTH_RATIO = 0.2
     LOW_HEALTH_VALUE = 8
+
+    # 需要执行run_task的事件
+    RUN_TASK_MAP = {
+        "交谈": "ProduceShoppingEntry",
+        "工作": "ProduceWorkEntry",
+        "指导": "ProduceGuideEntry",
+    }
 
     def __init__(self):
         super().__init__()
@@ -496,7 +529,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
         # 4. 营业
         event = self._find_event_by_name(events, "工作")
         if event:
-            return self._make_event("工作", event, run_task="ProduceWorkEntry")
+            return self._make_event("工作", event)
 
         # 5. 第一属性课程（属性未达80%时）
         if not is_first_stopped:
@@ -527,7 +560,7 @@ class ProduceChooseNIAEventAuto(CustomAction):
         # 9. 指导（点击后需执行任务）
         event = self._find_event_by_name(events, "指导")
         if event:
-            return self._make_event("指导", event, run_task="ProduceGuideEntry")
+            return self._make_event("指导", event)
 
         # 10. SP（其他属性）
         for attr in ["Vo", "Da", "Vi"]:
@@ -536,10 +569,12 @@ class ProduceChooseNIAEventAuto(CustomAction):
                 if event:
                     return self._make_event(f"{attr}_SP", event)
 
-        # 11. 商店（点击后需执行任务）
-        event = self._find_event_by_name(events, "商店")
-        if event:
-            return self._make_event("商店", event, run_task="ProduceShoppingEntry")
+        # 保底：从剩余事件中随机选择
+        if events:
+            fallback = self._find_any_event(events)
+            if fallback:
+                logger.warning(f"所有优先级未命中，保底选择: {fallback['name']}")
+                return fallback
 
         return None
 
@@ -576,9 +611,18 @@ class ProduceChooseNIAEventAuto(CustomAction):
                     return event[key]
         return None
 
+    def _find_any_event(self, events: list) -> Optional[dict]:
+        """从事件列表中获取任意第一个可用事件。"""
+        for event in events:
+            for key in event:
+                if key not in ["SP"] and isinstance(event[key], list):
+                    run_task = self.RUN_TASK_MAP.get(key, "")
+                    return self._make_event(key, event[key], run_task=run_task)
+        return None
+
     def _make_event(self, name: str, box: list, run_task: str = "") -> dict:
-        """创建事件字典。"""
-        return {"name": name, "box": box, "run_task": run_task}
+        """创建事件字典，run_task默认为空时从RUN_TASK_MAP自动获取。"""
+        return {"name": name, "box": box, "run_task": run_task or self.RUN_TASK_MAP.get(name, "")}
 
     def _parse_suggestion(self, suggestion: str) -> Optional[str]:
         """从老师建议中解析属性名称，匹配SUGGESTION_CONFIG中的关键词。"""
