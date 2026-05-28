@@ -18,6 +18,22 @@ class ChallengeAuto(CustomAction):
         context: Context,
         argv: CustomAction.RunArg,
     ) -> bool:
+        """执行挑战自动选择与进入流程。
+
+        支持以下选择模式（通过 custom_action_param 的 mode 字段指定）：
+        - fixed: 固定选择指定索引（0/1/2，默认 1）
+        - random: 随机选择一个挑战
+        - max: OCR 识别三个挑战的评分，选择评分最高的
+        - min: OCR 识别三个挑战的评分，选择评分最低的
+        - auto: OCR 识别评分，选择与自身评分最接近的
+
+        Args:
+            context: MAA 任务上下文，提供控制器、识别和任务执行能力。
+            argv: 自定义动作运行参数，需包含 JSON 格式的 custom_action_param。
+
+        Returns:
+            True 表示动作执行完毕。
+        """
         params = json.loads(argv.custom_action_param)
 
         mode_allowed = ["fixed", "random", "auto", "max", "min"]

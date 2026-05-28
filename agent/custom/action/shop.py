@@ -8,11 +8,28 @@ from maa.agent.agent_server import AgentServer
 
 @AgentServer.custom_action("ShoppingCoinGachaAuto")
 class ShoppingCoinGachaAuto(CustomAction):
+    """自动执行扭蛋商店的金币扭蛋购买。
+
+    根据活动是否存在动态调整布局，遍历各扭蛋类别（活动/好友/感性/理性/非凡），
+    通过 OCR 识别当前持有数量，数量 >= 10 时自动切换页面并执行购买。
+    """
+
     def run(
         self,
         context: Context,
         argv: CustomAction.RunArg,
     ) -> bool:
+        """执行金币扭蛋购买流程。
+
+        流程：检测活动扭蛋 → 计算各扭蛋项的布局和 ROI → OCR 读取持有数量 → 按需翻页购买。
+
+        Args:
+            context: MAA 任务上下文，提供控制器、识别和任务执行能力。
+            argv: 自定义动作运行参数。
+
+        Returns:
+            True 表示动作执行完毕（无论是否实际购买）。
+        """
         image = context.tasker.controller.post_screencap().wait().get()
         reco_detail = context.run_recognition(
             "ShoppingCoinGachaCheckActivity",
@@ -130,11 +147,30 @@ class ShoppingCoinGachaAuto(CustomAction):
 
 @AgentServer.custom_action("ShoppingDailyExchangeMoneyAuto")
 class ShoppingDailyExchangeMoneyAuto(CustomAction):
+    """自动执行每日金币商店的商品兑换。
+
+    根据用户配置的启用状态遍历金币商品列表（推荐物品、各色碎片、笔记、券等），
+    通过模板匹配在商店页面中定位目标商品，检测并点击加号按钮后执行购买。
+    支持多页浏览，最多翻页 2 次。
+    """
+
     def run(
         self,
         context: Context,
         argv: CustomAction.RunArg,
     ) -> bool:
+        """执行金币商店每日兑换流程。
+
+        流程：读取各商品启用状态 → 构建购买清单 → 遍历页面匹配商品 →
+        点击商品 → 检测加号按钮 → 确认购买。
+
+        Args:
+            context: MAA 任务上下文，提供控制器、识别和任务执行能力。
+            argv: 自定义动作运行参数。
+
+        Returns:
+            True 表示动作执行完毕（无论是否实际购买）。
+        """
         params = {
             "recommend": context.get_node_data("ShoppingDailyExchangeItemsRecommend").get("enabled", True),
             "sense_blue": context.get_node_data("ShoppingDailyExchangeItemsSenseBlue").get("enabled", False),
@@ -231,11 +267,29 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
 
 @AgentServer.custom_action("ShoppingDailyExchangeAPAuto")
 class ShoppingDailyExchangeAPAuto(CustomAction):
+    """自动执行每日 AP 商店的体力物品兑换。
+
+    根据用户配置的启用状态遍历 AP 商品列表（支援点增量、笔记增量、挑战券、回忆券），
+    通过模板匹配在商店页面中定位目标商品，检测并点击加号按钮后执行购买。
+    """
+
     def run(
         self,
         context: Context,
         argv: CustomAction.RunArg,
     ) -> bool:
+        """执行 AP 商店每日兑换流程。
+
+        流程：读取各商品启用状态 → 构建购买清单 → 截图匹配商品 →
+        点击商品 → 检测加号按钮 → 确认购买。
+
+        Args:
+            context: MAA 任务上下文，提供控制器、识别和任务执行能力。
+            argv: 自定义动作运行参数。
+
+        Returns:
+            True 表示动作执行完毕（无论是否实际购买）。
+        """
         params = {
             "support_point_increased": context.get_node_data("ShoppingDailyExchangeAPSupportPointIncreased").get("enabled", False),
             "note_increased": context.get_node_data("ShoppingDailyExchangeAPNoteIncreased").get("enabled", False),
