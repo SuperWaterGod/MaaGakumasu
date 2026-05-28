@@ -21,7 +21,7 @@
     ],
     "json.schemaDownload.enable": true,
     "json.validate.enable": true,
-    "[json][jsonc]": {
+    "[jsonc]": {
         "editor.formatOnSave": true,
         "editor.insertSpaces": true,
         "editor.tabSize": 4,
@@ -34,9 +34,14 @@
     },
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
         "editor.rulers": [
             144
-        ]
+        ],
+        "editor.codeActionsOnSave": {
+            "source.organizeImports.ruff": "explicit",
+            "source.fixAll.ruff": "explicit"
+        }
     },
     "files.associations": {
         "*.json": "jsonc"
