@@ -36,6 +36,7 @@
     ]
   },
   "AwardGift": {
+    "enabled": true,
     "recognition": {
       "type": "DirectHit",
       "param": {}
@@ -44,7 +45,6 @@
       "type": "DoNothing",
       "param": {}
     },
-    "enabled": true,
     "next": [
       "AwardGiftClick"
     ]
@@ -53,6 +53,12 @@
     "recognition": {
       "type": "OCR",
       "param": {
+        "roi": [
+          580,
+          440,
+          135,
+          80
+        ],
         "expected": [
           "プレゼント"
         ],
@@ -61,12 +67,6 @@
             "ル",
             "レ"
           ]
-        ],
-        "roi": [
-          580,
-          440,
-          135,
-          80
         ]
       }
     },
@@ -113,13 +113,13 @@
       "param": {}
     },
     "post_wait_freezes": 500,
+    "focus": {
+      "Node.Action.Succeeded": "[color:LimeGreen]礼物已领取[/color]"
+    },
     "next": [
       "AwardBackHome",
       "[JumpBack]CloseButton"
-    ],
-    "focus": {
-      "Node.Action.Succeeded": "[color:LimeGreen]礼物已领取[/color]"
-    }
+    ]
   },
   "AwardBackHome": {
     "recognition": {
@@ -143,6 +143,7 @@
     ]
   },
   "AwardMission": {
+    "enabled": true,
     "recognition": {
       "type": "DirectHit",
       "param": {}
@@ -151,7 +152,6 @@
       "type": "DoNothing",
       "param": {}
     },
-    "enabled": true,
     "next": [
       "AwardMissionClick",
       "[JumpBack]CloseButton"
@@ -161,16 +161,16 @@
     "recognition": {
       "type": "OCR",
       "param": {
-        "expected": [
-          "ミッション"
-        ],
-        "replace": [],
         "roi": [
           590,
           570,
           130,
           75
-        ]
+        ],
+        "expected": [
+          "ミッション"
+        ],
+        "replace": []
       }
     },
     "action": {
@@ -236,14 +236,14 @@
       "param": {}
     },
     "post_wait_freezes": 500,
-    "next": [
-      "AwardMissionChoose",
-      "BackHome",
-      "[JumpBack]AwardMissionUp"
-    ],
     "focus": {
       "Node.Action.Succeeded": "[color:LimeGreen]奖励已领取[/color]"
-    }
+    },
+    "next": [
+      "AwardMissionChoose",
+    "BackHome",
+      "[JumpBack]AwardMissionUp"
+    ]
   },
   "AwardMissionUp": {
     "recognition": {

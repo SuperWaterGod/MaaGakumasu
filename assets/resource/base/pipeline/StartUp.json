@@ -102,12 +102,12 @@
       "type": "Click",
       "param": {}
     },
-    "next": [
-      "StartUpInitCounter"
-    ],
     "focus": {
       "Node.Action.Succeeded": "[color:DeepSkyBlue]开始下载更新[/color]"
-    }
+    },
+    "next": [
+      "StartUpInitCounter"
+    ]
   },
   "StartUpLoginBonus": {
     "recognition": {
@@ -138,12 +138,12 @@
       "type": "DoNothing",
       "param": {}
     },
-    "next": [
-      "StartUpCloseButton"
-    ],
     "focus": {
       "Node.Action.Succeeded": "[color:DeepSkyBlue]好友点数获取成功[/color]"
-    }
+    },
+    "next": [
+      "StartUpCloseButton"
+    ]
   },
   "StartUpCloseButton": {
     "recognition": {
@@ -211,6 +211,14 @@
     }
   },
   "StartUpError": {
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
     "focus": {
       "Node.Action.Starting": "err:启动游戏失败，请检查是否正确选择游戏资源"
     }

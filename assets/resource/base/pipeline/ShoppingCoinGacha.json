@@ -19,14 +19,14 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": [
-          "menu.png"
-        ],
         "roi": [
           600,
           1160,
           120,
           120
+        ],
+        "template": [
+          "menu.png"
         ]
       }
     },
@@ -58,13 +58,13 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "shopping_coin_gacha.png",
         "roi": [
           0,
           660,
           720,
           460
-        ]
+        ],
+        "template": "shopping_coin_gacha.png"
       }
     },
     "action": {
@@ -88,13 +88,13 @@
         "custom_action": "ShoppingCoinGachaAuto"
       }
     },
+    "focus": {
+      "Node.Action.Succeeded": "[color:DeepSkyBlue]扭蛋已兑换[/color]"
+    },
     "next": [
       "[JumpBack]CloseButton",
       "BackHome"
-    ],
-    "focus": {
-      "Node.Action.Succeeded": "[color:DeepSkyBlue]扭蛋已兑换[/color]"
-    }
+    ]
   },
   "ShoppingCoinGachaBuy": {
     "recognition": {
@@ -150,6 +150,7 @@
     }
   },
   "ShoppingCoinGachaFriendGacha": {
+    "enabled": true,
     "recognition": {
       "type": "DirectHit",
       "param": {}
@@ -157,10 +158,10 @@
     "action": {
       "type": "DoNothing",
       "param": {}
-    },
-    "enabled": true
+    }
   },
   "ShoppingCoinGachaSenseGacha": {
+    "enabled": false,
     "recognition": {
       "type": "DirectHit",
       "param": {}
@@ -168,10 +169,10 @@
     "action": {
       "type": "DoNothing",
       "param": {}
-    },
-    "enabled": false
+    }
   },
   "ShoppingCoinGachaLogicGacha": {
+    "enabled": false,
     "recognition": {
       "type": "DirectHit",
       "param": {}
@@ -179,10 +180,10 @@
     "action": {
       "type": "DoNothing",
       "param": {}
-    },
-    "enabled": false
+    }
   },
   "ShoppingCoinGachaAnomalyGacha": {
+    "enabled": false,
     "recognition": {
       "type": "DirectHit",
       "param": {}
@@ -190,10 +191,10 @@
     "action": {
       "type": "DoNothing",
       "param": {}
-    },
-    "enabled": false
+    }
   },
   "ShoppingCoinGachaActivityGacha": {
+    "enabled": false,
     "recognition": {
       "type": "DirectHit",
       "param": {}
@@ -201,7 +202,6 @@
     "action": {
       "type": "DoNothing",
       "param": {}
-    },
-    "enabled": false
+    }
   }
 }

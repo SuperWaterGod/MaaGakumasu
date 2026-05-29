@@ -16,14 +16,14 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "shopping_plus.png",
-        "threshold": 0.98,
         "roi": [
           516,
           856,
           130,
           104
-        ]
+        ],
+        "template": "shopping_plus.png",
+        "threshold": 0.98
       }
     },
     "action": {

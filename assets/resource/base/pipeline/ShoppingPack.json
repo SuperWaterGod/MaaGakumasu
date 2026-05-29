@@ -1,24 +1,32 @@
 {
   "ShoppingPack": {
-  "next": [
-    "ShoppingPackStart",
-    "ShoppingPackMenuClick",
-    "[JumpBack]CloseMenu",
-    "[JumpBack]BackHome"
-  ]
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ShoppingPackStart",
+      "ShoppingPackMenuClick",
+      "[JumpBack]CloseMenu",
+      "[JumpBack]BackHome"
+    ]
   },
   "ShoppingPackMenuClick": {
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": [
-          "menu.png"
-        ],
         "roi": [
           600,
           1160,
           120,
           120
+        ],
+        "template": [
+          "menu.png"
         ]
       }
     },
@@ -50,25 +58,25 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "shopping_pack.png",
         "roi": [
           0,
           660,
           720,
           460
-        ]
+        ],
+        "template": "shopping_pack.png"
       }
     },
     "action": {
       "type": "Click",
       "param": {}
     },
+    "post_wait_freezes": 500,
     "next": [
       "ShoppingPackBuyFreePack",
       "ShoppingPackBuyFreePackSoldOut",
       "[JumpBack]ShoppingPackSwipe"
-    ],
-    "post_wait_freezes": 500
+    ]
   },
   "ShoppingPackBuyFreePack": {
     "recognition": {
@@ -84,10 +92,10 @@
       "type": "Click",
       "param": {}
     },
+    "post_wait_freezes": 100,
     "next": [
       "ShoppingPackBuyFreePackConfirm"
-    ],
-    "post_wait_freezes": 100
+    ]
   },
   "ShoppingPackBuyFreePackSoldOut": {
     "recognition": {
@@ -99,11 +107,20 @@
         "order_by": "Score"
       }
     },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
     "next": [
       "BackHome"
     ]
   },
   "ShoppingPackSwipe": {
+    "max_hit": 3,
+    "recognition": {
+      "type": "DirectHit",
+      "param": {}
+    },
     "action": {
       "type": "Swipe",
       "param": {
@@ -112,14 +129,15 @@
           1150
         ],
         "end": [
-          360,
-          730
+          [
+            360,
+            730
+          ]
         ],
-        "duration": 500,
-        "end_hold": 500
+        "end_hold": 500,
+        "duration": 500
       }
     },
-    "max_hit": 3,
     "post_wait_freezes": 100
   },
   "ShoppingPackBuyFreePackConfirm": {
@@ -133,10 +151,10 @@
       "type": "Click",
       "param": {}
     },
+    "post_wait_freezes": 100,
     "next": [
       "ShoppingPackPurchased"
-    ],
-    "post_wait_freezes": 100
+    ]
   },
   "ShoppingPackPurchased": {
     "recognition": {

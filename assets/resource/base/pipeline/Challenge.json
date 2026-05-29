@@ -52,16 +52,16 @@
     "recognition": {
       "type": "OCR",
       "param": {
-        "expected": [
-          "コンテスト"
-        ],
-        "replace": [],
         "roi": [
           426,
           809,
           213,
           157
-        ]
+        ],
+        "expected": [
+          "コンテスト"
+        ],
+        "replace": []
       }
     },
     "action": {
@@ -99,6 +99,7 @@
         "threshold": 0.9
       }
     },
+    "pre_delay": 0,
     "action": {
       "type": "Custom",
       "param": {
@@ -109,7 +110,6 @@
         }
       }
     },
-    "pre_delay": 0,
     "post_delay": 0,
     "next": [
       "ChallengeStart"
@@ -120,8 +120,8 @@
       "type": "TemplateMatch",
       "param": {
         "template": "challenge_battle_total.png",
-        "index": 1,
-        "order_by": "Vertical"
+        "order_by": "Vertical",
+        "index": 1
       }
     },
     "action": {
@@ -149,13 +149,13 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "challenge_ready.png",
         "roi": [
           220,
           1110,
           250,
           100
-        ]
+        ],
+        "template": "challenge_ready.png"
       }
     },
     "action": {
@@ -170,13 +170,13 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "challenge_skip.png",
         "roi": [
           482,
           1020,
           207,
           64
-        ]
+        ],
+        "template": "challenge_skip.png"
       }
     },
     "action": {
@@ -194,14 +194,14 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": [
-          "challenge_next.png"
-        ],
         "roi": [
           0,
           980,
           720,
           300
+        ],
+        "template": [
+          "challenge_next.png"
         ]
       }
     },
@@ -219,13 +219,13 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "challenge_finish.png",
         "roi": [
           0,
           980,
           720,
           300
-        ]
+        ],
+        "template": "challenge_finish.png"
       }
     },
     "action": {
@@ -247,12 +247,12 @@
       "type": "DoNothing",
       "param": {}
     },
-    "next": [
-      "BackHome"
-    ],
     "focus": {
       "Node.Recognition.Succeeded": "今日挑战次数已用完"
-    }
+    },
+    "next": [
+      "BackHome"
+    ]
   },
   "ChallengeError": {
     "recognition": {
@@ -274,37 +274,41 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "challenge_ready_period.png",
         "roi": [
           20,
           100,
           330,
           100
-        ]
+        ],
+        "template": "challenge_ready_period.png"
       }
     },
     "action": {
       "type": "DoNothing",
       "param": {}
     },
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:orange]挑战准备期间[/color]"
+    },
     "next": [
       "BackHome",
       "[JumpBack]ClickCenter"
-    ],
-    "focus": {
-      "Node.Recognition.Succeeded": "[color:orange]挑战准备期间[/color]"
-    }
+    ]
   },
   "ChallengeUnformation": {
     "enabled": true,
-    "recognition": "OCR",
-    "expected": "メモリー未編成",
-    "roi": [
-      25,
-      810,
-      280,
-      70
-    ],
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "roi": [
+          25,
+          810,
+          280,
+          70
+        ],
+        "expected": "メモリー未編成"
+      }
+    },
     "pre_wait_freezes": 200,
     "action": {
       "type": "Click",
@@ -317,27 +321,27 @@
         ]
       }
     },
-    "next": [
-      "ChallengeFormation"
-    ],
     "focus": {
       "Node.Recognition.Succeeded": "[color:orange]尚未编队，即将自动编队[/color]"
-    }
+    },
+    "next": [
+      "ChallengeFormation"
+    ]
   },
   "ChallengeFormation": {
     "recognition": {
       "type": "OCR",
       "param": {
-        "expected": [
-          "ユニット編成"
-        ],
-        "replace": [],
         "roi": [
           510,
           1050,
           190,
           80
-        ]
+        ],
+        "expected": [
+          "ユニット編成"
+        ],
+        "replace": []
       }
     },
     "action": {
@@ -352,16 +356,16 @@
     "recognition": {
       "type": "OCR",
       "param": {
-        "expected": [
-          "おまかせ"
-        ],
-        "replace": [],
         "roi": [
           530,
           1010,
           190,
           180
-        ]
+        ],
+        "expected": [
+          "おまかせ"
+        ],
+        "replace": []
       }
     },
     "action": {
@@ -394,13 +398,13 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "back.png",
         "roi": [
           240,
           1160,
           125,
           115
-        ]
+        ],
+        "template": "back.png"
       }
     },
     "action": {
