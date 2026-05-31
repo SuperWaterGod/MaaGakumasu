@@ -186,7 +186,7 @@
       "param": {}
     },
     "action": {
-      "type": "Click",
+      "type": "DoNothing",
       "param": {}
     },
     "post_wait_freezes": 200,
