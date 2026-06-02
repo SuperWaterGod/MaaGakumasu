@@ -311,19 +311,28 @@
     },
     "pre_wait_freezes": 200,
     "action": {
-      "type": "Click",
-      "param": {
-        "target_offset": [
-          105,
-          305,
-          0,
-          25
-        ]
-      }
+      "type": "DoNothing",
+      "param": {}
     },
     "focus": {
       "Node.Recognition.Succeeded": "[color:orange]尚未编队，即将自动编队[/color]"
     },
+    "next": [
+      "ChallengeFormationCancel"
+    ]
+  },
+  "ChallengeFormationCancel": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": "cancel.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_wait_freezes": 200,
     "next": [
       "ChallengeFormation"
     ]
@@ -357,10 +366,10 @@
       "type": "OCR",
       "param": {
         "roi": [
-          530,
-          1010,
+          340,
+          1040,
           190,
-          180
+          140
         ],
         "expected": [
           "おまかせ"
@@ -407,6 +416,7 @@
         "template": "back.png"
       }
     },
+    "pre_wait_freezes": 200,
     "action": {
       "type": "Click",
       "param": {}
