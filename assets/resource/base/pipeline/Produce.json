@@ -1014,7 +1014,8 @@
             "Node.Recognition.Succeeded": "[color:DeepSkyBlue]选择强化[/color]"
         },
         "next": [
-            "ProduceChooseStrengthen"
+            "ProduceChooseStrengthen",
+            "[JumpBack]Click_1"
         ]
     },
     "ProduceChooseStrengthen": {

@@ -192,8 +192,29 @@
     "post_wait_freezes": 200,
     "next": [
       "ProduceGuideFlag",
+      "[JumpBack]ProduceGuideStart",
+      "[JumpBack]ProduceChooseStrengthenFlag",
+      "[JumpBack]ProduceChooseDeleteFlag",
       "[JumpBack]Click_1"
     ]
+  },
+  "ProduceGuideStart": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "roi": [
+          0,
+          780,
+          720,
+          500
+        ],
+        "template": "produce/start.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    }
   },
   "ProduceGuideFlag": {
     "recognition": {
