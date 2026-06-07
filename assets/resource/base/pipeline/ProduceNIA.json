@@ -193,8 +193,7 @@
     "next": [
       "ProduceGuideFlag",
       "[JumpBack]ProduceGuideStart",
-      "[JumpBack]ProduceChooseStrengthenFlag",
-      "[JumpBack]ProduceChooseDeleteFlag",
+      "[JumpBack]ProduceChooseGetFlag",
       "[JumpBack]Click_1"
     ]
   },
