@@ -278,8 +278,8 @@ class ProduceChooseEventBase(CustomAction):
 
         try:
             health_parts = reco_detail.best_result.text.split("/")
-            current_health = int(health_parts[0])
-            max_health = int(health_parts[1])
+            current_health = int("".join(filter(str.isdigit, health_parts[0])))
+            max_health = int("".join(filter(str.isdigit, health_parts[1])))
             ratio = current_health / max_health
             logger.info(f"体力: {current_health}/{max_health} ({ratio:.2%})")
             return {"current": current_health, "max": max_health, "ratio": ratio}
@@ -804,8 +804,8 @@ class ProduceChooseWorkAuto(CustomAction):
 
         try:
             health_parts = reco_detail.best_result.text.split("/")
-            current_health = int(health_parts[0])
-            max_health = int(health_parts[1])
+            current_health = int("".join(filter(str.isdigit, health_parts[0])))
+            max_health = int("".join(filter(str.isdigit, health_parts[1])))
             ratio = current_health / max_health
             logger.info(f"体力: {current_health}/{max_health} ({ratio:.2%})")
             return {"current": current_health, "max": max_health, "ratio": ratio}
@@ -848,7 +848,7 @@ class ProduceChooseOptionsAuto(CustomAction):
 
     根据当前得分自动选择属性选项：
     1. 获取第一、第二、第三属性的当前分数
-    2. 70% 概率选择第三属性，30% 概率选择第二属性
+    2. THIRD_ATTR_PROBABILITY 概率选择第三属性，剩余概率选择第二属性
     3. 在可用选项中执行双击选择
     4. 若目标选项不可用，按优先级 fallback：null > 第二属性 > 第三属性 > 随机
     """
@@ -860,6 +860,7 @@ class ProduceChooseOptionsAuto(CustomAction):
         "null": "produce/choose_null.png",
     }
     CLICK_DELAY = 0.5
+    THIRD_ATTR_PROBABILITY = 0.6  # 选择第三属性的概率，剩余概率选择第二属性
 
     def __init__(self):
         super().__init__()
@@ -898,13 +899,13 @@ class ProduceChooseOptionsAuto(CustomAction):
         third_score = score.get(third, 0)
         logger.info(f"第一属性 {self.first}={first_score}, 第二属性 {self.second}={second_score}, 第三属性 {third}={third_score}")
 
-        # 判断逻辑：70% 概率选择第三属性，30% 概率选择第二属性
-        if random.random() < 0.7:
+        # 判断逻辑：根据 THIRD_ATTR_PROBABILITY 概率选择第三属性，剩余概率选择第二属性
+        if random.random() < self.THIRD_ATTR_PROBABILITY:
             choice = third
-            logger.debug(f"随机数 < 0.7，选择第三属性: {choice}")
+            logger.debug(f"随机数 < {self.THIRD_ATTR_PROBABILITY}，选择第三属性: {choice}")
         else:
             choice = self.second
-            logger.debug(f"随机数 >= 0.7，选择第二属性: {choice}")
+            logger.debug(f"随机数 >= {self.THIRD_ATTR_PROBABILITY}，选择第二属性: {choice}")
 
         # 找到目标选项
         target_box = None
