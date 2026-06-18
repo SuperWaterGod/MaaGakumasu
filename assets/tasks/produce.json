@@ -915,8 +915,26 @@
     },
     "葛城リーリヤ卡片": {
       "type": "select",
-      "default_case": "葛城リーリヤ(ときめきエモーション)",
+      "default_case": "葛城リーリヤ(ガラクタロード)",
       "cases": [
+        {
+          "name": "葛城リーリヤ(ガラクタロード)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "葛城リーリヤ",
+                "song_name": "ガラクタロード"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "理性·干劲",
+                "first": "Vi",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "葛城リーリヤ(ときめきエモーション)",
           "pipeline_override": {
@@ -2145,8 +2163,26 @@
     },
     "有村麻央卡片": {
       "type": "select",
-      "default_case": "有村麻央(見て)",
+      "default_case": "有村麻央(SUGAR FLAVOR)",
       "cases": [
+        {
+          "name": "有村麻央(SUGAR FLAVOR)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "有村麻央",
+                "song_name": "SUGAR FLAVOR"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·好调",
+                "first": "Vo",
+                "second": "Vi"
+              }
+            }
+          }
+        },
         {
           "name": "有村麻央(見て)",
           "pipeline_override": {
@@ -2555,8 +2591,26 @@
     },
     "姫崎莉波卡片": {
       "type": "select",
-      "default_case": "姫崎莉波(ガラクタロード)",
+      "default_case": "姫崎莉波(SUGAR FLAVOR)",
       "cases": [
+        {
+          "name": "姫崎莉波(SUGAR FLAVOR)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "姫崎莉波",
+                "song_name": "SUGAR FLAVOR"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·强气",
+                "first": "Vi",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "姫崎莉波(ガラクタロード)",
           "pipeline_override": {

@@ -398,8 +398,26 @@
     },
     "葛城莉莉娅卡片-zh_CN": {
       "type": "select",
-      "default_case": "葛城莉莉娅(ときめきエモーション)",
+      "default_case": "葛城莉莉娅(荆棘之路)",
       "cases": [
+        {
+          "name": "葛城莉莉娅(荆棘之路)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "葛城莉莉娅",
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "理性·干劲",
+                "first": "Vi",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "葛城莉莉娅(ときめきエモーション)",
           "pipeline_override": {
@@ -1459,8 +1477,26 @@
     },
     "有村麻央卡片-zh_CN": {
       "type": "select",
-      "default_case": "有村麻央(看着我)",
+      "default_case": "有村麻央(SUGAR FLAVOR)",
       "cases": [
+        {
+          "name": "有村麻央(SUGAR FLAVOR)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "有村麻央",
+                "song_name": "SUGAR FLAVOR"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·好调",
+                "first": "Vo",
+                "second": "Vi"
+              }
+            }
+          }
+        },
         {
           "name": "有村麻央(看着我)",
           "pipeline_override": {
@@ -1869,8 +1905,26 @@
     },
     "姬崎莉波卡片-zh_CN": {
       "type": "select",
-      "default_case": "姬崎莉波(荆棘之路)",
+      "default_case": "姬崎莉波(SUGAR FLAVOR)",
       "cases": [
+        {
+          "name": "姬崎莉波(SUGAR FLAVOR)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "姬崎莉波",
+                "song_name": "SUGAR FLAVOR"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·强气",
+                "first": "Vi",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "姬崎莉波(荆棘之路)",
           "pipeline_override": {
