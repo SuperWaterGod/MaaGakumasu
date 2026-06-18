@@ -25,6 +25,7 @@
       "type": "Click",
       "param": {}
     },
+    "post_wait_freezes": 200,
     "next": [
       "SocietyClick"
     ]
