@@ -278,6 +278,7 @@
         }
       }
     },
+    "pre_wait_freezes": 200,
     "focus": {
       "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择试镜难度[/color]"
     }
