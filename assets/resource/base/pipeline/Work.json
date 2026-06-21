@@ -97,6 +97,7 @@
       "type": "Click",
       "param": {}
     },
+    "pre_wait_freezes": 200,
     "next": [
       "WorkChooseShowGoodFlag"
     ]
@@ -112,6 +113,7 @@
       "type": "Click",
       "param": {}
     },
+    "pre_wait_freezes": 200,
     "next": [
       "WorkChooseLiveGoodFlag"
     ]
