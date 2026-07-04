@@ -206,6 +206,7 @@
       }
     },
     "post_wait_freezes": 500,
+    "post_delay": 3000,
     "focus": {
       "Node.Recognition.Succeeded": "[color:OrangeRed]游戏启动失败，尝试重新启动[/color]"
     }
@@ -220,7 +221,7 @@
       "param": {}
     },
     "focus": {
-      "Node.Action.Starting": "err:启动游戏失败，请检查是否正确选择游戏资源"
+      "Node.Action.Starting": "[color:OrangeRed]启动游戏失败，请检查是否正确选择游戏资源[/color]"
     }
   }
 }
