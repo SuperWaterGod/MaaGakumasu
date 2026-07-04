@@ -41,7 +41,8 @@
           "name": "NIA",
           "option": [
             "「NIA」难度",
-            "启用试镜难度降低"
+            "启用试镜难度降低",
+            "试镜手动接管"
           ]
         }
       ],
@@ -543,6 +544,67 @@
         }
       ],
       "label": "$启用试镜难度降低"
+    },
+    "试镜手动接管": {
+      "type": "select",
+      "default_case": "关闭",
+      "cases": [
+        {
+          "name": "关闭",
+          "label": "$关闭"
+        },
+        {
+          "name": "启用",
+          "option": [
+            "启用试镜手动接管"
+          ],
+          "label": "$启用"
+        }
+      ],
+      "label": "$培育难度"
+    },
+    "启用试镜手动接管": {
+      "type": "checkbox",
+      "default_case": [
+        "三镜"
+      ],
+      "description": "$试镜手动接管说明",
+      "cases": [
+        {
+          "name": "一镜",
+          "pipeline_override": {
+            "ProduceMirrorFlag": {
+              "attach": {
+                "focus_1": true
+              }
+            }
+          },
+          "label": "$一镜"
+        },
+        {
+          "name": "二镜",
+          "pipeline_override": {
+            "ProduceMirrorFlag": {
+              "attach": {
+                "focus_2": true
+              }
+            }
+          },
+          "label": "$二镜"
+        },
+        {
+          "name": "三镜",
+          "pipeline_override": {
+            "ProduceMirrorFlag": {
+              "attach": {
+                "focus_3": true
+              }
+            }
+          },
+          "label": "$三镜"
+        }
+      ],
+      "label": "$启用试镜手动接管"
     },
     "培育偶像": {
       "type": "select",

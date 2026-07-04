@@ -1062,10 +1062,62 @@ class ProduceChooseMirrorAuto(CustomAction):
 
             logger.info(f"分数 {target_threshold:,} 已锁定，继续降档")
 
+        # 在点击前判断当前是第几镜，若启用 focus 则点击后进入手动接管
+        mirror_idx = self._get_focus_mirror_index(context, image)
+
         logger.info(f"当前投票: {vote:,}, 目标分数: {target_threshold:,}, 点击坐标: ({x}, {y - 20})")
         self._double_click(context, x, y - 20)
 
+        if not mirror_idx:
+            return True
+
+        logger.info(f"检测到 focus 配置，进入手动接管模式（第{mirror_idx}镜）")
+        context.run_action(
+            "ProduceMirrorFocus",
+            pipeline_override={
+                "ProduceMirrorFocus": {
+                    "focus": {
+                        "Node.ActionNode.Succeeded": {
+                            "content": f"[color:LimeGreen]已暂停自动培育进入手动接管状态（第{mirror_idx}镜）[/color]\n"
+                            '退出手动接管请点击下方"确定"按钮',
+                            "display": ["log", "modal", "notification"],
+                        }
+                    }
+                }
+            },
+        )
+
         return True
+
+    @staticmethod
+    def _get_focus_mirror_index(context: Context, image) -> int:
+        """获取当前试镜对应的 focus 镜号。"""
+        node_data = context.get_node_data("ProduceMirrorFlag")
+        if not node_data:
+            return 0
+        attach = node_data.get("attach", {})
+        logger.info(f"focus 配置: {attach}")
+        # 仅当有 focus_x 为 true 时才识别
+        has_focus = any(attach.get(f"focus_{i}", False) for i in range(1, 4))
+        if not has_focus:
+            return 0
+
+        for i in range(1, 4):
+            reco_detail = context.run_recognition(
+                f"ProduceMirrorFlag_{i}",
+                image,
+                pipeline_override={
+                    f"ProduceMirrorFlag_{i}": {
+                        "recognition": "TemplateMatch",
+                        "roi": [12, 630, 696, 530],
+                        "template": f"produce/NIA/mirror_{i}.png",
+                        "threshold": 0.9,
+                    }
+                },
+            )
+            if reco_detail and reco_detail.hit:
+                return i if attach.get(f"focus_{i}", False) else 0
+        return 0
 
     @staticmethod
     def _check_lock(context: Context, image, target_box) -> bool:
