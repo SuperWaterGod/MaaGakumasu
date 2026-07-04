@@ -193,8 +193,26 @@
     },
     "藤田琴音卡片-zh_CN": {
       "type": "select",
-      "default_case": "藤田琴音(全力以赴！)",
+      "default_case": "藤田琴音(GO MY WAY!!)",
       "cases": [
+        {
+          "name": "藤田琴音(GO MY WAY!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "藤田琴音",
+                "song_name": "GO MY WAY!!"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·全力",
+                "first": "Da",
+                "second": "Vi"
+              }
+            }
+          }
+        },
         {
           "name": "藤田琴音(全力以赴！)",
           "pipeline_override": {
@@ -639,8 +657,26 @@
     },
     "花海咲季卡片-zh_CN": {
       "type": "select",
-      "default_case": "花海咲季(Wildest Flower)",
+      "default_case": "花海咲季(GO MY WAY!!)",
       "cases": [
+        {
+          "name": "花海咲季(GO MY WAY!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "花海咲季",
+                "song_name": "GO MY WAY!!"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·好调",
+                "first": "Vi",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "花海咲季(Wildest Flower)",
           "pipeline_override": {
