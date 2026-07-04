@@ -1426,10 +1426,11 @@
             "type": "Click",
             "param": {}
         },
-        "post_delay": 1000,
+        "post_wait_freezes": 200,
         "next": [
             "ProduceShoppingExit",
-            "ProduceShoppingExitConfirm"
+            "ProduceShoppingExitConfirm",
+            "[JumpBack]Click_1"
         ]
     },
     "ProduceShoppingExitConfirm": {
