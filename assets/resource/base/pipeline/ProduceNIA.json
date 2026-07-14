@@ -80,6 +80,7 @@
           "produce/decide.png",
           "produce/skip_confirm.png",
           "produce/drink_no.png",
+          "produce/shop_exit.png",
           "produce/close.png"
         ],
         "order_by": "Score"

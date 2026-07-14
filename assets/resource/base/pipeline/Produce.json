@@ -770,6 +770,7 @@
                     "produce/yes.png",
                     "produce/start.png",
                     "produce/close.png",
+                    "produce/shop_exit.png",
                     "cancel.png"
                 ],
                 "order_by": "Score"
@@ -1118,6 +1119,7 @@
         "next": [
             "ProduceGeneration",
             "[JumpBack]ProduceSkipED",
+            "[JumpBack]ProduceSkipShowConfirm",
             "[JumpBack]ProduceNext",
             "[JumpBack]ProduceSkip",
             "[JumpBack]ProduceDecide",
