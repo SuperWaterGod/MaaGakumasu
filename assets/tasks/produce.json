@@ -1477,8 +1477,26 @@
     },
     "花海佑芽卡片": {
       "type": "select",
-      "default_case": "花海佑芽(真っ白いページと水彩の主人公)",
+      "default_case": "花海佑芽(GO MY WAY!!)",
       "cases": [
+        {
+          "name": "花海佑芽(GO MY WAY!!)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "花海佑芽",
+                "song_name": "GO MY WAY!!"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "理性·好印象",
+                "first": "Da",
+                "second": "Vo"
+              }
+            }
+          }
+        },
         {
           "name": "花海佑芽(真っ白いページと水彩の主人公)",
           "pipeline_override": {
