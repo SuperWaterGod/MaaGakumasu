@@ -1118,11 +1118,14 @@
         },
         "next": [
             "ProduceGeneration",
+            "ProduceFinished",
+            "ProduceHomeFlag",
             "[JumpBack]ProduceSkipED",
             "[JumpBack]ProduceSkipShowConfirm",
             "[JumpBack]ProduceNext",
             "[JumpBack]ProduceSkip",
             "[JumpBack]ProduceDecide",
+            "[JumpBack]CloseRoundButton",
             "[JumpBack]ProduceError",
             "[JumpBack]Click_1"
         ]
@@ -1173,7 +1176,7 @@
         },
         "next": [
             "ProduceFinished",
-            "HomeFlag",
+            "ProduceHomeFlag",
             "[JumpBack]ProduceSkipED",
             "[JumpBack]ProduceNext",
             "[JumpBack]CloseRoundButton",

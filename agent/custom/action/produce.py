@@ -1096,7 +1096,7 @@ class ProduceChooseMirrorAuto(CustomAction):
         if not node_data:
             return 0
         attach = node_data.get("attach", {})
-        logger.info(f"focus 配置: {attach}")
+        logger.debug(f"focus 配置: {attach}")
         # 仅当有 focus_x 为 true 时才识别
         has_focus = any(attach.get(f"focus_{i}", False) for i in range(1, 4))
         if not has_focus:
