@@ -120,6 +120,12 @@
       "type": "TemplateMatch",
       "param": {
         "template": "challenge_battle_total.png",
+        "roi": [
+          54,
+          575,
+          190,
+          512
+        ],
         "order_by": "Vertical",
         "index": 1
       }
