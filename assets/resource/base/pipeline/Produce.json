@@ -1028,7 +1028,7 @@
                 ]
             }
         },
-        "post_delay": 200,
+        "post_wait_freezes": 200,
         "focus": {
             "Node.Recognition.Succeeded": "[color:DeepSkyBlue]选择强化[/color]"
         },
@@ -1047,7 +1047,25 @@
         "action": {
             "type": "Click",
             "param": {}
-        }
+        },
+        "post_wait_freezes": 200,
+        "next": [
+            "ProduceChooseStrengthen",
+            "ProduceChooseStrengthenConfirm",
+            "[JumpBack]Click_1"
+        ]
+    },
+    "ProduceChooseStrengthenConfirm": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "pre_delay": 0,
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "post_delay": 0
     },
     "ProduceChooseDeleteFlag": {
         "recognition": {
