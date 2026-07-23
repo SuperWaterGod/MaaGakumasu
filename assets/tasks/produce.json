@@ -1236,8 +1236,26 @@
     },
     "花海咲季卡片": {
       "type": "select",
-      "default_case": "花海咲季(GO MY WAY!!)",
+      "default_case": "花海咲季(ガラクタロード)",
       "cases": [
+        {
+          "name": "花海咲季(ガラクタロード)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "花海咲季",
+                "song_name": "ガラクタロード"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·强气",
+                "first": "Vi",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "花海咲季(GO MY WAY!!)",
           "pipeline_override": {

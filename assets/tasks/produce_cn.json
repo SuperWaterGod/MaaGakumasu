@@ -657,8 +657,26 @@
     },
     "花海咲季卡片-zh_CN": {
       "type": "select",
-      "default_case": "花海咲季(GO MY WAY!!)",
+      "default_case": "花海咲季(荆棘之路)",
       "cases": [
+        {
+          "name": "花海咲季(荆棘之路)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "花海咲季",
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·强气",
+                "first": "Vi",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "花海咲季(GO MY WAY!!)",
           "pipeline_override": {
