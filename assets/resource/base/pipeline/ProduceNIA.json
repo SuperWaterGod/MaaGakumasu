@@ -19,6 +19,7 @@
       "[JumpBack]ProduceChooseStrengthenFlag",
       "[JumpBack]ProduceChooseDeleteFlag",
       "[JumpBack]ProduceKeepDrinkFlag",
+      "[JumpBack]ProduceSkipChatFlag",
       "[JumpBack]ProduceNIAButton",
       "[JumpBack]ProduceMirrorFlag",
       "[JumpBack]ProduceSkip",

@@ -729,6 +729,7 @@
             "[JumpBack]ProduceShoppingFlag",
             "[JumpBack]ProduceKeepDrinkFlag",
             "[JumpBack]ProduceRecognitionWorkOptions",
+            "[JumpBack]ProduceSkipChatFlag",
             "[JumpBack]ProduceButton",
             "[JumpBack]ProduceSkip",
             "[JumpBack]Click_1"
@@ -766,6 +767,7 @@
                 ],
                 "template": [
                     "next.png",
+                    "produce/round_close_button.png",
                     "produce/retry.png",
                     "produce/yes.png",
                     "produce/start.png",
