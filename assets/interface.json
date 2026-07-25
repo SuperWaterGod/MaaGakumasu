@@ -172,6 +172,17 @@
         "DMM插件汉化版"
       ],
       "label": "$支援卡识别"
+    },
+    {
+      "name": "偶像之路",
+      "entry": "IdolRoad",
+      "option": [
+        "偶像之路自动回忆",
+        "偶像之路失败重试次数"
+      ],
+      "default_check": true,
+      "doc": "$偶像之路说明",
+      "label": "$偶像之路"
     }
   ],
   "option": {
@@ -888,6 +899,47 @@
         }
       ],
       "label": "$启用领取任务"
+    },
+    "偶像之路自动回忆": {
+      "type": "switch",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "IdolRoadFormationAuto": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "IdolRoadFormationAuto": {
+              "enabled": false
+            }
+          }
+        }
+      ],
+      "label": "$偶像之路自动回忆"
+    },
+    "偶像之路失败重试次数": {
+      "type": "input",
+      "inputs": [
+        {
+          "name": "idol_road_retry_times",
+          "label": "$偶像之路失败重试次数",
+          "default": "999",
+          "pipeline_type": "int",
+          "verify": "^[1-9]\\d*$",
+          "pattern_msg": "$偶像之路失败重试次数输入框说明"
+        }
+      ],
+      "pipeline_override": {
+        "IdolRoadRetryConfirm": {
+          "max_hit": "{idol_road_retry_times}"
+        }
+      }
     }
   }
 }

@@ -1,0 +1,267 @@
+{
+    "IdolRoad": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "next": [
+            "IdolRoadStartFlag"
+        ]
+    },
+    "IdolRoadStartFlag": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "challenge_action.png"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "IdolRoadFormationAuto",
+            "IdolRoadStart"
+        ],
+        "post_wait_freezes": 500
+    },
+    "IdolRoadFormationAuto": {
+        "enabled": true,
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "roi": [
+                    550,
+                    1000,
+                    160,
+                    150
+                ],
+                "expected": [
+                    "おまかせ"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "IdolRoadAutoDecide"
+        ],
+        "post_wait_freezes": 200
+    },
+    "IdolRoadAutoDecide": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "decide.png"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "IdolRoadStart",
+            "[JumpBack]CloseButton"
+        ],
+        "post_wait_freezes": 500
+    },
+    "IdolRoadStart": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "challenge_action.png"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "IdolRoadAuto"
+        ]
+    },
+    "IdolRoadAuto": {
+        "recognition": {
+            "type": "Custom",
+            "param": {
+                "custom_recognition": "ProduceCardsFlagAuto"
+            }
+        },
+        "pre_delay": 100,
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ProduceCardsAuto"
+            }
+        },
+        "post_delay": 100,
+        "next": [
+            "IdolRoadAutoNext",
+            "IdolRoadRetry",
+            "IdolRoadAuto",
+            "[JumpBack]Click_1"
+        ]
+    },
+    "IdolRoadRetry": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "challenge_retry.png"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "IdolRoadRetryConfirm"
+        ],
+        "on_error": [
+            "IdolRoadRetryFocus"
+        ],
+        "post_wait_freezes": 500
+    },
+    "IdolRoadRetryConfirm": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "produce/ok.png"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "IdolRoadStart"
+        ],
+        "post_wait_freezes": 500,
+        "focus": {
+            "Node.Recognition.Succeeded": {
+                "content": "[color:OrangeRed]❌ 挑战失败，建议手动更换回忆[/color]",
+                "display": [
+                    "log"
+                ]
+            }
+        }
+    },
+    "IdolRoadRetryFocus": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "focus": {
+            "Node.Recognition.Succeeded": {
+                "content": "[color:OrangeRed]❌ 挑战失败已到上限 [/color]",
+                "display": [
+                    "log",
+                    "notification"
+                ]
+            }
+        }
+    },
+    "IdolRoadAutoNext": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "next.png"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "IdolRoadBackToList"
+        ],
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:LimeGreen]挑战成功，继续前进[/color]"
+        }
+    },
+    "IdolRoadBackToList": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "back_to_list.png"
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "IdolRoadStartNextFlag"
+        ],
+        "post_wait_freezes": 500
+    },
+    "IdolRoadStartNextFlag": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "challenge_action.png"
+            }
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "next": [
+            "IdolRoadStartNext",
+            "IdolRoadStartNextNo"
+        ],
+        "post_wait_freezes": 500
+    },
+    "IdolRoadStartNext": {
+        "recognition": "And",
+        "all_of": [
+            {
+                "recognition": "TemplateMatch",
+                "template": "challenge_action.png"
+            },
+            {
+                "recognition": "TemplateMatch",
+                "template": "challenge_start.png",
+                "green_mask": true
+            }
+        ],
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "next": [
+            "IdolRoadStartFlag"
+        ],
+        "post_wait_freezes": 500
+    },
+    "IdolRoadStartNextNo": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "challenge_action_no.png"
+            }
+        },
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "focus": {
+            "Node.Recognition.Succeeded": {
+                "content": "[color:OrangeRed]❌ 挑战停止[/color]",
+                "display": [
+                    "log",
+                    "notification"
+                ]
+            }
+        }
+    }
+}
