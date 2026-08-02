@@ -12,7 +12,8 @@
       "ShoppingCoinGachaStart",
       "ShoppingCoinGachaMenuClick",
       "[JumpBack]CloseMenu",
-      "[JumpBack]BackHome"
+      "[JumpBack]BackHome",
+      "[JumpBack]CloseRoundButton"
     ]
   },
   "ShoppingCoinGachaMenuClick": {

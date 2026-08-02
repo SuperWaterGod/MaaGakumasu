@@ -11,7 +11,8 @@
     "next": [
       "AwardHomeFlag",
       "[JumpBack]ReturnHome",
-      "[JumpBack]BackHome"
+      "[JumpBack]BackHome",
+      "[JumpBack]CloseRoundButton"
     ]
   },
   "AwardHomeFlag": {
@@ -241,7 +242,7 @@
     },
     "next": [
       "AwardMissionChoose",
-    "BackHome",
+      "BackHome",
       "[JumpBack]AwardMissionUp"
     ]
   },

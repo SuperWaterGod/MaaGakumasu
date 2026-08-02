@@ -12,7 +12,8 @@
       "ShoppingDailyExchangeStart",
       "ShoppingDailyExchangeMenuClick",
       "[JumpBack]CloseMenu",
-      "[JumpBack]BackHome"
+      "[JumpBack]BackHome",
+      "[JumpBack]CloseRoundButton"
     ]
   },
   "ShoppingDailyExchangeMenuClick": {

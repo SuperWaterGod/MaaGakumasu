@@ -12,7 +12,8 @@
       "ShoppingPackStart",
       "ShoppingPackMenuClick",
       "[JumpBack]CloseMenu",
-      "[JumpBack]BackHome"
+      "[JumpBack]BackHome",
+      "[JumpBack]CloseRoundButton"
     ]
   },
   "ShoppingPackMenuClick": {
