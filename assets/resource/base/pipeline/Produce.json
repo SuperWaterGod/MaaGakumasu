@@ -1198,6 +1198,7 @@
             "ProduceFinished",
             "ProduceHomeFlag",
             "[JumpBack]ProduceSkipED",
+            "[JumpBack]ProduceSkipChatFlag",
             "[JumpBack]ProduceNext",
             "[JumpBack]CloseRoundButton",
             "[JumpBack]DecideButton",
@@ -1222,6 +1223,7 @@
         "next": [
             "ProduceBackHome",
             "[JumpBack]ProduceFollow",
+            "[JumpBack]ProduceSkipChatFlag",
             "[JumpBack]ProduceSkip",
             "[JumpBack]CloseRoundButton",
             "[JumpBack]ProduceEventResultButton",

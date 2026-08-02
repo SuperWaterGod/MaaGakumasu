@@ -97,7 +97,8 @@
       "param": {
         "template": [
           "produce/skip_chat_confirm_flag.png"
-        ]
+        ],
+        "threshold": 0.9
       }
     },
     "pre_delay": 0,
