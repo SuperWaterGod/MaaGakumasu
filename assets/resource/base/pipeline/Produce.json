@@ -1213,29 +1213,16 @@
                 "template": [
                     "produce/finished.png"
                 ],
-                "threshold": 0.9
+                "threshold": 0.8
             }
         },
         "action": {
             "type": "Click",
             "param": {}
         },
-        "post_wait_freezes": 200,
+        "pre_wait_freezes": 200,
         "next": [
             "ProduceFinished",
-            "ProduceFinishedConfirm"
-        ]
-    },
-    "ProduceFinishedConfirm": {
-        "recognition": {
-            "type": "DirectHit",
-            "param": {}
-        },
-        "action": {
-            "type": "Click",
-            "param": {}
-        },
-        "next": [
             "ProduceBackHome",
             "[JumpBack]ProduceFollow",
             "[JumpBack]ProduceSkipChatFlag",

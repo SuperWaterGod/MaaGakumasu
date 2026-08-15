@@ -49,6 +49,7 @@
       }
     },
     "pre_delay": 0,
+    "pre_wait_freezes": 200,
     "action": {
       "type": "Custom",
       "param": {
@@ -309,11 +310,13 @@
       }
     },
     "pre_delay": 0,
+    "pre_wait_freezes": 200,
     "action": {
       "type": "DoNothing",
       "param": {}
     },
     "post_delay": 0,
+    "post_wait_freezes": 200,
     "focus": {
       "Node.Recognition.Succeeded": {
         "content": "[color:OrangeRed]❌ 考试失败[/color]",
@@ -324,7 +327,8 @@
       }
     },
     "next": [
-      "ProduceNIAFailedRetry"
+      "ProduceNIAFailedRetry",
+      "ProduceNIAFailedRetryConfirm"
     ]
   },
   "ProduceNIAFailedRetry": {
