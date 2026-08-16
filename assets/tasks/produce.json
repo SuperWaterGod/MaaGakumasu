@@ -10,6 +10,7 @@
         "使用体力药",
         "使用道具",
         "跳过选择偶像",
+        "启用自动支援卡",
         "启用自动回忆",
         "启用关注租借",
         "启用培育失败重试",
@@ -303,6 +304,48 @@
           "max_hit": "{produce_times}"
         }
       }
+    },
+    "启用自动支援卡": {
+      "type": "switch",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "ProduceChooseSupport": {
+              "action": {
+                "param": {
+                  "target_offset": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "ProduceChooseSupport": {
+              "action": {
+                "param": {
+                  "target_offset": [
+                    0,
+                    -90,
+                    0,
+                    0
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ],
+      "description": "$启用自动支援卡说明",
+      "label": "$启用自动支援卡"
     },
     "启用自动回忆": {
       "type": "switch",

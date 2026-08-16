@@ -54,6 +54,21 @@
       "param": {}
     }
   },
+  "ProduceOK": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "template": [
+          "produce/ok.png",
+          "produce/ok_1.png"
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    }
+  },
   "ProduceNext": {
     "recognition": {
       "type": "TemplateMatch",

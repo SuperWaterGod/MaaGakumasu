@@ -61,7 +61,10 @@
         "next": [
             "ProduceStart",
             "ProduceContinue"
-        ]
+        ],
+        "focus": {
+            "Node.Recognition.Failed": "[color:OrangeRed]识别失败，请检查设置是否在正确！[/color]"
+        }
     },
     "ProduceStartPopUpButtons": {
         "recognition": {
@@ -516,11 +519,13 @@
                 ]
             }
         },
+        "pre_wait_freezes": 500,
         "action": {
             "type": "Click",
             "param": {}
         },
         "next": [
+            "ProduceChooseSupportCheckBox",
             "ProduceChooseSupportNext",
             "[JumpBack]ProduceDecide"
         ]
@@ -540,9 +545,57 @@
             "type": "Click",
             "param": {}
         },
+        "post_wait_freezes": 500,
         "next": [
             "ProduceChooseMemory",
             "ProduceChooseMemoryNext"
+        ]
+    },
+    "ProduceChooseSupportCheckBox": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/checkbox.png"
+                ],
+                "roi": [
+                    470,
+                    940,
+                    240,
+                    160
+                ],
+                "threshold": 0.97
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "post_wait_freezes": 500,
+        "next": [
+            "ProduceChooseSupportFirst"
+        ]
+    },
+    "ProduceChooseSupportFirst": {
+        "recognition": {
+            "type": "DirectHit",
+            "param": {}
+        },
+        "action": {
+            "type": "Click",
+            "param": {
+                "target": [
+                    420,
+                    620,
+                    1,
+                    1
+                ]
+            }
+        },
+        "post_wait_freezes": 500,
+        "next": [
+            "ProduceChooseSupportNext",
+            "[JumpBack]ProduceDecide"
         ]
     },
     "ProduceChooseMemory": {
@@ -565,6 +618,7 @@
             "type": "Click",
             "param": {}
         },
+        "post_wait_freezes": 500,
         "next": [
             "ProduceChooseMemoryNext",
             "[JumpBack]ProduceDecide"
@@ -585,6 +639,7 @@
             "type": "Click",
             "param": {}
         },
+        "post_wait_freezes": 500,
         "next": [
             "ProduceUseItem",
             "[JumpBack]ProduceDecide",
