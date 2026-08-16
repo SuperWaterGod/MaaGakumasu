@@ -166,11 +166,11 @@ CDK 购买入口：[Mirror 酱官网](https://mirrorchyan.com/zh/projects?rid=Ma
 
 ## Star History
 
-<a href="https://www.star-history.com/#SuperWaterGod/MaaGakumasu&Date">
+<a href="https://www.star-history.com/?repos=SuperWaterGod%2FMaaGakumasu&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=SuperWaterGod/MaaGakumasu&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=SuperWaterGod/MaaGakumasu&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=SuperWaterGod/MaaGakumasu&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=SuperWaterGod/MaaGakumasu&type=date&theme=dark&legend=top-left&sealed_token=jsOqvuuCRz8HSTe1rE4WEiB_lh4OkFRfvx0tVecSJiZ0HukPzmuA_rfbaruvDCzvY3Xr0MkWgQ0mrWa8Qk3qXQkr0Iv1jAo5nJzyq5JRSXSBkNYlI5iOzOyJDrIz2XE6n8kMs5EECJErxI-YosO1cGCktJdlL18XRt0gFlpDvXabHzX8SNB0N1cRKBcr" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=SuperWaterGod/MaaGakumasu&type=date&legend=top-left&sealed_token=jsOqvuuCRz8HSTe1rE4WEiB_lh4OkFRfvx0tVecSJiZ0HukPzmuA_rfbaruvDCzvY3Xr0MkWgQ0mrWa8Qk3qXQkr0Iv1jAo5nJzyq5JRSXSBkNYlI5iOzOyJDrIz2XE6n8kMs5EECJErxI-YosO1cGCktJdlL18XRt0gFlpDvXabHzX8SNB0N1cRKBcr" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=SuperWaterGod/MaaGakumasu&type=date&legend=top-left&sealed_token=jsOqvuuCRz8HSTe1rE4WEiB_lh4OkFRfvx0tVecSJiZ0HukPzmuA_rfbaruvDCzvY3Xr0MkWgQ0mrWa8Qk3qXQkr0Iv1jAo5nJzyq5JRSXSBkNYlI5iOzOyJDrIz2XE6n8kMs5EECJErxI-YosO1cGCktJdlL18XRt0gFlpDvXabHzX8SNB0N1cRKBcr" />
  </picture>
 </a>
 
