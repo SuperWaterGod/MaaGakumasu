@@ -112,6 +112,24 @@
           }
         }
       ]
+    },
+    {
+      "name": "实用工具",
+      "label": "$实用工具",
+      "description": "$实用工具描述",
+      "task": [
+        {
+          "name": "支援卡识别",
+          "enabled": true
+        },
+        {
+          "name": "偶像之路",
+          "enabled": true,
+          "option": {
+            "偶像之路自动回忆": "Yes"
+          }
+        }
+      ]
     }
   ]
 }
