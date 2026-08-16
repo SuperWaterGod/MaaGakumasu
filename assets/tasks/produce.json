@@ -736,8 +736,26 @@
     },
     "雨夜燕卡片": {
       "type": "select",
-      "default_case": "雨夜燕(Campus mode!!)",
+      "default_case": "雨夜燕(クライアイ)",
       "cases": [
+        {
+          "name": "雨夜燕(クライアイ)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "雨夜燕",
+                "song_name": "クライアイ"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·全力",
+                "first": "Da",
+                "second": "Vo"
+              }
+            }
+          }
+        },
         {
           "name": "雨夜燕(Campus mode!!)",
           "pipeline_override": {

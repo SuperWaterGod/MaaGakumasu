@@ -115,8 +115,26 @@
     },
     "雨夜燕卡片-zh_CN": {
       "type": "select",
-      "default_case": "雨夜燕(Campus mode!!)",
+      "default_case": "雨夜燕(互噬)",
       "cases": [
+        {
+          "name": "雨夜燕(互噬)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "雨夜燕",
+                "song_name": "互噬"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·全力",
+                "first": "Da",
+                "second": "Vo"
+              }
+            }
+          }
+        },
         {
           "name": "雨夜燕(Campus mode!!)",
           "pipeline_override": {
