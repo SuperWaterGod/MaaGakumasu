@@ -18,6 +18,7 @@
       "[JumpBack]ProduceChooseGetFlag",
       "[JumpBack]ProduceChooseStrengthenFlag",
       "[JumpBack]ProduceChooseDeleteFlag",
+      "[JumpBack]ProduceWorkFlag",
       "[JumpBack]ProduceKeepDrinkFlag",
       "[JumpBack]ProduceSkipChatFlag",
       "[JumpBack]ProduceNIAButton",
@@ -152,8 +153,12 @@
     "focus": {
       "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择工作[/color]"
     },
+    "post_wait_freezes": 500,
     "next": [
-      "ProduceWorkConfirm"
+      "ProduceWorkConfirm",
+      "ProduceWorkFlag",
+      "[JumpBack]CloseButton",
+      "[JumpBack]Click_1"
     ]
   },
   "ProduceWorkConfirm": {

@@ -30,6 +30,7 @@ class ProduceChooseEventBase(CustomAction):
     EVENT_CONFIG: dict = {}
     RUN_TASK_MAP: dict = {}
     SUGGESTION_ROI: list = [270, 160, 350, 80]
+    REST_COUNT_ROI = [580, 755, 135, 75]
 
     # 阈值常量
     CLICK_DELAY = 0.5
@@ -69,6 +70,14 @@ class ProduceChooseEventBase(CustomAction):
             logger.info("无可用事件")
             return True
 
+        # 休息前检查：次数用完（检测到"あと0回"）时不可休息，改选其他事件
+        if best_event.get("run_task") == "ProduceChooseRest" and not self._is_rest_available(context, image):
+            logger.warning("休息次数已用完，改选其他事件")
+            best_event = self._choose_best_event(suggestion, health_data, points, score, events, allow_rest=False)
+            if not best_event:
+                logger.info("无可用事件")
+                return True
+
         box = best_event["box"]
         logger.info(f"选择事件: {best_event['name']}, 坐标: ({box[0] + box[2] // 2}, {box[1] + box[3] // 2})")
 
@@ -85,7 +94,27 @@ class ProduceChooseEventBase(CustomAction):
             logger.warning("偏好设置解析失败，使用默认值")
             return {"first": "Vi", "second": "Da"}
 
-    def _choose_best_event(self, suggestion: str, health_data: dict, points: int, score: dict, events: list) -> Optional[dict]:
+    def _is_rest_available(self, context: Context, image) -> bool:
+        """检测休息是否可用：休息按钮剩余次数区域出现「あと0回」时不可休息。"""
+        reco_detail = context.run_recognition(
+            "ProduceRecognitionRestCount",
+            image,
+            pipeline_override={
+                "ProduceRecognitionRestCount": {
+                    "recognition": "OCR",
+                    "roi": self.REST_COUNT_ROI,
+                    "expected": ["あと[0０]回", "剩余[0０]次"],  # 兼容全角/半角 0
+                }
+            },
+        )
+        if reco_detail and reco_detail.hit:
+            logger.info("休息次数已用完")
+            return False
+        return True
+
+    def _choose_best_event(
+        self, suggestion: str, health_data: dict, points: int, score: dict, events: list, allow_rest: bool = True
+    ) -> Optional[dict]:
         """
         根据获取到的信息从可用事件中选择最佳事件。
 
@@ -106,8 +135,10 @@ class ProduceChooseEventBase(CustomAction):
             go_out = self._find_event_by_name(events, "外出")
             if go_out and points >= 100:
                 return self._make_event("外出", go_out)
-            logger.info("体力过低，选择休息")
-            return {"name": "rest", "box": [0, 0, 0, 0], "run_task": "ProduceChooseRest"}
+            if allow_rest:
+                logger.info("体力过低，选择休息")
+                return {"name": "rest", "box": [0, 0, 0, 0], "run_task": "ProduceChooseRest"}
+            # 休息不可用（次数用完），继续走后续优先级
 
         # 1. 老师建议
         suggestion_attr = self._parse_suggestion(suggestion)
@@ -465,7 +496,6 @@ class ProduceChooseNIAEventAuto(ProduceChooseEventBase):
 
     RUN_TASK_MAP = {
         "交谈": "ProduceShoppingEntry",
-        "工作": "ProduceWorkEntry",
         "指导": "ProduceGuideEntry",
     }
 
@@ -496,6 +526,10 @@ class ProduceCardsAuto(CustomAction):
     # 阈值常量
     CLICK_DELAY = 0.3
     TIME_OUT = 15.0
+
+    # 卡牌Y轴位置边界（超出范围视为识别异常，不点击）
+    CARD_Y_MIN = 840
+    CARD_Y_MAX = 1000
 
     def __init__(self):
         super().__init__()
@@ -545,12 +579,12 @@ class ProduceCardsAuto(CustomAction):
 
                 # 有推荐牌时，打出推荐牌
                 if suggestions > 0:
-                    if suggestions_box[1] < 840 or suggestions_box[1] > 1150:
+                    if suggestions_box[1] < self.CARD_Y_MIN or suggestions_box[1] > self.CARD_Y_MAX:
                         continue
                     self._play_a_card(context, suggestions_box)
                 # 只有一张可用牌时，直接打出该牌
                 elif cards == 1:
-                    if best_box[1] < 840 or best_box[1] > 1150:
+                    if best_box[1] < self.CARD_Y_MIN or best_box[1] > self.CARD_Y_MAX:
                         continue
                     time.sleep(1)  # 防止点击过早导致只命中一次
                     self._play_a_card(context, best_box)
@@ -563,7 +597,7 @@ class ProduceCardsAuto(CustomAction):
 
                 end_time = time.time()
                 if end_time - self.start_time > self.TIME_OUT:
-                    if best_box[1] < 840 or best_box[1] > 1150:
+                    if best_box[1] < self.CARD_Y_MIN or best_box[1] > self.CARD_Y_MAX:
                         continue
 
                     logger.warning("检测超时")
