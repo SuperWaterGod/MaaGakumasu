@@ -63,7 +63,7 @@
             "ProduceContinue"
         ],
         "focus": {
-            "Node.Recognition.Failed": "[color:OrangeRed]识别失败，请检查设置是否在正确！[/color]"
+            "Node.PipelineNode.Failed": "[color:OrangeRed]识别失败，请检查设置是否正确！[/color]"
         }
     },
     "ProduceStartPopUpButtons": {

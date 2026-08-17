@@ -497,6 +497,7 @@ class ProduceChooseNIAEventAuto(ProduceChooseEventBase):
     RUN_TASK_MAP = {
         "交谈": "ProduceShoppingEntry",
         "指导": "ProduceGuideEntry",
+        "工作": "ProduceWorkEntry",
     }
 
     def _choose_extra_before_attrs(self, events: list) -> Optional[dict]:
