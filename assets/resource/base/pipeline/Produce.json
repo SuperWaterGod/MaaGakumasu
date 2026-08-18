@@ -541,11 +541,12 @@
                 "threshold": 0.97
             }
         },
+        "pre_wait_freezes": 500,
         "action": {
             "type": "Click",
             "param": {}
         },
-        "post_wait_freezes": 500,
+        "post_wait_freezes": 200,
         "next": [
             "ProduceChooseMemory",
             "ProduceChooseMemoryNext"
@@ -595,7 +596,65 @@
         "post_wait_freezes": 500,
         "next": [
             "ProduceChooseSupportNext",
+            "[JumpBack]ProduceChooseSupportReplace",
             "[JumpBack]ProduceDecide"
+        ]
+    },
+    "ProduceChooseSupportReplace": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/support_card_replacement.png"
+                ],
+                "threshold": 0.9
+            }
+        },
+        "pre_wait_freezes": 200,
+        "action": {
+            "type": "DoNothing",
+            "param": {}
+        },
+        "next": [
+            "ProduceChooseSupportCancel"
+        ]
+    },
+    "ProduceChooseSupportCancel": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/cancel.png"
+                ],
+                "threshold": 0.9
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "post_wait_freezes": 500,
+        "next": [
+            "ProduceChooseSupportBack"
+        ]
+    },
+    "ProduceChooseSupportBack": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "produce/cancel.png"
+                ],
+                "threshold": 0.9
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "post_wait_freezes": 500,
+        "next": [
+            "ProduceChooseSupport"
         ]
     },
     "ProduceChooseMemory": {
