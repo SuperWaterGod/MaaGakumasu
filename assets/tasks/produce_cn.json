@@ -1773,8 +1773,26 @@
     },
     "月村手毬卡片-zh_CN": {
       "type": "select",
-      "default_case": "月村手毬(荆棘之路)",
+      "default_case": "月村手毬(喂，我要说了哦。)",
       "cases": [
+        {
+          "name": "月村手毬(喂，我要说了哦。)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "月村手毬",
+                "song_name": "喂，我要说了哦。"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·强气",
+                "first": "Vo",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "月村手毬(荆棘之路)",
           "pipeline_override": {
@@ -2237,8 +2255,26 @@
     },
     "十王星南卡片-zh_CN": {
       "type": "select",
-      "default_case": "十王星南(ENDLESS DANCE)",
+      "default_case": "十王星南(喂，我要说了哦。)",
       "cases": [
+        {
+          "name": "十王星南(喂，我要说了哦。)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "十王星南",
+                "song_name": "喂，我要说了哦。"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·集中",
+                "first": "Vi",
+                "second": "Vo"
+              }
+            }
+          }
+        },
         {
           "name": "十王星南(ENDLESS DANCE)",
           "pipeline_override": {
