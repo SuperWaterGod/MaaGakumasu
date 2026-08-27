@@ -2190,8 +2190,26 @@
     },
     "秦谷美鈴卡片": {
       "type": "select",
-      "default_case": "秦谷美鈴(VEIL)",
+      "default_case": "秦谷美鈴(ねえ、言っちゃうよ。)",
       "cases": [
+        {
+          "name": "秦谷美鈴(ねえ、言っちゃうよ。)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "秦谷美鈴",
+                "song_name": "ねえ、言っちゃうよ。"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·集中",
+                "first": "Vo",
+                "second": "Vi"
+              }
+            }
+          }
+        },
         {
           "name": "秦谷美鈴(VEIL)",
           "pipeline_override": {

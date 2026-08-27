@@ -2683,8 +2683,26 @@
     },
     "秦谷美铃卡片-zh_CN": {
       "type": "select",
-      "default_case": "秦谷美铃(VEIL)",
+      "default_case": "秦谷美铃(喂，我要说了哦。)",
       "cases": [
+        {
+          "name": "秦谷美铃(喂，我要说了哦。)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "秦谷美铃",
+                "song_name": "喂，我要说了哦。"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·集中",
+                "first": "Vo",
+                "second": "Vi"
+              }
+            }
+          }
+        },
         {
           "name": "秦谷美铃(VEIL)",
           "pipeline_override": {
