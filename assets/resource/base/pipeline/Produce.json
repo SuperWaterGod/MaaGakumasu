@@ -1200,7 +1200,7 @@
                 ]
             }
         },
-        "pre_delay": 100,
+        "pre_wait_freezes": 500,
         "action": {
             "type": "Click",
             "param": {
@@ -1212,7 +1212,7 @@
                 ]
             }
         },
-        "post_delay": 100,
+        "post_wait_freezes": 500,
         "focus": {
             "Node.Recognition.Succeeded": "[color:DeepSkyBlue]选择删除/复制/变换[/color]"
         },
@@ -1231,10 +1231,12 @@
                 ]
             }
         },
+        "pre_wait_freezes": 500,
         "action": {
             "type": "Click",
             "param": {}
-        }
+        },
+        "post_wait_freezes": 500
     },
     "ProduceEnd": {
         "recognition": {
