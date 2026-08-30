@@ -186,24 +186,26 @@ def check_and_install_dependencies():
     enable_pip_update = pip_config.get("enable_pip_update", True)
     enable_pip_install = pip_config.get("enable_pip_install", True)
 
-    if enable_pip_update:
-        if not update_pip(pip_config=pip_config):
-            logger.warning("pip 更新失败，继续尝试安装依赖...")
-
     current_version = read_interface_version()
     last_version = pip_config.get("last_version", "unknown")
 
     logger.info(f"启用 pip 安装依赖: {enable_pip_install}")
     logger.info(f"当前版本: {current_version}, 上次运行版本: {last_version}")
 
-    if enable_pip_install and (current_version != last_version or current_version == "unknown"):
-        if install_requirements(pip_config=pip_config):
-            update_pip_config(current_version)
-            logger.info("依赖检查完成")
-        else:
-            logger.warning("依赖安装失败，程序可能无法正常运行")
+    need_install = enable_pip_install and (current_version != last_version or current_version == "unknown")
+    if not need_install:
+        logger.info("依赖已就绪，跳过依赖检查与 pip 更新")
+        return
+
+    if enable_pip_update:
+        if not update_pip(pip_config=pip_config):
+            logger.warning("pip 更新失败，继续尝试安装依赖...")
+
+    if install_requirements(pip_config=pip_config):
+        update_pip_config(current_version)
+        logger.info("依赖检查完成")
     else:
-        logger.info("跳过依赖安装")
+        logger.warning("依赖安装失败，程序可能无法正常运行")
 
 
 def read_interface_version(interface_file="./interface.json") -> str:
