@@ -182,6 +182,10 @@
       ],
       "default_check": true,
       "doc": "$偶像之路说明",
+      "resource": [
+        "官服",
+        "DMM"
+      ],
       "label": "$偶像之路"
     }
   ],
