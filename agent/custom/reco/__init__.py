@@ -6,6 +6,7 @@ from .society import *
 __all__ = [
     "WorkChooseAuto",
     "WorkChooseIdol",
+    "WorkChooseTimeAuto",
     "SocietyRequestAuto",
     "ProduceChooseIdolAuto",
     "ProduceShowStart",

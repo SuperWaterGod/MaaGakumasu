@@ -1,12 +1,46 @@
 import json
 import time
 from typing import Union, Optional
+from datetime import datetime
 
 from utils import logger
 from maa.define import RectType
 from maa.context import Context
 from maa.agent.agent_server import AgentServer
 from maa.custom_recognition import CustomRecognition
+
+@AgentServer.custom_recognition("WorkChooseTimeAuto")
+class WorkChooseTimeAuto(CustomRecognition):
+    """
+    工作时长自动判断（迷你演唱会 / 直播活动通用）
+    """
+
+    def analyze(
+        self,
+        context: Context,
+        argv: CustomRecognition.AnalyzeArg,
+    ) -> Union[CustomRecognition.AnalyzeResult, Optional[RectType]]:
+        def choose_work_duration(now: datetime) -> int:
+            for hours in (12, 8):
+                if now.hour + hours < 23:
+                    return hours
+            return 12
+        kinds = {"show": "迷你演唱会", "live": "直播活动"}
+        kind = ""
+        if argv.custom_recognition_param:
+            kind = json.loads(argv.custom_recognition_param).get("kind", "")
+        target_node = {"show": "WorkChooseShowTime", "live": "WorkChooseLiveTime"}.get(kind)
+        if target_node is None:
+            logger.warning(f"未知的工件类型标识: {kind}")
+            return None
+
+        now = datetime.now()
+        hours = choose_work_duration(now)
+        overridden = context.override_pipeline({target_node: {"expected": str(hours)}})
+        logger.info(f"自动工作时长: 当前 {now:%H:%M}, 设置{kinds.get(kind)}时长 {hours} 小时")
+        if not overridden:
+            return None
+        return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": f"{hours} 小时"})
 
 
 @AgentServer.custom_recognition("WorkChooseAuto")
