@@ -17,7 +17,7 @@
                         "Adb",
                         "Win32",
                         "PlayCover",
-                        "WlRoots"
+                        "Linux"
                     ]
                 }
             }
@@ -58,12 +58,24 @@
                 }
             }
         },
-        "wlroots": {
-            "title": "WlRoots配置",
+        "linux": {
+            "title": "Linux配置",
             "type": "object",
             "properties": {
                 "wlr_socket_path": {
-                    "title": "Wayland Socket路径",
+                    "title": "Wayland Socket 路径",
+                    "type": "string"
+                },
+                "uinput_screen_width": {
+                    "title": "UInput 屏幕宽度（像素）",
+                    "type": "integer"
+                },
+                "uinput_screen_height": {
+                    "title": "UInput 屏幕高度（像素）",
+                    "type": "integer"
+                },
+                "eis_socket_path": {
+                    "title": "EIS socket 路径",
                     "type": "string"
                 }
             }
@@ -97,22 +109,13 @@
                                     "type": "string"
                                 }
                             },
-                            "required": [
-                                "name",
-                                "value"
-                            ]
+                            "required": ["name", "value"]
                         }
                     }
                 },
-                "required": [
-                    "name"
-                ]
+                "required": ["name"]
             }
         }
     },
-    "required": [
-        "controller",
-        "resource",
-        "task"
-    ]
+    "required": ["controller", "resource", "task"]
 }
