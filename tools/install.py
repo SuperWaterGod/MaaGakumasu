@@ -106,6 +106,14 @@ def install_chores():
         ignore=shutil.ignore_patterns("*.yaml"),
     )
 
+    # 复制默认配置模板，MFAAvalonia 首次启动时会自动将其转换为 config.json
+    config_dir = install_path / "config"
+    config_dir.mkdir(exist_ok=True)
+    shutil.copy2(
+        working_dir / "config.template.json",
+        config_dir / "config.template.json",
+    )
+
 
 def install_agent():
     shutil.copytree(
