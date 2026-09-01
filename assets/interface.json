@@ -282,7 +282,9 @@
           "label": "$自动",
           "pipeline_override": {
             "WorkChooseShowConfirm": {
-              "next": ["WorkTimeAutoFlag"]
+              "next": [
+                "WorkTimeAutoFlag"
+              ]
             },
             "WorkTimeAutoFlag": {
               "recognition": {
@@ -294,7 +296,10 @@
                   }
                 }
               },
-              "next": ["WorkChooseShowTime", "[JumpBack]DecideButton"]
+              "next": [
+                "WorkChooseShowTime",
+                "[JumpBack]DecideButton"
+              ]
             }
           }
         },
@@ -337,7 +342,9 @@
           "label": "$自动",
           "pipeline_override": {
             "WorkChooseLiveConfirm": {
-              "next": ["WorkTimeAutoFlag"]
+              "next": [
+                "WorkTimeAutoFlag"
+              ]
             },
             "WorkTimeAutoFlag": {
               "recognition": {
@@ -349,7 +356,10 @@
                   }
                 }
               },
-              "next": ["WorkChooseLiveTime", "[JumpBack]DecideButton"]
+              "next": [
+                "WorkChooseLiveTime",
+                "[JumpBack]DecideButton"
+              ]
             }
           }
         },
