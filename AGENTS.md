@@ -10,7 +10,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 
 ## 当前进度
 
-最近更新以 `assets/resource/Changelog.md` 的 v1.4.9 公告和最近提交为准。
+最近更新以 `assets/resource/announcement/Changelog.md` 的 v1.4.9 公告和最近提交为准。
 
 已实现的主要功能包括：
 
@@ -41,7 +41,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 截至最近更新本文件时，工作区存在未提交修改（v1.4.9 发版准备）：
 
 - `assets/interface.json`
-- `assets/resource/Changelog.md`
+- `assets/resource/announcement/Changelog.md`
 - `README.md`
 - `docs/zh_cn/功能说明.md`
 
@@ -56,7 +56,8 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - `assets/data/`：结构化数据，例如偶像卡片数据 `idols_cards.json`。
 - `assets/tasks/`：MFA/MaaFramework 任务入口与选项定义。培育任务入口在 `assets/tasks/produce.json`，中文任务配置在 `produce_cn.json`。
 - `assets/lang/`：界面与任务选项翻译。新增任务选项时同步 `zh-CN` 和 `zh-Hant` 等已有语言。
-- `assets/resource/Changelog.md`：发布给用户看的资源更新公告；当前内容已进入 v1.4.9 说明。
+- `assets/resource/announcement/Changelog.md`：发布给用户看的版本更新公告；当前内容已进入 v1.4.9 说明。
+- `assets/resource/announcement/`：客户端资源公告与首次使用欢迎弹窗（`welcome.md` 被 `assets/interface.json` 的 `welcome` 字段引用；`features.md` 为功能说明.md 的简化版公告，冲突时以功能说明.md 与任务配置为准；`disclaimer.md` / `faq.md` 为长期静态公告）。
 - `docs/zh_cn/`：中文用户与开发文档。
 - `tools/`：维护脚本，例如 README 中提到的偶像素材或卡片数据更新脚本。
 - `debug/`：运行日志和调试输出，不应作为功能改动的一部分提交。
@@ -68,7 +69,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - Python 依赖：`maafw`、`loguru`、`Pillow`。
 - 可选开发依赖：`pytest>=7.0`、`ruff>=0.1.0`。
 - Node 侧仅用于工具链，当前 `package.json` 包含 `prettier-plugin-multiline-arrays`。
-- Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源公告已更新到 `assets/resource/Changelog.md` 的 `v1.4.9`。
+- Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源公告已更新到 `assets/resource/announcement/Changelog.md` 的 `v1.4.9`。
 
 常用检查命令：
 
