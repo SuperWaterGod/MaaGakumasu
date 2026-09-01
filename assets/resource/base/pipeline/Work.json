@@ -366,5 +366,21 @@
       "type": "DoNothing",
       "param": {}
     }
+  },
+  "WorkTimeAutoFlag": {
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "WorkChooseTimeAuto",
+        "custom_recognition_param": {
+          "kind": "show"
+        }
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": []
   }
 }

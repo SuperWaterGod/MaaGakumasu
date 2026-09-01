@@ -275,8 +275,29 @@
     },
     "迷你演唱会工作时长": {
       "type": "select",
-      "default_case": "12 小时",
+      "default_case": "自动",
       "cases": [
+        {
+          "name": "自动",
+          "label": "$自动",
+          "pipeline_override": {
+            "WorkChooseShowConfirm": {
+              "next": ["WorkTimeAutoFlag"]
+            },
+            "WorkTimeAutoFlag": {
+              "recognition": {
+                "type": "Custom",
+                "param": {
+                  "custom_recognition": "WorkChooseTimeAuto",
+                  "custom_recognition_param": {
+                    "kind": "show"
+                  }
+                }
+              },
+              "next": ["WorkChooseShowTime", "[JumpBack]DecideButton"]
+            }
+          }
+        },
         {
           "name": "4 小时",
           "label": "$4 小时",
@@ -309,8 +330,29 @@
     },
     "直播活动工作时长": {
       "type": "select",
-      "default_case": "12 小时",
+      "default_case": "自动",
       "cases": [
+        {
+          "name": "自动",
+          "label": "$自动",
+          "pipeline_override": {
+            "WorkChooseLiveConfirm": {
+              "next": ["WorkTimeAutoFlag"]
+            },
+            "WorkTimeAutoFlag": {
+              "recognition": {
+                "type": "Custom",
+                "param": {
+                  "custom_recognition": "WorkChooseTimeAuto",
+                  "custom_recognition_param": {
+                    "kind": "live"
+                  }
+                }
+              },
+              "next": ["WorkChooseLiveTime", "[JumpBack]DecideButton"]
+            }
+          }
+        },
         {
           "name": "4 小时",
           "label": "$4 小时",
