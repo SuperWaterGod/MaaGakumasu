@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+import sys
 import json
 from datetime import datetime
 from collections import OrderedDict
@@ -92,13 +93,19 @@ def translate_idol(idol_name):
     return IDOLS_TRANSLATIONS.get(idol_name, idol_name)
 
 
-def scrape_cards_from_url(url):
+def scrape_cards_from_url(url, proxies=None):
     """
     从URL采集网站中的SSR、SR和R卡片信息
     """
     try:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=30, proxies=proxies)
+
+        # 反爬拦截时返回 403 等非 200 状态码，此时必须放弃采集，否则会把空数据保存覆盖旧数据
+        if response.status_code != 200:
+            print(f"请求被拒绝: HTTP {response.status_code}")
+            return None, None
+
         response.encoding = "EUC-JP"
 
         soup = BeautifulSoup(response.text, "html.parser")
@@ -139,8 +146,18 @@ def scrape_cards_from_url(url):
                     all_cards["R"] = parse_table(table, plan_effects_stats)
                     print(f"找到 {len(all_cards['R'])} 张R卡片")
 
+        # 校验采集结果：拦截页或页面结构变化会导致一张卡片都解析不到，此时不能保存
+        total_cards = sum(len(all_cards[r]) for r in all_cards)
+        if total_cards == 0:
+            print("警告: 未解析到任何卡片数据（可能被反爬拦截或页面结构变化），已放弃本次采集")
+            return None, None
+
         return all_cards, plan_effects_stats
 
+    except requests.RequestException as e:
+        # 网络类异常（超时、代理不可用等）在回退流程中属于预期情况，只打印一行
+        print(f"请求出错: {e}")
+        return None, None
     except Exception as e:
         print(f"错误: {e}")
         import traceback
@@ -449,6 +466,22 @@ def save_to_json(data):
         # 加载旧数据
         old_data = load_old_data(get_cards_filepath())
 
+        # 安全护栏：采集结果为空时拒绝保存，防止反爬拦截/页面异常导致清空已有数据
+        new_total = sum(len(data[r]) for r in ["SSR", "SR", "R"])
+        if new_total == 0:
+            print("错误: 采集结果为空，已取消保存，原有数据文件保持不变")
+            return
+
+        # 安全护栏：新数据量骤减（如拦截页只解析出部分内容）时需确认后才覆盖
+        if old_data:
+            old_total = sum(len(old_data.get(r, [])) for r in ["SSR", "SR", "R"])
+            if new_total < old_total * 0.5:
+                print(f"\n警告: 本次采集到 {new_total} 张卡片，远少于旧数据的 {old_total} 张")
+                confirm = input("数据量异常减少，是否仍要覆盖保存? (y/N): ").strip().lower()
+                if confirm != "y":
+                    print("已取消保存，原有数据文件保持不变")
+                    return
+
         # 对每个稀有度的卡片进行排序
         sorted_data = {
             "保存时间": datetime.now().strftime("%Y/%m/%d"),
@@ -532,18 +565,48 @@ def save_to_json(data):
 
 
 def main():
+    # 直连失败时自动回退到默认代理 127.0.0.1:12334（该网站会拦截非合法 IP）
+    # 可通过 --proxy 直接指定代理，跳过直连与默认代理尝试
+    default_proxy = "http://127.0.0.1:12334"
+    proxies = None
+    argv = sys.argv[1:]
+    if "--proxy" in argv:
+        idx = argv.index("--proxy")
+        if idx + 1 < len(argv):
+            proxy_url = argv[idx + 1]
+            proxies = {"http": proxy_url, "https": proxy_url}
+        else:
+            print("错误: --proxy 需要指定代理地址，例如 --proxy http://127.0.0.1:7890")
+            return
+
     url = "https://seesaawiki.jp/gakumasu/d/%a5%d7%a5%ed%a5%c7%a5%e5%a1%bc%a5%b9%a5%a2%a5%a4%a5%c9%a5%eb%b0%ec%cd%f7"
 
     print("开始采集卡片信息...")
 
-    cards_data, plan_effects_stats = scrape_cards_from_url(url)
+    cards_data, plan_effects_stats = scrape_cards_from_url(url, proxies)
+
+    # 未显式指定代理时：直连失败 → 尝试默认代理 → 失败则提示修改代理
+    if cards_data is None and proxies is None:
+        print(f"直连采集失败，尝试默认代理 {default_proxy} ...")
+        cards_data, plan_effects_stats = scrape_cards_from_url(url, {"http": default_proxy, "https": default_proxy})
+
+        if cards_data is None:
+            print("默认代理采集失败，请修改代理地址:")
+            try:
+                new_proxy = input("请输入新的代理地址 (如 http://127.0.0.1:7890，直接回车跳过): ").strip()
+            except EOFError:
+                new_proxy = ""
+            if new_proxy:
+                cards_data, plan_effects_stats = scrape_cards_from_url(url, {"http": new_proxy, "https": new_proxy})
 
     if cards_data:
         print("\n采集完成！")
         save_to_json(cards_data)
 
     else:
-        print("采集失败，请检查网络连接或URL是否正确")
+        print("采集失败，原有数据文件保持不变")
+        print("提示: 可修改 tools/update_cards.py 中 default_proxy 的默认代理地址")
+        print("  或下次直接指定: python update_cards.py --proxy http://127.0.0.1:7890")
 
 
 if __name__ == "__main__":
