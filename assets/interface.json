@@ -8,7 +8,7 @@
   "contact": "QQ群: 799823681",
   "icon": "./logo.ico",
   "license": "./LICENSE",
-  "welcome": "./resource/announcement/welcome.md",
+  "welcome": "./resource/announcement/04_欢迎使用.md",
   "description": "学園アイドルマスター（学マス）小助手 | Assistant For Gakuen Idolmaster",
   "languages": {
     "zh-CN": "lang/zh-CN.json",
