@@ -248,10 +248,13 @@ def agent():
     try:
         import custom
         from utils import logger
+        from maa.library import Library
         from maa.toolkit import Toolkit
         from maa.agent.agent_server import AgentServer
 
         Toolkit.init_option("./")
+
+        logger.debug(f"maafw Library version: {Library.version()}")
 
         socket_id = sys.argv[-1]
 
