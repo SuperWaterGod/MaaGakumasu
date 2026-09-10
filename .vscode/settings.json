@@ -2,9 +2,16 @@
     "json.schemas": [
         {
             "fileMatch": [
-                "/assets/resource/**/*.json"
+                "/assets/resource/**/*.json",
+                "!/assets/resource/mfa_layout.json"
             ],
             "url": "/tools/pipeline.schema.json"
+        },
+        {
+            "fileMatch": [
+                "/assets/resource/mfa_layout.json"
+            ],
+            "url": "/tools/mfa_layout.schema.json"
         },
         {
             "fileMatch": [
