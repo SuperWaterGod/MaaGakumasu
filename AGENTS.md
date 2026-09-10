@@ -10,14 +10,14 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 
 ## 当前进度
 
-最近更新以 `assets/resource/announcement/01_更新公告.md` 的 v1.4.9 公告和最近提交为准。
+最近更新以 `assets/resource/announcement/01_更新公告.md` 的 v1.5.0 公告和最近提交为准。
 
 已实现的主要功能包括：
 
 - 启动游戏、领取活动费、邮箱礼物、任务奖励、每周免费礼包。
 - 竞赛挑战，支持指定挑战、自动选择、无编队时自动编队。
 - 社团互动，支持自动或指定请求。
-- 安排工作，支持领取奖励、自动或指定偶像、指定时长。
+- 安排工作，支持领取奖励、自动或指定偶像、自动或指定时长。
 - 商店购买，支持扭蛋、金币、AP 购买和自动免费刷新。
 - 自动培育处于测试阶段，支持初 `REGULAR/PRO/MASTER`、NIA `PRO/MASTER`、指定偶像、自动选择、自动支援卡选择、体力药、道具、卡片选择优先级、跟随老师建议、培育失败重试（初 + NIA）、试镜难度降低、试镜手动接管和中断继续。
 - 偶像之路自动挑战，支持自动编队、自动战斗与失败重试（暂未适配汉化版，仅官服/DMM）。
@@ -38,12 +38,11 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - 初 `LEGEND` 培育适配。
 - 更多语言与更多自动培育样本覆盖。
 
-截至最近更新本文件时，工作区存在未提交修改（v1.4.9 发版准备）：
+截至最近更新本文件时，工作区存在未提交修改（v1.5.0 发版准备）：
 
 - `assets/interface.json`
 - `assets/resource/announcement/01_更新公告.md`
 - `README.md`
-- `docs/zh_cn/功能说明.md`
 
 不要覆盖或回退这些文件中的现有改动，除非用户明确要求。
 
@@ -56,7 +55,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - `assets/data/`：结构化数据，例如偶像卡片数据 `idols_cards.json`。
 - `assets/tasks/`：MFA/MaaFramework 任务入口与选项定义。培育任务入口在 `assets/tasks/produce.json`，中文任务配置在 `produce_cn.json`。
 - `assets/lang/`：界面与任务选项翻译。新增任务选项时同步 `zh-CN` 和 `zh-Hant` 等已有语言。
-- `assets/resource/announcement/01_更新公告.md`：发布给用户看的版本更新公告；当前内容已进入 v1.4.9 说明。
+- `assets/resource/announcement/01_更新公告.md`：发布给用户看的版本更新公告；当前内容已进入 v1.5.0 说明。
 - `assets/resource/announcement/`：客户端资源公告与首次使用欢迎弹窗。文件按名称数字前缀排序展示（`01_更新公告.md`、`02_常见问题.md`、`03_免责声明与使用须知.md`、`04_欢迎使用.md`、`05_功能介绍.md`）；`04_欢迎使用.md` 被 `assets/interface.json` 的 `welcome` 字段引用；`05_功能介绍.md` 为功能说明.md 的简化版公告，冲突时以功能说明.md 与任务配置为准；`02_常见问题.md` / `03_免责声明与使用须知.md` 为长期静态公告。
 - `docs/zh_cn/`：中文用户与开发文档。
 - `tools/`：维护脚本，例如 README 中提到的偶像素材或卡片数据更新脚本。
@@ -69,7 +68,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - Python 依赖：`maafw`、`loguru`、`Pillow`。
 - 可选开发依赖：`pytest>=7.0`、`ruff>=0.1.0`。
 - Node 侧仅用于工具链，当前 `package.json` 包含 `prettier-plugin-multiline-arrays`。
-- Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源公告已更新到 `assets/resource/announcement/01_更新公告.md` 的 `v1.4.9`。
+- Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源公告已更新到 `assets/resource/announcement/01_更新公告.md` 的 `v1.5.0`。
 
 常用检查命令：
 
@@ -142,7 +141,7 @@ npx maa-tools check
 - 不要回退用户已有修改。当前工作区若有不相关改动，保持原样。
 - 不要在未确认的情况下调整发布、安装、依赖打包或 Mirror 酱相关配置。
 - 不要把 README 中标注为测试阶段的自动培育描述成稳定功能。
-- README、功能说明与 Changelog 若存在冲突，先检查最近提交和 `assets/tasks/produce.json`；当前 NIA 状态应以 v1.4.9 Changelog 和任务配置为准。
+- README、功能说明与更新公告若存在冲突，先检查最近提交和 `assets/tasks/produce.json`；当前 NIA 状态应以 v1.5.0 更新公告和任务配置为准。
 - 不要改变项目许可证、免责声明或商业用途限制。
 - 需要联网查询 MaaFramework、MFAAvalonia、Mirror 酱或 OpenAI 等外部信息时，优先使用官方文档，并在回复中说明来源。
 - 对用户报告的运行问题，优先索要或检查 `debug/maa.log`、模拟器类型、分辨率、系统平台、游戏版本、是否 DMM/插件版汉化。
