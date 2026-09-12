@@ -1,0 +1,101 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "MFAAvalonia Dashboard 布局",
+    "description": "MFAAvalonia 主界面 Dashboard 卡片布局配置 | mfa_layout.json，放置于 resource 目录下",
+    "type": "object",
+    "required": [
+        "rows",
+        "columns"
+    ],
+    "properties": {
+        "rows": {
+            "title": "Rows",
+            "description": "行数 | 全局网格行数",
+            "type": "integer",
+            "minimum": 1
+        },
+        "columns": {
+            "title": "Columns",
+            "description": "列数 | 全局网格列数",
+            "type": "integer",
+            "minimum": 1
+        },
+        "spacing": {
+            "title": "Spacing",
+            "description": "间距 | 卡片之间的间距",
+            "type": "number",
+            "minimum": 0,
+            "default": 10
+        },
+        "settings": {
+            "$ref": "#/$defs/Card"
+        },
+        "task_list": {
+            "$ref": "#/$defs/Card"
+        },
+        "task_desc": {
+            "$ref": "#/$defs/Card"
+        },
+        "live_view": {
+            "$ref": "#/$defs/Card"
+        },
+        "log": {
+            "$ref": "#/$defs/Card"
+        }
+    },
+    "additionalProperties": {
+        "$ref": "#/$defs/Card"
+    },
+    "$defs": {
+        "Card": {
+            "title": "Card Layout",
+            "description": "卡片布局 | 以卡片 ID 为键，定义卡片在网格中的起始位置与跨度",
+            "type": "object",
+            "properties": {
+                "row": {
+                    "title": "Row",
+                    "description": "起始行 | 从 0 开始",
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                },
+                "col": {
+                    "title": "Column",
+                    "description": "起始列 | 从 0 开始",
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                },
+                "row_span": {
+                    "title": "Row Span",
+                    "description": "行跨度 | 占用几行",
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 1
+                },
+                "col_span": {
+                    "title": "Column Span",
+                    "description": "列跨度 | 占用几列",
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 1
+                },
+                "rowSpan": {
+                    "title": "Row Span (Alias)",
+                    "description": "行跨度 | row_span 的别名写法，二者等价",
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 1
+                },
+                "colSpan": {
+                    "title": "Column Span (Alias)",
+                    "description": "列跨度 | col_span 的别名写法，二者等价",
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 1
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}

@@ -10,6 +10,7 @@ on:
       - ".github/workflows/install.yml"
       - "assets/**"
       - "**.py"
+      - "config.template.json"
   pull_request:
     branches:
       - "**"
@@ -17,6 +18,7 @@ on:
       - ".github/workflows/install.yml"
       - "assets/**"
       - "**.py"
+      - "config.template.json"
   workflow_dispatch:
 
 permissions:
@@ -76,6 +78,38 @@ jobs:
         with:
           submodules: true
 
+      - name: Resolve MaaFramework version
+        id: maa_version
+        shell: bash
+        run: |
+          tag=$(curl -s -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/MaaXYZ/MaaFramework/releases/latest" \
+            | python -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+          maafw_version=${tag#v}
+          if [[ ! $maafw_version =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "Unexpected MaaFramework tag: '${tag}'" >&2
+            exit 1
+          fi
+          echo "MaaFramework latest: ${tag} -> maafw ${maafw_version}"
+          echo "tag=${tag}" | tee -a "$GITHUB_OUTPUT"
+          echo "maafw_version=${maafw_version}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Verify maafw version on PyPI
+        shell: bash
+        env:
+          MAAFW_VERSION: ${{ steps.maa_version.outputs.maafw_version }}
+        run: |
+          for i in 1 2 3; do
+            if curl -sf "https://pypi.org/pypi/maafw/json" | python -c "import json,sys,os; v=os.environ['MAAFW_VERSION']; files=(json.load(sys.stdin).get('releases') or {}).get(v) or []; sys.exit(0 if files else 1)"; then
+              echo "PyPI has maafw ${MAAFW_VERSION}"
+              exit 0
+            fi
+            echo "PyPI missing maafw ${MAAFW_VERSION} (attempt ${i}/3), retry in 60s..."
+            sleep 60
+          done
+          echo "ERROR: maafw ${MAAFW_VERSION} not found on PyPI" >&2
+          exit 1
+
       - name: Download MFAAvalonia
         uses: robinraju/release-downloader@v1
         with:
@@ -90,7 +124,7 @@ jobs:
         with:
           repository: MaaXYZ/MaaFramework
           fileName: "MAA-win-${{ matrix.arch }}*"
-          latest: true
+          tag: ${{ steps.maa_version.outputs.tag }}
           out-file-path: "deps"
           extract: true
 
@@ -203,7 +237,7 @@ jobs:
           echo "Building for platform: ${platform_tag}"
           
           # 运行安装脚本，传入版本号和平台标签
-          python ./tools/install.py ${{ needs.meta.outputs.tag }} ${platform_tag}
+          python ./tools/install.py "${{ needs.meta.outputs.tag }}" ${platform_tag} "${{ steps.maa_version.outputs.maafw_version }}"
 
           # 清理zip文件
           echo "Cleaning up zip files..."
@@ -230,6 +264,38 @@ jobs:
         with:
           submodules: true
 
+      - name: Resolve MaaFramework version
+        id: maa_version
+        shell: bash
+        run: |
+          tag=$(curl -s -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/MaaXYZ/MaaFramework/releases/latest" \
+            | python -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+          maafw_version=${tag#v}
+          if [[ ! $maafw_version =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "Unexpected MaaFramework tag: '${tag}'" >&2
+            exit 1
+          fi
+          echo "MaaFramework latest: ${tag} -> maafw ${maafw_version}"
+          echo "tag=${tag}" | tee -a "$GITHUB_OUTPUT"
+          echo "maafw_version=${maafw_version}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Verify maafw version on PyPI
+        shell: bash
+        env:
+          MAAFW_VERSION: ${{ steps.maa_version.outputs.maafw_version }}
+        run: |
+          for i in 1 2 3; do
+            if curl -sf "https://pypi.org/pypi/maafw/json" | python -c "import json,sys,os; v=os.environ['MAAFW_VERSION']; files=(json.load(sys.stdin).get('releases') or {}).get(v) or []; sys.exit(0 if files else 1)"; then
+              echo "PyPI has maafw ${MAAFW_VERSION}"
+              exit 0
+            fi
+            echo "PyPI missing maafw ${MAAFW_VERSION} (attempt ${i}/3), retry in 60s..."
+            sleep 60
+          done
+          echo "ERROR: maafw ${MAAFW_VERSION} not found on PyPI" >&2
+          exit 1
+
       - name: Download MFAAvalonia
         uses: robinraju/release-downloader@v1
         with:
@@ -244,7 +310,7 @@ jobs:
         with:
           repository: MaaXYZ/MaaFramework
           fileName: "MAA-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'macos' }}-${{ matrix.arch }}*"
-          latest: true
+          tag: ${{ steps.maa_version.outputs.tag }}
           out-file-path: "deps"
           extract: true
 
@@ -275,7 +341,7 @@ jobs:
           echo "Building for platform: ${platform_tag}"
           
           # 运行安装脚本，传入版本号和平台标签
-          python ./tools/install.py ${{ needs.meta.outputs.tag }} ${platform_tag}
+          python ./tools/install.py "${{ needs.meta.outputs.tag }}" ${platform_tag} "${{ steps.maa_version.outputs.maafw_version }}"
 
           # 清理zip文件
           echo "Cleaning up zip files..."

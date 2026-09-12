@@ -27,11 +27,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      # pip install maafw
+      # pip install maafw（动态取 PyPI 最新 stable 版本固定安装，与发布包保持一致）
+      - name: Resolve maafw version from PyPI
+        id: maa_version
+        shell: bash
+        run: |
+          curl -sf "https://pypi.org/pypi/maafw/json" \
+            | python -c "import json,sys; print('maafw_version=' + json.load(sys.stdin)['info']['version'])" \
+            | tee -a "$GITHUB_OUTPUT"
+
       - name: Install maafw
         run: |
             python -m pip install --upgrade pip
-            python -m pip install --upgrade maafw --pre
+            python -m pip install "maafw==${{ steps.maa_version.outputs.maafw_version }}"
 
       - name: Check Resource
         run: |
