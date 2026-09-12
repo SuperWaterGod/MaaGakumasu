@@ -39,10 +39,11 @@ class WorkChooseTimeAuto(CustomRecognition):
         now = datetime.now()
         hours = choose_work_duration(now)
         overridden = context.override_pipeline({target_node: {"expected": str(hours)}})
-        logger.info(f"自动工作时长: 当前 {now:%H:%M}, 设置{kinds.get(kind)}时长 {hours} 小时")
+        kind = kinds.get(kind)
+        logger.info(f"自动工作时长: 当前 {now:%H:%M}, 设置{kind}时长 {hours} 小时")
         if not overridden:
             return None
-        return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": f"{hours} 小时"})
+        return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": f"{hours} 小时", "kind": kind})
 
 
 @AgentServer.custom_recognition("WorkChooseAuto")
@@ -105,13 +106,13 @@ class WorkChooseAuto(CustomRecognition):
             return None
 
         # 处理第一页笑脸
-        first_result = handle_smile_page(argv.image, [8, 700, 621, 317], (400, 864, 200, 864))
+        first_result = handle_smile_page(argv.image, [8, 700, 621, 317], (400, 864, 100, 864))
         if first_result:
             return first_result
 
         # 处理第二页笑脸
         new_image = context.tasker.controller.post_screencap().wait().get()
-        second_result = handle_smile_page(new_image, [104, 700, 615, 309], (200, 864, 400, 864))
+        second_result = handle_smile_page(new_image, [104, 700, 615, 309], (100, 864, 400, 864))
         if second_result:
             return second_result
 

@@ -275,7 +275,7 @@
       "type": "TemplateMatch",
       "param": {
         "template": "society_requests_already.png",
-        "threshold": 0.95
+        "threshold": 0.93
       }
     },
     "action": {

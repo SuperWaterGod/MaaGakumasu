@@ -26,7 +26,7 @@
       "win32": {
         "class_regex": "UnityWndClass",
         "window_regex": "gakumas",
-        "screencap": "PrintWindow",
+        "screencap": "FramePool",
         "mouse": "SendMessageWithCursorPos",
         "keyboard": "SendMessageWithCursorPos"
       },
