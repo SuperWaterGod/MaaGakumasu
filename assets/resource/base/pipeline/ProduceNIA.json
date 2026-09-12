@@ -204,6 +204,7 @@
       "ProduceGuideFlag",
       "[JumpBack]ProduceGuideStart",
       "[JumpBack]ProduceChooseGetFlag",
+      "[JumpBack]ProduceChooseStrengthenFlag",
       "[JumpBack]Click_1"
     ]
   },
