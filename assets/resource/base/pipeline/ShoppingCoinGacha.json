@@ -1,5 +1,5 @@
 {
-  "ShoppingCoinCacha": {
+  "ShoppingCoinGacha": {
     "recognition": {
       "type": "DirectHit",
       "param": {}
@@ -99,28 +99,40 @@
       "BackHome"
     ]
   },
+  "ShoppingCoinGachaCount": {
+    "recognition": "OCR",
+    "expected": ".*\\d.*",
+    "roi": [
+      345,
+      25,
+      345,
+      170
+    ],
+    "threshold": 0.9
+    },
   "ShoppingCoinGachaBuy": {
     "recognition": {
-      "type": "TemplateMatch",
+      "type": "OCR",
       "param": {
-        "template": "shopping_gacha_friend.png"
-      }
-    },
-    "action": {
-      "type": "Click",
-      "param": {
-        "target_offset": [
-          170,
-          86,
-          0,
-          0
+        "expected": [
+          "期限",
+          "フレンドガシャ",
+          "センスガシャ",
+          "ロジックガシャ",
+          "アノマリーガシャ",
+          "好友扭蛋",
+          "感性扭蛋",
+          "理性扭蛋",
+          "非凡扭蛋"
+        ],
+        "roi": [
+          40, 
+          280, 
+          300, 
+          900
         ]
       }
-    },
-    "post_wait_freezes": 100,
-    "next": [
-      "ShoppingCoinGachaDecide"
-    ]
+    }
   },
   "ShoppingCoinGachaDecide": {
     "recognition": {
