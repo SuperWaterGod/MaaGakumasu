@@ -58,6 +58,15 @@
       "type": "Click",
       "param": {}
     },
+    "post_wait_freezes": {
+      "time": 1000,
+      "target": [
+        60,
+        375,
+        610,
+        328
+      ]
+    },
     "next": [
       "WorkFinished",
       "WorkStartChooseShow",

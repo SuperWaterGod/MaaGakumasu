@@ -1140,8 +1140,26 @@
     },
     "紫云清夏卡片-zh_CN": {
       "type": "select",
-      "default_case": "紫云清夏(ときめきエモーション)",
+      "default_case": "紫云清夏(标)",
       "cases": [
+        {
+          "name": "紫云清夏(标)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "紫云清夏",
+                "song_name": "标"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·集中",
+                "first": "Da",
+                "second": "Vi"
+              }
+            }
+          }
+        },
         {
           "name": "紫云清夏(ときめきエモーション)",
           "pipeline_override": {
@@ -1568,8 +1586,26 @@
     },
     "有村麻央卡片-zh_CN": {
       "type": "select",
-      "default_case": "有村麻央(SUGAR FLAVOR)",
+      "default_case": "有村麻央(标)",
       "cases": [
+        {
+          "name": "有村麻央(标)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "有村麻央",
+                "song_name": "标"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·集中",
+                "first": "Vo",
+                "second": "Vi"
+              }
+            }
+          }
+        },
         {
           "name": "有村麻央(SUGAR FLAVOR)",
           "pipeline_override": {
@@ -2255,8 +2291,26 @@
     },
     "十王星南卡片-zh_CN": {
       "type": "select",
-      "default_case": "十王星南(喂，我要说了哦。)",
+      "default_case": "十王星南(荆棘之路)",
       "cases": [
+        {
+          "name": "十王星南(荆棘之路)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "十王星南",
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "理性·好印象",
+                "first": "Vi",
+                "second": "Vo"
+              }
+            }
+          }
+        },
         {
           "name": "十王星南(喂，我要说了哦。)",
           "pipeline_override": {
@@ -2460,8 +2514,26 @@
     },
     "仓本千奈卡片-zh_CN": {
       "type": "select",
-      "default_case": "仓本千奈(未知万千 广阔无限)",
+      "default_case": "仓本千奈(标)",
       "cases": [
+        {
+          "name": "仓本千奈(标)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "仓本千奈",
+                "song_name": "标"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "理性·干劲",
+                "first": "Da",
+                "second": "Vi"
+              }
+            }
+          }
+        },
         {
           "name": "仓本千奈(未知万千 广阔无限)",
           "pipeline_override": {

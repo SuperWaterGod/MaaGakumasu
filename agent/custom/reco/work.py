@@ -9,6 +9,7 @@ from maa.context import Context
 from maa.agent.agent_server import AgentServer
 from maa.custom_recognition import CustomRecognition
 
+
 @AgentServer.custom_recognition("WorkChooseTimeAuto")
 class WorkChooseTimeAuto(CustomRecognition):
     """
@@ -25,6 +26,7 @@ class WorkChooseTimeAuto(CustomRecognition):
                 if now.hour + hours < 23:
                     return hours
             return 12
+
         kinds = {"show": "迷你演唱会", "live": "直播活动"}
         kind = ""
         if argv.custom_recognition_param:
