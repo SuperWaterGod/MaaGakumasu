@@ -132,9 +132,24 @@
   "ShoppingFreeRefresh": {
     "enabled": true,
     "recognition": {
-      "type": "TemplateMatch",
+      "type": "OCR",
       "param": {
-        "template": "shopping_refresh.png"
+        "expected": [
+          "無料",
+          "免费"
+        ],
+        "replace": [
+          [
+          "費", 
+          "费"
+          ]
+        ],
+        "roi": [
+          430, 
+          140, 
+          250, 
+          50
+        ]
       }
     },
     "action": {

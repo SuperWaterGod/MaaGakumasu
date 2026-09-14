@@ -12,7 +12,16 @@ class ShoppingCoinGachaAuto(CustomAction):
 
     根据活动是否存在动态调整布局，遍历各扭蛋类别（活动/好友/感性/理性/非凡），
     通过 OCR 识别当前持有数量，数量 >= 10 时自动切换页面并执行购买。
+    每页一次 OCR 识别全部扭蛋横幅目标，再按类型从中选择点击。
     """
+    
+    GACHA_TEXTS = {
+        "activity": ["期限"],
+        "friend": ["フレンドガシャ", "好友扭蛋"],
+        "sense": ["センスガシャ", "感性扭蛋"],
+        "logic": ["ロジックガシャ", "理性扭蛋"],
+        "anomaly": ["アノマリーガシャ", "非凡扭蛋"],
+    }
 
     def run(
         self,
@@ -102,46 +111,68 @@ class ShoppingCoinGachaAuto(CustomAction):
                 "page": row + 1,
             }
 
-        page = 1
         image = context.tasker.controller.post_screencap().wait().get()
-        for key in params.keys():
+
+        # 一次 OCR 读取整个数量面板，按数字框中心落入的格子归类到各扭蛋类型
+        # 归类时同步记录、打印需抽类型并生成 remaining（勾选且数量 >= 10）
+        reco_detail = context.run_recognition("ShoppingCoinGachaCount", image)
+        remaining = {}
+        if reco_detail and reco_detail.filtered_results:
+            for result in reco_detail.filtered_results:
+                box = result.box
+                cx, cy = box[0] + box[2] / 2, box[1] + box[3] / 2
+                for key, (row, col) in layout.items():
+                    if key in remaining:
+                        continue
+                    x0 = BASE_X + OFFSET_X * col
+                    y0 = BASE_Y + OFFSET_Y * row
+                    if x0 <= cx <= x0 + WIDTH and y0 <= cy <= y0 + HEIGHT:
+                        count_str = "".join(filter(lambda c: c.isdigit(), (result.text or "").replace(",", "")))
+                        info = params[key]
+                        info["count"] = int(count_str) if count_str else 0
+                        if info["enabled"] and info["count"] >= 10:
+                            logger.info(f"{info['name']}硬币数量:{info['count']}")
+                            remaining[key] = list(self.GACHA_TEXTS[key])
+                        else:
+                            logger.info(f"{info['name']}硬币数量不足10，跳过购买")
+                        break
+
+        max_page = max(info["page"] for info in params.values())
+        page = 1
+        while remaining and page <= max_page:
             if context.tasker.stopping:
                 logger.error("任务中断")
                 return True
 
-            if params[key]["enabled"]:
-                reco_detail = context.run_recognition(
-                    "ShoppingCoinGachaCount",
-                    image,
-                    pipeline_override={
-                        "ShoppingCoinGachaCount": {
-                            "recognition": "OCR",
-                            "expected": ".*\\d.*",
-                            "roi": params[key]["roi"],
-                            "order_by": "Horizontal",
-                            "only_rec": True,
-                        }
-                    },
-                )
-                if reco_detail and reco_detail.hit:
-                    raw_text = "".join([item.text for item in reco_detail.filtered_results]).replace(",", "")
-                    count_str = "".join(filter(lambda c: c.isdigit(), raw_text))
-                    params[key]["count"] = int(count_str) if count_str else 0
-                else:
-                    params[key]["count"] = 0
-                logger.info(f"{params[key]['name']}扭蛋数量:{params[key]['count']}")
-                if params[key]["count"] < 10:
-                    logger.info("扭蛋数量不足10，跳过购买")
-                    continue
-                if params[key]["page"] > page:
-                    page = params[key]["page"]
-                    logger.debug(f"切换到第{page}页")
-                    context.run_task("ShoppingNextPage")
-                logger.info(f"开始购买 {params[key]['name']}")
-                context.run_task(
-                    "ShoppingCoinGachaBuy",
-                    pipeline_override={"ShoppingCoinGachaBuy": {"template": f"shopping_gacha_{key}.png"}},
-                )
+            # 逐条结果与 remaining 比对，匹配到即购买并从 remaining 移除
+            image = context.tasker.controller.post_screencap().wait().get()
+            reco_detail = context.run_recognition("ShoppingCoinGachaBuy", image)
+            if reco_detail and reco_detail.filtered_results:
+                for result in reco_detail.filtered_results:
+                    if context.tasker.stopping:
+                        logger.error("任务中断")
+                        return True
+                    for key, texts in remaining.items():
+                        if any(t in (result.text or "") for t in texts):
+                            box = result.box
+                            logger.info(f"开始购买 {params[key]['name']}扭蛋")
+                            context.tasker.controller.post_click(
+                                box[0] + 330, box[1] + 120
+                            ).wait()
+                            context.run_task("ShoppingCoinGachaDecide")
+                            time.sleep(0.8)
+                            remaining.pop(key)
+                            break
+
+            if not remaining or page == max_page:
+                break
+            logger.debug(f"切换到第{page + 1}页")
+            context.run_task("ShoppingNextPage")
+            time.sleep(0.5)
+            page += 1
+
+        if remaining:
+            logger.warning(f"以下扭蛋未完成购买: {[params[k]['name'] for k in remaining]}")
 
         logger.debug("结束扭蛋购买")
         return True
@@ -219,22 +250,25 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
             for key, value in wishlist:
                 if key == "recommend":
                     logger.info("购买推荐物品")
-                    file_name = "shopping_recommend.png"
+                    reco_override = {
+                        "recognition": "OCR",
+                        "expected": ["おすすめ", "推荐"],
+                        "replace": [["薦", "荐"]],
+                        "roi": [30, 300, 660, 698],
+                    }
                 else:
                     logger.info(f"购买{key}")
-                    file_name = f"items/{key}.png"
+                    reco_override = {
+                        "recognition": "TemplateMatch",
+                        "template": f"items/{key}.png",
+                        "roi": [30, 300, 660, 698],
+                        "threshold": 0.93,
+                    }
 
                 reco_detail = context.run_recognition(
                     "ShoppingDailyExchangeMoneyRecognition",
                     image,
-                    pipeline_override={
-                        "ShoppingDailyExchangeMoneyRecognition": {
-                            "recognition": "TemplateMatch",
-                            "template": file_name,
-                            "roi": [30, 300, 660, 698],
-                            "threshold": 0.93,
-                        }
-                    },
+                    pipeline_override={"ShoppingDailyExchangeMoneyRecognition": reco_override},
                 )
 
                 if context.tasker.stopping:
@@ -244,7 +278,10 @@ class ShoppingDailyExchangeMoneyAuto(CustomAction):
                 if reco_detail and reco_detail.hit:
                     for result in reco_detail.filtered_results:
                         box = result.box
-                        context.tasker.controller.post_click(box[0] + 70, box[1] + 70).wait()
+                        if key == "recommend":
+                            context.tasker.controller.post_click(box[0] + box[2] // 2, box[1] + box[3] + 40).wait()
+                        else:
+                            context.tasker.controller.post_click(box[0] + 70, box[1] + 70).wait()
                         time.sleep(0.5)
 
                         image_plus = context.tasker.controller.post_screencap().wait().get()
