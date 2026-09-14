@@ -10,7 +10,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 
 ## 当前进度
 
-最近更新以 `assets/resource/announcement/01_更新公告.md` 的 v1.5.0 公告和最近提交为准。
+最近更新以 `assets/resource/announcement/01_更新公告.md` 的 v1.5.0 公告和最近提交为准。v1.5.0 发版之后的改动尚未写入公告，以下“v1.5.0 之后的改动”一节内容以提交为准。
 
 已实现的主要功能包括：
 
@@ -18,7 +18,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - 竞赛挑战，支持指定挑战、自动选择、无编队时自动编队。
 - 社团互动，支持自动或指定请求。
 - 安排工作，支持领取奖励、自动或指定偶像、自动或指定时长。
-- 商店购买，支持扭蛋、金币、AP 购买和自动免费刷新。
+- 商店购买：金币扭蛋按各类型硬币数量判定（仅勾选且数量 ≥ 10 才购买），金币兑换与 AP 兑换支持按列表勾选，免费刷新自动识别并使用。
 - 自动培育处于测试阶段，支持初 `REGULAR/PRO/MASTER`、NIA `PRO/MASTER`、指定偶像、自动选择、自动支援卡选择、体力药、道具、卡片选择优先级、跟随老师建议、培育失败重试（初 + NIA）、试镜难度降低、试镜手动接管和中断继续。
 - 偶像之路自动挑战，支持自动编队、自动战斗与失败重试（暂未适配汉化版，仅官服/DMM）。
 - Mirror 酱更新、插件版汉化、DMM 版适配、支援卡库存识别、i18n 繁体适配。
@@ -29,22 +29,28 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - 新增考试失败自动重试开关 `启用培育失败重试`，覆盖初流程 `ProduceFailedFlag` 和 NIA 流程 `ProduceNIAFailedFlag`。
 - 新增 `启用试镜难度降低` 选项（NIA 模式），支持降低一档或两档，检测到锁定图标后自动降档。
 - 新增 `跟随老师的建议` 开关；事件选择逻辑引入优先级系统，提取基类 `ProduceChooseEventBase`，增加事件保底选择机制。
-- 培育行动优先级、选秀逻辑、工作类型自动选择、商店购买流程、投票阈值、颜色识别和 `homeflag` 黑白模板识别都有近期修复。
+- 培育行动优先级、选秀逻辑、工作类型自动选择、投票阈值、颜色识别和 `homeflag` 黑白模板识别都有近期修复。
 - 剧本选择重构为模板匹配（替代 OCR），支持 Ranking/NIA/HIF 三种剧本；饮料识别升级为多模板匹配。
+- NIA 流程入口 `ProduceEntryNIA` 与 `ProduceGuideEntry` 新增 `[JumpBack]ProduceChooseStrengthenFlag` 回跳，识别到强化选择标志时回到对应处理节点，避免流程中断。
 - 培育界面资源图片在 `assets/resource/base/image/produce/` 有最近更新。
+
+v1.5.0 之后的改动（尚未发版）：
+
+- 商店金币扭蛋：数量面板改为一次 OCR 全量识别并按格子中心归类到各扭蛋类型；购买循环改为 `remaining` 驱动，仅勾选且硬币 ≥ 10 的类型参与比对，识别匹配到即购买并移除候选，避免重复购买；横幅改用 OCR 识别标题文字（日文/简中双候选），活动扭蛋以「期限」定位，已删除弃用的扭蛋横幅模板。
+- 商店每日兑换：推荐物品改用 OCR 识别「おすすめ/推荐」并将点击位置下移到物品图标；免费刷新改用 OCR 识别「無料/免费」并限定刷新按钮区域；修正角色碎片商品配置错误。
+- 安排工作：自动时长按迷你演唱会/直播活动拆分为 `WorkTimeAutoShowFlag`、`WorkTimeAutoLiveFlag` 两个节点，修正复用节点导致的日志与实际设置不一致；修正寻找笑脸时滑动幅度不足、最右侧角色识别不到的问题；一键日常预设的迷你演唱会/直播活动时长默认改为「自动」。
+- 社团互动：调整已请求标记的识别阈值（`0.95` → `0.93`），提高 DMM 端识别成功率。
+- 启动：`agent/main.py` 读取 `interface.json` 版本改为依次尝试 `./interface.json` 与 `./assets/interface.json`，兼容仓库调试与发布包两种布局；读取失败统一捕获异常并回退 `unknown`。
 
 待实现或未完全完成的内容包括：
 
 - 初 `LEGEND` 培育适配。
 - 更多语言与更多自动培育样本覆盖。
 
-截至最近更新本文件时，工作区存在未提交修改（v1.5.0 发版准备）：
+截至最近更新本文件时，工作区存在未提交修改（格式调整，不要覆盖或回退）：
 
-- `assets/interface.json`
-- `assets/resource/announcement/01_更新公告.md`
-- `README.md`
-
-不要覆盖或回退这些文件中的现有改动，除非用户明确要求。
+- `agent/custom/action/shop.py`
+- `assets/tasks/shopping.json`
 
 ## 目录职责
 
@@ -86,7 +92,7 @@ npx maa-tools check
 
 - Python 代码遵循 `pyproject.toml` 中 Ruff 配置：目标版本 `py312`，行宽 `144`，启用 import 排序规则。
 - JSON/YAML 使用 Prettier 配置：默认缩进 4 空格，YAML 缩进 2 空格，JSON 覆盖配置使用 tab。
-- Markdown 文档遵循 `docs/.markdownlint.yaml`，但根目录 `AGENTS.md` 主要服务代理协作，优先清晰准确。
+- Markdown 文档没有强制 lint 配置（`docs/.markdownlint.yaml` 已删除），保持与现有文档一致的简洁风格；根目录 `AGENTS.md` 主要服务代理协作，优先清晰准确。
 - 修改 JSON、JSONC 或流水线文件时保持原有排序、注释风格和缩进风格；不要做无关格式化。
 - 新增用户可见文案时优先使用中文；涉及游戏内名称时保留日文原名，并在已有数据结构支持时补充中文字段。
 
@@ -97,6 +103,7 @@ npx maa-tools check
 - `[JumpBack]` 节点用于在循环中回退重试，修改 `next` 顺序时要考虑优先级和误触风险。
 - `TemplateMatch` 应明确模板路径、ROI、阈值和必要的匹配方法。新增模板时使用与现有资源一致的分辨率基准。
 - `OCR` 只在文本稳定、语言明确时使用；游戏 UI 文案变动风险较高时优先保留模板或自定义识别。
+- 商店识别已统一改为 OCR：扭蛋横幅、免费刷新、推荐物品同时配置日文与简中汉化候选，并可用 `replace` 纠正 OCR 易错字；改动文案时保持两套候选同步。
 - `Custom` recognition/action 名称必须与 `agent/` 中实现一致，参数结构要向后兼容。
 - 自动培育相关改动风险较高。修改 `Produce.json` 时重点验证：
   - 入口与中断继续流程：`Produce`、`ProduceLoop`、`ProduceSkipPreparation`、`ProduceEntry`。

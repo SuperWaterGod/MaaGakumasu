@@ -17,10 +17,10 @@
     {
       "name": "每日兑换",
       "entry": "ShoppingDailyExchange",
-            "option": [
-                "启用金币兑换",
-                "启用AP兑换"
-            ],
+      "option": [
+        "启用金币兑换",
+        "启用AP兑换"
+      ],
       "default_check": true,
       "doc": "$每日兑换说明",
       "label": "$每日兑换"
@@ -153,9 +153,9 @@
               "next": "ShoppingDailyExchangeMoney"
             }
           },
-                    "option": [
-                        "金币兑换列表"
-                    ]
+          "option": [
+            "金币兑换列表"
+          ]
         },
         {
           "name": "No",
@@ -179,9 +179,9 @@
               "next": "ShoppingDailyExchangeAPStart"
             }
           },
-                    "option": [
-                        "AP兑换列表"
-                    ]
+          "option": [
+            "AP兑换列表"
+          ]
         },
         {
           "name": "No",
@@ -220,10 +220,10 @@
     "金币兑换列表": {
       "type": "checkbox",
       "description": "选择要使用金币购买的物品，可多选",
-            "default_case": [
-                "推荐物品",
-                "支援强化Pt"
-            ],
+      "default_case": [
+        "推荐物品",
+        "支援强化Pt"
+      ],
       "cases": [
         {
           "name": "推荐物品",
