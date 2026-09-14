@@ -226,7 +226,7 @@ def read_interface_version(interface_file="./interface.json") -> str:
             with path.open("r", encoding="utf-8") as f:
                 data = json.load(f)
             return data.get("version", "unknown")
-        except (OSError, json.JSONDecodeError):
+        except Exception:
             logger.exception("读取 interface.json 版本失败")
             return "unknown"
 
