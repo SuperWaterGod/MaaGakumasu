@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import unicodedata
 from typing import Tuple, Union, Optional
 from difflib import SequenceMatcher
 
@@ -16,6 +17,9 @@ class ProduceChooseIdolAuto(CustomRecognition):
     """
     自动识别当前偶像名称和歌曲
     """
+
+    # 文本相似度阈值，低于该值视为识别失败
+    SIMILARITY_THRESHOLD = 0.7
 
     def analyze(
         self,
@@ -52,28 +56,49 @@ class ProduceChooseIdolAuto(CustomRecognition):
             argv.image,
             pipeline_override={"ProduceChooseIdolName": {"recognition": "OCR", "roi": idol_name_roi}},
         )
+        name_score = 0.0
         if name_detail and name_detail.hit:
             recognized_name = "".join([item.text for item in name_detail.all_results]).replace(" ", "")
-            logger.info(f"识别到偶像名称: {recognized_name}，相似度: {self.similarity_ratio(recognized_name, idol_name):.2f}")
+            name_score = self.similarity_ratio(recognized_name, idol_name)
+            logger.info(f"识别到偶像名称: {recognized_name}，相似度: {name_score:.2f}")
 
         song_detail = context.run_recognition(
             "ProduceChooseIdolSong",
             argv.image,
             pipeline_override={"ProduceChooseIdolSong": {"recognition": "OCR", "roi": song_name_roi}},
         )
+        song_score = 0.0
         if song_detail and song_detail.hit:
             recognized_song = "".join([item.text for item in song_detail.all_results]).replace("[", "").replace("]", "")
-            logger.info(f"识别到歌曲名称: {recognized_song}，相似度: {self.similarity_ratio(recognized_song, song_name):.2f}")
+            song_score = self.similarity_ratio(recognized_song, song_name)
+            logger.info(f"识别到歌曲名称: {recognized_song}，相似度: {song_score:.2f}")
 
-        if self.similarity_ratio(recognized_name, idol_name) >= 0.7 and self.similarity_ratio(recognized_song, song_name) >= 0.7:
+        if name_score >= self.SIMILARITY_THRESHOLD and song_score >= self.SIMILARITY_THRESHOLD:
             return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "识别偶像卡成功"})
         else:
+            logger.debug(f"识别偶像卡失败，偶像相似度: {name_score:.2f}，歌曲相似度: {song_score:.2f}")
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "识别偶像卡失败"})
 
     @staticmethod
+    def normalize_text(text: str) -> str:
+        """
+        归一化 OCR 文本，抹平特殊符号带来的差异
+
+        OCR 对特殊符号识别不稳定，例如「36℃ U･B･U」常被识别成「36°C U・B・U」，
+        直接比较相似度只有 0.63，会导致该偶像卡无法被识别。
+        NFKC 会先把全角转半角、把 ℃ 拆成 °C、把 ･ 转成 ・，
+        之后只保留字母、数字、假名与汉字，符号与空格一律忽略。
+        """
+        return "".join(ch for ch in unicodedata.normalize("NFKC", text) if ch.isalnum())
+
+    @staticmethod
     def similarity_ratio(str1, str2):
-        """返回0-1之间的相似度分数，1表示完全相同"""
-        return SequenceMatcher(None, str1, str2).ratio()
+        """返回0-1之间的相似度分数，1表示完全相同（比较前先归一化，忽略符号差异）"""
+        return SequenceMatcher(
+            None,
+            ProduceChooseIdolAuto.normalize_text(str1),
+            ProduceChooseIdolAuto.normalize_text(str2),
+        ).ratio()
 
 
 @AgentServer.custom_recognition("ProduceShowStart")
