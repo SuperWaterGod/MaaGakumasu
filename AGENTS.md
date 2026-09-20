@@ -10,7 +10,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 
 ## 当前进度
 
-最近更新以 `assets/resource/announcement/01_更新公告.md` 的 v1.5.0 公告和最近提交为准。v1.5.0 发版之后的改动尚未写入公告，以下“v1.5.0 之后的改动”一节内容以提交为准。
+最近更新以 `assets/resource/announcement/01_更新公告.md` 的 v1.5.1 公告和最近提交为准。
 
 已实现的主要功能包括：
 
@@ -34,23 +34,28 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - NIA 流程入口 `ProduceEntryNIA` 与 `ProduceGuideEntry` 新增 `[JumpBack]ProduceChooseStrengthenFlag` 回跳，识别到强化选择标志时回到对应处理节点，避免流程中断。
 - 培育界面资源图片在 `assets/resource/base/image/produce/` 有最近更新。
 
-v1.5.0 之后的改动（尚未发版）：
+v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 
 - 商店金币扭蛋：数量面板改为一次 OCR 全量识别并按格子中心归类到各扭蛋类型；购买循环改为 `remaining` 驱动，仅勾选且硬币 ≥ 10 的类型参与比对，识别匹配到即购买并移除候选，避免重复购买；横幅改用 OCR 识别标题文字（日文/简中双候选），活动扭蛋以「期限」定位，已删除弃用的扭蛋横幅模板。
-- 商店每日兑换：推荐物品改用 OCR 识别「おすすめ/推荐」并将点击位置下移到物品图标；免费刷新改用 OCR 识别「無料/免费」并限定刷新按钮区域；修正角色碎片商品配置错误。
+- 商店每日兑换：推荐物品改用 OCR 识别「おすすめ/推荐」并将点击位置下移到物品图标；免费刷新改用 OCR 识别「無料/免费」并限定刷新按钮区域；修正角色碎片商品配置错误；商店购买日志统一商品显示名并仅在命中时输出。
 - 安排工作：自动时长按迷你演唱会/直播活动拆分为 `WorkTimeAutoShowFlag`、`WorkTimeAutoLiveFlag` 两个节点，修正复用节点导致的日志与实际设置不一致；修正寻找笑脸时滑动幅度不足、最右侧角色识别不到的问题；一键日常预设的迷你演唱会/直播活动时长默认改为「自动」。
 - 社团互动：调整已请求标记的识别阈值（`0.95` → `0.93`），提高 DMM 端识别成功率。
-- 启动：`agent/main.py` 读取 `interface.json` 版本改为依次尝试 `./interface.json` 与 `./assets/interface.json`，兼容仓库调试与发布包两种布局；读取失败统一捕获异常并回退 `unknown`。
+- 自动培育：新增篠澤広(め) 卡片数据与分支，日文/中文任务的筱泽广默认卡片由「ガラクタロード/荆棘之路」切换为「め/Me」；`ProduceNIA` 的 `next` 也加入 `[JumpBack]ProduceChooseStrengthenFlag`，进一步避免强化选择环节中断。
+- 偶像卡识别：`agent/custom/reco/produce.py` 新增 `normalize_text`，相似度比较前先做 NFKC 归一化并只保留字母、数字、假名与汉字，抹平 `℃`/`°C`、`･`/`・` 等符号差异；阈值抽为 `SIMILARITY_THRESHOLD`。
+- 启动：`agent/main.py` 读取 `interface.json` 版本改为依次尝试传入路径、`./interface.json` 与 `./assets/interface.json`，兼容仓库调试与发布包两种布局；读取失败统一捕获异常并回退 `unknown`；MaaFW 库版本日志级别由 `debug` 提升为 `info`。
 
 待实现或未完全完成的内容包括：
 
 - 初 `LEGEND` 培育适配。
 - 更多语言与更多自动培育样本覆盖。
 
-截至最近更新本文件时，工作区存在未提交修改（格式调整，不要覆盖或回退）：
+截至最近更新本文件时，工作区存在未提交修改（v1.5.1 发版准备）：
 
-- `agent/custom/action/shop.py`
-- `assets/tasks/shopping.json`
+- `assets/interface.json`
+- `assets/resource/announcement/01_更新公告.md`
+- `README.md`
+
+不要覆盖或回退这些文件中的现有改动，除非用户明确要求。
 
 ## 目录职责
 
@@ -61,7 +66,7 @@ v1.5.0 之后的改动（尚未发版）：
 - `assets/data/`：结构化数据，例如偶像卡片数据 `idols_cards.json`。
 - `assets/tasks/`：MFA/MaaFramework 任务入口与选项定义。培育任务入口在 `assets/tasks/produce.json`，中文任务配置在 `produce_cn.json`。
 - `assets/lang/`：界面与任务选项翻译。新增任务选项时同步 `zh-CN` 和 `zh-Hant` 等已有语言。
-- `assets/resource/announcement/01_更新公告.md`：发布给用户看的版本更新公告；当前内容已进入 v1.5.0 说明。
+- `assets/resource/announcement/01_更新公告.md`：发布给用户看的版本更新公告；当前内容已进入 v1.5.1 说明。
 - `assets/resource/announcement/`：客户端资源公告与首次使用欢迎弹窗。文件按名称数字前缀排序展示（`01_更新公告.md`、`02_常见问题.md`、`03_免责声明与使用须知.md`、`04_欢迎使用.md`、`05_功能介绍.md`）；`04_欢迎使用.md` 被 `assets/interface.json` 的 `welcome` 字段引用；`05_功能介绍.md` 为功能说明.md 的简化版公告，冲突时以功能说明.md 与任务配置为准；`02_常见问题.md` / `03_免责声明与使用须知.md` 为长期静态公告。
 - `docs/zh_cn/`：中文用户与开发文档。
 - `tools/`：维护脚本，例如 README 中提到的偶像素材或卡片数据更新脚本。
@@ -74,7 +79,7 @@ v1.5.0 之后的改动（尚未发版）：
 - Python 依赖：`maafw`、`loguru`、`Pillow`。
 - 可选开发依赖：`pytest>=7.0`、`ruff>=0.1.0`。
 - Node 侧仅用于工具链，当前 `package.json` 包含 `prettier-plugin-multiline-arrays`。
-- Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源公告已更新到 `assets/resource/announcement/01_更新公告.md` 的 `v1.5.0`。
+- Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源公告已更新到 `assets/resource/announcement/01_更新公告.md` 的 `v1.5.1`。
 
 常用检查命令：
 
@@ -148,7 +153,7 @@ npx maa-tools check
 - 不要回退用户已有修改。当前工作区若有不相关改动，保持原样。
 - 不要在未确认的情况下调整发布、安装、依赖打包或 Mirror 酱相关配置。
 - 不要把 README 中标注为测试阶段的自动培育描述成稳定功能。
-- README、功能说明与更新公告若存在冲突，先检查最近提交和 `assets/tasks/produce.json`；当前 NIA 状态应以 v1.5.0 更新公告和任务配置为准。
+- README、功能说明与更新公告若存在冲突，先检查最近提交和 `assets/tasks/produce.json`；当前 NIA 状态应以 v1.5.1 更新公告和任务配置为准。
 - 不要改变项目许可证、免责声明或商业用途限制。
 - 需要联网查询 MaaFramework、MFAAvalonia、Mirror 酱或 OpenAI 等外部信息时，优先使用官方文档，并在回复中说明来源。
 - 对用户报告的运行问题，优先索要或检查 `debug/maa.log`、模拟器类型、分辨率、系统平台、游戏版本、是否 DMM/插件版汉化。
