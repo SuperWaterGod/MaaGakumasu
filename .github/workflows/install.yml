@@ -1,5 +1,7 @@
 name: install
 
+# Ubuntu runner 固定为 24.04：ubuntu-latest 将于 2026-10-19 起迁移到 Ubuntu 26，
+# 固定版本可避免构建环境在迁移当天被静默替换。
 on:
   push:
     tags:
@@ -27,7 +29,7 @@ permissions:
 
 jobs:
   meta:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -255,7 +257,7 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-24.04, macos-latest]
         arch: [aarch64, x86_64]
       fail-fast: false
 
@@ -300,7 +302,7 @@ jobs:
         uses: robinraju/release-downloader@v1
         with:
           repository: MaaXYZ/MFAAvalonia
-          fileName: "MFAAvalonia-*-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'osx' }}-${{ matrix.arch == 'x86_64' && 'x64' || 'arm64' }}*"
+          fileName: "MFAAvalonia-*-${{ startsWith(matrix.os, 'ubuntu') && 'linux' || 'osx' }}-${{ matrix.arch == 'x86_64' && 'x64' || 'arm64' }}*"
           latest: true
           out-file-path: "install"
           extract: true
@@ -309,13 +311,13 @@ jobs:
         uses: robinraju/release-downloader@v1
         with:
           repository: MaaXYZ/MaaFramework
-          fileName: "MAA-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'macos' }}-${{ matrix.arch }}*"
+          fileName: "MAA-${{ startsWith(matrix.os, 'ubuntu') && 'linux' || 'macos' }}-${{ matrix.arch }}*"
           tag: ${{ steps.maa_version.outputs.tag }}
           out-file-path: "deps"
           extract: true
 
       - name: Setup Embed Python (macOS)
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
         shell: bash
         run: |
           chmod +x ./tools/ci/setup_embed_python.sh
@@ -325,7 +327,7 @@ jobs:
         shell: bash
         run: |
           # 确定平台标签
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          if [ "$RUNNER_OS" == "Linux" ]; then
             os_name="linux"
           else
             os_name="osx"
@@ -349,12 +351,12 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: MaaGakumasu-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'macos' }}-${{ matrix.arch }}
+          name: MaaGakumasu-${{ startsWith(matrix.os, 'ubuntu') && 'linux' || 'macos' }}-${{ matrix.arch }}
           path: "install"
 
   changelog:
     name: Generate changelog
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     outputs:
@@ -378,7 +380,7 @@ jobs:
   release:
     if: ${{ needs.meta.outputs.is_release == 'true' }}
     needs: [meta, windows, unix, changelog]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v8
         with:
