@@ -1363,8 +1363,26 @@
     },
     "筱泽广卡片-zh_CN": {
       "type": "select",
-      "default_case": "筱泽广(荆棘之路)",
+      "default_case": "筱泽广(Me)",
       "cases": [
+        {
+          "name": "筱泽广(Me)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "筱泽广",
+                "song_name": "Me"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·全力",
+                "first": "Vo",
+                "second": "Da"
+              }
+            }
+          }
+        },
         {
           "name": "筱泽广(荆棘之路)",
           "pipeline_override": {
