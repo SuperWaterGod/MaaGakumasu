@@ -236,9 +236,9 @@
         },
         {
           "name": "感性笔记(声乐)",
-          "description": "![](resource/base/image/items/sense_blue.png)",
+          "description": "![](resource/base/image/items/sense_red.png)",
           "pipeline_override": {
-            "ShoppingDailyExchangeItemsSenseBlue": {
+            "ShoppingDailyExchangeItemsSenseRed": {
               "enabled": true
             }
           },
@@ -246,9 +246,9 @@
         },
         {
           "name": "感性笔记(舞蹈)",
-          "description": "![](resource/base/image/items/sense_red.png)",
+          "description": "![](resource/base/image/items/sense_blue.png)",
           "pipeline_override": {
-            "ShoppingDailyExchangeItemsSenseRed": {
+            "ShoppingDailyExchangeItemsSenseBlue": {
               "enabled": true
             }
           },
@@ -266,9 +266,9 @@
         },
         {
           "name": "理性笔记(声乐)",
-          "description": "![](resource/base/image/items/logic_blue.png)",
+          "description": "![](resource/base/image/items/logic_red.png)",
           "pipeline_override": {
-            "ShoppingDailyExchangeItemsLogicBlue": {
+            "ShoppingDailyExchangeItemsLogicRed": {
               "enabled": true
             }
           },
@@ -276,9 +276,9 @@
         },
         {
           "name": "理性笔记(舞蹈)",
-          "description": "![](resource/base/image/items/logic_red.png)",
+          "description": "![](resource/base/image/items/logic_blue.png)",
           "pipeline_override": {
-            "ShoppingDailyExchangeItemsLogicRed": {
+            "ShoppingDailyExchangeItemsLogicBlue": {
               "enabled": true
             }
           },
@@ -296,9 +296,9 @@
         },
         {
           "name": "非凡笔记(声乐)",
-          "description": "![](resource/base/image/items/anomaly_blue.png)",
+          "description": "![](resource/base/image/items/anomaly_red.png)",
           "pipeline_override": {
-            "ShoppingDailyExchangeItemsAnomalyBlue": {
+            "ShoppingDailyExchangeItemsAnomalyRed": {
               "enabled": true
             }
           },
@@ -306,9 +306,9 @@
         },
         {
           "name": "非凡笔记(舞蹈)",
-          "description": "![](resource/base/image/items/anomaly_red.png)",
+          "description": "![](resource/base/image/items/anomaly_blue.png)",
           "pipeline_override": {
-            "ShoppingDailyExchangeItemsAnomalyRed": {
+            "ShoppingDailyExchangeItemsAnomalyBlue": {
               "enabled": true
             }
           },
