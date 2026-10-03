@@ -16,7 +16,8 @@
         "启用培育失败重试",
         "跳过准备阶段",
         "卡片选择优先级",
-        "跟随老师的建议"
+        "跟随老师的建议",
+        "启用超时截图"
       ],
       "resource": [
         "官服",
@@ -511,6 +512,34 @@
         }
       ],
       "label": "$跟随老师的建议"
+    },
+    "启用超时截图": {
+      "type": "switch",
+      "default_case": "Yes",
+      "description": "$超时截图说明",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "ProduceCardsFlag": {
+              "custom_action_param": {
+                "save_timeout_screenshot": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "ProduceCardsFlag": {
+              "custom_action_param": {
+                "save_timeout_screenshot": false
+              }
+            }
+          }
+        }
+      ],
+      "label": "$启用超时截图"
     },
     "启用培育失败重试": {
       "type": "switch",

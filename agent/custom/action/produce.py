@@ -1,13 +1,21 @@
+import os
 import json
 import time
 import random
+import shutil
 from typing import Any, Dict, List, Optional
-from collections import Counter
+from collections import Counter, deque
 
+import numpy as np
 from utils import logger
 from maa.context import Context
+from maa.library import Library
+from utils.image import save_bgr_png
 from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
+
+# 出牌超时截图保存目录（相对仓库根目录，与日志目录 debug/custom 的定位方式一致）
+DEBUG_TIMEOUT_DIR = os.path.join("debug", "cards_timeout")
 
 
 class ProduceChooseEventBase(CustomAction):
@@ -532,8 +540,17 @@ class ProduceCardsAuto(CustomAction):
     CARD_Y_MIN = 840
     CARD_Y_MAX = 1000
 
+    # 超时截图收集：帧缓冲上限（最快0.3s/轮，60帧≈18s，覆盖整个超时窗口）
+    MAX_BUFFER_FRAMES = 60
+    # 单次运行最多保存的卡死片段数，防止系统性故障时大量占盘
+    TIMEOUT_SAVE_LIMIT = 5
+
     def __init__(self):
         super().__init__()
+        self._frames = deque(maxlen=self.MAX_BUFFER_FRAMES)
+        self._timeout_saved = False
+        self._timeout_save_count = 0
+        self._save_enabled = True  # run() 里按 custom_action_param 解析，默认开启
         self.start_time = time.time()
 
     def run(
@@ -541,6 +558,9 @@ class ProduceCardsAuto(CustomAction):
         context: Context,
         argv: CustomAction.RunArg,
     ) -> bool:
+        # 出牌超时截图保存开关（任务选项「启用超时截图」）
+        self._save_enabled = self._is_save_enabled(argv)
+
         # 使用饮料
         self._wait_until_playable(context)
         image = context.tasker.controller.post_screencap().wait().get()
@@ -552,7 +572,7 @@ class ProduceCardsAuto(CustomAction):
             self._wait_until_playable(context, 2)
 
         # 开始出牌
-        self.start_time = time.time()
+        self._reset_window()
         while True:
             # 处理手动终止任务
             if context.tasker.stopping:
@@ -568,6 +588,10 @@ class ProduceCardsAuto(CustomAction):
                 logger.success("事件: 退出出牌")
                 break
 
+            # 记录本轮送入识别的截图，供超时排查使用（未开启保存时不缓冲）
+            if self._save_enabled:
+                self._frames.append({"ts": time.time(), "image": image, "status": None, "info": None})
+
             # 识别手牌
             reco_detail = context.run_recognition("ProduceRecognitionCards", image)
             if reco_detail and reco_detail.hit:
@@ -576,6 +600,7 @@ class ProduceCardsAuto(CustomAction):
 
                 # 获取卡牌信息
                 suggestions, useless, cards, suggestions_box, best_box = self._get_card_info(results)
+                self._mark_frame("hit", (suggestions, useless, cards, best_box))
                 # print(f"卡片数量:{suggestions}/{cards}/{useless}")
 
                 # 有推荐牌时，打出推荐牌
@@ -594,10 +619,15 @@ class ProduceCardsAuto(CustomAction):
                     logger.warning("!!!!!!!!无可用牌!!!!!!!!!!!")
                     context.run_task("ProduceRecognitionSkipRound")
                     self._wait_until_playable(context)
-                    self.start_time = time.time()
+                    self._reset_window()
 
                 end_time = time.time()
                 if end_time - self.start_time > self.TIME_OUT:
+                    # 截图放在Y轴越界判断之前：越界时会每 CLICK_DELAY 秒重复进入本分支，同样需要捕获
+                    if self._save_enabled and not self._timeout_saved:
+                        self._timeout_saved = True
+                        self._save_timeout_frames(context, end_time - self.start_time, suggestions, useless, cards, best_box)
+
                     if best_box[1] < self.CARD_Y_MIN or best_box[1] > self.CARD_Y_MAX:
                         continue
 
@@ -607,14 +637,152 @@ class ProduceCardsAuto(CustomAction):
             else:
                 reco_detail = context.run_recognition("ProduceRecognitionNoCards", image)
                 if reco_detail.hit:
+                    self._mark_frame("no_cards")
                     logger.info("无手牌")
                     context.run_task("ProduceRecognitionSkipRound")
                     self._wait_until_playable(context)
-                    self.start_time = time.time()
+                    self._reset_window()
+                else:
+                    self._mark_frame("miss")
 
             time.sleep(self.CLICK_DELAY)
 
         return True
+
+    def _reset_window(self):
+        """重置出牌计时窗口：计时、超时截图标记、帧缓冲一起清零"""
+        self.start_time = time.time()
+        self._timeout_saved = False
+        self._frames.clear()
+
+    def _mark_frame(self, status: str, info=None) -> None:
+        """回填本轮帧的识别结果（未开启超时截图时帧缓冲为空，直接忽略）"""
+        if self._frames:
+            self._frames[-1]["status"] = status
+            self._frames[-1]["info"] = info
+
+    @staticmethod
+    def _is_save_enabled(argv: CustomAction.RunArg) -> bool:
+        """解析 custom_action_param 中的超时截图开关，参数缺省或格式非法时默认开启（兼容偶像之路等未配置该参数的调用方）"""
+        try:
+            params = json.loads(argv.custom_action_param)
+        except (TypeError, ValueError):
+            return True
+        if not isinstance(params, dict):
+            return True
+        return bool(params.get("save_timeout_screenshot", True))
+
+    @staticmethod
+    def _framework_version() -> Optional[str]:
+        """获取 MaaFramework 版本，便于对照识别阈值的框架默认值"""
+        try:
+            return Library.version()
+        except Exception:
+            return None
+
+    @staticmethod
+    def _recognition_params(context: Context) -> dict:
+        """读取当前生效的识别节点定义（含 ROI、模型、阈值等），记录进 manifest 供离线分析"""
+        params = {}
+        for name in ("ProduceRecognitionCards", "ProduceRecognitionNoCards", "ProduceRecognitionHealthFlag", "ProduceRecognitionSkipRound"):
+            try:
+                data = context.get_node_data(name)
+            except Exception:
+                data = None
+            params[name] = data.get("recognition") if isinstance(data, dict) else None
+        return params
+
+    def _save_timeout_frames(self, context: Context, elapsed: float, suggestions: int, useless: int, cards: int, best_box: list) -> None:
+        """
+        超时时把本轮计时窗口内的截图落盘，并写出 manifest.json（每轮识别结果 + 当时生效的检测阈值），便于排查识别失败原因
+
+        Args:
+            context: maa的Context类
+            elapsed: 本轮窗口已持续的时间（秒）
+            suggestions (int): 最后一轮识别的建议牌数量
+            useless (int): 最后一轮识别的无用牌数量
+            cards (int): 最后一轮识别的可用牌数量
+            best_box (list): 最后一轮选出的卡牌区域
+        """
+        if not self._frames:
+            return
+        if self._timeout_save_count >= self.TIMEOUT_SAVE_LIMIT:
+            logger.warning(f"超时截图已达上限 {self.TIMEOUT_SAVE_LIMIT} 个片段，本次运行不再保存")
+            return
+
+        folder = ""
+        try:
+            frames = list(self._frames)
+            folder_name = f"{time.strftime('%Y%m%d_%H%M%S')}_{int(time.time() * 1000) % 1000:03d}"
+            folder = os.path.join(DEBUG_TIMEOUT_DIR, folder_name)
+            os.makedirs(folder, exist_ok=True)
+
+            records = []
+            saved_image = None
+            saved_name = ""
+            saved_count = 0
+            start_ts = frames[0]["ts"]
+            for index, frame in enumerate(frames):
+                is_new = saved_image is None or not np.array_equal(frame["image"], saved_image)
+                if is_new:
+                    saved_image = frame["image"]
+                    saved_name = f"{saved_count:03d}.png"
+                    if not save_bgr_png(os.path.join(folder, saved_name), frame["image"]):
+                        raise ValueError(f"第 {index} 帧图像格式非法，无法保存")
+                    saved_count += 1
+
+                record = {
+                    "序号": index,
+                    "相对时间秒": round(frame["ts"] - start_ts, 1),
+                    "状态": {"hit": "命中", "no_cards": "无手牌", "miss": "未识别到"}.get(frame["status"], "未识别"),
+                    "截图": saved_name,
+                    "与上一帧相同": not is_new,
+                }
+                if frame["info"]:
+                    frame_suggestions, frame_useless, frame_cards, frame_box = frame["info"]
+                    record.update(
+                        {
+                            "建议牌": frame_suggestions,
+                            "可用牌": frame_cards,
+                            "无用牌": frame_useless,
+                            "best_box": [int(value) for value in frame_box],
+                        }
+                    )
+                records.append(record)
+
+            manifest = {
+                "片段": folder_name,
+                "窗口开始时间": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start_ts)) + f".{int(start_ts * 1000) % 1000:03d}",
+                "超时耗时秒": round(elapsed, 1),
+                "循环轮数": len(frames),
+                "截图张数": saved_count,
+                "最终识别": {
+                    "建议牌": suggestions,
+                    "可用牌": cards,
+                    "无用牌": useless,
+                    "best_box": [int(value) for value in best_box],
+                },
+                "检测阈值": {
+                    "框架版本": self._framework_version(),
+                    "代码常量": {
+                        "TIME_OUT": self.TIME_OUT,
+                        "CLICK_DELAY": self.CLICK_DELAY,
+                        "CARD_Y_MIN": self.CARD_Y_MIN,
+                        "CARD_Y_MAX": self.CARD_Y_MAX,
+                    },
+                    "识别节点": self._recognition_params(context),
+                },
+                "循环记录": records,
+            }
+            with open(os.path.join(folder, "manifest.json"), "w", encoding="utf-8") as f:
+                json.dump(manifest, f, ensure_ascii=False, indent=2)
+
+            self._timeout_save_count += 1
+            logger.info(f"超时截图已保存: {folder}（{saved_count} 张）")
+        except Exception as e:
+            if folder:
+                shutil.rmtree(folder, ignore_errors=True)  # 半成品目录会干扰后续自动化读取，直接清理
+            logger.warning(f"保存超时截图失败: {e}")
 
     @staticmethod
     def _get_card_info(results: list):
@@ -671,7 +839,7 @@ class ProduceCardsAuto(CustomAction):
         # 等待回到可出牌状态后，重置计时
         time.sleep(1)
         self._wait_until_playable(context)
-        self.start_time = time.time()
+        self._reset_window()
 
         return True
 
