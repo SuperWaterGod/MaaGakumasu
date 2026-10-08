@@ -365,6 +365,9 @@ paket-files/
 __pycache__/
 *.pyc
 
+# Temporary local tests (delete after each use)
+/tests/
+
 # Cake - Uncomment if you are using it
 # tools/**
 # !tools/packages.config
