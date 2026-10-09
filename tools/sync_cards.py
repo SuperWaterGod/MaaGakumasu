@@ -19,6 +19,88 @@ preference = {
     "姬崎莉波": {"first": "Vi", "second": "Da"},
 }
 
+ATTRIBUTES = ("Vo", "Da", "Vi")
+EFFECTS = ("感性·好调", "感性·集中", "理性·干劲", "理性·好印象", "非凡·强气", "非凡·全力", "非凡·温存")
+CUSTOM_SONG_CASE = "自定义歌曲"
+
+
+def add_custom_song_option(options, key_name, idol_name, idol_cn, cn_mode=False):
+    """只添加自定义歌曲配置，保留已有卡片、顺序和默认选择。"""
+    suffix = "-zh_CN" if cn_mode else ""
+    pref = preference.get(idol_cn, {"first": "Vi", "second": "Da"})
+    song_key = f"{key_name}自定义歌曲名称"
+    first_key = f"自定义歌曲第一属性-{pref['first']}-{pref['second']}{suffix}"
+
+    options[song_key] = {
+        "type": "input",
+        "label": "$自定义歌曲名称",
+        "description": "$自定义歌曲名称说明",
+        "inputs": [
+            {
+                "name": "song_name",
+                "label": "$自定义歌曲名称",
+                "default": "",
+                "pipeline_type": "string",
+                "verify": r"^[^\r\n]*\S[^\r\n]*$(?![\r\n])",
+                "pattern_msg": "$自定义歌曲名称输入框说明",
+            }
+        ],
+        "pipeline_override": {
+            "ProduceChooseIdol": {"custom_recognition_param": {"idol_name": idol_name, "song_name": "{song_name}"}}
+        },
+    }
+
+    first_cases = []
+    for first in ATTRIBUTES:
+        remaining = [attr for attr in ATTRIBUTES if attr != first]
+        default_second = pref["second"] if pref["second"] in remaining else remaining[0]
+        second_key = f"自定义歌曲第二属性-{first}-{default_second}{suffix}"
+        second_cases = []
+        for second in remaining:
+            effect_key = f"自定义歌曲推荐效果-{first}-{second}{suffix}"
+            options[effect_key] = {
+                "type": "select",
+                "label": "$自定义歌曲推荐效果",
+                "description": "$自定义歌曲推荐效果说明",
+                "default_case": "感性·好调",
+                "cases": [
+                    {
+                        "name": effect,
+                        "label": f"${effect}",
+                        # 框架会整体替换 custom_action_param，末级选项必须一次写入完整配置。
+                        "pipeline_override": {
+                            "ProduceChooseNIAEventFlag": {"custom_action_param": {"effect": effect, "first": first, "second": second}}
+                        },
+                    }
+                    for effect in EFFECTS
+                ],
+            }
+            second_cases.append({"name": second, "label": f"$培育属性{second}", "option": [effect_key]})
+        options[second_key] = {
+            "type": "select",
+            "label": "$自定义歌曲第二属性",
+            "default_case": default_second,
+            "cases": second_cases,
+        }
+        first_cases.append(
+            {
+                "name": first,
+                "label": f"$培育属性{first}",
+                "option": [second_key],
+            }
+        )
+    options[first_key] = {
+        "type": "select",
+        "label": "$自定义歌曲第一属性",
+        "default_case": pref["first"],
+        "cases": first_cases,
+    }
+
+    # 重复同步时替换自定义入口，始终放在普通卡片末尾。
+    config = options[key_name]
+    config["cases"] = [case for case in config["cases"] if case["name"] != CUSTOM_SONG_CASE]
+    config["cases"].append({"name": CUSTOM_SONG_CASE, "label": "$自定义歌曲", "option": [song_key, first_key]})
+
 
 def get_project_path(*relative_parts):
     """获取项目根目录下的文件路径"""
@@ -172,6 +254,9 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
             new_cards_log[idol_name] = [card["card_name"] for card in unique_cards]
             updated_idols.append(idol_name)
 
+        # 普通卡片同步与统计完成后再添加，避免自定义入口参与排序和默认选择。
+        add_custom_song_option(interface_data["option"], key_name, idol_name, unique_cards[0]["idol_cn"], cn_mode)
+
     # 保存到输出文件
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(interface_data, f, ensure_ascii=False, indent=2)
@@ -197,11 +282,11 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
     safe_print(f"\n{'=' * 60}")
     safe_print(f"总体统计：")
 
-    # 只统计以"卡片"结尾的选项（偶像卡片配置）
-    idol_card_options = {k: v for k, v in interface_data["option"].items() if k.endswith("卡片")}
+    # 只统计偶像卡片配置，排除自定义入口及其子选项。
+    idol_card_options = {k: v for k, v in interface_data["option"].items() if k.endswith(("卡片", "卡片-zh_CN"))}
 
     safe_print(f"  偶像总数: {len(idol_card_options)} 位")
-    total_cards = sum(len(config["cases"]) for config in idol_card_options.values())
+    total_cards = sum(case["name"] != CUSTOM_SONG_CASE for config in idol_card_options.values() for case in config["cases"])
     safe_print(f"  卡片总数: {total_cards} 张")
     total_new_cards = sum(len(cards) for cards in new_cards_log.values())
     safe_print(f"  本次新增: {total_new_cards} 张")
