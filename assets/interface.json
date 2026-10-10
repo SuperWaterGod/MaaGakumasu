@@ -23,6 +23,9 @@
       "name": "PC",
       "label": "PC",
       "type": "Win32",
+      "option": [
+        "DMM点击延迟"
+      ],
       "win32": {
         "class_regex": "UnityWndClass",
         "window_regex": "gakumas",
@@ -190,6 +193,29 @@
     }
   ],
   "option": {
+    "DMM点击延迟": {
+      "type": "input",
+      "label": "$DMM点击延迟",
+      "description": "$DMM点击延迟说明",
+      "controller": [
+        "PC"
+      ],
+      "inputs": [
+        {
+          "name": "dmm_click_delay",
+          "label": "$DMM点击延迟",
+          "default": "0",
+          "pipeline_type": "int",
+          "verify": "^(?:0|[1-9][0-9]{0,2}|1000)$(?![\\r\\n])",
+          "pattern_msg": "$DMM点击延迟输入框说明"
+        }
+      ],
+      "pipeline_override": {
+        "Click_1": {
+          "post_delay": "{dmm_click_delay}"
+        }
+      }
+    },
     "挑战模式": {
       "type": "select",
       "default_case": "自动",
@@ -287,10 +313,10 @@
           "pipeline_override": {
             "WorkChooseShowConfirm": {
               "next": [
-                "WorkTimeAutoFlag"
+                "WorkTimeAutoShowFlag"
               ]
             },
-            "WorkTimeAutoFlag": {
+            "WorkTimeAutoShowFlag": {
               "recognition": {
                 "type": "Custom",
                 "param": {
@@ -347,10 +373,10 @@
           "pipeline_override": {
             "WorkChooseLiveConfirm": {
               "next": [
-                "WorkTimeAutoFlag"
+                "WorkTimeAutoLiveFlag"
               ]
             },
-            "WorkTimeAutoFlag": {
+            "WorkTimeAutoLiveFlag": {
               "recognition": {
                 "type": "Custom",
                 "param": {
