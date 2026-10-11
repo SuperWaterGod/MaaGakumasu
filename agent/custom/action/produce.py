@@ -8,6 +8,7 @@ from utils import logger
 from maa.context import Context
 from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
+from utils.decision_capture import DecisionCapture, card_candidates
 
 
 class ProduceChooseEventBase(CustomAction):
@@ -535,21 +536,73 @@ class ProduceCardsAuto(CustomAction):
     def __init__(self):
         super().__init__()
         self.start_time = time.time()
+        self._capture = None
+        self._active_decision = None
+        self._last_wait_image = None
+        self._frame_observed_at_ns = None
 
     def run(
         self,
         context: Context,
         argv: CustomAction.RunArg,
     ) -> bool:
+        self._capture = DecisionCapture.from_config({
+            "mode": "agent_actions", "action": "ProduceCardsAuto", "entry": getattr(argv, "node_name", None),
+            "coverage": "single_action_invocation", "policy": "existing_auto", "game_action_confirmation": "unknown",
+        }, console=logger.info)
+        reason = "action_returned"
+        try:
+            return self._run(context, argv)
+        except Exception:
+            reason = "action_exception"
+            raise
+        finally:
+            if self._capture:
+                self._capture.close("task_stopping" if context.tasker.stopping else reason)
+            self._capture = None
+            self._active_decision = None
+
+    def _record(self, kind, image=None, **data):
+        if self._capture:
+            return self._capture.record(kind, image=image, **data)
+        return None
+
+    def _begin_decision(self, kind, image, results=(), **data):
+        if not self._capture:
+            return
+        self._active_decision = None
+        try:
+            self._active_decision = self._record(
+                "decision_before", image, operation=kind, candidates=card_candidates(results),
+                source="existing_auto", frame_observed_at_ns=self._frame_observed_at_ns, **data,
+            )
+        except Exception as exc:
+            logger.warning(f"采集候选失败，继续原任务: {exc}")
+
+    def _finish_decision(self, wait_result):
+        self._record(
+            "decision_after", self._last_wait_image, decision_id=self._active_decision,
+            wait_until_playable=wait_result, game_action_confirmed=None,
+            observation_phase="next_playable_or_exit",
+            frame_observed_at_ns=self._frame_observed_at_ns,
+        )
+        self._active_decision = None
+
+    def _run(self, context: Context, argv: CustomAction.RunArg) -> bool:
         # 使用饮料
         self._wait_until_playable(context)
         image = context.tasker.controller.post_screencap().wait().get()
+        self._frame_observed_at_ns = time.time_ns()
         reco_detail = context.run_recognition("ProduceCheckDrinkButton", image)
         hit_count = len(reco_detail.filtered_results)  # 获取饮料数
+        self._record("battle_entry", image, drink_detections=hit_count)
         logger.info(f"识别到{hit_count}瓶饮料")
         for _ in range(hit_count):
+            self._begin_decision("use_drink_task", image, reason="existing_use_all_drinks")
             context.run_task("ProduceUseDrink")
-            self._wait_until_playable(context, 2)
+            playable = self._wait_until_playable(context, 2)
+            self._finish_decision(playable)
+            image = self._last_wait_image
 
         # 开始出牌
         self._reset_window()
@@ -561,9 +614,11 @@ class ProduceCardsAuto(CustomAction):
 
             # 截图
             image = context.tasker.controller.post_screencap().wait().get()
+            self._frame_observed_at_ns = time.time_ns()
 
             # 通过检测体力槽判断是否处于出牌场景
             if not self._is_playing_card(context, image):
+                self._record("battle_exit_observation", image, reason="health_flag_not_detected")
                 logger.info("未检测到体力")
                 logger.success("事件: 退出出牌")
                 break
@@ -583,19 +638,21 @@ class ProduceCardsAuto(CustomAction):
                     if suggestions_box[1] < self.CARD_Y_MIN or suggestions_box[1] > self.CARD_Y_MAX:
                         time.sleep(self.CLICK_DELAY)
                         continue
-                    self._play_a_card(context, suggestions_box)
+                    self._play_a_card(context, suggestions_box, image, results, "game_recommendation")
                 # 只有一张可用牌时，直接打出该牌
                 elif cards == 1:
                     if best_box[1] < self.CARD_Y_MIN or best_box[1] > self.CARD_Y_MAX:
                         time.sleep(self.CLICK_DELAY)
                         continue
                     time.sleep(1)  # 防止点击过早导致只命中一次
-                    self._play_a_card(context, best_box)
+                    self._play_a_card(context, best_box, image, results, "only_available_card")
                 # 没有可用牌时，先判断是否处于出牌场景，确认处于出牌场景后，再跳过回合
                 elif useless > 0 and suggestions == 0 and cards == 0:
                     logger.warning("!!!!!!!!无可用牌!!!!!!!!!!!")
+                    self._begin_decision("skip_round", image, results, reason="no_available_cards")
                     context.run_task("ProduceRecognitionSkipRound")
-                    self._wait_until_playable(context)
+                    playable = self._wait_until_playable(context)
+                    self._finish_decision(playable)
                     self._reset_window()
 
                 end_time = time.time()
@@ -605,14 +662,16 @@ class ProduceCardsAuto(CustomAction):
                         continue
 
                     logger.warning("检测超时")
-                    self._play_a_card(context, best_box)
+                    self._play_a_card(context, best_box, image, results, "timeout_detector_confidence")
 
             else:
                 reco_detail = context.run_recognition("ProduceRecognitionNoCards", image)
                 if reco_detail and reco_detail.hit:
                     logger.info("无手牌")
+                    self._begin_decision("skip_round", image, reason="no_cards_ocr")
                     context.run_task("ProduceRecognitionSkipRound")
-                    self._wait_until_playable(context)
+                    playable = self._wait_until_playable(context)
+                    self._finish_decision(playable)
                     self._reset_window()
 
             time.sleep(self.CLICK_DELAY)
@@ -661,7 +720,7 @@ class ProduceCardsAuto(CustomAction):
         cards = label_counts["cards"]
         return suggestions, useless, cards, suggestions_box, best_box
 
-    def _play_a_card(self, context: Context, box: list) -> bool:
+    def _play_a_card(self, context: Context, box: list, image=None, results=(), reason="unspecified") -> bool:
         """
         出牌并处理移动卡牌界面
 
@@ -673,22 +732,27 @@ class ProduceCardsAuto(CustomAction):
             bool: 如果执行没有问题，返回True；否则返回False。
         """
 
+        self._begin_decision("play_card", image, results, selected_box=list(box), reason=reason)
         # 出牌
         # context.tasker.controller.post_click(box[0] + 100, box[1] + 140).wait()
         context.tasker.controller.post_click(box[0] + box[2] // 2, box[1] + box[3] // 2).wait()
+        self._record("input_issued", decision_id=self._active_decision, click_index=1,
+                     point=[box[0] + box[2] // 2, box[1] + box[3] // 2])
         time.sleep(self.CLICK_DELAY)
         context.tasker.controller.post_click(box[0] + box[2] // 2, box[1] + box[3] // 2).wait()
+        self._record("input_issued", decision_id=self._active_decision, click_index=2,
+                     point=[box[0] + box[2] // 2, box[1] + box[3] // 2])
         logger.info("出牌 耗时:{:.2f}秒".format(time.time() - self.start_time))
 
         # 等待回到可出牌状态后，重置计时
         time.sleep(1)
-        self._wait_until_playable(context)
+        playable = self._wait_until_playable(context)
+        self._finish_decision(playable)
         self._reset_window()
 
         return True
 
-    @staticmethod
-    def _handle_move_cards(context: Context, image=None) -> bool:
+    def _handle_move_cards(self, context: Context, image=None) -> bool:
         """
         一种处理移动卡片界面的笨方法
 
@@ -705,17 +769,21 @@ class ProduceCardsAuto(CustomAction):
 
         reco_detail = context.run_recognition("ProduceRecognitionChooseMoveCards", image)
         if reco_detail.hit:
+            self._record("move_cards_screen", image, decision_id=self._active_decision)
             y = 450
             while y < 1100:
                 # for x in [140, 285, 440, 585]:
                 for x in [140, 285]:
                     context.tasker.controller.post_click(x, y).wait()
+                    self._record("move_cards_input", decision_id=self._active_decision, point=[x, y], click_index=1)
                     time.sleep(0.2)
                     context.tasker.controller.post_click(x, y).wait()
+                    self._record("move_cards_input", decision_id=self._active_decision, point=[x, y], click_index=2)
                     time.sleep(0.2)
                 image = context.tasker.controller.post_screencap().wait().get()
                 reco_detail = context.run_recognition("ProduceRecognitionChooseMoveCards", image)
                 if not reco_detail.hit:
+                    self._record("move_cards_selection_observation", image, decision_id=self._active_decision)
                     context.run_task("ProduceMoveCards")
                     return True
                 else:
@@ -763,6 +831,8 @@ class ProduceCardsAuto(CustomAction):
         count_exit = 0
         while True:
             image = context.tasker.controller.post_screencap().wait().get()
+            self._last_wait_image = image
+            self._frame_observed_at_ns = time.time_ns()
 
             # 通过跳过回合按钮检测是否处于可出牌状态
             reco_detail = context.run_recognition("ProduceRecognitionSkipRound", image)
@@ -783,6 +853,7 @@ class ProduceCardsAuto(CustomAction):
             # 解决莫名其妙的误触问题
             reco_detail = context.run_recognition("ProduceButton", image)
             if reco_detail and reco_detail.hit:
+                self._record("confirmation_task", image, decision_id=self._active_decision, task="ProduceButton")
                 context.run_task("ProduceButton")
 
             # 处理移动卡片界面
