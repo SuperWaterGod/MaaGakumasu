@@ -742,7 +742,8 @@ class ProduceCardsAuto(CustomAction):
         context.tasker.controller.post_click(box[0] + box[2] // 2, box[1] + box[3] // 2).wait()
         self._record("input_issued", decision_id=self._active_decision, click_index=2,
                      point=[box[0] + box[2] // 2, box[1] + box[3] // 2])
-        logger.info("出牌 耗时:{:.2f}秒".format(time.time() - self.start_time))
+        log_elapsed = logger.debug if self._capture and self._capture.merged_console_enabled else logger.info
+        log_elapsed("出牌 耗时:{:.2f}秒".format(time.time() - self.start_time))
 
         # 等待回到可出牌状态后，重置计时
         time.sleep(1)

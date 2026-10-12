@@ -1,0 +1,690 @@
+{
+	"schema_version": 1,
+	"backend": "MaaFramework.TemplateMatch",
+	"ambiguity_margin": 0.025,
+	"notes": "Only source-verified icons enabled. Missing/ambiguous matches are unknown, never zero. Icon pixels are cropped directly without resizing; RGB (0,255,0) masks variable background/numbers.",
+	"buffs": [
+		{
+			"id": "good_impression",
+			"key": "goodImpressionTurns",
+			"name": "好印象",
+			"unit": "turns",
+			"template": "produce/buffs/good_impression.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "integer",
+				"roi_offset": [36, 29, 100, 42],
+				"second_roi_offset": [42, 31, 94, 40]
+			},
+			"source": {
+				"run_id": "20261011T102332Z_0a7f0fc9",
+				"frame_sha256": "0ff5808558db6afae36ba18e20316a91d797fbd3afd2e2794b4bb8e8b7c6905f",
+				"box": [16, 235, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-11",
+				"verification": {
+					"method": "screenshot_glyph_and_catalog_or_transition_cross_check",
+					"evidence": "Thumb glyph matches the card good-impression badge; HUD value and card effects cross-checked in captured transitions.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 36, 20, 20]]
+			},
+			"template_sha256": "25a10f7a5440f8819b115d927b3e1faa7614e8ad2db9445da38604607f8d3547"
+		},
+		{
+			"id": "motivation",
+			"key": "motivation",
+			"name": "干劲",
+			"unit": "stacks",
+			"template": "produce/buffs/motivation.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "integer",
+				"roi_offset": [36, 29, 100, 42],
+				"second_roi_offset": [42, 31, 94, 40]
+			},
+			"source": {
+				"run_id": "20261011T102332Z_0a7f0fc9",
+				"frame_sha256": "0ff5808558db6afae36ba18e20316a91d797fbd3afd2e2794b4bb8e8b7c6905f",
+				"box": [16, 356, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-11",
+				"verification": {
+					"method": "screenshot_glyph_and_catalog_or_transition_cross_check",
+					"evidence": "Open-hand glyph cross-checked against motivation badge and observed HUD values; not inferred from icon color alone.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 36, 20, 20]]
+			},
+			"template_sha256": "d6ee7562195578293a5747d0ca33592038fe36f1c5ada48e26615b5c29a1c021"
+		},
+		{
+			"id": "concentration",
+			"key": "concentration",
+			"name": "集中",
+			"unit": "stacks",
+			"template": "produce/buffs/concentration.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "integer",
+				"roi_offset": [36, 29, 100, 42],
+				"second_roi_offset": [42, 31, 94, 40]
+			},
+			"source": {
+				"run_id": "20261011T102332Z_0a7f0fc9",
+				"frame_sha256": "0ff5808558db6afae36ba18e20316a91d797fbd3afd2e2794b4bb8e8b7c6905f",
+				"box": [16, 542, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-11",
+				"verification": {
+					"method": "screenshot_glyph_and_catalog_or_transition_cross_check",
+					"evidence": "Burst glyph cross-checked against concentration badge and observed changes after 精神統一+.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 36, 20, 20]]
+			},
+			"template_sha256": "f8fbdbb68b539e19309334bc5ee65aaae3c3b1747efbe3714efb1855da26c0a7",
+			"value_family": "concentration"
+		},
+		{
+			"id": "half_cost",
+			"key": "halfCostTurns",
+			"name": "消耗体力减少",
+			"unit": "turns",
+			"template": "produce/buffs/half_cost.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "turns",
+				"roi_offset": [36, 23, 125, 45],
+				"second_roi_offset": [42, 25, 119, 43]
+			},
+			"source": {
+				"run_id": "20261011T102332Z_0a7f0fc9",
+				"frame_sha256": "3b298da51149ad5dee9ae07dfdb5e85e01e91606e8007939977c686535ea4c0f",
+				"box": [16, 665, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-11",
+				"verification": {
+					"method": "screenshot_glyph_and_catalog_or_transition_cross_check",
+					"evidence": "Blue cost-tag appears after 仕切り直し (event 43; catalog source_id 160; halfCostTurns+=4); later visible with 2 turns remaining.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 24, 20, 32]]
+			},
+			"template_sha256": "4bb934d74ec5041b671fcf2322162f98587cc99d75d14e5da40e19897cea5509"
+		},
+		{
+			"id": "double_cost",
+			"key": "doubleCostTurns",
+			"name": "消耗体力增加",
+			"unit": "turns",
+			"template": "produce/buffs/double_cost.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "turns",
+				"roi_offset": [36, 23, 125, 45],
+				"second_roi_offset": [42, 25, 119, 43]
+			},
+			"source": {
+				"run_id": "20261011T093847Z_150b02bd",
+				"frame_sha256": "48f453ad6b7d6f840b2ac4e2d188408d3367b67fe611dd69f5e576d7767f0baa",
+				"box": [16, 603, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-11",
+				"verification": {
+					"method": "screenshot_glyph_and_catalog_or_transition_cross_check",
+					"evidence": "Red cost-tag appears immediately after キラメキ++ (event 45 in run 093847; base upgraded record source_id 95 includes doubleCostTurns+=2); screenshot shows 2 turns.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 24, 20, 32]]
+			},
+			"template_sha256": "a4a1193d7c16ccd2e87c65f45ca49ac32c212186c8a249855b89a339cd436375"
+		},
+		{
+			"id": "score_up",
+			"key": "scoreBuffPercent",
+			"name": "得分提升",
+			"unit": "percent",
+			"template": "produce/buffs/score_up.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "percent",
+				"roi_offset": [36, 29, 125, 42],
+				"second_roi_offset": [42, 31, 119, 40]
+			},
+			"source": {
+				"run_id": "20261011T102332Z_0a7f0fc9",
+				"frame_sha256": "3b298da51149ad5dee9ae07dfdb5e85e01e91606e8007939977c686535ea4c0f",
+				"box": [16, 603, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-11",
+				"verification": {
+					"method": "screenshot_glyph_and_catalog_or_transition_cross_check",
+					"evidence": "Blue upward parameter/score arrow with percentage; visually distinguished from concentration-effect and good-impression-effect glyphs. Duration is optional.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [
+					[36, 36, 20, 20],
+					[38, 0, 18, 20],
+					[38, 25, 18, 31]
+				]
+			},
+			"duration_reading": {
+				"format": "turns",
+				"roi_offset": [36, -9, 125, 38]
+			},
+			"template_sha256": "1124f0839983449f6195aa931cb31d76f7ed7631ba612a0fb2c4c265e25fcf87"
+		},
+		{
+			"id": "score_down",
+			"key": "scoreDebuffPercent",
+			"name": "得分降低",
+			"unit": "percent",
+			"template": "produce/buffs/score_down.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "percent",
+				"roi_offset": [36, 29, 125, 42],
+				"second_roi_offset": [42, 31, 119, 40]
+			},
+			"source": {
+				"run_id": "20261011T101659Z_cc070976",
+				"frame_sha256": "0e8492ea26c8f63b9749bfe3ac703351fe100515849b9b3e8f2db0a542c5c689",
+				"box": [16, 296, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-11",
+				"verification": {
+					"method": "screenshot_glyph_and_catalog_or_transition_cross_check",
+					"evidence": "Red downward parameter/score arrow with percentage and turn duration; verified HUD reads 20% and 4 turns. Not identified as a cost-tag.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [
+					[36, 36, 20, 20],
+					[38, 0, 18, 20],
+					[38, 25, 18, 31]
+				]
+			},
+			"duration_reading": {
+				"format": "turns",
+				"roi_offset": [36, -9, 125, 38]
+			},
+			"template_sha256": "0c98ce0cfbe678f67f0546d4d7f0a5f33d49651d5c97e9e0c63d52bfe655596c"
+		},
+		{
+			"id": "nullify_debuff",
+			"key": "nullifyDebuff",
+			"name": "低下状态无效",
+			"unit": "times",
+			"template": "produce/buffs/nullify_debuff.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "times",
+				"roi_offset": [44, 25, 117, 43],
+				"second_roi_offset": [48, 27, 113, 41]
+			},
+			"source": {
+				"run_id": "20261011T103142Z_33b41bd6",
+				"frame_sha256": "95218941f7d42bfc634c58c792ec019f8ce30e297e48d5d178ae937e01bfc444",
+				"box": [16, 481, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-11",
+				"verification": {
+					"method": "screenshot_glyph_and_catalog_or_transition_cross_check",
+					"evidence": "Shield with X appears after アイドル魂 (source_id 158; nullifyDebuff+=1); screenshot shows 1回.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 24, 20, 32]]
+			},
+			"template_sha256": "02f8d2e887778e3ba169441935e8ca88d2be86d6a7df48427d2ac2549ac7a0a4"
+		},
+		{
+			"id": "enthusiasm",
+			"kind": "buff",
+			"key": "enthusiasm",
+			"name": "热意",
+			"template": "produce/buffs/enthusiasm.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"source": {
+				"run_id": "20261011T163155Z_ace2e014",
+				"frame_sha256": "05d7b758e3948896a5908efadc97ec426c655763964d80af9b2673a4a8181ada",
+				"box": [16, 542, 56, 56],
+				"environment": "MuMu12 Japanese NIA 720x1280; no resize or rotation",
+				"verification": {
+					"method": "screenshot_and_catalog_or_engine_cross_check",
+					"evidence": "Snowflake/burst with 5 and 1 turn after preservation-to-strength transition; upstream STANCE_CHANGED_EFFECTS adds enthusiasm+=5 and TurnManager clears enthusiasm each turn. Keeps optional duration visible on HUD.",
+					"reference": "https://github.com/gakumas-tools/gakumas-tools/blob/6f138bd7eb4300935a473b3529bd82a1eb6661c6/packages/gakumas-engine/constants.js",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 0, 20, 56]]
+			},
+			"unit": "stacks",
+			"reading": {
+				"format": "integer",
+				"roi_offset": [36, 29, 100, 42],
+				"second_roi_offset": [42, 31, 94, 40]
+			},
+			"duration_reading": {
+				"format": "turns",
+				"roi_offset": [36, -9, 125, 38]
+			},
+			"template_sha256": "7038c3634f8d40cafe8566615e221f9452d12d849a862727d982f182472faaa9"
+		},
+		{
+			"id": "good_condition",
+			"key": "goodConditionTurns",
+			"name": "好调",
+			"unit": "turns",
+			"template": "produce/buffs/good_condition.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "turns",
+				"roi_offset": [44, 23, 117, 45],
+				"second_roi_offset": [48, 25, 113, 43]
+			},
+			"source": {
+				"run_id": "20261012T111430Z_4b7cf38c",
+				"frame_sha256": "288ed9ccc722a92aed25a30d9a462059cd36b50bdcb306cfc9e0605cbdf3d0a5",
+				"box": [16, 235, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-12",
+				"verification": {
+					"method": "screenshot_glyph_and_catalog_or_transition_cross_check",
+					"evidence": "Flexed arm glyph and 1 turn cross-checked with 振る舞いの基本/アドリブ actions goodConditionTurns+=N and captured changes.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 24, 20, 32]]
+			},
+			"template_sha256": "d0bb940f6071efcaf1d74fa67ce3c0d2d31a45302b4620f8675572a4624d4a9a",
+			"ambiguity_margin": 0.015
+		},
+		{
+			"id": "good_condition_inactive",
+			"key": "goodConditionTurns",
+			"name": "好调",
+			"unit": "turns",
+			"template": "produce/buffs/good_condition_inactive.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "turns",
+				"roi_offset": [44, 23, 117, 45],
+				"second_roi_offset": [48, 25, 113, 43]
+			},
+			"source": {
+				"run_id": "20261012T112117Z_c8078cc8",
+				"frame_sha256": "37e43b16600a116e956f3642f461dc5950b29cbc8374c838c33be122ddb97d70",
+				"box": [16, 235, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-12",
+				"verification": {
+					"method": "screenshot_glyph_and_catalog_or_transition_cross_check",
+					"evidence": "Inactive/faded arm variant; visible glyph only. No value inferred from gray color or missing numeric label.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 24, 20, 32]]
+			},
+			"template_sha256": "f76fbad20fd2d219b684fc793bd5fe67f4e03959f9f71211830c412c6d994d3e",
+			"ambiguity_margin": 0.015
+		},
+		{
+			"id": "perfect_condition",
+			"key": "perfectConditionTurns",
+			"name": "绝好调",
+			"unit": "turns",
+			"template": "produce/buffs/perfect_condition.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "turns",
+				"roi_offset": [44, 23, 117, 45],
+				"second_roi_offset": [48, 25, 113, 43]
+			},
+			"source": {
+				"run_id": "20261012T112117Z_c8078cc8",
+				"frame_sha256": "37e43b16600a116e956f3642f461dc5950b29cbc8374c838c33be122ddb97d70",
+				"box": [16, 480, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-12",
+				"verification": {
+					"method": "screenshot_glyph_and_catalog_or_transition_cross_check",
+					"evidence": "Arm with upward arrow appears in after event 18 following 魅惑のパフォーマンス (id 146; perfectConditionTurns+=3); frame shows 3 turns.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 24, 20, 32]]
+			},
+			"template_sha256": "5ef25b82bfeb2a33d4fbf0f40411a9b39e0188966035afa8d1c6312b6b41d50d",
+			"ambiguity_margin": 0.015
+		},
+		{
+			"id": "concentration_effect",
+			"key": "concentrationEffectBuffPercent",
+			"name": "集中效果提升",
+			"unit": "percent",
+			"template": "produce/buffs/concentration_effect.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 538],
+			"green_mask": true,
+			"reading": {
+				"format": "percent",
+				"roi_offset": [36, 29, 125, 42],
+				"second_roi_offset": [42, 31, 119, 40]
+			},
+			"duration_reading": {
+				"format": "turns",
+				"roi_offset": [36, -9, 125, 38]
+			},
+			"source": {
+				"run_id": "20261012T141218Z_fd64995d",
+				"frame_sha256": "0abcbc6e4f0feeb5422fb987cfcf5319da5e331c182ee101ba395e7a6900509f",
+				"box": [16, 665, 56, 56],
+				"environment": "MuMu 12 / Japanese NIA / 720x1280 / 2026-10-12",
+				"verification": {
+					"method": "selected_card_dsl_and_after_frame_cross_check",
+					"evidence": "Event 27 plays 精神統一+ (catalog 752): setConcentrationEffectBuff(0.2,3). Event 30 then shows the concentration-effect glyph with 20% and 2ターン at [16,665,56,56]. Later repeated uses show 40%. This is a score-effect modifier, not concentration stacks or concentration acquisition.",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [
+					[36, 36, 20, 20],
+					[38, 0, 18, 20],
+					[38, 25, 18, 31]
+				]
+			},
+			"template_sha256": "5b917b82d932cbfa957c234e0fe0d2a2888ae52203714d0458f31fef32e735d2",
+			"value_family": "concentration"
+		}
+	],
+	"stances": [
+		{
+			"id": "stance_strength",
+			"kind": "stance",
+			"key": "strength",
+			"name": "强气",
+			"template": "produce/buffs/stance_strength.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 68],
+			"green_mask": true,
+			"source": {
+				"run_id": "20261011T162455Z_56cee54b",
+				"frame_sha256": "659116e4ac6597dd4fcdf9a63ed9fad44af12f6527e24928e93dd538ad3e6c1b",
+				"box": [16, 235, 56, 56],
+				"environment": "MuMu12 Japanese NIA 720x1280; no resize or rotation",
+				"verification": {
+					"method": "screenshot_and_catalog_or_engine_cross_check",
+					"evidence": "Orange flame is visible after はげしく (decision 9; setStance(strength)); next event before/after supports the glyph.",
+					"reference": "https://github.com/gakumas-tools/gakumas-tools/blob/6f138bd7eb4300935a473b3529bd82a1eb6661c6/packages/gakumas-engine/constants.js",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 30, 20, 26]]
+			},
+			"charge_reading": {
+				"format": "integer",
+				"roi_offset": [92, 6, 65, 40],
+				"second_roi_offset": [97, 8, 60, 38]
+			},
+			"reading": {
+				"format": "integer",
+				"roi_offset": [36, 29, 40, 35],
+				"second_roi_offset": [42, 31, 34, 33]
+			},
+			"template_sha256": "d30ec1f6d5ad34617e69db39b71dd56b4f6450a0c0f58cf5b9436732cc90f5bb"
+		},
+		{
+			"id": "stance_preservation",
+			"kind": "stance",
+			"key": "preservation",
+			"name": "温存",
+			"template": "produce/buffs/stance_preservation.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 68],
+			"green_mask": true,
+			"source": {
+				"run_id": "20261011T163155Z_ace2e014",
+				"frame_sha256": "a7e59cc7310db24ae7667407c2e55a361f82f31ffc0c85c797d66199addf532d",
+				"box": [16, 235, 56, 56],
+				"environment": "MuMu12 Japanese NIA 720x1280; no resize or rotation",
+				"verification": {
+					"method": "screenshot_and_catalog_or_engine_cross_check",
+					"evidence": "Cyan glyph cross-checked with cards setting preservation and preservation2; stage numeral is read separately.",
+					"reference": "https://github.com/gakumas-tools/gakumas-tools/blob/6f138bd7eb4300935a473b3529bd82a1eb6661c6/packages/gakumas-engine/constants.js",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 30, 20, 26]]
+			},
+			"charge_reading": {
+				"format": "integer",
+				"roi_offset": [92, 6, 65, 40],
+				"second_roi_offset": [97, 8, 60, 38]
+			},
+			"reading": {
+				"format": "integer",
+				"roi_offset": [36, 29, 40, 35],
+				"second_roi_offset": [42, 31, 34, 33]
+			},
+			"template_sha256": "17eaa9aa70ed992371c32f44a34cc3ea268c40aa45e5522947601a7a3778f25e"
+		},
+		{
+			"id": "stance_full_power",
+			"kind": "stance",
+			"key": "fullPower",
+			"name": "全力",
+			"template": "produce/buffs/stance_full_power.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 232, 84, 68],
+			"green_mask": true,
+			"source": {
+				"run_id": "20261011T162455Z_56cee54b",
+				"frame_sha256": "0bade0f9b2e0f24f8ced7dfbc0756f863bf217796eb9126d35326c18d8102a4b",
+				"box": [16, 235, 56, 56],
+				"environment": "MuMu12 Japanese NIA 720x1280; no resize or rotation",
+				"verification": {
+					"method": "screenshot_and_catalog_or_engine_cross_check",
+					"evidence": "Purple burst appears transiently after charge accumulation; engine FULL_POWER_EFFECTS documents fullPower at charge>=10. This is an ice/fire capture, not validation of a full-power build.",
+					"reference": "https://github.com/gakumas-tools/gakumas-tools/blob/6f138bd7eb4300935a473b3529bd82a1eb6661c6/packages/gakumas-engine/constants.js",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 30, 20, 26]]
+			},
+			"charge_reading": {
+				"format": "integer",
+				"roi_offset": [92, 6, 65, 40],
+				"second_roi_offset": [97, 8, 60, 38]
+			},
+			"template_sha256": "5aa90c5beebb4f97b6f76564da80a9ca67fc784d4fdb2d9759b3de563105978d"
+		},
+		{
+			"id": "stance_neutral",
+			"kind": "stance",
+			"key": "none",
+			"name": "通常",
+			"template": "produce/buffs/stance_neutral.png",
+			"threshold": 0.985,
+			"method": 10001,
+			"roi": [0, 232, 84, 68],
+			"green_mask": true,
+			"source": {
+				"run_id": "20261011T162455Z_56cee54b",
+				"frame_sha256": "cdf519fc671299a8e34d7f9308e1d5cdeea256acf9fc9b4ea42e75f97ec44764",
+				"box": [16, 235, 56, 56],
+				"environment": "MuMu12 Japanese NIA 720x1280; no resize or rotation",
+				"verification": {
+					"method": "screenshot_and_catalog_or_engine_cross_check",
+					"evidence": "Gray three-arrow glyph cross-checked against engine stance none. Visible icon required; missing stance never implies none.",
+					"reference": "https://github.com/gakumas-tools/gakumas-tools/blob/6f138bd7eb4300935a473b3529bd82a1eb6661c6/packages/gakumas-engine/constants.js",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": [[36, 30, 20, 26]]
+			},
+			"charge_reading": {
+				"format": "integer",
+				"roi_offset": [92, 6, 65, 40],
+				"second_roi_offset": [97, 8, 60, 38]
+			},
+			"template_sha256": "bfb3be05b3fc4e58537066f5dd35caaa302f6b7f9088840b0b0d288adca029f9"
+		}
+	],
+	"stance_previews": [
+		{
+			"id": "next_strength",
+			"kind": "stance_preview",
+			"key": "strength",
+			"name": "强气",
+			"template": "produce/buffs/next_strength.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 136, 96, 96],
+			"green_mask": true,
+			"source": {
+				"run_id": "20261011T162455Z_56cee54b",
+				"frame_sha256": "659116e4ac6597dd4fcdf9a63ed9fad44af12f6527e24928e93dd538ad3e6c1b",
+				"box": [26, 151, 56, 56],
+				"environment": "MuMu12 Japanese NIA 720x1280; no resize or rotation",
+				"verification": {
+					"method": "screenshot_and_catalog_or_engine_cross_check",
+					"evidence": "Blue next-stance preview glyph and explicit Nターン後 label; distinct from current orange/cyan stance badge. No transition inferred when absent.",
+					"reference": "https://github.com/gakumas-tools/gakumas-tools/blob/6f138bd7eb4300935a473b3529bd82a1eb6661c6/packages/gakumas-engine/constants.js",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": []
+			},
+			"reading": {
+				"format": "turns_after",
+				"roi_offset": [76, 5, 130, 40],
+				"second_roi_offset": [80, 7, 126, 38]
+			},
+			"template_sha256": "60cfd360b6bcfd76454bdfc960d94575ead36b50177c6f65a9c303124ef1e97f"
+		},
+		{
+			"id": "next_preservation",
+			"kind": "stance_preview",
+			"key": "preservation",
+			"name": "温存",
+			"template": "produce/buffs/next_preservation.png",
+			"threshold": 0.94,
+			"method": 10001,
+			"roi": [0, 136, 96, 96],
+			"green_mask": true,
+			"source": {
+				"run_id": "20261011T163155Z_ace2e014",
+				"frame_sha256": "05d7b758e3948896a5908efadc97ec426c655763964d80af9b2673a4a8181ada",
+				"box": [26, 151, 56, 56],
+				"environment": "MuMu12 Japanese NIA 720x1280; no resize or rotation",
+				"verification": {
+					"method": "screenshot_and_catalog_or_engine_cross_check",
+					"evidence": "Blue next-stance preview glyph and explicit Nターン後 label; distinct from current orange/cyan stance badge. No transition inferred when absent.",
+					"reference": "https://github.com/gakumas-tools/gakumas-tools/blob/6f138bd7eb4300935a473b3529bd82a1eb6661c6/packages/gakumas-engine/constants.js",
+					"popup_name_confirmed": false
+				}
+			},
+			"mask": {
+				"center": [28, 28],
+				"radius": 30,
+				"rectangles": []
+			},
+			"reading": {
+				"format": "turns_after",
+				"roi_offset": [76, 5, 130, 40],
+				"second_roi_offset": [80, 7, 126, 38]
+			},
+			"template_sha256": "4c85b8fb6bbc65cf2ca48ade3e764821002fb3cab307cb7e8e666ffdc006f2ef"
+		}
+	]
+}

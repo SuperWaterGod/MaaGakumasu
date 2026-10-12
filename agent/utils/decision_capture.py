@@ -11,6 +11,7 @@ import logging
 import platform
 import threading
 import subprocess
+from html import escape
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -20,7 +21,16 @@ LOGGER = logging.getLogger(__name__)
 
 class DecisionCapture:
     def __init__(
-        self, root: Path, metadata: dict, *, queue_size=32, max_bytes=2 * 1024**3, min_free_bytes=512 * 1024**2, analysis=None, console=None
+        self,
+        root: Path,
+        metadata: dict,
+        *,
+        queue_size=32,
+        max_bytes=2 * 1024**3,
+        min_free_bytes=512 * 1024**2,
+        analysis=None,
+        console=None,
+        console_details=True,
     ):
         self.run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ_") + uuid.uuid4().hex[:8]
         self.directory = root / self.run_id
@@ -37,8 +47,10 @@ class DecisionCapture:
         self._max_bytes = max_bytes
         self._min_free_bytes = min_free_bytes
         self._console = console
+        self._console_details = console_details
         self._console_offset = 0
         self._analysis_finished = False
+        self._analysis_started = False
         self._manifest = {
             "schema_version": 1,
             "run_id": self.run_id,
@@ -49,7 +61,8 @@ class DecisionCapture:
             "python_version": platform.python_version(),
             "limits": {"queue_size": queue_size, "max_bytes": max_bytes, "min_free_bytes": min_free_bytes},
             "state_fields": {"card_identity": None, "buffs": None, "turn": None, "score": None, "stamina": None},
-            "unknown_reason": "Buff、回合和数值尚未解析；卡牌身份见独立后台分析结果。本目录不代表完整培育。",
+            "unknown_reason": "结构化手牌、剩余回合、数值及可见 Buff 见独立后台分析结果；未确认字段保留未知。本目录不代表完整培育。",
+            "derived_state": "derived/card_identity/<analysis_id>/<frame>.json:battle_state",
             "frame_policy": "720x1280 portrait; unsupported aspect ratios retain original with explicit dimensions",
         }
         self._save_manifest()
@@ -63,9 +76,22 @@ class DecisionCapture:
     def _emit_console(self, message):
         if self._console:
             try:
-                self._console(f"[对局采集] {message}")
+                lines = [line for line in message.splitlines() if line.strip()]
+                if self._console_details and len(lines) > 1:
+                    # MFA reads one physical line per log item and renders it as
+                    # Markdown/HTML. Keep the entire details block in that item.
+                    title = escape(lines[0])
+                    body = "<br/>".join(escape(line) for line in lines[1:])
+                    self._console(f"<details><summary>[对局采集] {title}</summary><p>{body}</p></details>")
+                else:
+                    for line in lines:
+                        self._console(f"[对局采集] {line}")
             except Exception:
                 LOGGER.exception("无法输出采集摘要，继续采集")
+
+    @property
+    def merged_console_enabled(self):
+        return bool(self._console) and self._analysis_started and not self._analysis_finished
 
     def _poll_console(self):
         path = self.directory / "analysis_console.jsonl"
@@ -119,6 +145,7 @@ class DecisionCapture:
                 process = subprocess.Popen(
                     command, stdout=log, stderr=subprocess.STDOUT, cwd=str(ROOT), creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
                 )
+            self._analysis_started = True
             self.record("analysis_started", pid=process.pid, database=str(database), resource=str(resource))
             self._emit_console(f"已开启截图和后台手牌匹配，目录: {self.directory}")
         except Exception as exc:
@@ -160,6 +187,7 @@ class DecisionCapture:
                 min_free_bytes=max(0, int(config.get("min_free_bytes", 512 * 1024**2))),
                 analysis=analysis,
                 console=console if config.get("console_summary", True) else None,
+                console_details=config.get("console_details", True),
             )
         except Exception:
             LOGGER.exception("无法开启对局采集，继续原任务")

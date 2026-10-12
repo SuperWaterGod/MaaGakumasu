@@ -3,6 +3,7 @@
 import os
 import sys
 import json
+import math
 import time
 import hashlib
 import argparse
@@ -14,6 +15,7 @@ from PIL import Image
 
 # Embedded release Python uses an isolated _pth and does not add the script directory.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from battle_state import STANCE_NAMES, STATE_FIELDS, ANOMALY_FIELDS, BattleStateReader, state_lines, state_changes
 from skill_card_identity import SkillCardCatalog, normalize_name
 
 
@@ -23,17 +25,155 @@ def normalized_image(image):
     return image.convert("RGB").resize((720, 1280), Image.Resampling.BILINEAR)
 
 
-def hand_summary(cards):
+def card_name(identity):
+    if identity.get("database_card_id"):
+        name = identity.get("base_name", identity["database_name"].rstrip("+")) + "+" * identity.get("observed_plus_count", 0)
+    else:
+        name = identity.get("observed_name", "") or "牌名未识别"
+    suffix = " [未知]" if identity["status"] == "unknown" else ""
+    if identity.get("match_method") == "prefix":
+        suffix = " ≈"
+    return " ".join(name.split()) + suffix
+
+
+def hand_summary(cards, selected_box=None):
     parts = []
-    for index, card in enumerate(cards, 1):
-        identity = card["identity"]
-        name = " ".join(identity.get("recognized_name", identity.get("observed_name", "")).split()) or "牌名未识别"
-        label = {"cards": "普通", "suggestions": "推荐", "useless": "不可用"}.get(card.get("label"), "状态未知")
-        match = {"matched": "已匹配", "base_match_variant_unresolved": "牌名已匹配，强化待确认"}.get(identity["status"], "未匹配")
-        if identity.get("match_method") == "prefix":
-            match = "前缀匹配，强化待确认"
-        parts.append(f"{index}. {name}（{label}，{match}）")
-    return "；".join(parts) if parts else "未检测到手牌"
+    for index, card in enumerate(sorted(cards, key=lambda card: card["box"][0]), 1):
+        label = {"cards": "", "suggestions": "荐 ", "useless": "禁 "}.get(card.get("label"), "? ")
+        marker = "→" if card["box"] == selected_box else " "
+        parts.append(f"{marker} {index}. {label}{card_name(card['identity'])}")
+    return "\n".join(parts) if parts else "  未检测到手牌"
+
+
+def after_console(event, before, result):
+    state = result.get("battle_state")
+    changes = state_changes(before, state)
+    if not state or not state.get("hud_present"):
+        return f"操作后 #{event['seq']}：当前画面未确认出牌 HUD", changes
+    labels = {
+        "turns_remaining": "剩余回合",
+        "score": "分数",
+        "stamina": "体力",
+        "genki": "元气",
+        "attribute": "属性",
+        "attribute_multiplier_percent": "倍率%",
+        "goodImpressionTurns": "好印象",
+        "concentration": "集中",
+        "motivation": "干劲",
+    }
+    labels.update({buff["key"]: buff["name"] for buff in state.get("buffs", [])})
+    labels.update(
+        {
+            "anomaly_stance": "姿态",
+            "anomaly_stance_stage": "姿态阶段",
+            "anomaly_full_power_charge": "全力值",
+            "anomaly_next_stance": "预告姿态",
+            "anomaly_transition_after_turns": "距切换回合",
+            "anomaly_held_cards_count": "保留牌数",
+            "anomaly_held_cards_capacity": "保留容量",
+        }
+    )
+
+    def display(value):
+        return STANCE_NAMES.get(value, value) if isinstance(value, str) else value
+
+    parts = [f"{labels.get(key, key)} {display(value['before'])}→{display(value['after'])}" for key, value in changes.items()]
+    if not parts:
+        return None, changes
+    rows = ["｜".join(parts[index : index + 3]) for index in range(0, len(parts), 3)]
+    decision = str(event.get("decision_id") or "?").rsplit(":", 1)[-1]
+    return f"操作后 #{event['seq']}（关联 #{decision}）：\n" + "\n".join(rows), changes
+
+
+def compact_state_lines(state):
+    lines = state_lines(state)
+    if not state or not state.get("hud_present"):
+        return lines
+    main = lines[0].removeprefix("状态：") + "｜" + lines[1].removeprefix("属性：")
+    extra = [line for line in lines[2:] if not line.startswith("Buff：")]
+    buffs = [line.removeprefix("Buff：") for line in lines[2:] if line.startswith("Buff：")]
+    return [main, *extra, *(["Buff：" + "｜".join(buffs)] if buffs else [])]
+
+
+def operation_console(number, before_event, before_result, after_event=None, after_result=None):
+    before_result = before_result or {}
+    after_result = after_result or {}
+    before = before_result.get("battle_state")
+    cards = before_result.get("cards", [])
+    operation = before_event.get("operation")
+    title = {"play_card": "出牌", "use_drink_task": "使用饮料", "skip_round": "跳过回合", "move_cards": "移动卡牌"}.get(operation, "操作后观察")
+    selected = next((card for card in cards if card["box"] == before_event.get("selected_box")), None)
+    if operation == "play_card":
+        title += "：" + (card_name(selected["identity"]) if selected else "牌名未识别")
+    title = f"操作 {number}｜{title}"
+    started, ended = before_event.get("monotonic_ns"), (after_event or {}).get("monotonic_ns")
+    if isinstance(started, int) and isinstance(ended, int) and ended >= started:
+        title += f"｜{(ended - started) / 1e9:.1f}秒"
+    lines = [title]
+    reason = {
+        "game_recommendation": "游戏推荐",
+        "only_available_card": "仅一张可用",
+        "timeout_detector_confidence": "超时兜底",
+        "existing_use_all_drinks": "使用现有饮料",
+        "no_available_cards": "无可用牌",
+        "no_cards_ocr": "无手牌",
+    }.get(before_event.get("reason"), before_event.get("reason"))
+    if reason:
+        lines.append("选择依据：" + reason)
+    if before_result.get("error"):
+        lines.append("操作前识别失败：" + before_result["error"])
+    elif before_event:
+        lines.extend(["操作前：" + compact_state_lines(before)[0], *compact_state_lines(before)[1:]])
+    else:
+        lines.append("操作前：缺少前帧，无法比较变化")
+    if operation in ("play_card", "skip_round", "move_cards"):
+        lines.extend(["手牌：", hand_summary(cards, before_event.get("selected_box"))])
+    changes = {}
+    if after_event is None:
+        lines[0] += "｜后续观察缺失"
+        lines.append("后续观察：未采集到操作后画面，无法比较变化")
+    elif after_result.get("error"):
+        lines.append("操作后识别失败：" + after_result["error"])
+    else:
+        message, changes = after_console(after_event, before, after_result)
+        if not after_result.get("battle_state", {}).get("hud_present"):
+            lines.append("后续观察：未确认出牌 HUD")
+        elif not before or not before.get("hud_present"):
+            lines.append("操作后：" + compact_state_lines(after_result.get("battle_state"))[0])
+        elif message:
+            lines.append("观察变化：" + "｜".join(message.splitlines()[1:]))
+        else:
+            lines.append("观察变化：前后可读数值未变化；不代表没有其他效果")
+    trace = [f"前 #{before_event['seq']}"] if before_event else []
+    if after_event:
+        trace.append(f"后 #{after_event['seq']}")
+    lines.append("采集索引：" + " → ".join(trace))
+    return "\n".join(lines), changes
+
+
+class OperationConsole:
+    """Pair observations for display; raw capture IDs and action labels stay intact."""
+
+    def __init__(self):
+        self.count = 0
+        self.pending = {}
+
+    def start(self, event, result):
+        self.count += 1
+        self.pending[event["event_id"]] = (self.count, event, result)
+
+    def finish(self, event, result):
+        pending = self.pending.pop(event.get("decision_id"), None)
+        if pending is None:
+            self.count += 1
+            pending = (self.count, {}, {})
+        number, before_event, before_result = pending
+        message, changes = operation_console(number, before_event, before_result, event, result)
+        return message, changes, number
+
+    def unfinished(self):
+        pending, self.pending = self.pending, {}
+        return [(operation_console(number, event, result)[0], event["event_id"], number) for number, event, result in pending.values()]
 
 
 class OfflineVision:
@@ -92,6 +232,22 @@ class OfflineVision:
             if len(self._ocr_cache) > 2048:
                 self._ocr_cache.pop(next(iter(self._ocr_cache)))
         return [{**item, "box": [item["box"][0] + left, item["box"][1] + top, *item["box"][2:]]} for item in self._ocr_cache[crop_hash]]
+
+    def match_buff_templates(self, array, definition):
+        from maa.pipeline import JTemplateMatch, JRecognitionType
+
+        items = self.recognize(
+            JRecognitionType.TemplateMatch,
+            JTemplateMatch(
+                template=[definition["template"]],
+                roi=definition["roi"],
+                threshold=[definition["threshold"]],
+                method=definition["method"],
+                green_mask=True,
+            ),
+            array,
+        )
+        return [{"score": item.score, "box": list(item.box)} for item in items if math.isfinite(item.score)]
 
     def analyze(self, image, catalog, candidates=None):
         import numpy as np
@@ -171,13 +327,22 @@ class OfflineVision:
                     "ocr_views": views,
                 }
             )
-        return {"analysis_size": [720, 1280], "source_size": list(image.size), "cards": cards}
+        result = {"analysis_size": [720, 1280], "source_size": list(image.size), "cards": cards}
+        if getattr(self, "state_reader", None):
+            try:
+                result["battle_state"] = self.state_reader.read(array)
+            except Exception as exc:
+                result["battle_state"] = {"hud_present": False, "error": str(exc), "fields": {}, "buffs": []}
+        return result
 
 
 def analyze_capture(directory, resource, database, aliases=None, follow=False, max_frames=None):
     directory = directory.resolve()
     catalog = SkillCardCatalog(database, aliases)
     model_sha = hashlib.sha256((resource / "model/detect/cards.onnx").read_bytes()).hexdigest()
+    state_module = Path(__file__).with_name("battle_state.py")
+    state_templates = database.with_name("battle_buff_templates.json")
+    state_reader = BattleStateReader(state_templates, None, image_root=resource / "image")
     signature = hashlib.sha256(
         (
             catalog.sha256
@@ -186,6 +351,8 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
             + (hashlib.sha256(aliases.read_bytes()).hexdigest() if aliases and aliases.exists() else "")
             + Path(__file__).read_text(encoding="utf-8")
             + Path(__file__).with_name("skill_card_identity.py").read_text(encoding="utf-8")
+            + state_module.read_text(encoding="utf-8")
+            + (state_reader.template_sha256 or "missing_buff_templates")
         ).encode()
     ).hexdigest()[:16]
     output = directory / "derived" / "card_identity" / signature
@@ -211,6 +378,11 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
         "variant_unresolved": 0,
         "unknown": 0,
         "errors": 0,
+        "state_errors": 0,
+        "state_frames": 0,
+        "state_field_observations": {key: 0 for key in STATE_FIELDS},
+        "anomaly_frames": 0,
+        "anomaly_field_observations": {key: 0 for key in ANOMALY_FIELDS},
     }
     status_path = output / "status.json"
     console_path = directory / "analysis_console.jsonl"
@@ -225,15 +397,24 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
         temporary.write_text(json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8")
         temporary.replace(status_path)
 
+    action_console = OperationConsole()
     try:
         save_status()
         vision = OfflineVision(resource, output)
+        vision.state_reader = BattleStateReader(state_templates, vision._read_title, vision.match_buff_templates, resource / "image")
+        status["buff_backend"] = "MaaFramework.TemplateMatch"
+        status["buff_templates"] = [entry["id"] for entry in vision.state_reader.templates if entry["kind"] == "buff"]
+        status["stance_templates"] = [entry["id"] for entry in vision.state_reader.templates if entry["kind"] == "stance"]
+        status["stance_preview_templates"] = [entry["id"] for entry in vision.state_reader.templates if entry["kind"] == "stance_preview"]
+        status["buff_template_errors"] = vision.state_reader.template_error
+        if vision.state_reader.template_error:
+            notice("部分 Buff 模板不可用，未确认的状态保留未知：" + vision.state_reader.template_error)
         from maa.library import Library
 
         status["framework_version"] = Library.version()
         status["status"] = "processing"
         save_status()
-        notice("后台卡牌识别已就绪，等待出牌画面。")
+        notice("后台手牌与状态识别已就绪。手牌按从左到右排列：→ 选中，荐 推荐，禁 不可用，≈ 前缀匹配。")
         last_status_update = time.monotonic()
         cached = {}
         last_summary = None
@@ -261,7 +442,13 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     continue
                 last_event = time.monotonic()
                 event = json.loads(line)
-                if "frame" not in event or event["kind"] not in ("decision_before", "decision_after", "screen_observation"):
+                if "frame" not in event or event["kind"] not in (
+                    "decision_before",
+                    "decision_after",
+                    "screen_observation",
+                    "battle_entry",
+                    "battle_exit_observation",
+                ):
                     continue
                 if event["kind"] == "screen_observation" and event.get("battle_hint") is not True:
                     continue
@@ -283,6 +470,17 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                         for card in result["cards"]:
                             value = card["identity"]["status"]
                             status[{"matched": "matched", "base_match_variant_unresolved": "variant_unresolved"}.get(value, "unknown")] += 1
+                        state = result.get("battle_state", {})
+                        status["state_errors"] += bool(state.get("error") or state.get("errors"))
+                        if state.get("hud_present"):
+                            status["state_frames"] += 1
+                            for field, value in state["fields"].items():
+                                status["state_field_observations"][field] += value["value"] is not None
+                            anomaly = state.get("anomaly", {})
+                            if anomaly.get("hud_present"):
+                                status["anomaly_frames"] += 1
+                            for field in ANOMALY_FIELDS:
+                                status["anomaly_field_observations"][field] += anomaly.get(field, {}).get("value") is not None
                     except Exception as exc:
                         result = {"schema_version": 1, "error": str(exc), "cards": [], "source_frame_sha256": sha}
                         status["errors"] += 1
@@ -291,21 +489,36 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     status["unique_frames_processed"] += 1
                 else:
                     result = json.loads(result_path.read_text(encoding="utf-8"))
-                summary = f"本帧识别失败：{result['error']}" if result.get("error") else hand_summary(result["cards"])
-                phase = {"decision_before": "操作前", "decision_after": "操作后", "screen_observation": "旁路"}[event["kind"]]
-                if summary != last_summary:
-                    notice(f"手牌识别（{phase} #{event['seq']}）：{summary}", event_id=event["event_id"])
-                    last_summary = summary
-                if event["kind"] == "decision_before" and event.get("selected_box"):
-                    selected = [card for card in result["cards"] if card["box"] == event["selected_box"]]
-                    if selected:
-                        notice(f"出牌选择记录（#{event['seq']}）：{hand_summary(selected)}", event_id=event["event_id"])
+                changes = None
+                console_operation_number = None
+                if event["kind"] == "decision_before":
+                    action_console.start(event, result)
+                    console_operation_number = action_console.count
+                elif event["kind"] == "decision_after":
+                    message, changes, console_operation_number = action_console.finish(event, result)
+                    notice(
+                        message,
+                        event_id=event["event_id"],
+                        decision_id=event.get("decision_id"),
+                        console_operation_number=console_operation_number,
+                    )
+                elif result.get("error"):
+                    notice(f"本帧识别失败（#{event['seq']}）：{result['error']}", event_id=event["event_id"])
+                elif event["kind"] == "screen_observation":
+                    summary = "\n".join([*state_lines(result.get("battle_state")), "手牌：", hand_summary(result["cards"])])
+                    if summary != last_summary:
+                        notice(f"旁路观察 #{event['seq']}\n{summary}", event_id=event["event_id"])
+                        last_summary = summary
                 index.write(
                     json.dumps(
                         {
                             "event_id": event["event_id"],
                             "frame_sha256": sha,
                             "result": str(result_path.relative_to(directory)).replace("\\", "/"),
+                            "decision_id": event.get("decision_id"),
+                            "state_changes": changes,
+                            "game_action_confirmed": None,
+                            "console_operation_number": console_operation_number,
                         },
                         ensure_ascii=False,
                     )
@@ -317,12 +530,18 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                 if (output / "STOP").exists() or (max_frames and status["unique_frames_processed"] >= max_frames):
                     status["stop_reason"] = "stop_file_or_frame_limit"
                     break
+        for message, event_id, number in action_console.unfinished():
+            notice(message, decision_id=event_id, console_operation_number=number)
         status["status"] = "completed"
         notice(
-            f"手牌分析结束：匹配 {status['matched']}，牌名已匹配但强化待确认 {status['variant_unresolved']}，未知 {status['unknown']}。", finished=True
+            f"分析结束：牌名覆盖 {status['matched'] + status['variant_unresolved']}，未知 {status['unknown']}；"
+            f"可读状态 {status['state_frames']} 帧，状态识别异常 {status['state_errors']} 帧。",
+            finished=True,
         )
     except Exception as exc:
         status.update(status="failed", error=str(exc))
+        for message, event_id, number in action_console.unfinished():
+            notice(message, decision_id=event_id, console_operation_number=number)
         notice(f"手牌分析停止：{exc}；采集与培育继续。", finished=True)
         raise
     finally:

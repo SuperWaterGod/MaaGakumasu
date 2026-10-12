@@ -57,7 +57,7 @@ def build_report(directory: Path):
         f"- 缺失截图：{len(missing)}；JSON 损坏行：{parse_errors}",
         "",
         "旁路采集没有实际点击标签。场景提示和返回可操作状态均不等于动作成功。",
-        "卡牌身份与卡库参考效果见后台分析；Buff、回合数、分数与体力数值尚未自动解析。",
+        "卡牌身份、可见战斗状态与卡库参考效果见后台分析；未知字段、隐藏 Buff 和未适配布局不当作零。",
         "",
         "## 事件分布",
         "",
@@ -72,11 +72,19 @@ def build_report(directory: Path):
                 "## 卡牌身份分析",
                 "",
                 f"- 状态：{analysis['status']}；处理画面：{analysis['unique_frames_processed']}",
-                f"- 匹配：{analysis['matched']}；额外强化待确认：{analysis['variant_unresolved']}；未知：{analysis['unknown']}",
+                f"- 匹配：{analysis['matched']}；牌名已匹配但强化待确认：{analysis['variant_unresolved']}；未知：{analysis['unknown']}",
                 f"- 分析错误：{analysis['errors']}；卡库 SHA-256：`{analysis['catalog_sha256']}`",
                 "",
             ]
         )
+        if "state_frames" in analysis:
+            lines.extend(
+                [
+                    f"- 可读出牌状态：{analysis['state_frames']} 帧；状态识别异常：{analysis['state_errors']} 帧",
+                    "- 数值字段覆盖（按分析帧计）：" + "；".join(f"{key}={count}" for key, count in analysis["state_field_observations"].items()),
+                    "",
+                ]
+            )
     (directory / "report.md").write_text("\n".join(lines), encoding="utf-8")
     return summary
 
