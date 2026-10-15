@@ -14,6 +14,7 @@ import subprocess
 from html import escape
 from pathlib import Path
 from datetime import datetime, timezone
+from importlib.metadata import version
 
 ROOT = Path(__file__).resolve().parents[2]
 LOGGER = logging.getLogger(__name__)
@@ -31,6 +32,8 @@ class DecisionCapture:
         analysis=None,
         console=None,
         console_details=True,
+        reward_preview=True,
+        reward_identity_cache=True,
     ):
         self.run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ_") + uuid.uuid4().hex[:8]
         self.directory = root / self.run_id
@@ -40,6 +43,9 @@ class DecisionCapture:
         self._closed = threading.Event()
         self._failed = False
         self._seq = 0
+        self._record_lock = threading.Lock()
+        self.event_context = ({"session_id": metadata["session_id"], "segment_id": self.run_id}
+                              if metadata.get("session_id") else {})
         self._dropped = 0
         self._written = 0
         self._bytes = 0
@@ -48,9 +54,14 @@ class DecisionCapture:
         self._min_free_bytes = min_free_bytes
         self._console = console
         self._console_details = console_details
+        self.reward_preview_enabled = reward_preview
+        self.reward_identity_cache_enabled = reward_identity_cache
         self._console_offset = 0
+        self._console_condition = threading.Condition()
+        self._console_events = set()
         self._analysis_finished = False
         self._analysis_started = False
+        self._analysis_process = None
         self._manifest = {
             "schema_version": 1,
             "run_id": self.run_id,
@@ -60,8 +71,12 @@ class DecisionCapture:
             "recorder_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             "python_version": platform.python_version(),
             "limits": {"queue_size": queue_size, "max_bytes": max_bytes, "min_free_bytes": min_free_bytes},
+            "reward_preview_enabled": reward_preview,
+            "reward_identity_cache_enabled": reward_identity_cache,
             "state_fields": {"card_identity": None, "buffs": None, "turn": None, "score": None, "stamina": None},
-            "unknown_reason": "结构化手牌、剩余回合、数值及可见 Buff 见独立后台分析结果；未确认字段保留未知。本目录不代表完整培育。",
+            "unknown_reason": ("整次培育的分段证据；完整性见培育会话清单。未知牌组、成本和动作确认不推断。"
+                               if metadata.get("session_id") else
+                               "结构化手牌、剩余回合、数值及可见 Buff 见独立后台分析结果；未确认字段保留未知。本目录不代表完整培育。"),
             "derived_state": "derived/card_identity/<analysis_id>/<frame>.json:battle_state",
             "frame_policy": "720x1280 portrait; unsupported aspect ratios retain original with explicit dimensions",
         }
@@ -73,50 +88,81 @@ class DecisionCapture:
         if console and analysis:
             threading.Thread(target=self._relay_console, name="card-analysis-console", daemon=True).start()
 
-    def _emit_console(self, message):
+    def _emit_console(self, message, label="对局采集"):
         if self._console:
             try:
-                lines = [line for line in message.splitlines() if line.strip()]
+                lines = message.strip().splitlines()
                 if self._console_details and len(lines) > 1:
                     # MFA reads one physical line per log item and renders it as
                     # Markdown/HTML. Keep the entire details block in that item.
                     title = escape(lines[0])
                     body = "<br/>".join(escape(line) for line in lines[1:])
-                    self._console(f"<details><summary>[对局采集] {title}</summary><p>{body}</p></details>")
+                    self._console(f"<details><summary>[{label}] {title}</summary><p>{body}</p></details>")
                 else:
                     for line in lines:
-                        self._console(f"[对局采集] {line}")
+                        if line.strip():
+                            self._console(f"[{label}] {line}")
+                return True
             except Exception:
                 LOGGER.exception("无法输出采集摘要，继续采集")
+        return False
 
     @property
     def merged_console_enabled(self):
         return bool(self._console) and self._analysis_started and not self._analysis_finished
 
+    def wait_for_console(self, event_id, timeout=3, cancelled=None):
+        """Drain the final operation at a battle boundary, never wait indefinitely."""
+        deadline = time.monotonic() + timeout
+        with self._console_condition:
+            while event_id not in self._console_events:
+                if not event_id or not self.merged_console_enabled or self._failed:
+                    return False
+                if cancelled and cancelled():
+                    return False
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                self._console_condition.wait(min(remaining, 0.1))
+            return True
+
     def _poll_console(self):
         path = self.directory / "analysis_console.jsonl"
         if not path.exists():
-            return
+            return 0
+        count = 0
         with path.open("rb") as stream:
             stream.seek(self._console_offset)
             for _ in range(20):
                 line = stream.readline()
                 if not line.endswith(b"\n"):
                     break
+                count += 1
                 self._console_offset = stream.tell()
                 try:
                     notice = json.loads(line)
                 except (ValueError, UnicodeError):
                     continue
-                self._emit_console(notice["message"])
-                if notice.get("finished"):
-                    self._analysis_finished = True
+                emitted = self._emit_console(notice["message"], label="奖励采集" if notice.get("scope") == "reward" else "对局采集")
+                with self._console_condition:
+                    if emitted and notice.get("event_id"):
+                        self._console_events.add(notice["event_id"])
+                    if notice.get("finished"):
+                        self._analysis_finished = True
+                    self._console_condition.notify_all()
+        return count
 
     def _relay_console(self):
         closed_since = None
         while not self._analysis_finished:
             try:
-                self._poll_console()
+                count = self._poll_console()
+                # A crashed worker may never write its final notice. Drain any
+                # buffered notices before marking it unavailable.
+                if self._analysis_process and self._analysis_process.poll() is not None and count < 20:
+                    with self._console_condition:
+                        self._analysis_finished = True
+                        self._console_condition.notify_all()
             except OSError:
                 pass
             if self._closed.is_set():
@@ -130,7 +176,7 @@ class DecisionCapture:
             command = [
                 sys.executable,
                 "-u",
-                str(Path(__file__).with_name("card_analysis.py")),
+                str(Path(__file__).with_name("analysis.py")),
                 "--capture-dir",
                 str(self.directory.resolve()),
                 "--resource",
@@ -145,6 +191,7 @@ class DecisionCapture:
                 process = subprocess.Popen(
                     command, stdout=log, stderr=subprocess.STDOUT, cwd=str(ROOT), creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
                 )
+            self._analysis_process = process
             self._analysis_started = True
             self.record("analysis_started", pid=process.pid, database=str(database), resource=str(resource))
             self._emit_console(f"已开启截图和后台手牌匹配，目录: {self.directory}")
@@ -162,13 +209,16 @@ class DecisionCapture:
             config = json.loads(config_path.read_text(encoding="utf-8-sig"))
             if config.get("enabled") is not True:
                 return None
-            # A missing optional recording dependency must not prevent Agent startup.
-            from PIL import Image  # noqa: F401
 
             metadata = dict(
                 metadata,
                 package_root=str(ROOT),
-                action_source_sha256=hashlib.sha256((ROOT / "agent/custom/action/produce.py").read_bytes()).hexdigest(),
+                maafw_package_version=version("maafw"),
+                action_source_sha256=hashlib.sha256(b"".join(
+                    (ROOT / name).read_bytes() for name in (
+                        "agent/produce/events.py", "agent/produce/battle.py", "agent/produce/options.py", "agent/custom/action/produce.py"
+                    )
+                )).hexdigest(),
             )
             for interface_path in (ROOT / "interface.json", ROOT / "assets/interface.json"):
                 if interface_path.exists():
@@ -188,6 +238,8 @@ class DecisionCapture:
                 analysis=analysis,
                 console=console if config.get("console_summary", True) else None,
                 console_details=config.get("console_details", True),
+                reward_preview=config.get("reward_preview", True) is True,
+                reward_identity_cache=config.get("reward_identity_cache", True) is True,
             )
         except Exception:
             LOGGER.exception("无法开启对局采集，继续原任务")
@@ -196,22 +248,26 @@ class DecisionCapture:
     def record(self, kind: str, *, image=None, **data):
         if self._closed.is_set() or self._failed:
             return None
-        self._seq += 1
-        event_id = f"{self.run_id}:{self._seq}"
         try:
             # Copy at enqueue time: Maa may reuse its screenshot buffer.
             snapshot = None if image is None else image.copy()
-            event = {
-                "schema_version": 1,
-                "run_id": self.run_id,
-                "event_id": event_id,
-                "seq": self._seq,
-                "time": datetime.now(timezone.utc).isoformat(),
-                "monotonic_ns": time.monotonic_ns(),
-                "kind": kind,
-                **data,
-            }
-            self._queue.put_nowait((event, snapshot))
+            with self._record_lock:
+                if self._closed.is_set() or self._failed:
+                    return None
+                self._seq += 1
+                event_id = f"{self.run_id}:{self._seq}"
+                event = {
+                    "schema_version": 1,
+                    "run_id": self.run_id,
+                    "event_id": event_id,
+                    "seq": self._seq,
+                    "time": datetime.now(timezone.utc).isoformat(),
+                    "monotonic_ns": time.monotonic_ns(),
+                    "kind": kind,
+                    **self.event_context,
+                    **data,
+                }
+                self._queue.put_nowait((event, snapshot))
             return event_id
         except queue.Full:
             self._dropped += 1
@@ -221,8 +277,9 @@ class DecisionCapture:
         return None
 
     def close(self, reason="completed", timeout=3):
-        self._manifest["stop_reason"] = reason
-        self._closed.set()
+        with self._record_lock:
+            self._manifest["stop_reason"] = reason
+            self._closed.set()
         self._thread.join(timeout=timeout)
 
     def _save_manifest(self):
@@ -234,19 +291,15 @@ class DecisionCapture:
         temporary.replace(target)
 
     def _write_frame(self, image):
-        import io
+        from utils.image_io import bgr_image, encode_png, resize_image
 
-        from PIL import Image
-
-        if not isinstance(image, Image.Image):
-            # Maa screenshots are BGR arrays; preserve dimensions and orientation.
-            image = Image.fromarray(image[:, :, ::-1] if image.ndim == 3 else image)
-        source_size = [image.width, image.height]
-        if abs(image.width / image.height - 720 / 1280) <= 0.005 and image.size != (720, 1280):
-            image = image.resize((720, 1280), Image.Resampling.BILINEAR)
-        buffer = io.BytesIO()
-        image.save(buffer, format="PNG")
-        encoded = buffer.getvalue()
+        image = bgr_image(image)
+        height, width = image.shape[:2]
+        source_size = [width, height]
+        if abs(width / height - 720 / 1280) <= 0.005:
+            image = resize_image(image, 720, 1280)
+        height, width = image.shape[:2]
+        encoded = encode_png(image)
         digest = hashlib.sha256(encoded).hexdigest()
         if digest not in self._hashes:
             if self._bytes + len(encoded) > self._max_bytes:
@@ -258,10 +311,10 @@ class DecisionCapture:
         return {
             "path": self._hashes[digest],
             "sha256": digest,
-            "width": image.width,
-            "height": image.height,
+            "width": width,
+            "height": height,
             "source_size": source_size,
-            "resized": source_size != [image.width, image.height],
+            "resized": source_size != [width, height],
         }
 
     def _write_loop(self):
@@ -304,19 +357,3 @@ class DecisionCapture:
                 self._save_manifest()
             except Exception:
                 LOGGER.exception("无法保存采集状态")
-
-
-def card_candidates(results, y_min=840, y_max=1000):
-    """Detector confidence is not game value. Keep rejected boxes as evidence."""
-    return [
-        {
-            "candidate_id": f"detection_{index}",
-            "box": [int(value) for value in result.box],
-            "label": result.label,
-            "detector_confidence": float(result.score),
-            "in_hand_region": y_min <= result.box[1] <= y_max,
-            "available": result.label in ("cards", "suggestions") and y_min <= result.box[1] <= y_max,
-            "card_id": None,
-        }
-        for index, result in enumerate(results)
-    ]

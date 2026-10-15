@@ -449,42 +449,6 @@ class BattleStateReader:
         return state
 
 
-def state_lines(state):
-    if not state or not state.get("hud_present"):
-        return ["状态：当前画面未确认出牌 HUD"]
-    fields = state["fields"]
-
-    def value(key):
-        return fields[key]["value"] if fields[key]["value"] is not None else "?"
-
-    lines = [f"状态：剩 {value('turns_remaining')} 回合｜分 {value('score')}｜体 {value('stamina')}｜元 {value('genki')}"]
-    lines.append(f"属性：{value('attribute')} {value('attribute_multiplier_percent')}%")
-    anomaly = state.get("anomaly", {})
-    if anomaly.get("held_cards_count", {}).get("value") is not None:
-        capacity = anomaly["held_cards_capacity"]["value"]
-        lines.append(f"保留：{anomaly['held_cards_count']['value']}/{capacity if capacity is not None else '?'}")
-    if anomaly.get("hud_present"):
-
-        def observed(key):
-            return anomaly[key]["value"] if anomaly[key]["value"] is not None else "?"
-
-        stance = STANCE_NAMES.get(observed("stance"), observed("stance"))
-        stage = f" {observed('stance_stage')}阶段" if observed("stance") in ("strength", "preservation") else ""
-        lines.append(f"非凡：{stance}{stage}｜全力值 {observed('full_power_charge')}")
-        if anomaly["next_stance"]["value"] is not None:
-            target = STANCE_NAMES.get(observed("next_stance"), observed("next_stance"))
-            condition = anomaly["pointer_condition"]["value"]
-            lines.append(f"指针预告：{observed('transition_after_turns')}回合后→{target}" + (f"｜{condition}" if condition else ""))
-    descriptions = []
-    for buff in state["buffs"]:
-        suffix = {"percent": "%", "turns": "回合", "times": "次"}.get(buff["unit"], "")
-        number = buff["value"] if buff["value"] is not None else "?"
-        descriptions.append(f"{buff['name']} {number}{suffix}")
-    for index in range(0, len(descriptions), 3):
-        lines.append("Buff：" + "｜".join(descriptions[index : index + 3]))
-    return lines
-
-
 def state_changes(before, after):
     changes = {}
     if not before or not after or not before.get("hud_present") or not after.get("hud_present"):

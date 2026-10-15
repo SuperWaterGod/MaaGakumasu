@@ -261,6 +261,13 @@ def agent():
 
         Toolkit.init_option("./")
 
+        try:
+            from produce.sessions import install_produce_capture
+
+            install_produce_capture()
+        except Exception:
+            logger.exception("培育会话监听不可用，继续原任务")
+
         logger.info(f"MaaFW Library version: {Library.version()}")
 
         socket_id = sys.argv[-1]
@@ -268,6 +275,9 @@ def agent():
         AgentServer.start_up(socket_id)
         logger.info("AgentServer 启动")
         AgentServer.join()
+        from produce.sessions import SESSIONS
+
+        SESSIONS.close_all()
         AgentServer.shut_down()
         logger.info("AgentServer 关闭")
     except Exception as e:

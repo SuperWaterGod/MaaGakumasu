@@ -1,6 +1,7 @@
-"""Separate, input-free MaaFramework worker for captured hand identity analysis."""
+"""Input-free background OCR and analysis of captured battles and route observations."""
 
 import os
+import re
 import sys
 import json
 import math
@@ -11,169 +12,163 @@ from pathlib import Path
 from datetime import datetime, timezone
 from importlib.metadata import version
 
-from PIL import Image
+# Embedded Python ignores the script directory; allow direct worker/CLI launch.
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-# Embedded release Python uses an isolated _pth and does not add the script directory.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from battle_state import STANCE_NAMES, STATE_FIELDS, ANOMALY_FIELDS, BattleStateReader, state_lines, state_changes
-from skill_card_identity import SkillCardCatalog, normalize_name
+from produce.state import STANCE_NAMES, STATE_FIELDS, ANOMALY_FIELDS, BattleStateReader
+from utils.image_io import bgr_image, read_image, resize_image
+from produce.catalog import SkillCardCatalog, clean, normalize_name
+from produce.console import RewardConsole, OperationConsole, state_lines, hand_summary
+from produce.rewards import RewardReader
 
 
 def normalized_image(image):
-    if abs(image.width / image.height - 720 / 1280) > 0.005:
+    image = bgr_image(image)
+    height, width = image.shape[:2]
+    if abs(width / height - 720 / 1280) > 0.005:
         raise ValueError("Unsupported frame aspect ratio; will not rotate")
-    return image.convert("RGB").resize((720, 1280), Image.Resampling.BILINEAR)
+    return resize_image(image, 720, 1280)
 
 
-def card_name(identity):
-    if identity.get("database_card_id"):
-        name = identity.get("base_name", identity["database_name"].rstrip("+")) + "+" * identity.get("observed_plus_count", 0)
-    else:
-        name = identity.get("observed_name", "") or "牌名未识别"
-    suffix = " [未知]" if identity["status"] == "unknown" else ""
-    if identity.get("match_method") == "prefix":
-        suffix = " ≈"
-    return " ".join(name.split()) + suffix
-
-
-def hand_summary(cards, selected_box=None):
-    parts = []
-    for index, card in enumerate(sorted(cards, key=lambda card: card["box"][0]), 1):
-        label = {"cards": "", "suggestions": "荐 ", "useless": "禁 "}.get(card.get("label"), "? ")
-        marker = "→" if card["box"] == selected_box else " "
-        parts.append(f"{marker} {index}. {label}{card_name(card['identity'])}")
-    return "\n".join(parts) if parts else "  未检测到手牌"
-
-
-def after_console(event, before, result):
-    state = result.get("battle_state")
-    changes = state_changes(before, state)
-    if not state or not state.get("hud_present"):
-        return f"操作后 #{event['seq']}：当前画面未确认出牌 HUD", changes
-    labels = {
-        "turns_remaining": "剩余回合",
-        "score": "分数",
-        "stamina": "体力",
-        "genki": "元气",
-        "attribute": "属性",
-        "attribute_multiplier_percent": "倍率%",
-        "goodImpressionTurns": "好印象",
-        "concentration": "集中",
-        "motivation": "干劲",
+def labeled_value(tokens, labels, pattern):
+    values = []
+    evidence = []
+    for token in tokens:
+        if token.get("confidence", 0) < 0.8:
+            continue
+        text = clean(token["text"])
+        label = re.search(labels, text, re.IGNORECASE)
+        if not label:
+            continue
+        tail = text[label.end() :].strip(" ：:")
+        value = re.fullmatch(pattern, tail)
+        if value:
+            values.append(value.group())
+            evidence.append(token)
+            continue
+        # Only accept a separate value on the same row and to the right of the label.
+        x, y, w, h = token["box"]
+        nearby = [
+            other
+            for other in tokens
+            if other is not token
+            and other.get("confidence", 0) >= 0.8
+            and x + w <= other["box"][0] <= x + w + 150
+            and abs(other["box"][1] - y) <= max(10, h // 2)
+            and re.fullmatch(pattern, clean(other["text"]))
+        ]
+        if len(nearby) == 1:
+            values.append(clean(nearby[0]["text"]))
+            evidence.extend([token, nearby[0]])
+    unique = {int(value.replace(",", "")) if re.fullmatch(r"[0-9][0-9,]*", value) else value for value in values}
+    return {
+        "value": next(iter(unique)) if len(unique) == 1 else None,
+        "evidence": evidence,
+        "status": "read" if len(unique) == 1 else "unknown",
     }
-    labels.update({buff["key"]: buff["name"] for buff in state.get("buffs", [])})
-    labels.update(
-        {
-            "anomaly_stance": "姿态",
-            "anomaly_stance_stage": "姿态阶段",
-            "anomaly_full_power_charge": "全力值",
-            "anomaly_next_stance": "预告姿态",
-            "anomaly_transition_after_turns": "距切换回合",
-            "anomaly_held_cards_count": "保留牌数",
-            "anomaly_held_cards_capacity": "保留容量",
+
+
+def route_observation(tokens, catalog, event):
+    candidates = []
+    for index, token in enumerate(tokens):
+        identity = catalog.match(token["text"], token.get("confidence", 0))
+        # Route descriptions also contain effect text. Require an exact catalog name.
+        if identity["status"] == "unknown" or identity.get("match_method") != "exact":
+            continue
+        candidates.append(
+            {
+                "candidate_id": f"ocr_{index}",
+                "name_box": token["box"],
+                "identity": identity,
+                "cost": {"value": None, "unit": None, "evidence": [], "status": "unknown"},
+                "available": None,
+                "ocr": token,
+            }
+        )
+    price_tokens = []
+    for token in tokens:
+        match = re.fullmatch(r"(?:必要|消費|花费|价格|費用)?\s*([0-9][0-9,]*)\s*(?:P\s*ポイント|ポイント|Pt|PT|点)", clean(token["text"]))
+        if match and token.get("confidence", 0) >= 0.8:
+            price_tokens.append({"value": int(match[1].replace(",", "")), "unit": "produce_points", "evidence": [token]})
+    # Attach only explicit prices in the same row as one unique card name.
+    # Bare digits and shop balance are deliberately left as raw OCR.
+    if event.get("operation", "").startswith("shop"):
+        for card in candidates:
+            cx, cy, cw, ch = card["name_box"]
+            owned_prices = [
+                price
+                for price in price_tokens
+                if abs(price["evidence"][0]["box"][1] - cy) <= max(price["evidence"][0]["box"][3], ch)
+                and 0 <= price["evidence"][0]["box"][0] - (cx + cw) <= 180
+            ]
+            if len(owned_prices) == 1:
+                price = owned_prices[0]
+                owners = [
+                    other
+                    for other in candidates
+                    if abs(other["name_box"][1] - price["evidence"][0]["box"][1]) <= max(ch, other["name_box"][3])
+                    and 0 <= price["evidence"][0]["box"][0] - (other["name_box"][0] + other["name_box"][2]) <= 180
+                ]
+                if len(owners) == 1:
+                    card["cost"] = {**price, "status": "explicit_same_row"}
+            elif len(owned_prices) > 1:
+                card["cost"]["status"] = "conflicting_prices"
+                card["cost"]["evidence"] = [token for price in owned_prices for token in price["evidence"]]
+    settlement = None
+    if event["kind"] == "settlement_observation":
+        settlement = {
+            "score": labeled_value(tokens, r"(?:最終スコア|最終評価点|最终得分|最終得点|評価点|总得分)", r"[0-9][0-9,]*"),
+            "rank": labeled_value(tokens, r"(?:評価ランク|最终评级|最終評価|评价等级)", r"(?:S{1,3}|[A-D])\+?"),
+            "Vo": labeled_value(tokens, r"(?:ボーカル|声乐|Vo)", r"[0-9][0-9,]*"),
+            "Da": labeled_value(tokens, r"(?:ダンス|舞蹈|Da)", r"[0-9][0-9,]*"),
+            "Vi": labeled_value(tokens, r"(?:ビジュアル|形象|Vi)", r"[0-9][0-9,]*"),
         }
-    )
-
-    def display(value):
-        return STANCE_NAMES.get(value, value) if isinstance(value, str) else value
-
-    parts = [f"{labels.get(key, key)} {display(value['before'])}→{display(value['after'])}" for key, value in changes.items()]
-    if not parts:
-        return None, changes
-    rows = ["｜".join(parts[index : index + 3]) for index in range(0, len(parts), 3)]
-    decision = str(event.get("decision_id") or "?").rsplit(":", 1)[-1]
-    return f"操作后 #{event['seq']}（关联 #{decision}）：\n" + "\n".join(rows), changes
-
-
-def compact_state_lines(state):
-    lines = state_lines(state)
-    if not state or not state.get("hud_present"):
-        return lines
-    main = lines[0].removeprefix("状态：") + "｜" + lines[1].removeprefix("属性：")
-    extra = [line for line in lines[2:] if not line.startswith("Buff：")]
-    buffs = [line.removeprefix("Buff：") for line in lines[2:] if line.startswith("Buff：")]
-    return [main, *extra, *(["Buff：" + "｜".join(buffs)] if buffs else [])]
-
-
-def operation_console(number, before_event, before_result, after_event=None, after_result=None):
-    before_result = before_result or {}
-    after_result = after_result or {}
-    before = before_result.get("battle_state")
-    cards = before_result.get("cards", [])
-    operation = before_event.get("operation")
-    title = {"play_card": "出牌", "use_drink_task": "使用饮料", "skip_round": "跳过回合", "move_cards": "移动卡牌"}.get(operation, "操作后观察")
-    selected = next((card for card in cards if card["box"] == before_event.get("selected_box")), None)
-    if operation == "play_card":
-        title += "：" + (card_name(selected["identity"]) if selected else "牌名未识别")
-    title = f"操作 {number}｜{title}"
-    started, ended = before_event.get("monotonic_ns"), (after_event or {}).get("monotonic_ns")
-    if isinstance(started, int) and isinstance(ended, int) and ended >= started:
-        title += f"｜{(ended - started) / 1e9:.1f}秒"
-    lines = [title]
-    reason = {
-        "game_recommendation": "游戏推荐",
-        "only_available_card": "仅一张可用",
-        "timeout_detector_confidence": "超时兜底",
-        "existing_use_all_drinks": "使用现有饮料",
-        "no_available_cards": "无可用牌",
-        "no_cards_ocr": "无手牌",
-    }.get(before_event.get("reason"), before_event.get("reason"))
-    if reason:
-        lines.append("选择依据：" + reason)
-    if before_result.get("error"):
-        lines.append("操作前识别失败：" + before_result["error"])
-    elif before_event:
-        lines.extend(["操作前：" + compact_state_lines(before)[0], *compact_state_lines(before)[1:]])
-    else:
-        lines.append("操作前：缺少前帧，无法比较变化")
-    if operation in ("play_card", "skip_round", "move_cards"):
-        lines.extend(["手牌：", hand_summary(cards, before_event.get("selected_box"))])
-    changes = {}
-    if after_event is None:
-        lines[0] += "｜后续观察缺失"
-        lines.append("后续观察：未采集到操作后画面，无法比较变化")
-    elif after_result.get("error"):
-        lines.append("操作后识别失败：" + after_result["error"])
-    else:
-        message, changes = after_console(after_event, before, after_result)
-        if not after_result.get("battle_state", {}).get("hud_present"):
-            lines.append("后续观察：未确认出牌 HUD")
-        elif not before or not before.get("hud_present"):
-            lines.append("操作后：" + compact_state_lines(after_result.get("battle_state"))[0])
-        elif message:
-            lines.append("观察变化：" + "｜".join(message.splitlines()[1:]))
-        else:
-            lines.append("观察变化：前后可读数值未变化；不代表没有其他效果")
-    trace = [f"前 #{before_event['seq']}"] if before_event else []
-    if after_event:
-        trace.append(f"后 #{after_event['seq']}")
-    lines.append("采集索引：" + " → ".join(trace))
-    return "\n".join(lines), changes
+    return {
+        "schema_version": 1,
+        "operation": event.get("operation"),
+        "node": event.get("node"),
+        "candidates": candidates,
+        "candidates_complete": False,
+        "candidate_scope": "exact_catalog_names_visible_in_ocr; other_items_in_raw_ocr",
+        "explicit_prices": price_tokens,
+        "actual_cost": None,
+        "levels": {
+            "idol_level": labeled_value(tokens, r"(?:親愛度|好感度|偶像等级)", r"[0-9]+"),
+            "player_level": labeled_value(tokens, r"(?:PLv\.?|Pレベル|玩家等级)", r"[0-9]+"),
+        }
+        if event["kind"] == "preparation_observation"
+        else None,
+        "deck_observation": {
+            "cards": [card["identity"] for card in candidates],
+            "complete": False,
+            "scope": "visible_names; route_candidates_are_not_owned_cards",
+        },
+        "settlement": settlement,
+        "raw_ocr": tokens,
+        "game_action_confirmed": None,
+    }
 
 
-class OperationConsole:
-    """Pair observations for display; raw capture IDs and action labels stay intact."""
-
-    def __init__(self):
-        self.count = 0
-        self.pending = {}
-
-    def start(self, event, result):
-        self.count += 1
-        self.pending[event["event_id"]] = (self.count, event, result)
-
-    def finish(self, event, result):
-        pending = self.pending.pop(event.get("decision_id"), None)
-        if pending is None:
-            self.count += 1
-            pending = (self.count, {}, {})
-        number, before_event, before_result = pending
-        message, changes = operation_console(number, before_event, before_result, event, result)
-        return message, changes, number
-
-    def unfinished(self):
-        pending, self.pending = self.pending, {}
-        return [(operation_console(number, event, result)[0], event["event_id"], number) for number, event, result in pending.values()]
+def selection_evidence(observation, action):
+    point = action.get("actual_point")
+    if not point:
+        return {"candidate_id": None, "status": "unknown", "actual_point": None}
+    x, y = point
+    # A name below the click is only a geometric suggestion, never inventory confirmation.
+    candidates = []
+    for card in observation.get("candidates", []):
+        left, top, width, height = card["name_box"]
+        if left - 40 <= x <= left + width + 40 and top - 240 <= y <= top + height:
+            candidates.append(card)
+    return {
+        "candidate_id": candidates[0]["candidate_id"] if len(candidates) == 1 else None,
+        "status": "geometry_only" if len(candidates) == 1 else "unknown",
+        "actual_point": point,
+        "actual_box": action.get("actual_box"),
+        "framework_action_succeeded": action.get("framework_action_succeeded"),
+        "game_action_confirmed": None,
+    }
 
 
 class OfflineVision:
@@ -186,6 +181,9 @@ class OfflineVision:
         from maa.controller import CustomController
 
         Toolkit.init_option(str(log_directory))
+        # OCR worker evidence is saved in derived JSON and analysis.log. Native
+        # per-recognition trace logs otherwise grow by many MB for every replay.
+        Tasker.set_log_dir("")
         Tasker.set_stdout_level(LoggingLevelEnum.Error)
         self.resource = Resource()
         if not self.resource.post_bundle(resource_path).wait().status.succeeded:
@@ -250,11 +248,9 @@ class OfflineVision:
         return [{"score": item.score, "box": list(item.box)} for item in items if math.isfinite(item.score)]
 
     def analyze(self, image, catalog, candidates=None):
-        import numpy as np
         from maa.pipeline import JRecognitionType, JNeuralNetworkDetect
 
-        normalized = normalized_image(image)
-        array = np.asarray(normalized)[:, :, ::-1].copy()
+        array = normalized_image(image)
         if candidates is None:
             detections = self.recognize(
                 JRecognitionType.NeuralNetworkDetect,
@@ -327,7 +323,7 @@ class OfflineVision:
                     "ocr_views": views,
                 }
             )
-        result = {"analysis_size": [720, 1280], "source_size": list(image.size), "cards": cards}
+        result = {"analysis_size": [720, 1280], "source_size": [image.shape[1], image.shape[0]], "cards": cards}
         if getattr(self, "state_reader", None):
             try:
                 result["battle_state"] = self.state_reader.read(array)
@@ -339,8 +335,8 @@ class OfflineVision:
 def analyze_capture(directory, resource, database, aliases=None, follow=False, max_frames=None):
     directory = directory.resolve()
     catalog = SkillCardCatalog(database, aliases)
+    reward_reader = RewardReader(catalog, database.with_name("produce_reward_items.json"), directory)
     model_sha = hashlib.sha256((resource / "model/detect/cards.onnx").read_bytes()).hexdigest()
-    state_module = Path(__file__).with_name("battle_state.py")
     state_templates = database.with_name("battle_buff_templates.json")
     state_reader = BattleStateReader(state_templates, None, image_root=resource / "image")
     signature = hashlib.sha256(
@@ -349,9 +345,9 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
             + model_sha
             + version("maafw")
             + (hashlib.sha256(aliases.read_bytes()).hexdigest() if aliases and aliases.exists() else "")
-            + Path(__file__).read_text(encoding="utf-8")
-            + Path(__file__).with_name("skill_card_identity.py").read_text(encoding="utf-8")
-            + state_module.read_text(encoding="utf-8")
+            + "".join(path.read_text(encoding="utf-8") for path in sorted(Path(__file__).parent.glob("*.py")))
+            + Path(__file__).parents[1].joinpath("utils/image_io.py").read_text(encoding="utf-8")
+            + (reward_reader.catalog.item_sha256 or "missing_reward_items")
             + (state_reader.template_sha256 or "missing_buff_templates")
         ).encode()
     ).hexdigest()[:16]
@@ -383,6 +379,16 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
         "state_field_observations": {key: 0 for key in STATE_FIELDS},
         "anomaly_frames": 0,
         "anomaly_field_observations": {key: 0 for key in ANOMALY_FIELDS},
+        "route_frames": 0,
+        "route_errors": 0,
+        "reward_preview_frames": 0,
+        "reward_preview_errors": 0,
+        "reward_observation_schema_version": 2,
+        "reward_effect_statuses": {},
+        "reward_catalog_hashes": reward_reader.catalog.hashes,
+        "reward_item_source": reward_reader.catalog.item_source,
+        "reward_item_error": reward_reader.catalog.item_error,
+        "reward_reading_counts": reward_reader.counts,
     }
     status_path = output / "status.json"
     console_path = directory / "analysis_console.jsonl"
@@ -398,6 +404,7 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
         temporary.replace(status_path)
 
     action_console = OperationConsole()
+    reward_console = RewardConsole()
     try:
         save_status()
         vision = OfflineVision(resource, output)
@@ -417,6 +424,7 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
         notice("后台手牌与状态识别已就绪。手牌按从左到右排列：→ 选中，荐 推荐，禁 不可用，≈ 前缀匹配。")
         last_status_update = time.monotonic()
         cached = {}
+        route_pending = {}
         last_summary = None
         last_event = time.monotonic()
         events_path = directory / "events.jsonl"
@@ -442,6 +450,76 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     continue
                 last_event = time.monotonic()
                 event = json.loads(line)
+                if event["kind"].startswith("reward_") and event["kind"] != "reward_candidate_preview":
+                    summary = reward_console.observe(event)
+                    if summary:
+                        notice(**summary)
+                    continue
+                if event["kind"] == "reward_candidate_preview":
+                    result = {"error": "missing_frame", "detail_verified": False}
+                    try:
+                        frame_path = (directory / event["frame"]["path"]).resolve()
+                        if not frame_path.is_relative_to(directory):
+                            raise ValueError("Frame escaped capture directory")
+                        array = normalized_image(read_image(frame_path))
+                        result = reward_reader.read(array, event, vision._read_title)
+                        result.update(source_frame_sha256=event["frame"]["sha256"], catalog_sha256=catalog.sha256)
+                        semantic_status = result["effects"]["semantic_status"]
+                        status["reward_effect_statuses"][semantic_status] = status["reward_effect_statuses"].get(semantic_status, 0) + 1
+                        status["reward_preview_frames"] += 1
+                    except Exception as exc:
+                        result["error"] = str(exc)
+                        status["reward_preview_errors"] += 1
+                    result_path = output / f"reward_{event['seq']}.json"
+                    result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                    index.write(json.dumps({
+                        "event_id": event["event_id"], "session_id": event.get("session_id"),
+                        "reward_page_id": event.get("reward_page_id"),
+                        "candidate_id": event.get("candidate", {}).get("candidate_id"),
+                        "result": str(result_path.relative_to(directory)).replace("\\", "/"),
+                    }, ensure_ascii=False) + "\n")
+                    status["event_links"] += 1
+                    reward_console.observe(event, result)
+                    save_status()
+                    continue
+                if event["kind"] == "route_input_result":
+                    before = route_pending.pop(event.get("decision_id"), {})
+                    selection = selection_evidence(before, event)
+                    index.write(json.dumps({
+                        "event_id": event["event_id"], "session_id": event.get("session_id"),
+                        "decision_id": event.get("decision_id"), "selection": selection,
+                        "game_action_confirmed": None,
+                    }, ensure_ascii=False) + "\n")
+                    status["event_links"] += 1
+                    continue
+                if event["kind"] in ("route_before", "route_after", "preparation_observation", "settlement_observation"):
+                    result = {"error": "missing_frame", "candidates": []}
+                    try:
+
+                        frame_path = (directory / event["frame"]["path"]).resolve()
+                        if not frame_path.is_relative_to(directory):
+                            raise ValueError("Frame escaped capture directory")
+                        array = normalized_image(read_image(frame_path))
+                        tokens = vision._read_title(array, [0, 0, 720, 1280])
+                        result = route_observation(tokens, catalog, event)
+                        result.update(source_frame_sha256=event["frame"]["sha256"], catalog_sha256=catalog.sha256)
+                        status["route_frames"] += 1
+                    except Exception as exc:
+                        result["error"] = str(exc)
+                        status["route_errors"] += 1
+                    result_path = output / f"route_{event['seq']}.json"
+                    result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                    if event["kind"] == "route_before":
+                        route_pending[event["event_id"]] = result
+                    index.write(json.dumps({
+                        "event_id": event["event_id"], "session_id": event.get("session_id"),
+                        "decision_id": event.get("decision_id"),
+                        "result": str(result_path.relative_to(directory)).replace("\\", "/"),
+                        "game_action_confirmed": None,
+                    }, ensure_ascii=False) + "\n")
+                    status["event_links"] += 1
+                    save_status()
+                    continue
                 if "frame" not in event or event["kind"] not in (
                     "decision_before",
                     "decision_after",
@@ -461,11 +539,11 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                         frame_path = (directory / event["frame"]["path"]).resolve()
                         if not frame_path.is_relative_to(directory):
                             raise ValueError("Frame escaped capture directory")
-                        with Image.open(frame_path) as image:
-                            source_size = event["frame"].get("source_size", list(image.size))
-                            candidates = (event.get("candidates") or None) if source_size == [720, 1280] else None
-                            result = vision.analyze(image, catalog, candidates)
-                            result["capture_source_size"] = source_size
+                        image = read_image(frame_path)
+                        source_size = event["frame"].get("source_size", [image.shape[1], image.shape[0]])
+                        candidates = (event.get("candidates") or None) if source_size == [720, 1280] else None
+                        result = vision.analyze(image, catalog, candidates)
+                        result["capture_source_size"] = source_size
                         result.update(schema_version=1, source_frame_sha256=sha, catalog_sha256=catalog.sha256)
                         for card in result["cards"]:
                             value = card["identity"]["status"]
@@ -513,6 +591,8 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     json.dumps(
                         {
                             "event_id": event["event_id"],
+                            "session_id": event.get("session_id"),
+                            "battle_id": event.get("battle_id"),
                             "frame_sha256": sha,
                             "result": str(result_path.relative_to(directory)).replace("\\", "/"),
                             "decision_id": event.get("decision_id"),
@@ -532,6 +612,8 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     break
         for message, event_id, number in action_console.unfinished():
             notice(message, decision_id=event_id, console_operation_number=number)
+        for summary in reward_console.unfinished():
+            notice(**summary)
         status["status"] = "completed"
         notice(
             f"分析结束：牌名覆盖 {status['matched'] + status['variant_unresolved']}，未知 {status['unknown']}；"
@@ -542,6 +624,8 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
         status.update(status="failed", error=str(exc))
         for message, event_id, number in action_console.unfinished():
             notice(message, decision_id=event_id, console_operation_number=number)
+        for summary in reward_console.unfinished():
+            notice(**summary)
         notice(f"手牌分析停止：{exc}；采集与培育继续。", finished=True)
         raise
     finally:

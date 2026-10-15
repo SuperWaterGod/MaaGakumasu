@@ -27,7 +27,6 @@ classifiers = [
 dependencies = [
     "maafw",
     "loguru",
-    "Pillow",
 ]
 
 [project.urls]

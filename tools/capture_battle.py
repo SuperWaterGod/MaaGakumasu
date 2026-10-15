@@ -1,6 +1,5 @@
 """Read-only ADB observer for an already running MFA; no input commands."""
 
-import io
 import os
 import sys
 import json
@@ -11,11 +10,11 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from PIL import Image
 
-# Import the recorder without importing utils/__init__.py and its logger side effects.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agent" / "utils"))
-from decision_capture import DecisionCapture
+# Both CLI and embedded Agent use package imports rooted at agent/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agent"))
+from utils.image_io import decode_image
+from produce.capture import DecisionCapture
 
 
 def screencap(adb: str, serial: str):
@@ -25,17 +24,15 @@ def screencap(adb: str, serial: str):
         timeout=15,
         check=True,
     )
-    with Image.open(io.BytesIO(result.stdout)) as image:
-        return image.convert("RGB")
+    return decode_image(result.stdout)
 
 
 def health_score(image, template):
-    if abs(image.width / image.height - 720 / 1280) > 0.005:
+    height, width = image.shape[:2]
+    if abs(width / height - 720 / 1280) > 0.005:
         return None
     # Only the analysis copy is normalized; saved ADB frames remain untouched.
-    if image.size != (720, 1280):
-        image = image.resize((720, 1280), Image.Resampling.LANCZOS)
-    frame = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
+    frame = cv2.resize(image, (720, 1280), interpolation=cv2.INTER_LANCZOS4) if (width, height) != (720, 1280) else image
     roi = frame[125:255, 512:680]
     blue, green, red = cv2.split(template)
     mask = np.where((green.astype(int) > red.astype(int) + 20) & (green.astype(int) > blue.astype(int) + 20), 0, 255).astype("uint8")
@@ -47,10 +44,10 @@ def health_score(image, template):
 
 
 def skip_score(image, templates):
-    if abs(image.width / image.height - 720 / 1280) > 0.005:
+    height, width = image.shape[:2]
+    if abs(width / height - 720 / 1280) > 0.005:
         return None
-    image = image.resize((720, 1280), Image.Resampling.LANCZOS)
-    frame = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
+    frame = cv2.resize(image, (720, 1280), interpolation=cv2.INTER_LANCZOS4) if (width, height) != (720, 1280) else image
     roi = frame[720:840, 590:720]
     scores = []
     for template in templates:
@@ -159,7 +156,7 @@ def main():
                     "samples": samples,
                     "frames_queued": captured,
                     "last_frame_time": time.time(),
-                    "native_size": list(image.size),
+                    "native_size": [image.shape[1], image.shape[0]],
                     "health_score": score,
                     "skip_score": skip,
                     "battle_hint": battle,
@@ -173,7 +170,7 @@ def main():
                 was_battle = battle
                 failures = 0
                 if args.once:
-                    print(f"尺寸: {image.size}; health_score={score}; battle_hint={battle}", flush=True)
+                    print(f"尺寸: {status['native_size']}; health_score={score}; battle_hint={battle}", flush=True)
                     reason = "once"
                     break
                 if time.monotonic() - last_battle > args.idle_timeout:

@@ -74,7 +74,11 @@ class ProduceChooseIdolAuto(CustomRecognition):
             logger.info(f"识别到歌曲名称: {recognized_song}，相似度: {song_score:.2f}")
 
         if name_score >= self.SIMILARITY_THRESHOLD and song_score >= self.SIMILARITY_THRESHOLD:
-            return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "识别偶像卡成功"})
+            return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={
+                "detail": "识别偶像卡成功", "observed_idol": recognized_name, "observed_song": recognized_song,
+                "configured_idol": idol_name, "configured_song": song_name,
+                "idol_similarity": name_score, "song_similarity": song_score,
+            })
         else:
             logger.debug(f"识别偶像卡失败，偶像相似度: {name_score:.2f}，歌曲相似度: {song_score:.2f}")
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "识别偶像卡失败"})

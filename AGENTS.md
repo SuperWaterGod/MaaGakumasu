@@ -67,7 +67,9 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 ## 目录职责
 
 - `agent/`：Python 自定义逻辑扩展，供 MaaFramework 的 Custom recognition/action 调用。
-- `agent/custom/action/produce.py`：自动培育事件、商店、选项、出牌等自定义动作逻辑，包括 `ProduceChooseEventBase`、事件优先级与保底选择、试镜难度降低，以及 `ProduceCardsAuto` 的出牌与 15 秒兜底逻辑。
+- `agent/custom/action/produce.py`：MaaFramework 培育动作入口，显式导入注册事件、出牌、选项动作，并处理奖励领取的框架适配；注册名称与流水线保持一致。
+- `agent/produce/`：培育业务模块。`events.py` 管理事件选择，`battle.py` 管理出牌/饮料/15 秒兜底，`options.py` 管理工作/属性/试镜/饮料保留等选项；`catalog.py` 统一技能卡、饮料与 P 道具查库；`rewards.py` 聚合奖励预览、身份缓存和后台读取；`capture.py` 管理异步证据保存与后台进程，`sessions.py` 管理整轮生命周期及 sinks；`state.py` 读取战斗 HUD；`analysis.py` 执行后台识别与路线分析；`console.py` 统一出牌/奖励日志及库效果文案。
+- `agent/utils/`：仅放通用基础设施，当前为日志和 MaaFramework 图像接口；培育专用业务不得继续散放在此。
 - `assets/resource/base/pipeline/`：MaaFramework 任务流水线。自动培育通用核心逻辑在 `Produce.json`，NIA 相关流程在 `ProduceNIA.json`，共用节点在 `ProduceUtils.json`。
 - `assets/resource/base/image/` 或相邻资源目录：模板匹配、图像识别所需素材。
 - `assets/data/`：结构化数据，例如偶像卡片数据 `idols_cards.json`。
@@ -83,7 +85,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 ## 开发环境
 
 - Python 版本：`>=3.12`。
-- Python 依赖：`maafw`、`loguru`、`Pillow`。
+- Python 运行依赖：`maafw`、`loguru`（NumPy 随 maafw 提供）；图像编解码与缩放使用 MaaFramework。维护工具可按需使用 Pillow。
 - 可选开发依赖：`pytest>=7.0`、`ruff>=0.1.0`。
 - Node 侧仅用于工具链，当前 `package.json` 包含 `prettier-plugin-multiline-arrays`。
 - Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源版本与公告已更新为 `v1.5.2`，发版入口为 `assets/interface.json`。
@@ -110,6 +112,16 @@ python tools/ci/check_resource.py ./assets/resource/base/
 - Markdown 文档没有强制 lint 配置（`docs/.markdownlint.yaml` 已删除），保持与现有文档一致的简洁风格；根目录 `AGENTS.md` 主要服务代理协作，优先清晰准确。
 - 修改 JSON、JSONC 或流水线文件时保持原有排序、注释风格和缩进风格；不要做无关格式化。
 - 新增用户可见文案时优先使用中文；涉及游戏内名称时保留日文原名，并在已有数据结构支持时补充中文字段。
+
+### 模块组织与拆分规范
+
+- 先找所属业务和现有模块，再决定是否新建文件。培育业务统一归入 `agent/produce/`；`custom/` 保留框架入口及直接调用 Maa 的适配逻辑，`utils/` 只放可跨业务使用的基础设施。维护 CLI 放在 `tools/`，运行证据和临时脚本放在按任务归档的 `debug/` 子目录。
+- 按实际职责、调用关系和生命周期划分文件，保持同类功能的尺度一致。事件策略、实时输入控制、证据写盘、会话生命周期、离线识别与日志展示可独立；不按每个函数、数据类型、常量、单个条件或卡牌拆文件。奖励的预览、缓存和读取一起维护，所有奖励类型一起查库，出牌和奖励日志一起维护。
+- 单一调用方的短辅助逻辑优先放回所属模块。约 100 行以下且没有独立外部接口的辅助文件，新增前应先考虑合并；不得为了“区分职责”创建只有几个函数或几行代码的碎片文件。包声明、独立 CLI、框架入口或被多处调用的原生接口可保留短文件，但须有真实接口或复用需求。
+- 大文件出现互不相关的职责、跨生命周期状态或难以单独验证的逻辑时再拆；超过约 700 行时检查是否有清晰的拆分边界。行数是检查提示，不是硬指标，不为凑行数合并不相关代码或拆散同一流程。
+- 同一业务使用统一的包导入。只有脚本入口为内置 Python 设置一次 `agent/` 搜索路径；内部模块不各自修改 `sys.path`，不保留“相对导入失败就换裸模块名”的双重导入。包 `__init__.py` 保持轻量，后台导入分析模块不得自动注册输入动作或安装 sinks。
+- 移动/合并模块时一并更新导入、框架注册入口、后台进程启动路径、源码版本指纹、维护 CLI 和文档。迁移完成后清除旧源码及对应旧字节码，不用一串空转发文件保留内部旧布局；确有外部兼容契约时才保留适配入口并说明原因。
+- 结构整理优先保留既有行为、流水线注册名称、参数、事件和派生数据 schema。验证普通包导入、脚本直接启动、内置 Python/AgentServer 和历史数据读取；同步 beta 时做目标路径检查、备份与 SHA 核对，禁止通过启动客户端完成复制。
 
 ## MaaFramework 流水线规则
 

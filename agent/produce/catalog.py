@@ -1,10 +1,12 @@
-"""Conservative OCR-to-catalog matching. Preserve upgrade ambiguity and raw DSL."""
+"""Skill cards, drinks and P items: identity lookup and structured reference data."""
 
+import copy
 import json
 import hashlib
 import unicodedata
 from difflib import SequenceMatcher
 from pathlib import Path
+from collections import defaultdict
 
 
 def normalize_name(text):
@@ -166,3 +168,123 @@ class SkillCardCatalog:
                 status="matched", card_id=result["database_card_id"], upgrade_status="visible_catalog_variant", effect_resolution="catalog_reference_only"
             )
         return result
+
+
+def clean(text):
+    return unicodedata.normalize("NFKC", text).strip()
+
+
+class RewardCatalog:
+    def __init__(self, skills, items_path=None):
+        self.skills = skills
+        self.index = defaultdict(list)
+        self.ids = {}
+        self.card_names = {}
+        self.item_sha256 = None
+        self.item_source = None
+        self.item_error = None
+        self._skill_cache = {}
+        for card in skills.cards:
+            self._add("skill_card", card, [card["name"], *card.get("aliases", [])])
+        for base, plus, card in skills.entries:
+            self.card_names[base + "+" * plus] = card["name"]
+            self.index[base + "+" * plus].append(("skill_card", card))
+        if items_path and Path(items_path).exists():
+            try:
+                raw = Path(items_path).read_bytes()
+                items = json.loads(raw)
+                if items["source"]["revision"] != skills.source["revision"]:
+                    raise ValueError("Reward item and skill snapshots differ")
+                for table, kind in (("drinks", "drink"), ("p_items", "p_item")):
+                    for row in items[table]:
+                        names = [row["name"], *row.get("aliases", [])]
+                        if row.get("upgraded") and not row["name"].endswith("+"):
+                            names.append(row["name"] + "+")
+                        self._add(kind, row, names)
+                self.item_sha256 = hashlib.sha256(raw).hexdigest()
+                self.item_source = items["source"]
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                self.item_error = str(exc)
+                # Keep skills operational if the optional item snapshot is invalid.
+                self.index = defaultdict(list, {key: [(kind, row) for kind, row in values if kind == "skill_card"]
+                                                for key, values in self.index.items()})
+                self.ids = {key: value for key, value in self.ids.items() if value[0] == "skill_card"}
+
+    @property
+    def hashes(self):
+        return {"skill_cards": self.skills.sha256, "reward_items": self.item_sha256}
+
+    def _add(self, kind, row, names):
+        key = f"{kind}_{row['id']:04d}"
+        if key in self.ids:
+            raise ValueError("Duplicate reward catalog id")
+        self.ids[key] = (kind, row)
+        for name in names:
+            self.index[normalize_name(name)].append((kind, row))
+
+    @staticmethod
+    def dsl(kind, row):
+        if kind == "skill_card":
+            return {key: row.get(key, "") for key in ("conditions", "cost", "actions", "limit", "effects")}
+        return {"conditions": "", "cost": "", "actions": row.get("actions", "") if kind == "drink" else "",
+                "limit": "", "effects": row.get("effects", "") if kind == "p_item" else ""}
+
+    def match(self, text, confidence=1.0):
+        normalized = normalize_name(text)
+        rows = {(kind, row["id"]): (kind, row) for kind, row in self.index.get(normalized, [])}
+        # Some upstream item variants omit '+' in their name. Apply the explicit
+        # upgraded field instead of arbitrarily selecting the first duplicate.
+        if len(rows) > 1:
+            rows = {key: value for key, value in rows.items() if bool(value[1].get("upgraded")) == normalized.endswith("+")}
+        if confidence < .65 or len(rows) != 1:
+            if normalized.endswith("++") and normalized.rstrip("+") + "+" in self.card_names:
+                identity = self.skills.match(text, confidence)
+                if identity.get("database_card_id"):
+                    return {**identity, "item_kind": "skill_card", "catalog_id": identity["database_card_id"], "needs_full_ocr": True}
+            return {**self.skills.match(""), "observed_name": text, "item_kind": "other_or_unknown", "catalog_id": None,
+                    "unknown_reason": "low_name_confidence" if confidence < .65 else "ambiguous_or_missing_reward_name", "needs_full_ocr": True}
+        kind, row = next(iter(rows.values()))
+        if kind == "skill_card":
+            name = self.card_names.get(normalized, row["name"])
+            if name not in self._skill_cache:
+                self._skill_cache[name] = self.skills.match(name)
+            identity = copy.deepcopy(self._skill_cache[name])
+            identity.update(observed_name=text, normalized_name=normalized, ocr_confidence=confidence)
+        else:
+            identity = {"status": "matched", "observed_name": text, "normalized_name": normalized, "ocr_confidence": confidence,
+                        "database_name": row["name"], "source_id": row["id"], "database_item_id": f"{kind}_{row['id']:04d}",
+                        "upgraded": row.get("upgraded", False), "plan": row.get("plan"), "mode": row.get("mode"),
+                        "match_method": "exact", "customization": None}
+        dsl = self.dsl(kind, row)
+        available = bool(dsl["actions"] or dsl["effects"])
+        identity.update(item_kind=kind, catalog_id=f"{kind}_{row['id']:04d}", reference_effect_dsl=dsl,
+                        effective_effect_dsl=copy.deepcopy(dsl) if available else None,
+                        effect_resolution="catalog_default" if available else "catalog_effect_missing", needs_full_ocr=not available,
+                        effective_effect_confirmed=False)
+        return identity
+
+    def match_tokens(self, tokens):
+        ordered = sorted(tokens, key=lambda token: (token["box"][1], token["box"][0]))
+        choices = [self.match(token["text"], token.get("confidence", 0)) for token in ordered]
+        if len(ordered) > 1:
+            choices.append(self.match("".join(token["text"] for token in ordered), min(t.get("confidence", 0) for t in ordered)))
+        matches = {choice["catalog_id"]: choice for choice in choices if choice.get("catalog_id")}
+        return next(iter(matches.values())) if len(matches) == 1 else self.match(" ".join(t["text"] for t in ordered), 0)
+
+    def by_id(self, catalog_id):
+        found = self.ids.get(catalog_id)
+        if not found:
+            return self.match("")
+        kind, row = found
+        name = row["name"]
+        if row.get("upgraded") and not name.endswith("+"):
+            name += "+"
+        identity = self.match(name)
+        return identity if identity.get("catalog_id") == catalog_id else self.match("")
+
+
+def catalog_effects(identity):
+    dsl = identity.get("effective_effect_dsl")
+    return {"source": "catalog_default", "catalog_id": identity.get("catalog_id"), "dsl": copy.deepcopy(dsl),
+            "complete": bool(dsl), "current_effect_confirmed": False,
+            "assumption": "standard_catalog_variant; customization_and_temporary_changes_not_confirmed"}

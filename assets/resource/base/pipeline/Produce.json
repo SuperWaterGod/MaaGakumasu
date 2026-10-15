@@ -983,7 +983,7 @@
             }
         },
         "focus": {
-            "Node.Action.Succeeded": "已领取第一项奖励"
+            "Node.Action.Succeeded": "已选择第一项奖励"
         },
         "next": [
             "ProduceChooseConfirm"
@@ -1017,7 +1017,7 @@
             }
         },
         "focus": {
-            "Node.Action.Succeeded": "已领取推荐奖励"
+            "Node.Action.Succeeded": "已选择推荐奖励"
         },
         "next": [
             "ProduceChooseConfirm"
@@ -1050,7 +1050,7 @@
             }
         },
         "focus": {
-            "Node.Action.Succeeded": "已领取活动推荐奖励"
+            "Node.Action.Succeeded": "已选择活动推荐奖励"
         },
         "next": [
             "ProduceChooseConfirm"
@@ -1095,9 +1095,33 @@
             }
         },
         "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ProduceRewardConfirm"
+            }
+        }
+    },
+    "ProduceRewardReceive": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "roi": [
+                    0,
+                    980,
+                    720,
+                    300
+                ],
+                "template": [
+                    "produce/cards_get.png"
+                ]
+            }
+        },
+        "action": {
             "type": "Click",
             "param": {}
-        }
+        },
+        "pre_delay": 0,
+        "post_delay": 0
     },
     "ProduceChooseStrengthenFlag": {
         "recognition": {
