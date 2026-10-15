@@ -11,8 +11,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-# 命令行工具和内置 Agent 均从 agent/ 根目录导入业务包。
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agent"))
+# 内置 Python 不自动加入脚本目录，在实验入口设置仓库与 Agent 导入路径。
+sys.path[:0] = [str(Path(__file__).resolve().parents[2]), str(Path(__file__).resolve().parents[2] / "agent")]
 from utils.image_io import decode_image
 from produce.capture import DecisionCapture
 
@@ -193,7 +193,7 @@ def main():
             status.update(status="stopped", stop_reason=reason)
             status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8")
         try:
-            from report_decision_capture import build_report
+            from research.produce.report_decision_capture import build_report
 
             build_report(capture.directory)
         except Exception as exc:

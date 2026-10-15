@@ -8,7 +8,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from collections import Counter
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agent"))
+sys.path[:0] = [str(Path(__file__).resolve().parents[2]), str(Path(__file__).resolve().parents[2] / "agent")]
 from utils.image_io import read_image
 from produce.catalog import SkillCardCatalog
 from produce.rewards import DETAIL_ROIS, RewardReader, reward_preview_observation

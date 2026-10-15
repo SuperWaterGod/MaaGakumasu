@@ -6,13 +6,14 @@ import hashlib
 import argparse
 import tempfile
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import Counter
 
-if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agent"))
+# 内置 Python 不自动添加脚本目录，在工具入口统一设置仓库与 Agent 导入路径。
+sys.path[:0] = [str(Path(__file__).resolve().parents[2]), str(Path(__file__).resolve().parents[2] / "agent")]
 
 from produce.settlement import evaluation_check
+from research.produce.produce_reporting import build_corpus, render_audit, enrich_report
 
 
 def read_json(path):
@@ -31,7 +32,7 @@ def refresh_settlement(run: Path, resource: Path, vision=None):
     event_bytes = (run / "events.jsonl").read_bytes()
     events = [event for line in event_bytes.decode("utf-8").splitlines()
               if (event := json.loads(line))["kind"] in ("settlement_observation", "exam_result_observation")]
-    code_root = Path(__file__).resolve().parents[1] / "agent"
+    code_root = Path(__file__).resolve().parents[2] / "agent"
     provenance = {
         "events_sha256": hashlib.sha256(event_bytes).hexdigest(),
         "code_sha256": {name: hashlib.sha256((code_root / name).read_bytes()).hexdigest()
@@ -93,7 +94,7 @@ def refresh_settlement(run: Path, resource: Path, vision=None):
     return status, vision
 
 
-def build_report(session_directory: Path, capture_root: Path | None = None):
+def build_report(session_directory: Path, capture_root: Path | None = None, output_directory: Path | None = None):
     directory = session_directory.resolve()
     session = read_json(directory / "session.json")
     capture_root = capture_root or directory.parent.parent / "decision_capture"
@@ -107,21 +108,44 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
     observed_hand_cards = {}
     segments = []
     gaps = []
+    records = []
+    seen_events = set()
+    seen_runs = set()
     for segment in session["segments"]:
         run_id = segment["run_id"]
+        if run_id in seen_runs:
+            gaps.append({"run_id": run_id, "reason": "duplicate_segment"})
+            continue
+        seen_runs.add(run_id)
         run = (capture_root / run_id).resolve()
         if not run.is_relative_to(capture_root.resolve()):
             raise ValueError("Segment escaped capture root")
         if not (run / "events.jsonl").exists():
             gaps.append({"run_id": run_id, "reason": "missing_events"})
             continue
-        manifest = read_json(run / "manifest.json")
+        try:
+            manifest = read_json(run / "manifest.json")
+        except (OSError, ValueError) as exc:
+            gaps.append({"run_id": run_id, "reason": "invalid_manifest", "error": str(exc)})
+            manifest = {}
         derived = {}
         # 每个分段只使用一个分析版本，并在报告中记录所选版本。
         statuses = sorted((run / "derived/card_identity").glob("*/status.json"), key=lambda path: path.stat().st_mtime)
-        status = read_json(statuses[-1]) if statuses else None
-        if statuses and (statuses[-1].parent / "index.jsonl").exists():
-            for line in (statuses[-1].parent / "index.jsonl").read_text(encoding="utf-8").splitlines():
+        selected_status = None
+        status = None
+        for candidate in reversed(statuses):
+            try:
+                candidate_status = read_json(candidate)
+            except (OSError, ValueError) as exc:
+                gaps.append({"run_id": run_id, "reason": "invalid_analysis_status", "error": str(exc)})
+                continue
+            if selected_status is None or candidate_status.get("status") == "completed":
+                selected_status = candidate
+                status = candidate_status
+            if candidate_status.get("status") == "completed":
+                break
+        if selected_status and (selected_status.parent / "index.jsonl").exists():
+            for line in (selected_status.parent / "index.jsonl").read_text(encoding="utf-8").splitlines():
                 try:
                     link = json.loads(line)
                     result = None
@@ -186,11 +210,21 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
             except json.JSONDecodeError:
                 gaps.append({"run_id": run_id, "reason": "invalid_event_json", "line": number})
                 continue
-            if event.get("session_id") != session["session_id"]:
+            entry = {"event": event, "derived": derived.get(event["event_id"]),
+                     "source": {"run_id": run_id, "events_path": str(run / "events.jsonl"), "line": number}}
+            records.append(entry)
+            if event.get("session_id") != session["session_id"] or event.get("run_id") != run_id:
                 gaps.append({"event_id": event["event_id"], "reason": "session_id_mismatch"})
                 continue
+            if event["event_id"] in seen_events:
+                gaps.append({"event_id": event["event_id"], "reason": "duplicate_event_id"})
+                continue
+            seen_events.add(event["event_id"])
+            result_hash = ((entry["derived"] or {}).get("observation") or {}).get("source_frame_sha256")
+            if result_hash and result_hash != event.get("frame", {}).get("sha256"):
+                gaps.append({"event_id": event["event_id"], "reason": "analysis_frame_mismatch"})
+                entry["derived"] = None
             counts[event["kind"]] += 1
-            entry = {"event": event, "derived": derived.get(event["event_id"])}
             observation = (entry["derived"] or {}).get("observation") or {}
             if event["kind"] == "reward_page_start":
                 reward_pages[event["event_id"]] = {
@@ -339,17 +373,23 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
         },
         "gaps": gaps,
         "missing_route_frames": missing_frames,
-        "complete": bool(
-            session["start_observed"]
-            and session["settlement_observed"]
-            and session["status"] == "ended"
-            and not gaps
-            and not missing_frames
-            and all(s["manifest"]["status"] == "closed" and s["manifest"].get("events_dropped", 0) == 0 for s in segments)
-        ),
         "coverage_scope": "pipeline_events; candidate_inventory_and_game_action_confirmation_remain_partial",
     }
-    (directory / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    output = (output_directory or directory).resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    report["report_path"] = str(output / "report.md")
+    report["report_provenance"] = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "session_path": str(directory / "session.json"),
+        "session_sha256": hashlib.sha256((directory / "session.json").read_bytes()).hexdigest(),
+        "reader_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "audit_sha256": hashlib.sha256(Path(__file__).with_name("produce_reporting.py").read_bytes()).hexdigest(),
+        "events_sha256": {item["run_id"]: hashlib.sha256((capture_root / item["run_id"] / "events.jsonl").read_bytes()).hexdigest()
+                          for item in segments},
+        "device_input_sent": False,
+    }
+    enrich_report(report, records, directory, capture_root)
+    (output / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     bindings = session["bindings"]
     lines = [
         "# 培育会话采集报告",
@@ -359,7 +399,7 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
         f"- 配置偶像/歌曲：`{json.dumps(bindings['configured_idol'], ensure_ascii=False)}`",
         f"- 剧本/难度：`{bindings['scenario']}` / `{bindings['difficulty']}`；偶像/玩家等级未确认",
         f"- 分段：{len(segments)}；出牌调用：{len(battles)}；路线节点操作：{len(routes)}",
-        f"- 开始已观察：{session['start_observed']}；结算已观察：{session['settlement_observed']}；事件覆盖完整：{report['complete']}",
+        f"- 开始已观察：{session['start_observed']}；结算已观察：{session['settlement_observed']}；整轮数据完整：{report['complete']}",
         f"- 关联缺口：{len(gaps)}；路线缺帧：{len(missing_frames)}",
         "",
         "配置身份与实际 OCR 身份分开保存。牌组仅有可见观测，尚未确认完整库存；路线候选不属于已持有牌。",
@@ -400,7 +440,7 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
                 lines.append(f"  原因：`{failure.get('candidate_id')}` / `{failure.get('reason')}`；诊断截图和分项证据见 report.json。")
     lines.extend(["", "## 结算观察", ""])
     lines.append("- 汇总：" + "；".join(f"{field}={entry['value']}" for field, entry in final_settlement.items()))
-    lines.append(f"- 结算字段齐全：{settlement_complete}；事件覆盖完整不代表结算数值全部读出。粉丝投票数、考试分数不作为最终评价分数。")
+    lines.append(f"- 结算字段齐全：{settlement_complete}；结算画面已观察不代表数值全部读出。粉丝投票数、考试分数不作为最终评价分数。")
     lines.append(f"- 最终粉丝投票数：{final_fan_votes['value']}；公式校验：{formula_check['status']}；计算值：{formula_check['calculated']}")
     if session["bindings"]["scenario"] == "初":
         lines.append(f"- 最终考试：{final_exam['score']['value']} 分；名次：{final_exam['place']['value']}；最终三维不重复增加名次奖励。")
@@ -410,8 +450,9 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
         lines.append(f"- `{entry['event']['event_id']}`：" + "；".join(f"{key}={value['value']}" for key, value in fields.items()))
     if not settlements:
         lines.append("- 未采集到结算画面。")
+    lines.extend(render_audit(report))
     lines.extend(["", "版本、文件 SHA-256、各分段清单、成本 OCR 证据和全部关联事件见 report.json。", ""])
-    (directory / "report.md").write_text("\n".join(lines), encoding="utf-8")
+    (output / "report.md").write_text("\n".join(lines), encoding="utf-8")
     return report
 
 
@@ -419,9 +460,25 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("directory", type=Path, help="debug/produce_sessions/<session_id>")
     parser.add_argument("--capture-root", type=Path)
+    parser.add_argument("--all", action="store_true", help="汇总目录下所有 session.json，生成单轮报告和多轮统计")
+    parser.add_argument("--output", type=Path, help="派生报告输出目录；--all 时必填")
     parser.add_argument("--refresh-settlement", action="store_true", help="Re-OCR saved ending frames; never sends device input")
     parser.add_argument("--resource", type=Path, help="Resource bundle used for settlement OCR")
     args = parser.parse_args()
+    if args.all:
+        if not args.output:
+            parser.error("--all requires --output")
+        if args.refresh_settlement:
+            parser.error("--all 不执行 OCR；如需补识别，请先对单个会话运行 --refresh-settlement")
+        reports, failures = [], []
+        for path in sorted(args.directory.glob("*/session.json")):
+            try:
+                reports.append(build_report(path.parent, args.capture_root, args.output / path.parent.name))
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                failures.append({"session_path": str(path), "error": str(exc)})
+        summary = build_corpus(reports, args.output, failures)
+        print(json.dumps({"summary": summary["summary"], "failed_sessions": failures}, ensure_ascii=False))
+        return
     if args.refresh_settlement:
         if not args.resource:
             parser.error("--refresh-settlement requires --resource")
@@ -432,7 +489,7 @@ def main():
             if not run.is_relative_to(capture_root.resolve()):
                 raise ValueError("Segment escaped capture root")
             _, vision = refresh_settlement(run, args.resource, vision)
-    report = build_report(args.directory, args.capture_root)
+    report = build_report(args.directory, args.capture_root, args.output)
     print(
         json.dumps(
             {

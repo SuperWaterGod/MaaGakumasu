@@ -1,4 +1,4 @@
-"""从 HUD 原图裁剪像素，并遮罩变化区域和背景，生成 MaaFramework 模板。"""
+"""从培育实验 HUD 原图裁剪像素，遮罩变化区域和背景，生成 MaaFramework 模板。"""
 
 import json
 import hashlib

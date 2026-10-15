@@ -1,0 +1,215 @@
+"""培育报告离线回归：审计异常、分母与证据关联，使用合成素材。"""
+import sys
+import json
+import hashlib
+import tempfile
+import unittest
+from copy import deepcopy
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path[:0] = [str(ROOT), str(ROOT / 'agent')]
+from research.produce.produce_reporting import build_corpus
+from research.produce.report_produce_session import build_report
+
+
+class ReportingTest(unittest.TestCase):
+    def setUp(self):
+        temporary_root = ROOT / 'debug/research/produce/tests'
+        temporary_root.mkdir(parents=True, exist_ok=True)
+        temporary = tempfile.TemporaryDirectory(prefix='reporting_', dir=temporary_root)
+        self.base = Path(temporary.name).resolve()
+        assert self.base.parent == temporary_root.resolve()
+        self.addCleanup(temporary.cleanup)
+        self.capture = self.base / 'decision_capture'
+        self.directory = self.base / 'produce_sessions/s1'
+        self.directory.mkdir(parents=True)
+        self.bindings = {'scenario': 'NIA', 'difficulty': ['PRO'], 'configured_idol': {'idol_name': '偶像', 'song_name': '歌曲'}, 'deck': {}}
+        self.session = {'session_id': 's1', 'schema_version': 2, 'bindings': self.bindings, 'segments': [],
+                        'started_at': '2000-01-01T00:00:00+00:00', 'gameplay_started_at': '2000-01-01T00:00:00+00:00',
+                        'start_observed': True, 'settlement_observed': True, 'status': 'ended',
+                        'stop_reason': 'returned_home', 'ended_at': '2000-01-01T00:01:00+00:00'}
+        self.events = []
+        self.results = {}
+        self.add('produce_session_start', bindings=self.bindings)
+        self.add('produce_gameplay_entry', fresh_start=True)
+        self.add('produce_event_choice', selected={'name': '休息'}, candidates=[{'休息': [0, 0, 1, 1]}], frame=True)
+        self.add('produce_event_input_result', decision_id='run:3', framework_action_succeeded=True)
+        event = self.add('settlement_observation', frame=True)
+        self.results[event['event_id']] = {'source_frame_sha256': event['frame']['sha256'],
+            'settlement': {k: {'value': v} for k, v in {'score': 12000, 'rank': 'S', 'Vo': 800, 'Da': 900, 'Vi': 1000}.items()}}
+        self.add('produce_session_end', terminal=True, reason='returned_home')
+
+    def add(self, kind, **data):
+        seq = len(self.events) + 1
+        event = {'kind': kind, 'seq': seq, 'event_id': f'run:{seq}', 'run_id': 'run', 'segment_id': 'run', 'session_id': 's1',
+                 'time': f'2000-01-01T00:00:{seq:02d}+00:00', **data}
+        if data.get('frame') is True:
+            image = kind.encode()
+            digest = hashlib.sha256(image).hexdigest()
+            path = self.capture / 'run/frames' / (digest + '.png')
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(image)
+            event['frame'] = {'path': f'frames/{digest}.png', 'sha256': digest}
+        self.events.append(event)
+        return event
+
+    def write(self, second=False):
+        run = self.capture / 'run'
+        run.mkdir(parents=True, exist_ok=True)
+        manifest = {'run_id': 'run', 'status': 'closed', 'events_written': len(self.events), 'events_dropped': 0,
+                    'started_at': self.session['started_at'], 'ended_at': self.session['ended_at'],
+                    'metadata': {'session_id': 's1', 'bindings': self.bindings, 'entry': 'ProduceEntryNIA', 'version_files': {'agent.py': 'hash'}}}
+        (run / 'manifest.json').write_text(json.dumps(manifest), encoding='utf8')
+        (run / 'events.jsonl').write_text('\n'.join(json.dumps(e) for e in self.events) + '\n', encoding='utf8')
+        derived = run / 'derived/card_identity/old'
+        derived.mkdir(parents=True, exist_ok=True)
+        (derived / 'status.json').write_text(json.dumps({'status': 'completed', 'analysis_id': 'old'}), encoding='utf8')
+        links = []
+        for n, (event_id, result) in enumerate(self.results.items()):
+            path = derived / f'{n}.json'
+            path.write_text(json.dumps(result), encoding='utf8')
+            links.append({'event_id': event_id, 'result': path.relative_to(run).as_posix()})
+        (derived / 'index.jsonl').write_text('\n'.join(json.dumps(link) for link in links), encoding='utf8')
+        self.session['segments'] = [{'run_id': 'run'}] + ([{'run_id': 'run'}] if second else [])
+        (self.directory / 'session.json').write_text(json.dumps(self.session), encoding='utf8')
+        return build_report(self.directory, self.capture)
+
+    def codes(self, report):
+        return {item['code'] for item in report['integrity']['issues']}
+
+    def test_normal_and_trace(self):
+        report = self.write()
+        self.assertTrue(report['complete'])
+        self.assertEqual(report['integrity']['state'], 'normal_completion')
+        choice = next(r for r in report['timeline'] if r['kind'] == 'produce_event_choice')
+        self.assertEqual(choice['evidence']['line'], 3)
+        self.assertTrue(Path(choice['evidence']['frame_path']).exists())
+        self.assertIsNone(report['uncollected']['shop_cost']['value'])
+
+    def test_duplicate_event_and_segment(self):
+        self.events.append(deepcopy(self.events[2]))
+        report = self.write(second=True)
+        self.assertIn('duplicate_event', self.codes(report))
+        self.assertIn('duplicate_segment', self.codes(report))
+        self.assertEqual(report['event_counts']['produce_event_choice'], 1)
+        self.assertFalse(report['complete'])
+
+    def test_foreign_event(self):
+        self.events[2]['session_id'] = 'other'
+        report = self.write()
+        self.assertIn('foreign_event', self.codes(report))
+        self.assertNotIn('run:3', report['produce_events'])
+
+    def test_reward_duplicate_receive_and_unique_denominator(self):
+        page = self.add('reward_page_start', frame=True, selected_candidate_id='a', confirmation_id='run:3',
+                        layout={'candidates': [{'candidate_id': 'a'}, {'candidate_id': 'b'}]})
+        for candidate in ('a', 'a', 'b'):
+            preview = self.add('reward_candidate_preview', frame=True, reward_page_id=page['event_id'], candidate={'candidate_id': candidate})
+            self.results[preview['event_id']] = {'identity_verified': True, 'detail_verified': True}
+        self.add('reward_selection_restored', reward_page_id=page['event_id'], selected_candidate_id='a', verified=True)
+        self.add('reward_page_end', reward_page_id=page['event_id'], candidate_previews_complete=True)
+        for _ in range(2):
+            self.add('reward_receive_input', reward_page_id=page['event_id'], selected_candidate_id='a')
+        report = self.write()
+        self.assertIn('duplicate_reward_receive', self.codes(report))
+        self.assertEqual(report['recognition']['reward_identity'], {'success': 2, 'total': 2, 'rate': 1})
+
+    def test_missing_and_conflicting_settlement(self):
+        self.results['run:5']['settlement']['score']['value'] = None
+        report = self.write()
+        self.assertEqual(report['integrity']['settlement_missing_reasons']['score'], 'not_readable_in_saved_frames')
+        self.assertIsNone(report['final_settlement']['score']['value'])
+        event = self.add('settlement_observation', frame=True)
+        self.results['run:5']['settlement']['score']['value'] = 12000
+        self.results[event['event_id']] = {'settlement': {'score': {'value': 13000}}}
+        report = self.write()
+        self.assertIn('settlement_conflicting_readings', self.codes(report))
+        self.assertIsNone(report['final_settlement']['score']['value'])
+
+    def test_frame_hash_and_stale_analysis(self):
+        self.results['run:5']['source_frame_sha256'] = 'other'
+        report = self.write()
+        self.assertIn('analysis_frame_mismatch', self.codes(report))
+        self.assertIsNone(report['final_settlement']['score']['value'])
+        Path(report['timeline'][2]['evidence']['frame_path']).write_bytes(b'changed')
+        report = self.write()
+        self.assertIn('frame_integrity', self.codes(report))
+
+    def test_preparation_excluded_and_null_statistics(self):
+        self.events = self.events[:1] + self.events[-1:]
+        self.events[1]['seq'] = 2
+        self.events[1]['event_id'] = 'run:2'
+        self.results = {}
+        report = self.write()
+        result = build_corpus([report, report], self.base / 'summary')
+        self.assertEqual(result['summary']['eligible_rounds'], 0)
+        self.assertIsNone(result['summary']['completion']['rate'])
+        self.assertIsNone(result['summary']['settlement']['score']['mean'])
+        self.assertEqual(result['duplicate_sessions_excluded'], ['s1'])
+
+    def test_skip_preparation(self):
+        self.session['start_observed'] = False
+        report = self.write()
+        self.assertEqual(report['integrity']['entry_mode'], 'skip_preparation')
+        self.assertFalse(report['complete'])
+
+    def test_legacy_reward_field_is_unevaluated(self):
+        page = self.add('reward_page_start', frame=True, selected_candidate_id='a', layout={'candidates': [{'candidate_id': 'a'}]})
+        preview = self.add('reward_candidate_preview', frame=True, reward_page_id=page['event_id'], candidate={'candidate_id': 'a'})
+        self.results[preview['event_id']] = {'detail_verified': True, 'observed_name': '旧版牌名'}
+        report = self.write()
+        self.assertIsNone(report['recognition']['reward_identity']['rate'])
+        self.assertEqual(report['recognition']['reward_identity']['total'], 0)
+        self.assertEqual(report['recognition']['reward_candidate_analysis']['total'], 1)
+
+    def test_cross_session_segment_reuse(self):
+        report = self.write()
+        other = deepcopy(report)
+        other['session']['session_id'] = 's2'
+        result = build_corpus([report, other], self.base / 'summary')
+        self.assertEqual(result['summary']['sessions'], 0)
+        self.assertEqual(result['shared_segments_excluded'], {'run': ['s1', 's2']})
+
+    def test_partial_new_analysis_does_not_hide_completed(self):
+        report = self.write()
+        new = self.capture / 'run/derived/card_identity/new'
+        new.mkdir()
+        (new / 'status.json').write_text(json.dumps({'status': 'failed', 'analysis_id': 'new'}), encoding='utf8')
+        report = build_report(self.directory, self.capture)
+        self.assertEqual(report['segments'][0]['analysis']['analysis_id'], 'old')
+        self.assertEqual(report['final_settlement']['score']['value'], 12000)
+
+    def test_resume_duration_and_fresh_start_contamination(self):
+        self.events[-1].update(terminal=False, reason='task_ended_without_home')
+        self.write()
+        second = self.capture / 'run2'
+        second.mkdir()
+        events = [
+            {'kind': 'produce_session_resume', 'continuity': 'explicit_resume_with_matching_configuration'},
+            {'kind': 'produce_gameplay_entry', 'fresh_start': False},
+            {'kind': 'produce_session_end', 'terminal': True, 'reason': 'returned_home'},
+        ]
+        for n, e in enumerate(events, 1):
+            e.update(seq=n, event_id=f'run2:{n}', run_id='run2', segment_id='run2', session_id='s1', time=f'2000-01-01T01:00:{n:02d}+00:00')
+        manifest = {'run_id': 'run2', 'status': 'closed', 'events_written': 3, 'events_dropped': 0,
+                    'started_at': '2000-01-01T01:00:00+00:00', 'ended_at': '2000-01-01T01:01:00+00:00',
+                    'metadata': {'session_id': 's1', 'bindings': self.bindings, 'entry': 'ProduceSkipPreparation', 'version_files': {'agent.py': 'hash'}}}
+        (second / 'manifest.json').write_text(json.dumps(manifest), encoding='utf8')
+        (second / 'events.jsonl').write_text('\n'.join(json.dumps(e) for e in events), encoding='utf8')
+        self.session['segments'] = [{'run_id': 'run'}, {'run_id': 'run2'}]
+        self.session['ended_at'] = manifest['ended_at']
+        (self.directory / 'session.json').write_text(json.dumps(self.session), encoding='utf8')
+        report = build_report(self.directory, self.capture)
+        self.assertEqual(report['integrity']['entry_mode'], 'interrupted_resume')
+        self.assertEqual(report['timing']['active_seconds'], 120)
+        self.assertEqual(report['timing']['wall_seconds'], 3660)
+        self.assertFalse(report['complete'])
+        events[1]['fresh_start'] = True
+        (second / 'events.jsonl').write_text('\n'.join(json.dumps(e) for e in events), encoding='utf8')
+        report = build_report(self.directory, self.capture)
+        self.assertIn('fresh_start_in_resume', self.codes(report))
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)
