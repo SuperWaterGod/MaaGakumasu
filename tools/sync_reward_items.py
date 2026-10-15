@@ -1,4 +1,4 @@
-"""Fetch pinned drink and P-item catalogs alongside the existing skill-card snapshot."""
+"""按照技能卡快照的固定版本同步饮料与 P 道具数据库。"""
 
 import json
 import hashlib
@@ -48,7 +48,7 @@ def main():
             raw = response.read()
         tables[key] = (json.loads(raw), hashlib.sha256(raw).hexdigest())
     database = build_database(tables, revision)
-    # Preserve the project's existing license file; verify its upstream contents.
+    # 保留项目已有许可证文件，并核对其上游内容。
     with urllib.request.urlopen(prefix + "LICENSE", timeout=30) as response:
         license_bytes = response.read()
     license_path = args.output.parent / "GAKUMAS_DATA_LICENSE.txt"

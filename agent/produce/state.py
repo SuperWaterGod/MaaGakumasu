@@ -1,4 +1,4 @@
-"""Read the battle HUD with native Maa OCR and data-driven green-mask templates."""
+"""使用 Maa 原生 OCR 和配置中的绿幕模板读取对局状态。"""
 
 import re
 import json
@@ -44,7 +44,7 @@ def number_field(raw, roi, *, maximum, percent=False, minimum_confidence=0.70):
 def buff_number(raw, roi, format_name):
     if format_name in ("integer", "percent"):
         return number_field(raw, roi, maximum=9999, percent=format_name == "percent")
-    # Maa occasionally reads the first katakana タ as the visually similar 夕.
+    # Maa 偶尔将开头的片假名「タ」误识为形近的「夕」。
     suffix = {"turns": r"(?:ターン|夕ーン|回合)", "times": r"(?:回|次)", "turns_after": r"(?:ターン|夕ーン)後|回合后|回合後"}[format_name]
     accepted = []
     for item in raw:
@@ -58,7 +58,7 @@ def buff_number(raw, roi, format_name):
 
 
 def number_views(views):
-    """Use readable numeric views while preserving disagreements as unknown."""
+    """合并可读数值视图，存在分歧时保留未知。"""
     values = {view["value"] for view in views if view["value"] is not None}
     if len(values) == 1:
         reading = max((view for view in views if view["value"] is not None), key=lambda view: view["confidence"])
@@ -77,10 +77,10 @@ def overlap_ratio(left, right):
 
 
 def player_score_roi(rgb):
-    """Locate the NIA player's wide white rank frame, independent of color.
+    """通过宽白色排名框定位 NIA 玩家，不依赖颜色。
 
-    Opponents can use colored or familiar portraits. Only a unique pair of
-    frame sides is accepted; colors and faces never select the player.
+    对手也可能使用彩色或相似头像；仅接受唯一的一对边框，
+    不通过颜色和角色头像判断玩家位置。
     """
     frame = rgb[10:156, 216:720].astype(int)
     white = (frame.min(axis=2) > 225) & (frame.max(axis=2) - frame.min(axis=2) < 30)
@@ -97,7 +97,7 @@ def player_score_roi(rgb):
 
 
 def held_card_fields(raw, roi):
-    """Parse only an explicit visible held-card counter, never infer zero."""
+    """只解析明确显示的保留卡计数，未显示时不推断为零。"""
     pairs = []
     for item in raw:
         text = unicodedata.normalize("NFKC", item["text"]).strip()
@@ -216,8 +216,8 @@ class BattleStateReader:
             unit_evidence = None
             family = group[0]["definition"].get("value_family")
             relatives = [hit for hit in group if family and hit["definition"].get("value_family") == family]
-            # Only explicitly registered glyph relatives can be separated by
-            # value units. Unrelated icon rivals retain their score competition.
+            # 只有明确登记为同源的图标才能通过数值单位区分，
+            # 其他不同图标仍按匹配分数竞争。
             if len({hit["definition"]["reading"]["format"] for hit in relatives}) > 1:
                 readings = []
                 for hit in relatives:
@@ -264,8 +264,8 @@ class BattleStateReader:
             if incompatible_unit and any(
                 re.search(incompatible_unit, unicodedata.normalize("NFKC", item["text"])) for view in views for item in view["raw_ocr"]
             ):
-                # A modifier may reuse the same base glyph. Its explicit unit is
-                # evidence against interpreting it as a base stack/duration.
+                # 效果修正可能复用基础图标；出现明确的修正单位时，
+                # 不能将其解释为基础层数或持续回合。
                 unknown.append(
                     {
                         "box": box,
@@ -304,8 +304,8 @@ class BattleStateReader:
                     "ocr_confidence": reading["confidence"],
                 }
             )
-        # Retain unclassified regions for new-flow material collection without
-        # asserting that every sampled region really contains a Buff.
+        # 保留未分类区域以便补充新机制素材，
+        # 不认定每个采样区域都包含 Buff。
         for slot in range(8):
             cy = round(263 + slot * 61.4)
             box = [14, cy - 30, 60, 60]
@@ -361,8 +361,8 @@ class BattleStateReader:
             return result
         upcoming, result["next_stance"] = self._single_icon(array, "stance_preview", errors)
         if entry["key"] == "none" and upcoming is None:
-            # A gray neutral badge alone can resemble a faded ordinary Buff.
-            # Confirm the independent non凡 preview before claiming this layout.
+            # 单独的灰色通常姿态图标可能与变暗的普通 Buff 相似。
+            # 先核验非凡流派独立的姿态预告，再确认该布局。
             result["stance"] = {**unknown_field("neutral_icon_without_anomaly_context"), "icon_evidence": result["stance"]["icon_evidence"]}
             result["hud_present"] = False
             return result
@@ -372,8 +372,8 @@ class BattleStateReader:
         result["full_power_charge"] = self._numeric_views(array, box, entry["charge_reading"], errors)
         if upcoming:
             result["transition_after_turns"] = self._numeric_views(array, upcoming["box"], upcoming["definition"]["reading"], errors)
-        # This line describes a pointer condition/threshold. It is not a counter
-        # of actual cumulative charge or actual stance changes.
+        # 该行只描述指针触发条件或阈值，
+        # 不表示实际累计全力值或姿态切换次数。
         roi = [104, 201, 210, 42]
         raw = self._ocr(array, roi, errors)
         texts = [item["text"] for item in raw if item["confidence"] >= 0.70 and re.search(r"変更|变更|變更|累計|累计|累計", item["text"])]
@@ -444,7 +444,7 @@ class BattleStateReader:
         state["buffs"], state["unknown_buffs"] = self._buffs(array, rgb, errors)
         state["anomaly"] = self._anomaly(array, errors, state["buffs"])
         state["stance"] = state["anomaly"]["stance"]["value"]
-        # Side lists can be scrolled or abbreviated. Absence is never an implicit zero.
+        # 侧边列表可能滚动或省略，未出现的状态不自动补零。
         state["buffs_incomplete_reason"] = "registered_visible_templates_only; hidden, faded and unregistered icons may be unparsed"
         return state
 

@@ -1,4 +1,4 @@
-"""Bounded, opt-in recording of observations and actions; never controls the game."""
+"""按配置和容量上限记录画面与动作，不控制游戏。"""
 
 import sys
 import json
@@ -93,8 +93,8 @@ class DecisionCapture:
             try:
                 lines = message.strip().splitlines()
                 if self._console_details and len(lines) > 1:
-                    # MFA reads one physical line per log item and renders it as
-                    # Markdown/HTML. Keep the entire details block in that item.
+                    # MFA 将每条物理日志行作为独立条目渲染，
+                    # 因此完整的 Markdown/HTML 折叠块必须保留在同一日志行中。
                     title = escape(lines[0])
                     body = "<br/>".join(escape(line) for line in lines[1:])
                     self._console(f"<details><summary>[{label}] {title}</summary><p>{body}</p></details>")
@@ -112,7 +112,7 @@ class DecisionCapture:
         return bool(self._console) and self._analysis_started and not self._analysis_finished
 
     def wait_for_console(self, event_id, timeout=3, cancelled=None):
-        """Drain the final operation at a battle boundary, never wait indefinitely."""
+        """在对局边界收取最后一次操作摘要，并限制等待时间。"""
         deadline = time.monotonic() + timeout
         with self._console_condition:
             while event_id not in self._console_events:
@@ -143,7 +143,8 @@ class DecisionCapture:
                     notice = json.loads(line)
                 except (ValueError, UnicodeError):
                     continue
-                emitted = self._emit_console(notice["message"], label="奖励采集" if notice.get("scope") == "reward" else "对局采集")
+                label = {"reward": "奖励采集", "settlement": "结算校验"}.get(notice.get("scope"), "对局采集")
+                emitted = self._emit_console(notice["message"], label=label)
                 with self._console_condition:
                     if emitted and notice.get("event_id"):
                         self._console_events.add(notice["event_id"])
@@ -157,8 +158,8 @@ class DecisionCapture:
         while not self._analysis_finished:
             try:
                 count = self._poll_console()
-                # A crashed worker may never write its final notice. Drain any
-                # buffered notices before marking it unavailable.
+                # 后台进程崩溃时可能无法写出最后一条通知，
+                # 标记为不可用之前先收取已有缓冲通知。
                 if self._analysis_process and self._analysis_process.poll() is not None and count < 20:
                     with self._console_condition:
                         self._analysis_finished = True
@@ -249,7 +250,7 @@ class DecisionCapture:
         if self._closed.is_set() or self._failed:
             return None
         try:
-            # Copy at enqueue time: Maa may reuse its screenshot buffer.
+            # Maa 可能复用截图缓冲区，必须在入队时复制图像。
             snapshot = None if image is None else image.copy()
             with self._record_lock:
                 if self._closed.is_set() or self._failed:

@@ -1,4 +1,4 @@
-"""Replay saved reward OCR through catalog lookup without device input or new OCR."""
+"""使用已保存的奖励 OCR 重新查库，不发送输入，也不重新执行 OCR。"""
 
 import sys
 import json
@@ -84,8 +84,8 @@ def replay(directory: Path, database: Path):
             if not frame_path.is_relative_to(directory):
                 raise ValueError("Replay frame escaped capture")
             array = read_image(frame_path)
-            # Estimate the new live reader's ROI requests using the previously
-            # saved OCR. No fresh OCR or historical input event is rewritten.
+            # 使用已有 OCR 估计实时读取器需要请求的识别区域，
+            # 不重新识别图像，也不改写历史输入事件。
             if (event["candidate"]["candidate_id"] != selected_ids.get(event.get("reward_page_id")) and
                     reader.icons.lookup(array, event["candidate"]["box"])):
                 reusable_icons += 1

@@ -1,4 +1,4 @@
-"""Read-only ADB observer for an already running MFA; no input commands."""
+"""通过只读 ADB 观察已运行的 MFA，不发送输入命令。"""
 
 import os
 import sys
@@ -11,7 +11,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-# Both CLI and embedded Agent use package imports rooted at agent/.
+# 命令行工具和内置 Agent 均从 agent/ 根目录导入业务包。
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agent"))
 from utils.image_io import decode_image
 from produce.capture import DecisionCapture
@@ -31,7 +31,7 @@ def health_score(image, template):
     height, width = image.shape[:2]
     if abs(width / height - 720 / 1280) > 0.005:
         return None
-    # Only the analysis copy is normalized; saved ADB frames remain untouched.
+    # 仅归一化分析用副本，已保存的 ADB 原图保持原样。
     frame = cv2.resize(image, (720, 1280), interpolation=cv2.INTER_LANCZOS4) if (width, height) != (720, 1280) else image
     roi = frame[125:255, 512:680]
     blue, green, red = cv2.split(template)

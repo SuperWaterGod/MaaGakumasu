@@ -70,6 +70,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - `agent/custom/action/produce.py`：MaaFramework 培育动作入口，显式导入注册事件、出牌、选项动作，并处理奖励领取的框架适配；注册名称与流水线保持一致。
 - `agent/produce/`：培育业务模块。`events.py` 管理事件选择，`battle.py` 管理出牌/饮料/15 秒兜底，`options.py` 管理工作/属性/试镜/饮料保留等选项；`catalog.py` 统一技能卡、饮料与 P 道具查库；`rewards.py` 聚合奖励预览、身份缓存和后台读取；`capture.py` 管理异步证据保存与后台进程，`sessions.py` 管理整轮生命周期及 sinks；`state.py` 读取战斗 HUD；`analysis.py` 执行后台识别与路线分析；`console.py` 统一出牌/奖励日志及库效果文案。
 - `agent/utils/`：仅放通用基础设施，当前为日志和 MaaFramework 图像接口；培育专用业务不得继续散放在此。
+- `agent/produce/settlement.py`：统一结算页的最终评价分数、评级及 Vo/Da/Vi 读取；按文字标签或核验后的属性图标定位及 OCR，不按评级各建模板；初 REGULAR/PRO/MASTER 与 NIA 的公式值、实测值分开保存并作一致性校验，控制台按段输出一条折叠结算日志；考前倒推暂不接入。翻页证据由 `sessions.py` 监听结束阶段的现有输入保存，后台识别及跨分段汇总分别接入 `analysis.py` 和 `tools/report_produce_session.py`。
 - `assets/resource/base/pipeline/`：MaaFramework 任务流水线。自动培育通用核心逻辑在 `Produce.json`，NIA 相关流程在 `ProduceNIA.json`，共用节点在 `ProduceUtils.json`。
 - `assets/resource/base/image/` 或相邻资源目录：模板匹配、图像识别所需素材。
 - `assets/data/`：结构化数据，例如偶像卡片数据 `idols_cards.json`。
@@ -112,6 +113,8 @@ python tools/ci/check_resource.py ./assets/resource/base/
 - Markdown 文档没有强制 lint 配置（`docs/.markdownlint.yaml` 已删除），保持与现有文档一致的简洁风格；根目录 `AGENTS.md` 主要服务代理协作，优先清晰准确。
 - 修改 JSON、JSONC 或流水线文件时保持原有排序、注释风格和缩进风格；不要做无关格式化。
 - 新增用户可见文案时优先使用中文；涉及游戏内名称时保留日文原名，并在已有数据结构支持时补充中文字段。
+- 项目自有代码的说明性注释和文档字符串正文统一使用中文；`Args:`、`Returns:`、`Raises:`、`Attributes:` 等文档结构标记，以及 `:param`、`:return:` 等工具约定必须保留原文，确保 IDE 和文档生成器正常解析。接口名称、字段、类型、技术标识、工具指令和第三方许可证保留原文。
+- 本地会话号、截图哈希、裁剪来源、实测流水和临时验证结论保存到 Git 忽略的 `debug/`，不得写成业务常量或混入正式功能文档。运行所需的识别参数、缓存/完整性校验、版本指纹及第三方来源与许可证说明正常保留。
 
 ### 模块组织与拆分规范
 
@@ -142,6 +145,7 @@ python tools/ci/check_resource.py ./assets/resource/base/
   - NIA 事件参数：每张卡片通过 `ProduceChooseNIAEventFlag.custom_action_param` 设置 `effect`、`first`、`second`，字段顺序和语义都要保持一致。
   - 出牌逻辑：初/NIA 与偶像之路共用 `ProduceCardsAuto`；修改计时窗口时同步检查 `_reset_window` 与 `_play_a_card`，保留 15 秒兜底、有效手牌范围过滤和推荐优先逻辑。
   - 弹窗和通用按钮处理：不要扩大 ROI 到容易误触的位置。
+  - 培育结束流程：保留各结束循环末尾的 `[JumpBack]Click_1` 无条件兜底；没有 Next 的页面和需要点击才能跳过的动画不得等待冻结。结算等待限于明确识别到的 Next、生成或完成按钮，不得为采集完整性替换掉原有点击兜底。
 
 ## 任务配置规则
 

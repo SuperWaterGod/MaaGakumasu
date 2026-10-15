@@ -1,4 +1,4 @@
-"""Skill cards, drinks and P items: identity lookup and structured reference data."""
+"""技能卡、饮料和 P 道具的身份查库与结构化参考数据。"""
 
 import copy
 import json
@@ -18,6 +18,15 @@ def split_variant(text):
     normalized = normalize_name(text)
     base = normalized.rstrip("+")
     return base, len(normalized) - len(base)
+
+
+def name_match_allowed(observed, candidate, confidence, similarity, margin):
+    """完整名称共用容错规则；短名称、歧义名称和强化标记仍严格核验。"""
+    base, plus = split_variant(observed)
+    target, target_plus = split_variant(candidate)
+    single_substitution = len(base) == len(target) and len(base) >= 5 and sum(a != b for a, b in zip(base, target)) == 1
+    return (confidence >= .65 and margin >= .08 and bool(plus) == bool(target_plus)
+            and base.count("+") == target.count("+") and (similarity >= .90 or similarity >= .80 and single_substitution))
 
 
 class SkillCardCatalog:
@@ -40,7 +49,7 @@ class SkillCardCatalog:
                 self.exact_names.add(normalize_name(name))
 
     def _overlap_name(self, normalized):
-        """Trim short adjacent-card suffixes only after a complete catalog name."""
+        """完整库名称已经出现时，允许清理少量混入的相邻卡名尾字。"""
         prefixes = set()
         for base, variant_plus, _ in self.entries:
             if len(base) < 4 or not normalized.startswith(base):
@@ -54,7 +63,7 @@ class SkillCardCatalog:
         return max(prefixes, key=len) if prefixes else None
 
     def _truncated_name(self, normalized):
-        """Rank visible prefixes by coverage; normal/upgraded records share one name."""
+        """按可见前缀覆盖率排列候选；基础版和强化版按同名归组。"""
         base, plus = split_variant(normalized)
         if len(base) < 3 or "+" in base:
             return None
@@ -64,8 +73,8 @@ class SkillCardCatalog:
             return None
         coverage, name = ranked[0]
         margin = coverage - ranked[1][0] if len(ranked) > 1 else 1.0
-        # A shorter catalog name is closer by length, but not stronger evidence when
-        # another distinct card has the very same visible prefix.
+        # 不同卡名共享同一可见前缀时，名称更短只提高长度覆盖率，
+        # 不能因此确认其中某张卡。
         if coverage < 0.60:
             return None
         return {
@@ -111,10 +120,10 @@ class SkillCardCatalog:
             return result
         scores = {}
         for candidate_base, candidate_plus, card in self.entries:
-            # A visible + selects an upgraded record. ++ retains an unresolved runtime variant.
+            # 可见加号选择强化条目；双加号仍标记为待确认的运行时变体。
             if bool(plus) != bool(candidate_plus):
                 continue
-            # A fuzzy match must not erase unparsed interior upgrade markers.
+            # 模糊匹配不得丢弃名称内部尚未解析的强化标记。
             if base.count("+") != candidate_base.count("+"):
                 continue
             similarity = SequenceMatcher(None, base, candidate_base).ratio()
@@ -139,7 +148,7 @@ class SkillCardCatalog:
         if prefix and prefix["ambiguous"]:
             result.update(match_method="prefix_candidates", unknown_reason="shared_visible_prefix")
             return result
-        if ocr_confidence < 0.65 or best < 0.90 or margin < 0.08:
+        if not name_match_allowed(recognized, card["name"], ocr_confidence, best, margin):
             result["unknown_reason"] = "low_confidence_or_ambiguous_name"
             return result
         if prefix:
@@ -163,7 +172,7 @@ class SkillCardCatalog:
             reason = "extra_upgrade_markers" if plus > 1 else "upgrade_not_visible_in_overlap"
             result.update(status="base_match_variant_unresolved", unknown_reason=reason, upgrade_status="unresolved", upgraded=None)
         else:
-            # Name matching identifies the catalog variant, not invisible customizations or temporary buffs.
+            # 名称匹配只确定库中的变体，不能确认不可见的改造或临时效果。
             result.update(
                 status="matched", card_id=result["database_card_id"], upgrade_status="visible_catalog_variant", effect_resolution="catalog_reference_only"
             )
@@ -205,7 +214,7 @@ class RewardCatalog:
                 self.item_source = items["source"]
             except (OSError, ValueError, KeyError, TypeError) as exc:
                 self.item_error = str(exc)
-                # Keep skills operational if the optional item snapshot is invalid.
+                # 可选道具快照无效时，仍保留技能卡查库能力。
                 self.index = defaultdict(list, {key: [(kind, row) for kind, row in values if kind == "skill_card"]
                                                 for key, values in self.index.items()})
                 self.ids = {key: value for key, value in self.ids.items() if value[0] == "skill_card"}
@@ -229,11 +238,32 @@ class RewardCatalog:
         return {"conditions": "", "cost": "", "actions": row.get("actions", "") if kind == "drink" else "",
                 "limit": "", "effects": row.get("effects", "") if kind == "p_item" else ""}
 
+    def _fuzzy_candidates(self, normalized):
+        base, plus = split_variant(normalized)
+        scores = {}
+        if len(base) < 2:
+            return []
+        for name, entries in self.index.items():
+            candidate_base, candidate_plus = split_variant(name)
+            if bool(plus) != bool(candidate_plus) or base.count("+") != candidate_base.count("+"):
+                continue
+            rows = {(kind, row["id"]): (kind, row) for kind, row in entries}
+            if len(rows) > 1:
+                rows = {key: value for key, value in rows.items() if bool(value[1].get("upgraded")) == bool(plus)}
+            score = SequenceMatcher(None, base, candidate_base).ratio()
+            for key, (kind, row) in rows.items():
+                if kind != "skill_card" and plus != candidate_plus:
+                    continue
+                if key not in scores or score > scores[key][0]:
+                    scores[key] = (score, name, kind, row)
+        return sorted(scores.values(), key=lambda item: (-item[0], item[2], item[3]["id"]))
+
     def match(self, text, confidence=1.0):
         normalized = normalize_name(text)
         rows = {(kind, row["id"]): (kind, row) for kind, row in self.index.get(normalized, [])}
-        # Some upstream item variants omit '+' in their name. Apply the explicit
-        # upgraded field instead of arbitrarily selecting the first duplicate.
+        match_evidence = {}
+        # 部分上游道具变体的名称省略加号，
+        # 按明确的 upgraded 字段区分，不能随意选择首个同名条目。
         if len(rows) > 1:
             rows = {key: value for key, value in rows.items() if bool(value[1].get("upgraded")) == normalized.endswith("+")}
         if confidence < .65 or len(rows) != 1:
@@ -241,14 +271,29 @@ class RewardCatalog:
                 identity = self.skills.match(text, confidence)
                 if identity.get("database_card_id"):
                     return {**identity, "item_kind": "skill_card", "catalog_id": identity["database_card_id"], "needs_full_ocr": True}
-            return {**self.skills.match(""), "observed_name": text, "item_kind": "other_or_unknown", "catalog_id": None,
-                    "unknown_reason": "low_name_confidence" if confidence < .65 else "ambiguous_or_missing_reward_name", "needs_full_ocr": True}
-        kind, row = next(iter(rows.values()))
+            ranked = self._fuzzy_candidates(normalized) if confidence >= .65 and not rows else []
+            if ranked:
+                score, name, kind, row = ranked[0]
+                margin = score - ranked[1][0] if len(ranked) > 1 else 1.0
+                match_evidence = {"name_similarity": score, "similarity_margin": margin, "match_method": "fuzzy",
+                                  "candidates": [{"catalog_id": f"{kind}_{row['id']:04d}", "source_id": row["id"],
+                                                  "name": row["name"], "name_similarity": score}
+                                                 for score, _, kind, row in ranked[:3]]}
+            if not ranked or not name_match_allowed(normalized, name, confidence, score, margin):
+                return {**self.skills.match(""), "observed_name": text, "normalized_name": normalized, "ocr_confidence": confidence,
+                        **match_evidence, "item_kind": "other_or_unknown", "catalog_id": None,
+                        "unknown_reason": "low_name_confidence" if confidence < .65 else "ambiguous_or_missing_reward_name",
+                        "needs_full_ocr": True}
+        else:
+            kind, row = next(iter(rows.values()))
         if kind == "skill_card":
-            name = self.card_names.get(normalized, row["name"])
-            if name not in self._skill_cache:
-                self._skill_cache[name] = self.skills.match(name)
-            identity = copy.deepcopy(self._skill_cache[name])
+            if match_evidence:
+                identity = self.skills.match(text, confidence)
+            else:
+                name = self.card_names.get(normalized, row["name"])
+                if name not in self._skill_cache:
+                    self._skill_cache[name] = self.skills.match(name)
+                identity = copy.deepcopy(self._skill_cache[name])
             identity.update(observed_name=text, normalized_name=normalized, ocr_confidence=confidence)
         else:
             identity = {"status": "matched", "observed_name": text, "normalized_name": normalized, "ocr_confidence": confidence,
@@ -256,10 +301,11 @@ class RewardCatalog:
                         "upgraded": row.get("upgraded", False), "plan": row.get("plan"), "mode": row.get("mode"),
                         "match_method": "exact", "customization": None}
         dsl = self.dsl(kind, row)
-        available = bool(dsl["actions"] or dsl["effects"])
-        identity.update(item_kind=kind, catalog_id=f"{kind}_{row['id']:04d}", reference_effect_dsl=dsl,
+        available = bool(dsl["actions"] or dsl["effects"]) and identity["status"] == "matched"
+        identity.update(**match_evidence, item_kind=kind, catalog_id=f"{kind}_{row['id']:04d}", reference_effect_dsl=dsl,
                         effective_effect_dsl=copy.deepcopy(dsl) if available else None,
-                        effect_resolution="catalog_default" if available else "catalog_effect_missing", needs_full_ocr=not available,
+                        effect_resolution="catalog_default" if available else "runtime_variant_unresolved"
+                        if identity["status"] != "matched" else "catalog_effect_missing", needs_full_ocr=not available,
                         effective_effect_confirmed=False)
         return identity
 
@@ -268,8 +314,17 @@ class RewardCatalog:
         choices = [self.match(token["text"], token.get("confidence", 0)) for token in ordered]
         if len(ordered) > 1:
             choices.append(self.match("".join(token["text"] for token in ordered), min(t.get("confidence", 0) for t in ordered)))
-        matches = {choice["catalog_id"]: choice for choice in choices if choice.get("catalog_id")}
-        return next(iter(matches.values())) if len(matches) == 1 else self.match(" ".join(t["text"] for t in ordered), 0)
+        matches = {}
+        for choice in choices:
+            if choice.get("catalog_id"):
+                key = choice["catalog_id"]
+                if key not in matches or choice.get("name_similarity", 1) > matches[key].get("name_similarity", 1):
+                    matches[key] = choice
+        if len(matches) == 1:
+            return next(iter(matches.values()))
+        if len(choices) == 1:
+            return choices[0]
+        return self.match(" ".join(t["text"] for t in ordered), 0)
 
     def by_id(self, catalog_id):
         found = self.ids.get(catalog_id)

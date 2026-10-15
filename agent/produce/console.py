@@ -1,9 +1,10 @@
-"""Ordered battle and reward summaries for the same console presentation layer."""
+"""统一整理并按顺序展示出牌、奖励和结算摘要。"""
 
 import re
 from itertools import groupby
 
 from .state import STANCE_NAMES, state_changes
+from .settlement import FIELDS, evaluation_check
 
 POLICY_NAMES = {
     "ProduceChooseFirst": "第一项",
@@ -16,6 +17,68 @@ def policy_name(choice):
     return POLICY_NAMES.get((choice or {}).get("policy_node"), "原选择")
 
 
+class SettlementConsole:
+    """每个采集分段在结束画面处理完成后输出一条折叠结算摘要。"""
+
+    def __init__(self, bindings):
+        self.bindings = bindings
+        self.readings = {key: [] for key in (*FIELDS, "fan_votes", "exam_score", "place")}
+        self.frames = 0
+        self.sent = False
+        self.ending_observed = False
+
+    def observe(self, event, observation):
+        self.frames += 1
+        self.ending_observed |= (event.get("kind") == "settlement_observation" or
+                                 any(reading.get("value") is not None for reading in (observation.get("final_exam") or {}).values()))
+        fields = {**(observation.get("settlement") or {}), "fan_votes": observation.get("fan_votes") or {},
+                  "exam_score": (observation.get("final_exam") or {}).get("score") or {},
+                  "place": (observation.get("final_exam") or {}).get("place") or {}}
+        for key, reading in fields.items():
+            if key in self.readings and reading.get("value") is not None:
+                self.readings[key].append({**reading, "event_id": event.get("event_id")})
+
+    def finish(self, event_id=None):
+        if self.sent or not self.frames or not self.ending_observed:
+            return None
+        self.sent = True
+        fields = {}
+        for key, readings in self.readings.items():
+            values = {reading["value"] for reading in readings}
+            fields[key] = {"value": next(iter(values)) if len(values) == 1 else None,
+                           "conflict": len(values) > 1, "observations": readings}
+        final_exam = {"score": fields["exam_score"], "place": fields["place"]}
+        check = evaluation_check(self.bindings.get("scenario"), fields, fields["fan_votes"], final_exam,
+                                 self.bindings.get("difficulty"))
+        scenario = self.bindings.get("scenario") or "模式未确认"
+        difficulty = self.bindings.get("difficulty") or []
+        difficulty = "/".join(difficulty) if isinstance(difficulty, list) else str(difficulty)
+        status = {"match": "一致", "mismatch": "不一致", "calculated_only": "仅计算", "unavailable": "待补齐"}[check["status"]]
+        show = lambda value: "未读到" if value is None else str(value)
+        observed = check["observed_score"]
+        calculated = check["calculated"] or {}
+        formula = (f"公式计算：{show(calculated.get('score'))}｜推算评级 {show(calculated.get('rank'))}" if calculated else
+                   "公式校验：暂不可用，输入缺项或不适用；画面评分与评级见标题")
+        lines = [f"{scenario} {difficulty}｜{status}｜评分 {show(observed)}｜评级 {show(check['observed_rank'])}",
+                 formula,
+                 "最终属性：" + " / ".join(f"{key} {show(fields[key]['value'])}" for key in ("Vo", "Da", "Vi"))]
+        if scenario == "初":
+            lines.append(f"最终考试：{show(fields['exam_score']['value'])} 分｜名次 {show(fields['place']['value'])}")
+        else:
+            lines.append(f"最终粉丝投票数：{show(fields['fan_votes']['value'])}")
+        if observed is not None and calculated.get("score") is not None:
+            lines.append(f"评分差值（画面－公式）：{observed - calculated['score']:+d}")
+        missing = [key for key, value in check["inputs"].items() if value is None]
+        names = {"exam_score": "考试分数", "place": "考试名次", "fan_votes": "最终投票数"}
+        if missing:
+            lines.append("待补齐：" + "、".join(names.get(key, key) for key in missing))
+        if any(reading["conflict"] for reading in fields.values()):
+            lines.append("部分画面读数冲突，已保留未知；不按公式覆盖原始结果")
+        lines.append("已使用最终三维，名次属性奖励不重复增加。" if scenario == "初" else
+                     "公式值与画面值分开保留，完整证据见采集记录。")
+        return {"message": "\n".join(lines), "scope": "settlement", "event_id": event_id, "evaluation_check": check}
+
+
 DISPLAY_FIELDS = {"goodImpressionTurns": "好印象", "goodConditionTurns": "好调", "perfectConditionTurns": "绝好调",
                   "cardUsesRemaining": "使用次数", "turnsRemaining": "剩余回合", "halfCostTurns": "体力消耗减少回合",
                   "doubleCostTurns": "体力消耗增加回合", "concentration": "集中", "motivation": "干劲", "genki": "元气",
@@ -24,7 +87,7 @@ SPECIAL_EFFECT = "特殊效果（详见数据记录）"
 
 
 def _dsl_parts(text):
-    """Split display clauses without dropping a nested condition or trigger."""
+    """拆分展示语句时保留嵌套条件与触发条件。"""
     parts, start, depth = [], 0, 0
     for index, character in enumerate(text):
         if character in "{([":
@@ -82,7 +145,7 @@ def _display_clause(text, depth):
 
 
 def _display_dsl(text, depth=0):
-    """Presentation only: never parse OCR, evaluate gains or change catalog data."""
+    """仅格式化展示，不解析 OCR、计算实际收益或修改库数据。"""
     parts = _dsl_parts(text.strip())
     if parts is None:
         return SPECIAL_EFFECT
@@ -95,7 +158,7 @@ def _display_dsl(text, depth=0):
 
 
 def catalog_lines(identity):
-    """Compact display of defaults; unsupported DSL stays in JSON, not the UI."""
+    """简要展示库默认效果；不支持的 DSL 保留在 JSON 中。"""
     dsl = identity.get("reference_effect_dsl") or {}
     result = []
     if dsl.get("conditions"):
@@ -164,7 +227,7 @@ def hand_summary(cards, selected_box=None):
     for index, card in enumerate(sorted(cards, key=lambda card: card["box"][0]), 1):
         label = {"cards": "", "suggestions": "荐 ", "useless": "禁 "}.get(card.get("label"), "? ")
         marker = "→ " if card["box"] == selected_box else ""
-        # Avoid Markdown's ordered-list syntax inside MFA's HTML parser.
+        # 避免 MFA 的 HTML 解析器将内容误当作 Markdown 有序列表。
         parts.append(f"{index}｜{marker}{label}{card_name(card['identity'])}")
     return "\n".join(parts) if parts else "未检测到手牌"
 
@@ -299,7 +362,7 @@ def operation_console(number, before_event, before_result, after_event=None, aft
 
 
 class OperationConsole:
-    """Pair observations for display; raw capture IDs and action labels stay intact."""
+    """配对操作前后画面用于展示，保留原始采集编号和动作标签。"""
 
     def __init__(self):
         self.count = 0

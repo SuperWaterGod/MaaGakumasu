@@ -40,7 +40,7 @@ try:
         )
         _logger.add(
             f"{log_dir}/{{time:YYYY-MM-DD}}.log",
-            rotation="00:00",  # midnight
+            rotation="00:00",  # 每天午夜轮换日志文件
             retention="2 weeks",
             compression="zip",
             level="DEBUG",

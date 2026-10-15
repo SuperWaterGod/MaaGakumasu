@@ -1,4 +1,4 @@
-"""Reward candidate preview, identity caches and name-first background reading."""
+"""奖励候选预览、身份缓存，以及优先读取名称的后台识别。"""
 
 import re
 import copy
@@ -13,7 +13,7 @@ from utils.image_io import bgr_image, encode_png, decode_image, resize_image
 
 from .catalog import RewardCatalog, clean, catalog_effects
 
-# v1 used Pillow/RGB resampling; never compare it with native BGR thumbnails.
+# 第一版缓存使用 Pillow/RGB 重采样，不能与原生 BGR 缩略图混合比较。
 CACHE_VERSION = 2
 
 
@@ -22,7 +22,7 @@ def icon_image(image, box):
     x, y, width, height = box
     if image.shape != (1280, 720, 3) or min(width, height) <= 8 or min(x, y) < 0 or x + width > 720 or y + height > 1280:
         raise ValueError("Unsupported reward icon bounds")
-    # Include corner badges and upgrade markers; remove only the frame itself.
+    # 保留角标和强化标记，只去掉图标自身的外框。
     crop = image[y + 4:y + height - 4, x + 4:x + width - 4]
     return resize_image(crop, 64, 64)
 
@@ -79,7 +79,7 @@ class RewardIdentityCache:
                 fraction = float((delta.max(axis=2) > 24).mean())
                 if mean <= 1.5 and fraction <= .01:
                     matches.append((mean, fraction, entry))
-            # Conflicting learned identities block reuse even if one is closer.
+            # 已学习的身份互相冲突时，即使某项更接近也不复用。
             if len({entry["catalog_id"] for _, _, entry in matches}) != 1:
                 return None
             mean, fraction, entry = min(matches, key=lambda value: value[0])
@@ -152,7 +152,7 @@ def components(mask):
 
 def selection_pixels(array, box):
     x, y, w, h = box
-    # Read only the outside brackets, excluding artwork, cost badges and labels.
+    # 只读取图标外侧的选中括号，排除卡面、消耗角标和文字。
     orange = orange_mask(array)
     return int(sum(region.sum() for region in (
         orange[y + 10:y + h - 10, x - 13:x - 2],
@@ -182,8 +182,8 @@ def reward_layout(image):
     pitch = min(gaps)
     if not w + 4 <= pitch <= w + 24 or any(abs(gap / pitch - round(gap / pitch)) > .04 for gap in gaps):
         return {"status": "ambiguous_spacing", "candidates": [], "selected_index": None}
-    # Fill only visually verified grid positions. Badges can split the selected
-    # card's border into components; a missing component is not a missing card.
+    # 只补齐经过画面核验的网格位置；角标可能将选中卡牌的边框分成多段，
+    # 少了一段边框不代表少了一张候选牌。
     boxes = []
     for step in range(-4, 5):
         x = seeds[0][0] + step * pitch
@@ -216,7 +216,7 @@ def same_layout(left, right):
 
 
 def verify_reward_layout(image, reference_image, reference_layout):
-    """Check the established icon positions instead of refitting selected borders."""
+    """沿用已确认的图标位置核验页面，不重新拟合选中边框。"""
     array, before = rgb_image(image), rgb_image(reference_image)
     if array is None or before is None or array.shape != (1280, 720, 3) or before.shape != array.shape:
         return {"status": "unsupported_size", "candidates": [], "selected_index": None}
@@ -246,7 +246,7 @@ def detail_difference(left, right):
 
 
 class RewardPreview:
-    """Input adapter is supplied by the action; OCR runs separately on saved frames."""
+    """动作入口提供输入适配；OCR 在后台独立处理已保存的画面。"""
 
     def __init__(self, capture, screenshot, click, receive_visible, stopping, *, timeout=1.8, interval=.12):
         self.capture = capture
@@ -355,7 +355,7 @@ class RewardPreview:
         for attempt in range(1, 3 if purpose == "preview" else 2):
             if self.stopping():
                 return None
-            # Mark before calling input: an exception may occur after it was sent.
+            # 发送输入前先记录状态，异常可能发生在输入已经送出之后。
             self.changed_selection = True
             try:
                 clicked = self.click(*point)
@@ -384,8 +384,8 @@ class RewardPreview:
                 return frame
             diagnostic = self.last_wait_diagnostic or {}
             layout = diagnostic.get("observed_layout") or {}
-            # Retry only a verified, unchanged icon row which still highlights
-            # a different item. Never retry a selected target or a changed page.
+            # 只有候选行已核验且仍选中其他图标时才允许重试；
+            # 目标已选中或页面已经变化时不重试。
             if (attempt != 1 or purpose != "preview" or self.stopping() or
                     diagnostic.get("reason") != "different_candidate_selected" or layout.get("status") != "ready" or
                     not self.receive_visible(self.last_image)):
@@ -544,7 +544,7 @@ class RewardReader:
 
 
 def reward_preview_observation(tokens_by_roi, catalog, event, rewards=None, reading=None):
-    """Associate verified visible text with its icon, without inventing actual gains."""
+    """将已核验的可见文字关联到候选图标，不推断实际获得的内容。"""
     refreshed = event.get("detail_refreshed") is True and event.get("selected_highlight_verified") is True
     names = sorted(tokens_by_roi.get("name", []), key=lambda token: (token["box"][1], token["box"][0]))
     reading = reading or {}
@@ -554,9 +554,9 @@ def reward_preview_observation(tokens_by_roi, catalog, event, rewards=None, read
         identity = dict(identity)
     else:
         identities = [catalog.match(token["text"], token.get("confidence", 0)) for token in names]
-        exact = [identity for identity in identities if identity.get("match_method") == "exact" and identity["status"] != "unknown"]
-        unique_ids = {identity["database_card_id"] for identity in exact}
-        identity = exact[0] if len(unique_ids) == 1 and refreshed else catalog.match("")
+        matched = [identity for identity in identities if identity["status"] != "unknown"]
+        unique_ids = {identity["database_card_id"] for identity in matched}
+        identity = matched[0] if len(unique_ids) == 1 and refreshed else catalog.match("")
     effect_tokens = sorted(tokens_by_roi.get("effects", []), key=lambda token: (token["box"][1] // 14, token["box"][0]))
     rows = []
     for token in sorted(effect_tokens, key=lambda token: (token["box"][1], token["box"][0])):

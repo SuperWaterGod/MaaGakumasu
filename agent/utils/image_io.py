@@ -1,7 +1,7 @@
-"""BGR image I/O through MaaFramework; no additional image library is required.
+"""通过 MaaFramework 读写 BGR 图像，无需额外图像库。
 
-The SDK does not yet wrap the encoded-buffer API. Keep its private handle access
-and C signatures here; copy encoded bytes before the owning ImageBuffer expires.
+SDK 尚未封装编码缓冲区接口；私有句柄访问和 C 接口签名统一放在此处，
+并在所属 ImageBuffer 释放前复制编码字节。
 """
 
 import ctypes

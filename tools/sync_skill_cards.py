@@ -1,4 +1,4 @@
-"""Fetch a pinned gakumas-data skill-card snapshot for offline identity matching."""
+"""同步固定版本的学马数据技能卡快照，供离线身份匹配使用。"""
 
 import json
 import hashlib

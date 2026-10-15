@@ -1,4 +1,4 @@
-"""培育battle动作；流水线注册名称与原行为保持不变。"""
+"""培育出牌动作；流水线注册名称与原行为保持不变。"""
 
 import time
 from collections import Counter
@@ -13,7 +13,7 @@ from .sessions import SESSIONS
 
 
 def card_candidates(results, y_min=840, y_max=1000):
-    """Detector confidence is not game value. Keep rejected boxes as evidence."""
+    """检测置信度只表示识别可靠程度；被过滤的框仍保留为证据。"""
     return [
         {
             "candidate_id": f"detection_{index}",
@@ -109,8 +109,8 @@ class ProduceCardsAuto(CustomAction):
         self._active_decision = None
 
     def _log_battle_exit(self, context):
-        # The background summary is emitted only after OCR of decision_after.
-        # Synchronize here so subsequent pipeline events cannot overtake it.
+        # 后台完成 decision_after 的 OCR 后才会输出合并摘要。
+        # 在边界同步摘要，避免后续流水线日志抢先输出。
         if self._last_decision_after and self._capture and self._capture.merged_console_enabled:
             emitted = self._capture.wait_for_console(
                 self._last_decision_after, cancelled=lambda: context.tasker.stopping,
@@ -265,7 +265,7 @@ class ProduceCardsAuto(CustomAction):
 
         self._begin_decision("play_card", image, results, selected_box=list(box), reason=reason)
         # 出牌
-        # context.tasker.controller.post_click(box[0] + 100, box[1] + 140).wait()
+        # 调试示例：按检测框偏移位置点击卡牌。
         context.tasker.controller.post_click(box[0] + box[2] // 2, box[1] + box[3] // 2).wait()
         self._record("input_issued", decision_id=self._active_decision, click_index=1,
                      point=[box[0] + box[2] // 2, box[1] + box[3] // 2])
@@ -304,7 +304,7 @@ class ProduceCardsAuto(CustomAction):
             self._record("move_cards_screen", image, decision_id=self._active_decision)
             y = 450
             while y < 1100:
-                # for x in [140, 285, 440, 585]:
+                # 调试示例：按四个固定卡槽位置依次处理饮料。
                 for x in [140, 285]:
                     context.tasker.controller.post_click(x, y).wait()
                     self._record("move_cards_input", decision_id=self._active_decision, point=[x, y], click_index=1)
@@ -343,9 +343,9 @@ class ProduceCardsAuto(CustomAction):
         reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", image)
         if reco_detail and reco_detail.hit:
             return True
-        # reco_detail = context.run_recognition('ProduceRecognitionChooseMoveCards', image)
-        # if reco_detail and reco_detail.hit:
-        #     return True
+        # 调试示例：识别移动卡牌页面。
+        # 检查识别是否命中。
+        # 命中时返回成功。
         return False
 
     def _wait_until_playable(self, context: Context, confirmation_count=1):

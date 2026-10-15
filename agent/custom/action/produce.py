@@ -1,4 +1,4 @@
-"""MaaFramework produce action entry points and reward receive adapter."""
+"""MaaFramework 培育动作入口及奖励领取适配。"""
 
 from utils import logger
 from produce.battle import ProduceCardsAuto
@@ -27,8 +27,8 @@ class ProduceRewardConfirm(CustomAction):
         capture = session["capture"] if session else None
         if not capture or not capture.reward_preview_enabled:
             return self.receive(context, argv.box, session)
-        # Skipping an unavailable drink is an existing policy action, not a
-        # candidate preview. Do not turn that into a reward selection.
+        # 跳过无法领取的饮料属于原有策略动作，
+        # 不作为候选预览，也不进入奖励选择流程。
         choice = session.get("reward_choice") or {}
         if choice.get("policy_node") == "ProduceChooseSkip":
             return self.receive(context, argv.box, session)
@@ -50,8 +50,8 @@ class ProduceRewardConfirm(CustomAction):
             result = preview.collect(choice, session.get("reward_confirmation_id"))
         except Exception:
             logger.exception("奖励详情采集未启动，继续原选择")
-            # collect handles exceptions after inputs and attempts restoration.
-            # An exception outside that guard must never confirm a changed item.
+            # collect 会处理输入后的异常并尝试恢复原选择。
+            # 超出该保护范围的异常不得确认已经变化的选项。
             result = {"safe_to_receive": not preview.changed_selection, "status": "skipped"}
         if context.tasker.stopping:
             return False
@@ -60,8 +60,8 @@ class ProduceRewardConfirm(CustomAction):
             context.tasker.post_stop()
             return False
         if preview.last_image is not None:
-            # Recheck the receive button on the restored page; do not reuse a
-            # recognition from before the previews.
+            # 恢复原页面后重新识别领取按钮，
+            # 不复用预览候选之前的识别结果。
             detail = context.run_recognition("ProduceRewardReceive", preview.last_image)
             if not detail or not detail.hit:
                 logger.warning("奖励领取按钮未确认，暂停任务")

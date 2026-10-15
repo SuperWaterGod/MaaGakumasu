@@ -1,4 +1,4 @@
-"""Summarize capture evidence without treating observations as action labels."""
+"""汇总采集证据，保留观察结果与实际动作标签的区别。"""
 
 import json
 import argparse

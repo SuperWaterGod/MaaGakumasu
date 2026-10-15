@@ -1,4 +1,4 @@
-"""Read-only pipeline observers joining route and battle evidence into a produce session."""
+"""通过只读流水线监听，将路线和对局证据关联到整次培育会话。"""
 
 import re
 import json
@@ -15,7 +15,7 @@ from maa.event_sink import NotificationType
 
 from .capture import ROOT, DecisionCapture
 
-# Observe actions already present in the pipeline; never add inputs or recognitions.
+# 只观察流水线已有动作，不新增输入或识别。
 ROUTE_NODES = {
     "ProduceChooseGetFlag": "reward",
     "ProduceChooseSkip": "reward_skip",
@@ -43,8 +43,18 @@ PREPARATION_NODES = {
     "ProduceChooseMemoryNext",
 }
 SETTLEMENT_NODES = {"ProduceGeneration", "ProduceFinished"}
+SETTLEMENT_ENTRIES = SETTLEMENT_NODES | {"ProduceEnd"}
+SETTLEMENT_NAVIGATION = {
+    "ProduceNext", "ProduceEndNext", "ProduceButton", "ProduceNIAButton", "ProduceDecide", "DecideButton",
+    "CloseRoundButton", "ProduceEventResultButton", "ProduceSkip", "ProduceSkipED",
+    "ProduceSkipChatFlag", "ProduceYes", "ProduceSkipShowConfirm", "ProduceFollow", "Click_1",
+}
 ENTRY_NODES = {"ProduceStart", "ProduceContinue", "ProduceSkipPreparation", "ProduceEntryFlag"}
 GAMEPLAY_NODES = {"ProduceEntry", "ProduceEntryNIA"}
+
+
+def capture_window(session):
+    return bool(session.get("settlement_window") or session.get("exam_result_capture_remaining", 0))
 
 
 def save_json(path, value):
@@ -126,6 +136,7 @@ class ProduceSessions:
             ROOT / "agent/utils/image_io.py",
             ROOT / "agent/custom/action/produce.py",
             *sorted((resource / "pipeline").glob("Produce*.json")),
+            *sorted((resource / "image/produce/settlement").glob("*.png")),
         ]
         version_hashes = {
             (str(path.relative_to(ROOT)).replace("\\", "/") if path.is_relative_to(ROOT) else path.name): hashlib.sha256(
@@ -152,12 +163,12 @@ class ProduceSessions:
                 ):
                     previous = None
                 elif not previous.get("gameplay_started_at"):
-                    # Old preparation-only records are not interrupted game saves.
+                    # 旧的仅准备阶段记录不属于已中断的游戏存档。
                     previous = None
             except (OSError, ValueError):
                 logger.warning("培育续跑索引不可读，将创建部分会话")
-            # A resume is explicit route evidence, not proof of the same in-game save.
-            # Keep configuration mismatches separate and do not silently join them.
+            # 继续培育只证明进入了续跑路线，不能独立证明是同一游戏存档。
+            # 配置不一致时分别记录，不能静默合并会话。
             if previous and previous.get("bindings", {}).get("configured_idol") != bindings["configured_idol"]:
                 previous = None
             elif previous and any(previous.get("bindings", {}).get(field) != bindings[field] for field in ("scenario", "difficulty")):
@@ -223,6 +234,7 @@ class ProduceSessions:
             "resumed": bool(previous),
             "fresh_game_started_in_segment": fresh_start,
             "gameplay_entry_recorded": False,
+            "settlement_window": bool(state.get("ending_phase_started")),
         }
         self.active[key] = session
         self.persist(session)
@@ -269,21 +281,51 @@ def safe_image(context):
 
 
 class ProduceContextSink(ContextEventSink):
-    def on_node_recognition(self, context, noti_type, detail):
-        if noti_type != NotificationType.Succeeded or (not SESSIONS.active and detail.name not in PREPARATION_NODES):
+    def on_node_wait_freezes(self, context, noti_type, detail):
+        if detail.phase != "pre" or detail.name not in (SETTLEMENT_ENTRIES | SETTLEMENT_NAVIGATION):
+            return
+        if noti_type not in (NotificationType.Starting, NotificationType.Succeeded, NotificationType.Failed):
             return
         try:
             session = SESSIONS.get(context)
+            if session and (capture_window(session) or detail.name in SETTLEMENT_ENTRIES):
+                if noti_type == NotificationType.Starting:
+                    session.get("settlement_pre_wait", {}).pop(detail.name, None)
+                    return
+                session.setdefault("settlement_pre_wait", {})[detail.name] = {
+                    "succeeded": noti_type == NotificationType.Succeeded,
+                    "elapsed_ms": detail.elapsed, "roi": list(detail.roi), "parameters": detail.param,
+                }
+        except Exception:
+            logger.exception("培育结算等待记录失败，继续任务")
+
+    def on_node_recognition(self, context, noti_type, detail):
+        if noti_type not in (NotificationType.Succeeded, NotificationType.Failed):
+            return
+        if noti_type == NotificationType.Failed and not any(capture_window(item) for item in list(SESSIONS.active.values())):
+            return
+        if not SESSIONS.active and detail.name not in PREPARATION_NODES:
+            return
+        try:
+            session = SESSIONS.get(context)
+            # 在 DirectHit 兜底之前只保留最近一次图像识别编号。
+            # 输入前读取一次画面，不在每个未命中的候选节点上重复读取。
+            if session and capture_window(session) and noti_type in (NotificationType.Succeeded, NotificationType.Failed):
+                if detail.name != "Click_1":
+                    session["settlement_latest_recognition"] = detail.reco_id
+            if noti_type != NotificationType.Succeeded:
+                return
             if not session:
                 origin = SESSIONS.task_origins.get(SESSIONS.key(context.tasker))
                 if origin and detail.name in PREPARATION_NODES:
                     origin["recognitions"][detail.name] = context.tasker.get_recognition_detail(detail.reco_id)
                 return
-            if session and detail.name in (set(ROUTE_NODES) | PREPARATION_NODES | SETTLEMENT_NODES):
+            if session and (detail.name in (set(ROUTE_NODES) | PREPARATION_NODES | SETTLEMENT_ENTRIES)
+                            or (capture_window(session) and detail.name in SETTLEMENT_NAVIGATION)):
                 reco = context.tasker.get_recognition_detail(detail.reco_id)
                 session["recognitions"][detail.name] = reco
-            # DirectHit does not acquire a fresh screenshot. Do not mistake its
-            # cached pre-input image for an observation of the result.
+            # DirectHit 不会获取新截图，
+            # 不能将其输入前缓存当作操作结果画面。
             if session and session["pending"]:
                 reco = context.tasker.get_recognition_detail(detail.reco_id)
                 algorithm = getattr(reco, "algorithm", None)
@@ -307,15 +349,19 @@ class ProduceContextSink(ContextEventSink):
             logger.exception("培育后续观测记录失败，继续任务")
 
     def on_node_action(self, context, noti_type, detail):
+        if detail.name in SETTLEMENT_NAVIGATION and not any(capture_window(item) for item in list(SESSIONS.active.values())):
+            return
         watched = (
             ENTRY_NODES
             | GAMEPLAY_NODES
             | set(ROUTE_NODES)
             | PREPARATION_NODES
-            | SETTLEMENT_NODES
+            | SETTLEMENT_ENTRIES
+            | SETTLEMENT_NAVIGATION
             | {
                 "Produce",
                 "ProduceLoop",
+                "ProduceHomeFlag",
                 "ProduceBackHome",
                 "ProduceFailedStop",
                 "ProduceNIAFailedStop",
@@ -323,6 +369,9 @@ class ProduceContextSink(ContextEventSink):
                 "ProduceNIAFailedFlag",
                 "ProduceFailedRetry",
                 "ProduceNIAFailedRetry",
+                "ProduceCardsFlag",
+                "ProduceChooseEventFlag",
+                "ProduceChooseNIAEventFlag",
             }
         )
         if detail.name not in watched:
@@ -336,8 +385,23 @@ class ProduceContextSink(ContextEventSink):
         name = detail.name
         key = SESSIONS.key(context.tasker)
         if noti_type == NotificationType.Starting:
+            if name in {"ProduceCardsFlag", "ProduceChooseEventFlag", "ProduceChooseNIAEventFlag", "ProduceChooseGetFlag"}:
+                session = SESSIONS.get(context)
+                if session:
+                    session.pop("exam_result_capture_remaining", None)
+                    if not session.get("settlement_window"):
+                        session.pop("settlement_latest_recognition", None)
+            if name in {"ProduceLoop", "ProduceHomeFlag", "ProduceStart"}:
+                session = SESSIONS.get(context)
+                if session:
+                    session.pop("settlement_window", None)
+                    session.pop("settlement_latest_recognition", None)
+                    session.pop("settlement_pre_wait", None)
+                    session.pop("exam_result_capture_remaining", None)
+                    if session["state"].pop("ending_phase_started", None):
+                        SESSIONS.persist(session)
             if name == "Produce":
-                SESSIONS.disabled.discard(key)  # Re-read opt-in at each new task.
+                SESSIONS.disabled.discard(key)  # 每个新任务重新读取采集开关。
                 root_task_id = context.get_task_job().job_id
                 now = SESSIONS.task_entry_times.get(root_task_id) or datetime.now(timezone.utc).isoformat()
                 session = SESSIONS.get(context)
@@ -388,6 +452,18 @@ class ProduceContextSink(ContextEventSink):
                         }
                 return
             capture = session["capture"]
+            if name in SETTLEMENT_ENTRIES:
+                session["settlement_window"] = True
+                if not session["state"].get("ending_phase_started"):
+                    session["state"]["ending_phase_started"] = True
+                    SESSIONS.persist(session)
+            if name in SETTLEMENT_NAVIGATION or name == "ProduceEnd":
+                if capture_window(session):
+                    kind = "settlement_observation" if session.get("settlement_window") else "exam_result_observation"
+                    self.capture_settlement(session, name, context, kind)
+                    if session.get("exam_result_capture_remaining"):
+                        session["exam_result_capture_remaining"] -= 1
+                return
             if name in ROUTE_NODES:
                 node = context.get_node_data(name)
                 reco = session["recognitions"].pop(name, None)
@@ -408,18 +484,24 @@ class ProduceContextSink(ContextEventSink):
                 session["actions"][detail.action_id] = event_id
                 if name == "ProduceChooseConfirm":
                     session["reward_confirmation_id"] = event_id
-            elif name in PREPARATION_NODES or name in SETTLEMENT_NODES:
-                kind = "settlement_observation" if name in SETTLEMENT_NODES else "preparation_observation"
+            elif name in SETTLEMENT_NODES:
+                self.capture_settlement(session, name, context)
+                session["state"]["settlement_observed"] = True
+                SESSIONS.persist(session)
+            elif name in PREPARATION_NODES:
                 reco = session["recognitions"].pop(name, None)
-                capture.record(kind, image=safe_image(context), node=name, recognition=getattr(reco, "raw_detail", None))
-                if name in SETTLEMENT_NODES:
-                    session["state"]["settlement_observed"] = True
-                    SESSIONS.persist(session)
+                capture.record("preparation_observation", image=safe_image(context), node=name, recognition=getattr(reco, "raw_detail", None))
             elif name in {"ProduceFailedFlag", "ProduceNIAFailedFlag", "ProduceFailedRetry", "ProduceNIAFailedRetry"}:
                 capture.record("exam_failure_or_retry", image=safe_image(context), node=name)
             return
         session = SESSIONS.get(context)
         if not session:
+            return
+        if name == "ProduceCardsFlag" and noti_type == NotificationType.Succeeded:
+            if session["state"]["bindings"].get("scenario") == "初":
+                # 考试结果页可能先于最终演出出现，限制额外观察的翻页次数，
+                # 再由明确的最终考试标签判断其含义。
+                session["exam_result_capture_remaining"] = 16
             return
         if detail.action_id in session["actions"]:
             decision = session["actions"].pop(detail.action_id)
@@ -455,6 +537,54 @@ class ProduceContextSink(ContextEventSink):
                     key, "failure_returned_home" if session["state"].get("failure_stop_observed") else "returned_home", terminal=True
                 )
 
+    @staticmethod
+    def capture_settlement(session, name, context, kind="settlement_observation"):
+        reco = session["recognitions"].pop(name, None)
+        algorithm = getattr(reco, "algorithm", None)
+        raw = getattr(reco, "raw_image", None)
+        source = "recognition_raw"
+        reco_id = getattr(reco, "reco_id", None)
+        freeze = session.get("settlement_pre_wait", {}).pop(name, None)
+        waited_image = safe_image(context) if freeze is not None else None
+        if waited_image is not None and waited_image.size:
+            # Maa 在 pre_wait_freezes 之后发出 Action.Starting，
+            # 此时识别原图已经较旧，应读取等待后的最新缓存画面。
+            raw = waited_image
+            source = "controller_cached_after_pre_wait_freezes"
+            session.pop("settlement_latest_recognition", None)
+        elif reco and getattr(algorithm, "value", algorithm) != "DirectHit" and (raw is None or not raw.size):
+            raw = safe_image(context)
+            source = "controller_cached_before_image_node_action"
+        has_waited_image = waited_image is not None and bool(waited_image.size)
+        if not has_waited_image and (getattr(algorithm, "value", algorithm) == "DirectHit" or raw is None or not raw.size):
+            latest_id = session.pop("settlement_latest_recognition", None)
+            if not latest_id:
+                return  # 输入前的旧缓存不作为新观察。
+            reco = context.tasker.get_recognition_detail(latest_id)
+            algorithm = getattr(reco, "algorithm", None)
+            if not reco or getattr(algorithm, "value", algorithm) == "DirectHit":
+                return
+            reco_id, raw = latest_id, getattr(reco, "raw_image", None)
+            source = "latest_image_recognition_before_fallback"
+            if raw is None or not raw.size:
+                raw = safe_image(context)
+                source = "controller_cached_after_image_recognition_before_fallback"
+            if raw is None or not raw.size:
+                return
+        else:
+            session.pop("settlement_latest_recognition", None)
+        digest = hashlib.sha256(raw.tobytes()).hexdigest()
+        if digest == session.get("settlement_last_frame"):
+            return
+        session["settlement_last_frame"] = digest
+        session["capture"].record(
+            kind, image=raw, node=name, reco_id=reco_id,
+            recognition=getattr(reco, "raw_detail", None), frame_source=source,
+            wait_freezes=freeze,
+            observation_phase="ending_navigation_before_input" if kind == "settlement_observation" else "post_battle_navigation_before_input",
+            evaluation_page_confirmed=None,
+        )
+
 
 class ProduceTaskSink(TaskerEventSink):
     def on_tasker_task(self, tasker, noti_type, detail):
@@ -463,8 +593,8 @@ class ProduceTaskSink(TaskerEventSink):
                 SESSIONS.task_entry_times[detail.task_id] = datetime.now(timezone.utc).isoformat()
             return
         try:
-            # Agent callbacks cannot safely make reverse controller queries while
-            # the client is delivering a task-end notification. Match stored IDs.
+            # 客户端发送任务结束通知时，Agent 回调不能安全地反向查询控制器，
+            # 因此使用之前保存的任务编号关联收尾。
             for key, session in list(SESSIONS.active.items()):
                 if detail.task_id == session["state"]["root_task_id"]:
                     SESSIONS.close(key, "task_ended_without_home")

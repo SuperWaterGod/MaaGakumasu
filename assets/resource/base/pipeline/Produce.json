@@ -1282,13 +1282,37 @@
             "ProduceHomeFlag",
             "[JumpBack]ProduceSkipED",
             "[JumpBack]ProduceSkipShowConfirm",
-            "[JumpBack]ProduceNext",
+            "[JumpBack]ProduceEndNext",
             "[JumpBack]ProduceSkip",
             "[JumpBack]ProduceDecide",
             "[JumpBack]CloseRoundButton",
             "[JumpBack]ProduceError",
             "[JumpBack]Click_1"
         ]
+    },
+    "ProduceEndNext": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": "next.png"
+            }
+        },
+        "pre_wait_freezes": {
+            "time": 400,
+            "target": [
+                100,
+                300,
+                540,
+                650
+            ],
+            "threshold": 0.98,
+            "rate_limit": 100,
+            "timeout": 2500
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        }
     },
     "ProduceSkipED": {
         "recognition": {
@@ -1326,6 +1350,18 @@
             }
         },
         "pre_delay": 0,
+        "pre_wait_freezes": {
+            "time": 400,
+            "target": [
+                100,
+                300,
+                540,
+                650
+            ],
+            "threshold": 0.98,
+            "rate_limit": 100,
+            "timeout": 2500
+        },
         "action": {
             "type": "Click",
             "param": {}
@@ -1339,7 +1375,7 @@
             "ProduceHomeFlag",
             "[JumpBack]ProduceSkipED",
             "[JumpBack]ProduceSkipChatFlag",
-            "[JumpBack]ProduceNext",
+            "[JumpBack]ProduceEndNext",
             "[JumpBack]CloseRoundButton",
             "[JumpBack]DecideButton",
             "[JumpBack]ProduceEventResultButton",
@@ -1360,7 +1396,18 @@
             "type": "Click",
             "param": {}
         },
-        "pre_wait_freezes": 200,
+        "pre_wait_freezes": {
+            "time": 400,
+            "target": [
+                100,
+                300,
+                540,
+                650
+            ],
+            "threshold": 0.98,
+            "rate_limit": 100,
+            "timeout": 2500
+        },
         "next": [
             "ProduceFinished",
             "ProduceBackHome",

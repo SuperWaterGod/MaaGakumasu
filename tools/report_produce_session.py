@@ -1,15 +1,96 @@
-"""Build a produce-level evidence report across interrupted capture segments."""
+"""跨中断分段生成整次培育的证据报告。"""
 
+import sys
 import json
 import hashlib
 import argparse
+import tempfile
 from pathlib import Path
 from datetime import datetime
 from collections import Counter
 
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agent"))
+
+from produce.settlement import evaluation_check
+
 
 def read_json(path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def refresh_settlement(run: Path, resource: Path, vision=None):
+    """只读取已保存的结束阶段画面，将结果写入独立版本目录。"""
+    from utils.image_io import read_image
+    from produce.analysis import OfflineVision, normalized_image
+    from produce.settlement import PARAMETER_ICONS, settlement_observation
+
+    run = run.resolve()
+    if read_json(run / "manifest.json").get("status") != "closed":
+        raise ValueError("Settlement refresh requires a closed capture")
+    event_bytes = (run / "events.jsonl").read_bytes()
+    events = [event for line in event_bytes.decode("utf-8").splitlines()
+              if (event := json.loads(line))["kind"] in ("settlement_observation", "exam_result_observation")]
+    code_root = Path(__file__).resolve().parents[1] / "agent"
+    provenance = {
+        "events_sha256": hashlib.sha256(event_bytes).hexdigest(),
+        "code_sha256": {name: hashlib.sha256((code_root / name).read_bytes()).hexdigest()
+                        for name in ("produce/settlement.py", "produce/analysis.py", "utils/image_io.py")},
+        "reader_cli_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "resource_ocr_sha256": {path.relative_to(resource).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                                for path in sorted((resource / "model/ocr").rglob("*")) if path.is_file()},
+        "settlement_icons_sha256": {definition["template"]: hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
+                                    for definition in PARAMETER_ICONS.values() for path in [resource / "image" / definition["template"]]},
+    }
+    from importlib.metadata import version
+
+    provenance["maafw_version"] = version("maafw")
+    signature = hashlib.sha256(json.dumps(provenance, sort_keys=True).encode()).hexdigest()[:16]
+    output = run / "derived/settlement" / signature
+    if (output / "status.json").exists():
+        status = read_json(output / "status.json")
+        if status.get("status") == "completed":
+            return status, vision
+        # 保留原生 OCR 中断时的输出，在新目录中重试。
+        output = Path(tempfile.mkdtemp(prefix=signature + "_retry_", dir=output.parent))
+    output.mkdir(parents=True, exist_ok=True)
+    status = {"schema_version": 1, "status": "running", "analysis_id": signature, **provenance,
+              "device_input_sent": False, "frames": 0, "field_observations": {key: 0 for key in ("score", "rank", "Vo", "Da", "Vi")}}
+    status_path = output / "status.json"
+    status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    try:
+        if events and vision is None:
+            vision = OfflineVision(resource, output)
+        seen = {}
+        with (output / "index.jsonl").open("w", encoding="utf-8") as stream:
+            for event in events:
+                frame = event.get("frame") or {}
+                frame_path = (run / frame.get("path", "")).resolve()
+                if not frame_path.is_relative_to(run) or not frame_path.is_file():
+                    raise ValueError("Missing settlement frame or path escaped capture")
+                if hashlib.sha256(frame_path.read_bytes()).hexdigest() != frame.get("sha256"):
+                    raise ValueError("Settlement frame hash mismatch")
+                if frame["sha256"] not in seen:
+                    array = normalized_image(read_image(frame_path))
+                    tokens = vision._read_title(array, [0, 0, 720, 1280])
+                    result = settlement_observation(tokens, lambda roi: vision._read_title(array, roi),
+                                                    lambda definition: vision.match_buff_templates(array, definition))
+                    result["source_frame_sha256"] = frame["sha256"]
+                    result_path = output / f"settlement_{event['seq']}.json"
+                    result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                    seen[frame["sha256"]] = result_path
+                    status["frames"] += 1
+                    for key, reading in result["settlement"].items():
+                        status["field_observations"][key] += reading["value"] is not None
+                stream.write(json.dumps({"event_id": event["event_id"], "source_frame_sha256": frame["sha256"],
+                                         "result": seen[frame["sha256"]].relative_to(run).as_posix()}) + "\n")
+        status["status"] = "completed"
+    except Exception as exc:
+        status.update(status="failed", error=str(exc))
+        raise
+    finally:
+        status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return status, vision
 
 
 def build_report(session_directory: Path, capture_root: Path | None = None):
@@ -21,6 +102,7 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
     reward_pages = {}
     battles = []
     settlements = []
+    exam_results = []
     preparations = []
     observed_hand_cards = {}
     segments = []
@@ -35,7 +117,7 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
             continue
         manifest = read_json(run / "manifest.json")
         derived = {}
-        # Keep one analysis version per segment; report which version was chosen.
+        # 每个分段只使用一个分析版本，并在报告中记录所选版本。
         statuses = sorted((run / "derived/card_identity").glob("*/status.json"), key=lambda path: path.stat().st_mtime)
         status = read_json(statuses[-1]) if statuses else None
         if statuses and (statuses[-1].parent / "index.jsonl").exists():
@@ -76,7 +158,28 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
                 original["reward_effect_replay_result"] = link["result"]
             effect_replay = replay_status
             break
-        segments.append({"run_id": run_id, "manifest": manifest, "analysis": status, "reward_effect_replay": effect_replay})
+        settlement_refresh = None
+        settlement_updates = {}
+        refreshes = sorted((run / "derived/settlement").glob("*/status.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+        for refresh_path in refreshes:
+            refresh_status = read_json(refresh_path)
+            if refresh_status.get("status") != "completed":
+                continue
+            if refresh_status.get("events_sha256") != hashlib.sha256((run / "events.jsonl").read_bytes()).hexdigest():
+                continue
+            for line in (refresh_path.parent / "index.jsonl").read_text(encoding="utf-8").splitlines():
+                link = json.loads(line)
+                result_path = (run / link["result"]).resolve()
+                if not result_path.is_relative_to(run):
+                    raise ValueError("Settlement refresh escaped capture")
+                result = read_json(result_path)
+                if result.get("source_frame_sha256") != link.get("source_frame_sha256"):
+                    raise ValueError("Settlement refresh frame mismatch")
+                settlement_updates[link["event_id"]] = {"link": link, "observation": result}
+            settlement_refresh = refresh_status
+            break
+        segments.append({"run_id": run_id, "manifest": manifest, "analysis": status, "reward_effect_replay": effect_replay,
+                         "settlement_refresh": settlement_refresh})
         for number, line in enumerate((run / "events.jsonl").read_text(encoding="utf-8").splitlines(), 1):
             try:
                 event = json.loads(line)
@@ -123,8 +226,13 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
                     route["input" if event["kind"] == "route_input_result" else "after"] = entry
             elif event["kind"] == "battle_invocation_start":
                 battles.append(event["event_id"])
-            elif event["kind"] == "settlement_observation":
-                settlements.append(entry)
+            elif event["kind"] in ("settlement_observation", "exam_result_observation"):
+                refreshed = settlement_updates.get(event["event_id"])
+                if refreshed:
+                    if refreshed["link"]["source_frame_sha256"] != event.get("frame", {}).get("sha256"):
+                        raise ValueError("Settlement refresh event frame mismatch")
+                    entry["derived"] = refreshed
+                (settlements if event["kind"] == "settlement_observation" else exam_results).append(entry)
             elif event["kind"] == "preparation_observation":
                 preparations.append(entry)
     for decision, route in routes.items():
@@ -156,20 +264,29 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
             if entry and "frame" not in entry["event"]:
                 missing_frames.append(entry["event"]["event_id"])
     final_settlement = {}
-    for field in ("score", "rank", "Vo", "Da", "Vi"):
+    for field in ("score", "rank", "Vo", "Da", "Vi", "fan_votes", "exam_score", "place"):
         observations = []
-        for entry in settlements:
-            settlement = ((entry.get("derived") or {}).get("observation") or {}).get("settlement") or {}
-            value = settlement.get(field, {}).get("value")
+        for entry in (*settlements, *exam_results):
+            observation = (entry.get("derived") or {}).get("observation") or {}
+            settlement = observation.get("settlement") or {}
+            reading = (observation.get("fan_votes") or {}) if field == "fan_votes" else settlement.get(field, {})
+            if field in ("exam_score", "place"):
+                reading = (observation.get("final_exam") or {}).get("score" if field == "exam_score" else "place") or {}
+            value = reading.get("value")
             if value is not None:
-                observations.append({"event_id": entry["event"]["event_id"], **settlement[field]})
+                observations.append({"event_id": entry["event"]["event_id"], **reading})
         values = {item["value"] for item in observations}
         final_settlement[field] = {
             "value": next(iter(values)) if len(values) == 1 else None,
             "observations": observations,
             "conflict": len(values) > 1,
         }
-    # Never use route options as the owned deck, or input success as a mutation.
+    final_fan_votes = final_settlement.pop("fan_votes")
+    final_exam = {"score": final_settlement.pop("exam_score"), "place": final_settlement.pop("place")}
+    formula_check = evaluation_check(session["bindings"]["scenario"], final_settlement, final_fan_votes, final_exam,
+                                     session["bindings"].get("difficulty"))
+    settlement_complete = all(item["value"] is not None for item in final_settlement.values())
+    # 不把路线候选当作已持有牌组，也不把输入成功当作库存变更。
     gameplay_started_at = session.get("gameplay_started_at")
     started_at = gameplay_started_at or session["started_at"]
     start_source = session.get("start_source", "legacy_preparation_entry")
@@ -190,6 +307,12 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
         "preparation_observations": preparations,
         "settlement_observations": settlements,
         "final_settlement": final_settlement,
+        "final_fan_votes": final_fan_votes,
+        "final_exam": final_exam,
+        "exam_result_observations": exam_results,
+        "evaluation_check": formula_check,
+        "settlement_fields_complete": settlement_complete,
+        "unresolved_settlement_fields": [key for key, item in final_settlement.items() if item["value"] is None],
         "timing": {
             "started_at": started_at,
             "start_source": start_source,
@@ -277,6 +400,10 @@ def build_report(session_directory: Path, capture_root: Path | None = None):
                 lines.append(f"  原因：`{failure.get('candidate_id')}` / `{failure.get('reason')}`；诊断截图和分项证据见 report.json。")
     lines.extend(["", "## 结算观察", ""])
     lines.append("- 汇总：" + "；".join(f"{field}={entry['value']}" for field, entry in final_settlement.items()))
+    lines.append(f"- 结算字段齐全：{settlement_complete}；事件覆盖完整不代表结算数值全部读出。粉丝投票数、考试分数不作为最终评价分数。")
+    lines.append(f"- 最终粉丝投票数：{final_fan_votes['value']}；公式校验：{formula_check['status']}；计算值：{formula_check['calculated']}")
+    if session["bindings"]["scenario"] == "初":
+        lines.append(f"- 最终考试：{final_exam['score']['value']} 分；名次：{final_exam['place']['value']}；最终三维不重复增加名次奖励。")
     for entry in settlements:
         derived = (entry.get("derived") or {}).get("observation") or {}
         fields = derived.get("settlement") or {}
@@ -292,7 +419,19 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("directory", type=Path, help="debug/produce_sessions/<session_id>")
     parser.add_argument("--capture-root", type=Path)
+    parser.add_argument("--refresh-settlement", action="store_true", help="Re-OCR saved ending frames; never sends device input")
+    parser.add_argument("--resource", type=Path, help="Resource bundle used for settlement OCR")
     args = parser.parse_args()
+    if args.refresh_settlement:
+        if not args.resource:
+            parser.error("--refresh-settlement requires --resource")
+        capture_root = args.capture_root or args.directory.parent.parent / "decision_capture"
+        vision = None
+        for segment in read_json(args.directory / "session.json")["segments"]:
+            run = (capture_root / segment["run_id"]).resolve()
+            if not run.is_relative_to(capture_root.resolve()):
+                raise ValueError("Segment escaped capture root")
+            _, vision = refresh_settlement(run, args.resource, vision)
     report = build_report(args.directory, args.capture_root)
     print(
         json.dumps(

@@ -1,4 +1,4 @@
-"""Input-free background OCR and analysis of captured battles and route observations."""
+"""对已采集的对局和路线画面执行后台 OCR 与分析，不发送游戏输入。"""
 
 import os
 import re
@@ -12,15 +12,16 @@ from pathlib import Path
 from datetime import datetime, timezone
 from importlib.metadata import version
 
-# Embedded Python ignores the script directory; allow direct worker/CLI launch.
+# 内置 Python 不自动加入脚本目录，在入口设置后台进程和命令行工具的导入路径。
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from produce.state import STANCE_NAMES, STATE_FIELDS, ANOMALY_FIELDS, BattleStateReader
 from utils.image_io import bgr_image, read_image, resize_image
 from produce.catalog import SkillCardCatalog, clean, normalize_name
-from produce.console import RewardConsole, OperationConsole, state_lines, hand_summary
+from produce.console import RewardConsole, OperationConsole, SettlementConsole, state_lines, hand_summary
 from produce.rewards import RewardReader
+from produce.settlement import PARAMETER_ICONS, settlement_observation
 
 
 def normalized_image(image):
@@ -47,7 +48,7 @@ def labeled_value(tokens, labels, pattern):
             values.append(value.group())
             evidence.append(token)
             continue
-        # Only accept a separate value on the same row and to the right of the label.
+        # 独立数值须与标签位于同一行，且在标签右侧。
         x, y, w, h = token["box"]
         nearby = [
             other
@@ -73,7 +74,7 @@ def route_observation(tokens, catalog, event):
     candidates = []
     for index, token in enumerate(tokens):
         identity = catalog.match(token["text"], token.get("confidence", 0))
-        # Route descriptions also contain effect text. Require an exact catalog name.
+        # 路线描述也可能包含效果文本，只接受完整匹配的库名称。
         if identity["status"] == "unknown" or identity.get("match_method") != "exact":
             continue
         candidates.append(
@@ -91,8 +92,8 @@ def route_observation(tokens, catalog, event):
         match = re.fullmatch(r"(?:必要|消費|花费|价格|費用)?\s*([0-9][0-9,]*)\s*(?:P\s*ポイント|ポイント|Pt|PT|点)", clean(token["text"]))
         if match and token.get("confidence", 0) >= 0.8:
             price_tokens.append({"value": int(match[1].replace(",", "")), "unit": "produce_points", "evidence": [token]})
-    # Attach only explicit prices in the same row as one unique card name.
-    # Bare digits and shop balance are deliberately left as raw OCR.
+    # 只关联与唯一卡名处于同一行的明确价格。
+    # 裸数字和商店余额保留为原始 OCR 证据。
     if event.get("operation", "").startswith("shop"):
         for card in candidates:
             cx, cy, cw, ch = card["name_box"]
@@ -117,13 +118,7 @@ def route_observation(tokens, catalog, event):
                 card["cost"]["evidence"] = [token for price in owned_prices for token in price["evidence"]]
     settlement = None
     if event["kind"] == "settlement_observation":
-        settlement = {
-            "score": labeled_value(tokens, r"(?:最終スコア|最終評価点|最终得分|最終得点|評価点|总得分)", r"[0-9][0-9,]*"),
-            "rank": labeled_value(tokens, r"(?:評価ランク|最终评级|最終評価|评价等级)", r"(?:S{1,3}|[A-D])\+?"),
-            "Vo": labeled_value(tokens, r"(?:ボーカル|声乐|Vo)", r"[0-9][0-9,]*"),
-            "Da": labeled_value(tokens, r"(?:ダンス|舞蹈|Da)", r"[0-9][0-9,]*"),
-            "Vi": labeled_value(tokens, r"(?:ビジュアル|形象|Vi)", r"[0-9][0-9,]*"),
-        }
+        settlement = settlement_observation(tokens)["settlement"]
     return {
         "schema_version": 1,
         "operation": event.get("operation"),
@@ -155,7 +150,7 @@ def selection_evidence(observation, action):
     if not point:
         return {"candidate_id": None, "status": "unknown", "actual_point": None}
     x, y = point
-    # A name below the click is only a geometric suggestion, never inventory confirmation.
+    # 点击下方的牌名只表示几何位置对应，不确认库存变化。
     candidates = []
     for card in observation.get("candidates", []):
         left, top, width, height = card["name_box"]
@@ -181,14 +176,14 @@ class OfflineVision:
         from maa.controller import CustomController
 
         Toolkit.init_option(str(log_directory))
-        # OCR worker evidence is saved in derived JSON and analysis.log. Native
-        # per-recognition trace logs otherwise grow by many MB for every replay.
+        # OCR 证据已写入派生 JSON 和 analysis.log，
+        # 关闭原生逐次识别追踪日志，避免每次回放产生大量重复日志。
         Tasker.set_log_dir("")
         Tasker.set_stdout_level(LoggingLevelEnum.Error)
         self.resource = Resource()
         if not self.resource.post_bundle(resource_path).wait().status.succeeded:
             raise RuntimeError("Cannot load analysis resource")
-        # No physical controller is created. All input callbacks are denied.
+        # 使用内存控制器提供图像，所有游戏输入回调均拒绝执行。
         methods = {
             name: (lambda self, *args: False)
             for name in dir(CustomController)
@@ -272,7 +267,7 @@ class OfflineVision:
             if not candidate.get("in_hand_region"):
                 continue
             x, y, width, height = map(int, candidate["box"])
-            # ADB boxes never come from a differently scaled image. Agent candidates require 720x1280.
+            # ADB 检测框须与原图缩放一致，Agent 候选框要求图像为 720×1280。
             left, top = max(0, x), max(0, y + int(height * 0.80))
             right, bottom = min(720, x + width), min(1280, y + height)
             if right <= left or bottom <= top:
@@ -288,14 +283,14 @@ class OfflineVision:
             views = []
             for title_roi in rois:
                 texts = self._read_title(array, title_roi)
-                # Do not select a whole neighboring title which starts outside this card's visible part.
+                # 相邻卡名的起点位于当前卡牌可见区域之外时，不将其整段选入。
                 eligible = [item for item in texts if not overlap or item["box"][0] < visible_right]
                 title = max(eligible, key=lambda item: len(normalize_name(item["text"])), default=None)
                 identity = catalog.match(title["text"], title["confidence"], allow_overlap=overlap) if title else catalog.match("")
                 views.append({"roi": list(title_roi), "ocr_results": texts, "identity": identity})
             accepted = [view for view in views if view["identity"]["database_card_id"]]
             if accepted:
-                # A clipped + may lose the second marker. Preserve the strongest visible variant evidence.
+                # 裁切可能漏掉第二个加号，保留已观察到的最强强化标记证据。
                 chosen = max(accepted, key=lambda view: view["identity"]["observed_plus_count"])
             else:
                 chosen = max(views, key=lambda view: view["identity"].get("name_similarity", 0))
@@ -349,6 +344,8 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
             + Path(__file__).parents[1].joinpath("utils/image_io.py").read_text(encoding="utf-8")
             + (reward_reader.catalog.item_sha256 or "missing_reward_items")
             + (state_reader.template_sha256 or "missing_buff_templates")
+            + "".join(hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else "missing_settlement_icon"
+                      for definition in PARAMETER_ICONS.values() for path in [resource / "image" / definition["template"]])
         ).encode()
     ).hexdigest()[:16]
     output = directory / "derived" / "card_identity" / signature
@@ -381,6 +378,9 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
         "anomaly_field_observations": {key: 0 for key in ANOMALY_FIELDS},
         "route_frames": 0,
         "route_errors": 0,
+        "settlement_frames": 0,
+        "exam_result_frames": 0,
+        "settlement_field_observations": {key: 0 for key in ("score", "rank", "Vo", "Da", "Vi")},
         "reward_preview_frames": 0,
         "reward_preview_errors": 0,
         "reward_observation_schema_version": 2,
@@ -405,6 +405,8 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
 
     action_console = OperationConsole()
     reward_console = RewardConsole()
+    bindings = json.loads((directory / "manifest.json").read_text(encoding="utf-8")).get("metadata", {}).get("bindings", {})
+    settlement_console = SettlementConsole(bindings)
     try:
         save_status()
         vision = OfflineVision(resource, output)
@@ -450,6 +452,12 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     continue
                 last_event = time.monotonic()
                 event = json.loads(line)
+                if event["kind"] == "produce_session_end":
+                    summary = settlement_console.finish(event.get("event_id"))
+                    if summary:
+                        status["evaluation_check"] = summary["evaluation_check"]
+                        notice(**summary)
+                    continue
                 if event["kind"].startswith("reward_") and event["kind"] != "reward_candidate_preview":
                     summary = reward_console.observe(event)
                     if summary:
@@ -492,7 +500,7 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     }, ensure_ascii=False) + "\n")
                     status["event_links"] += 1
                     continue
-                if event["kind"] in ("route_before", "route_after", "preparation_observation", "settlement_observation"):
+                if event["kind"] in ("route_before", "route_after", "preparation_observation", "settlement_observation", "exam_result_observation"):
                     result = {"error": "missing_frame", "candidates": []}
                     try:
 
@@ -502,6 +510,12 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                         array = normalized_image(read_image(frame_path))
                         tokens = vision._read_title(array, [0, 0, 720, 1280])
                         result = route_observation(tokens, catalog, event)
+                        if event["kind"] in ("settlement_observation", "exam_result_observation"):
+                            result.update(settlement_observation(tokens, lambda roi: vision._read_title(array, roi),
+                                                                 lambda definition: vision.match_buff_templates(array, definition)))
+                            status["settlement_frames" if event["kind"] == "settlement_observation" else "exam_result_frames"] += 1
+                            for key, reading in result["settlement"].items():
+                                status["settlement_field_observations"][key] += reading["value"] is not None
                         result.update(source_frame_sha256=event["frame"]["sha256"], catalog_sha256=catalog.sha256)
                         status["route_frames"] += 1
                     except Exception as exc:
@@ -511,6 +525,8 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
                     if event["kind"] == "route_before":
                         route_pending[event["event_id"]] = result
+                    if event["kind"] in ("settlement_observation", "exam_result_observation"):
+                        settlement_console.observe(event, result)
                     index.write(json.dumps({
                         "event_id": event["event_id"], "session_id": event.get("session_id"),
                         "decision_id": event.get("decision_id"),
@@ -531,7 +547,7 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                 if event["kind"] == "screen_observation" and event.get("battle_hint") is not True:
                     continue
                 sha = event["frame"]["sha256"]
-                # Pre-action candidates are stronger evidence than re-detection; keep them event-specific.
+                # 操作前的检测候选优于重新检测结果，按原始事件分别保留。
                 key = sha + ("_" + str(event["seq"]) if event.get("candidates") else "")
                 result_path = output / f"{key}.json"
                 if key not in cached:
@@ -613,6 +629,10 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
         for message, event_id, number in action_console.unfinished():
             notice(message, decision_id=event_id, console_operation_number=number)
         for summary in reward_console.unfinished():
+            notice(**summary)
+        summary = settlement_console.finish()
+        if summary:
+            status["evaluation_check"] = summary["evaluation_check"]
             notice(**summary)
         status["status"] = "completed"
         notice(
