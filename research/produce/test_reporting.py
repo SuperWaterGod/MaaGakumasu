@@ -9,7 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / 'agent')]
-from research.produce.produce_reporting import build_corpus
+from research.produce.analyze_choices import POLICY_FILES, build_baseline
+from research.produce.produce_reporting import build_corpus, timeline_summary
 from research.produce.report_produce_session import build_report
 
 
@@ -86,6 +87,127 @@ class ReportingTest(unittest.TestCase):
         self.assertEqual(choice['evidence']['line'], 3)
         self.assertTrue(Path(choice['evidence']['frame_path']).exists())
         self.assertIsNone(report['uncollected']['shop_cost']['value'])
+
+    def test_sp_is_candidate_attribute(self):
+        summary = timeline_summary({'kind': 'produce_event_choice', 'detail': {
+            'candidates': [{'Vo': [190, 1000, 1, 1], 'SP': False}, {'Da': [360, 1000, 1, 1], 'SP': True}],
+            'selected': {'name': 'Da_SP'},
+        }})
+        self.assertEqual(summary, '候选：Vo、Da_SP；选择：Da_SP')
+
+    def _reward_baseline_fixture(self):
+        self.events[-1]['kind'] = 'analysis_started'
+        page = self.add('reward_page_start', frame=True, selected_candidate_id='a',
+                        layout={'candidates': [{'candidate_id': 'a'}, {'candidate_id': 'b'}]})
+        previews = []
+        for candidate in ('a', 'a', 'b'):
+            preview = self.add('reward_candidate_preview', frame=True, reward_page_id=page['event_id'], candidate={'candidate_id': candidate})
+            previews.append(preview['event_id'])
+            self.results[preview['event_id']] = {'identity_verified': True, 'detail_verified': True,
+                'item_kind': 'skill_card', 'observed_name': candidate, 'identity': {'catalog_id': candidate, 'database_name': candidate}}
+        self.add('reward_selection_restored', reward_page_id=page['event_id'], selected_candidate_id='a', verified=True)
+        self.add('reward_page_end', reward_page_id=page['event_id'], candidate_previews_complete=True)
+        self.add('reward_receive_input', reward_page_id=page['event_id'], selected_candidate_id='a', framework_action_succeeded=True)
+        self.add('produce_session_end', terminal=True, reason='returned_home')
+        return previews
+
+    def test_baseline_preview_retry_not_an_extra_opportunity(self):
+        self._reward_baseline_fixture()
+        result = build_baseline([self.write()], self.base / 'baseline')
+        self.assertEqual(result['summary']['reward_candidates'], 2)
+        items = {item['catalog_id']: item for item in result['summary']['reward_opportunities']}
+        self.assertEqual(items['a']['offered_pages'], 1)
+        self.assertEqual(items['a']['selection_when_offered']['success'], 1)
+        self.assertEqual(items['b']['selection_when_offered']['total'], 1)
+
+    def test_baseline_conflicting_identity_remains_unknown(self):
+        previews = self._reward_baseline_fixture()
+        self.results[previews[1]]['identity']['catalog_id'] = 'conflicting'
+        result = build_baseline([self.write()], self.base / 'baseline')
+        self.assertEqual(result['summary']['unknown_reward_candidates'], 1)
+        self.assertEqual(result['summary']['unknown_selected_reward_identities'], 1)
+        self.assertIsNone(result['sessions'][0]['rewards'][0]['candidates'][0]['catalog_id'])
+        self.assertIsNone(result['summary']['uncollected']['shop_cost']['value'])
+        self.assertEqual(result['readiness'][1]['status'], '部分可用')
+
+    def test_baseline_unverified_selection_does_not_mean_not_selected(self):
+        self._reward_baseline_fixture()
+        next(e for e in self.events if e['kind'] == 'reward_receive_input')['framework_action_succeeded'] = False
+        result = build_baseline([self.write()], self.base / 'baseline')
+        self.assertEqual(result['summary']['verified_reward_selection_inputs'], 0)
+        for item in result['summary']['reward_opportunities']:
+            self.assertEqual(item['offered_pages'], 1)
+            self.assertIsNone(item['selection_when_offered']['rate'])
+
+    def test_baseline_same_catalog_in_two_slots_counts_one_page(self):
+        previews = self._reward_baseline_fixture()
+        self.results[previews[-1]]['identity']['catalog_id'] = 'a'
+        result = build_baseline([self.write()], self.base / 'baseline')
+        self.assertEqual(result['summary']['reward_candidates'], 2)
+        items = result['summary']['reward_opportunities']
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]['offered_pages'], 1)
+        self.assertEqual(items[0]['selection_when_offered']['success'], 1)
+
+    def test_baseline_unmatched_event_selection_stays_unknown(self):
+        self.events[2]['selected']['name'] = '未匹配的选择'
+        result = build_baseline([self.write()], self.base / 'baseline')
+        self.assertEqual(result['summary']['unknown_event_choices'], 1)
+        self.assertIsNone(result['summary']['event_opportunities'][0]['selection_when_available']['rate'])
+
+    def test_baseline_sp_metadata_is_not_an_event(self):
+        self.events[2].update(candidates=[{'Vo': [190, 1000, 1, 1], 'SP': False}, {'Da': [360, 1000, 1, 1], 'SP': True}],
+                              selected={'name': 'Da_SP', 'box': [360, 1000, 1, 1]})
+        result = build_baseline([self.write()], self.base / 'baseline')
+        self.assertEqual(result['summary']['event_selection_counts'], {'Da_SP': 1})
+        self.assertEqual({v['name'] for v in result['summary']['event_opportunities']}, {'Vo', 'Da_SP'})
+
+    def test_baseline_card_song_and_code_versions_stay_separate(self):
+        first = self.write()
+        second = deepcopy(first)
+        second['session']['session_id'] = 's2'
+        second['session']['bindings']['configured_idol']['song_name'] = '另一首歌曲'
+        second['segments'][0]['run_id'] = 'run2'
+        third = deepcopy(first)
+        third['session']['session_id'] = 's3'
+        third['code_versions'] = ['another_version']
+        third['segments'][0]['run_id'] = 'run3'
+        result = build_baseline([first, second, third, first], self.base / 'baseline')
+        self.assertEqual(len(result['groups']), 3)
+        self.assertEqual(result['summary']['sessions'], 3)
+        self.assertEqual(result['excluded'][0]['reason'], 'duplicate_session')
+        self.assertEqual(result['matched_configuration_observations'], [])
+
+    def test_baseline_incomplete_or_shared_rounds_excluded(self):
+        first = self.write()
+        incomplete = deepcopy(first)
+        incomplete['complete'] = False
+        result = build_baseline([incomplete], self.base / 'baseline_incomplete')
+        self.assertEqual(result['summary']['sessions'], 0)
+        second = deepcopy(first)
+        second['session']['session_id'] = 's2'
+        result = build_baseline([first, second], self.base / 'baseline_shared')
+        self.assertEqual(result['summary']['sessions'], 0)
+        self.assertEqual({e['reason'] for e in result['excluded']}, {'shared_segment'})
+
+    def test_baseline_same_policy_is_not_causal_evidence(self):
+        self.bindings['node_settings'] = {'ProduceChooseNIAEventFlag': {'first': 'Vi'}}
+        first = self.write()
+        first['segments'][0]['manifest']['metadata']['version_files'] = {name: 'same' for name in POLICY_FILES}
+        first['evaluation_check']['calculated'] = {'parameter_rating': 100, 'vote_rating': 200}
+        second = deepcopy(first)
+        second['session']['session_id'] = 's2'
+        second['segments'][0]['run_id'] = 'run2'
+        second['code_versions'] = ['another_capture_version']
+        second['timing']['started_at'] = '2000-01-01T01:00:00+00:00'
+        second['final_settlement']['score']['value'] += 100
+        second['evaluation_check']['calculated'] = {'parameter_rating': 180, 'vote_rating': 220}
+        result = build_baseline([first, second], self.base / 'baseline')
+        pair = result['matched_configuration_observations'][0]
+        self.assertEqual(pair['score_delta'], 100)
+        self.assertEqual(pair['formula_component_delta']['parameter_rating'], 80)
+        self.assertEqual(pair['formula_component_delta']['vote_rating'], 20)
+        self.assertEqual(result['readiness'][4]['status'], '证据不足')
 
     def test_duplicate_event_and_segment(self):
         self.events.append(deepcopy(self.events[2]))

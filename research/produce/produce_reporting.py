@@ -374,7 +374,12 @@ def timeline_summary(row):
     """Markdown 展示简短摘要；完整参数保留在 JSON 中。"""
     kind, detail = row["kind"], row["detail"]
     if kind == "produce_event_choice":
-        candidates = "、".join(str(name) for c in detail.get("candidates", []) for name in c)
+        candidates = "、".join(
+            f"{name}_SP" if name in ("Vo", "Da", "Vi") and candidate.get("SP") is True else str(name)
+            for candidate in detail.get("candidates", [])
+            for name, box in candidate.items()
+            if name != "SP" and isinstance(box, list) and len(box) == 4
+        )
         return f"候选：{candidates or '未记录'}；选择：{(detail.get('selected') or {}).get('name', '未知')}"
     if kind == "reward_candidate_preview":
         return (f"候选 {(detail.get('candidate') or {}).get('candidate_id')}：{detail.get('observed_name') or '未识别'}；"
