@@ -132,14 +132,9 @@
       "param": {}
     },
     "action": {
-      "type": "Click",
+      "type": "Custom",
       "param": {
-        "target": [
-          1160,
-          66,
-          42,
-          42
-        ]
+        "custom_action": "ProduceSkipShowAuto"
       }
     }
   },
