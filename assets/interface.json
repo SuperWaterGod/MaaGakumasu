@@ -96,7 +96,7 @@
     "./tasks/shopping.json",
     "./tasks/produce.json",
     "./tasks/produce_cn.json",
-    "./tasks/Shutdown.json"
+    "./tasks/shutdown.json"
   ],
   "task": [
     {
