@@ -1293,7 +1293,7 @@
                     100,
                     60
                 ],
-                "expected": "生成"
+                "expected": "^\\s*生成\\s*$"
             }
         },
         "pre_delay": 0,
