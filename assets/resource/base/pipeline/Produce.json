@@ -1322,14 +1322,9 @@
             }
         },
         "action": {
-            "type": "Click",
+            "type": "Custom",
             "param": {
-                "target": [
-                    1192,
-                    80,
-                    1,
-                    1
-                ]
+                "custom_action": "ProduceSkipShowAuto"
             }
         },
         "focus": {
@@ -1346,7 +1341,7 @@
                     100,
                     60
                 ],
-                "expected": "生成"
+                "expected": "^\\s*生成\\s*$"
             }
         },
         "pre_delay": 0,

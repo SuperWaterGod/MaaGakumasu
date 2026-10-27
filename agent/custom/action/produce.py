@@ -1,5 +1,7 @@
 """MaaFramework 培育动作入口及奖励领取适配。"""
 
+import time
+from maa.context import Context
 from utils import logger
 from produce.battle import ProduceCardsAuto
 from produce.events import ProduceChooseEventAuto, ProduceChooseEventBase, ProduceChooseNIAEventAuto
@@ -12,7 +14,7 @@ from maa.agent.agent_server import AgentServer
 
 __all__ = [
     "ProduceChooseEventBase", "ProduceChooseEventAuto", "ProduceChooseNIAEventAuto", "ProduceCardsAuto",
-    "ProduceChooseWorkAuto", "ProduceChooseOptionsAuto", "ProduceChooseMirrorAuto", "ProduceKeepDrinkAuto", "ProduceRewardConfirm",
+    "ProduceChooseWorkAuto", "ProduceChooseOptionsAuto", "ProduceChooseMirrorAuto", "ProduceKeepDrinkAuto", "ProduceRewardConfirm", "ProduceSkipShowAuto",
 ]
 
 
@@ -107,3 +109,27 @@ class ProduceRewardConfirm(CustomAction):
         if pending:
             message += "｜候选摘要仍在后台处理，完成后补发"
         (logger.info if success else logger.warning)(message)
+
+
+@AgentServer.custom_action("ProduceSkipShowAuto")
+class ProduceSkipShowAuto(CustomAction):
+    """按固定坐标尝试右上角两次、左上角一次，并限制点击在当前画面内。"""
+
+    def run(self, context: Context, argv: CustomAction.RunArg) -> bool:
+        for target_x, target_y in ((1192, 80), (1192, 80), (20, 20)):
+            image = context.tasker.controller.post_screencap().wait().get()
+            if image is None or image.size == 0:
+                return False
+            height, width = image.shape[:2]
+            if height >= width:
+                # 演出已结束或尚在切屏，交还流水线判断，避免点击结算页面。
+                return True
+
+            x = max(0, min(width - 1, target_x))
+            y = max(0, min(height - 1, target_y))
+            if not context.tasker.controller.post_click(x, y).wait().succeeded:
+                return False
+            time.sleep(0.3)
+
+        return True
+
