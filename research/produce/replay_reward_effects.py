@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from collections import Counter
 
 sys.path[:0] = [str(Path(__file__).resolve().parents[2]), str(Path(__file__).resolve().parents[2] / "agent")]
+from produce.audit import analysis_records
 from utils.image_io import read_image
 from produce.catalog import SkillCardCatalog
 from produce.rewards import DETAIL_ROIS, RewardReader, reward_preview_observation
@@ -23,7 +24,7 @@ def replay(directory: Path, database: Path):
     manifest = load(directory / "manifest.json")
     if manifest.get("status") != "closed":
         raise ValueError("Replay requires a closed capture")
-    sources = sorted((directory / "derived/card_identity").glob("*/status.json"), key=lambda path: path.stat().st_mtime)
+    sources = sorted((directory / "analysis").glob("status.json"), key=lambda path: path.stat().st_mtime)
     if not sources:
         raise ValueError("No prior OCR analysis")
     source = sources[-1].parent
@@ -36,21 +37,15 @@ def replay(directory: Path, database: Path):
     events_path = directory / "events.jsonl"
     events = [json.loads(line) for line in events_path.read_text(encoding="utf-8").splitlines()]
     events = {event["event_id"]: event for event in events if event["kind"] == "reward_candidate_preview"}
-    links = [json.loads(line) for line in (source / "index.jsonl").read_text(encoding="utf-8").splitlines()]
     inputs = []
-    for link in links:
+    for link, observation in analysis_records(source / "results.jsonl"):
         event = events.get(link["event_id"])
         if event is None:
             continue
-        path = (directory / link["result"]).resolve()
-        if not path.is_relative_to(directory):
-            raise ValueError("Source result escaped capture")
-        raw = path.read_bytes()
-        observation = json.loads(raw)
         if observation.get("source_frame_sha256") != event.get("frame", {}).get("sha256"):
             raise ValueError("Source result frame mismatch")
-        inputs.append((event, observation, {"event_id": event["event_id"], "path": link["result"],
-                                          "sha256": hashlib.sha256(raw).hexdigest()}))
+        raw = json.dumps(observation, ensure_ascii=False, sort_keys=True).encode()
+        inputs.append((event, observation, {"event_id": event["event_id"], "sha256": hashlib.sha256(raw).hexdigest()}))
     if not inputs or {event["event_id"] for event, _, _ in inputs} != set(events) or len(inputs) != len(events):
         raise ValueError("Reward OCR coverage is missing or duplicated")
     code_root = Path(reward_preview_observation.__code__.co_filename).parent
@@ -87,7 +82,7 @@ def replay(directory: Path, database: Path):
             # 使用已有 OCR 估计实时读取器需要请求的识别区域，
             # 不重新识别图像，也不改写历史输入事件。
             if (event["candidate"]["candidate_id"] != selected_ids.get(event.get("reward_page_id")) and
-                    reader.icons.lookup(array, event["candidate"]["box"])):
+                    reader.icons and reader.icons.lookup(array, event["candidate"]["box"])):
                 reusable_icons += 1
 
             def saved_ocr(_image, roi):
@@ -101,7 +96,7 @@ def replay(directory: Path, database: Path):
             path = output / f"reward_{event['seq']}.json"
             path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             stream.write(json.dumps({"event_id": event["event_id"], "result": path.relative_to(directory).as_posix(),
-                                     "source_result": source_entry["path"]}, ensure_ascii=False) + "\n")
+                                     "source_event_id": source_entry["event_id"]}, ensure_ascii=False) + "\n")
     result = {"schema_version": 2, "status": "completed", "analysis_id": signature, **provenance,
               "reward_observation_schema_version": 2, "method": "saved_ocr_only", "device_input_sent": False, "fresh_ocr": False,
               "reward_candidates": len(inputs), "semantic_statuses": dict(counts),

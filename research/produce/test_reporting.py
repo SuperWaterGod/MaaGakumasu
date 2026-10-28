@@ -16,17 +16,18 @@ from research.produce.report_produce_session import build_report
 
 class ReportingTest(unittest.TestCase):
     def setUp(self):
-        temporary_root = ROOT / 'debug/research/produce/tests'
+        temporary_root = ROOT.parent / 'MaaGakumasuLab/debug/research/produce/tests'
         temporary_root.mkdir(parents=True, exist_ok=True)
         temporary = tempfile.TemporaryDirectory(prefix='reporting_', dir=temporary_root)
         self.base = Path(temporary.name).resolve()
         assert self.base.parent == temporary_root.resolve()
         self.addCleanup(temporary.cleanup)
-        self.capture = self.base / 'decision_capture'
+        self.capture = self.base / 'produce_sessions/s1/data'
         self.directory = self.base / 'produce_sessions/s1'
         self.directory.mkdir(parents=True)
+        self.capture.mkdir()
         self.bindings = {'scenario': 'NIA', 'difficulty': ['PRO'], 'configured_idol': {'idol_name': '偶像', 'song_name': '歌曲'}, 'deck': {}}
-        self.session = {'session_id': 's1', 'schema_version': 2, 'bindings': self.bindings, 'segments': [],
+        self.session = {'session_id': 's1', 'schema_version': 4, 'start_source': 'ProduceEntryNIA', 'bindings': self.bindings, 'segments': [],
                         'started_at': '2000-01-01T00:00:00+00:00', 'gameplay_started_at': '2000-01-01T00:00:00+00:00',
                         'start_observed': True, 'settlement_observed': True, 'status': 'ended',
                         'stop_reason': 'returned_home', 'ended_at': '2000-01-01T00:01:00+00:00'}
@@ -63,18 +64,14 @@ class ReportingTest(unittest.TestCase):
                     'metadata': {'session_id': 's1', 'bindings': self.bindings, 'entry': 'ProduceEntryNIA', 'version_files': {'agent.py': 'hash'}}}
         (run / 'manifest.json').write_text(json.dumps(manifest), encoding='utf8')
         (run / 'events.jsonl').write_text('\n'.join(json.dumps(e) for e in self.events) + '\n', encoding='utf8')
-        derived = run / 'derived/card_identity/old'
+        derived = run / 'analysis'
         derived.mkdir(parents=True, exist_ok=True)
         (derived / 'status.json').write_text(json.dumps({'status': 'completed', 'analysis_id': 'old'}), encoding='utf8')
-        links = []
-        for n, (event_id, result) in enumerate(self.results.items()):
-            path = derived / f'{n}.json'
-            path.write_text(json.dumps(result), encoding='utf8')
-            links.append({'event_id': event_id, 'result': path.relative_to(run).as_posix()})
-        (derived / 'index.jsonl').write_text('\n'.join(json.dumps(link) for link in links), encoding='utf8')
-        self.session['segments'] = [{'run_id': 'run'}] + ([{'run_id': 'run'}] if second else [])
-        (self.directory / 'session.json').write_text(json.dumps(self.session), encoding='utf8')
-        return build_report(self.directory, self.capture)
+        links = [{'event_id': event_id, 'observation': result} for event_id, result in self.results.items()]
+        (derived / 'results.jsonl').write_text('\n'.join(json.dumps(link) for link in links) + '\n', encoding='utf8')
+        self.session['segments'] = [{'run_id': 'run', 'relative_path': 'data/run'}] + ([{'run_id': 'run', 'relative_path': 'data/run'}] if second else [])
+        (self.directory / 'data/session.json').write_text(json.dumps(self.session), encoding='utf8')
+        return build_report(self.directory)
 
     def codes(self, report):
         return {item['code'] for item in report['integrity']['issues']}
@@ -276,10 +273,10 @@ class ReportingTest(unittest.TestCase):
         self.assertEqual(report['integrity']['entry_mode'], 'skip_preparation')
         self.assertFalse(report['complete'])
 
-    def test_legacy_reward_field_is_unevaluated(self):
+    def test_missing_reward_verification_is_unevaluated(self):
         page = self.add('reward_page_start', frame=True, selected_candidate_id='a', layout={'candidates': [{'candidate_id': 'a'}]})
         preview = self.add('reward_candidate_preview', frame=True, reward_page_id=page['event_id'], candidate={'candidate_id': 'a'})
-        self.results[preview['event_id']] = {'detail_verified': True, 'observed_name': '旧版牌名'}
+        self.results[preview['event_id']] = {'detail_verified': True, 'observed_name': '未核验牌名'}
         report = self.write()
         self.assertIsNone(report['recognition']['reward_identity']['rate'])
         self.assertEqual(report['recognition']['reward_identity']['total'], 0)
@@ -293,14 +290,81 @@ class ReportingTest(unittest.TestCase):
         self.assertEqual(result['summary']['sessions'], 0)
         self.assertEqual(result['shared_segments_excluded'], {'run': ['s1', 's2']})
 
-    def test_partial_new_analysis_does_not_hide_completed(self):
-        report = self.write()
-        new = self.capture / 'run/derived/card_identity/new'
-        new.mkdir()
-        (new / 'status.json').write_text(json.dumps({'status': 'failed', 'analysis_id': 'new'}), encoding='utf8')
-        report = build_report(self.directory, self.capture)
-        self.assertEqual(report['segments'][0]['analysis']['analysis_id'], 'old')
-        self.assertEqual(report['final_settlement']['score']['value'], 12000)
+    def test_failed_current_analysis_is_reported(self):
+        self.write()
+        status = self.capture / 'run/analysis/status.json'
+        status.write_text(json.dumps({'status': 'failed', 'analysis_id': 'current'}), encoding='utf8')
+        report = build_report(self.directory)
+        self.assertEqual(report['segments'][0]['analysis']['status'], 'failed')
+
+    def test_old_schema_is_rejected(self):
+        self.write()
+        self.session['schema_version'] = 2
+        (self.directory / 'data/session.json').write_text(json.dumps(self.session), encoding='utf-8')
+        with self.assertRaises(ValueError):
+            build_report(self.directory)
+
+    def test_event_tables_screenshots_and_browser_report(self):
+        self.events.pop()
+        event = self.add("decision_before", operation="play_card", selected_box=[1, 2, 3, 4], frame=True)
+        self.results[event['event_id']] = {'source_frame_sha256': event['frame']['sha256'], 'cards': [
+            {'box': [1, 2, 3, 4], 'identity': {'database_name': '卡片甲'}},
+            {'box': [5, 6, 3, 4], 'identity': {'database_name': '卡片乙'}}]}
+        self.add('produce_session_end', terminal=True, reason='returned_home')
+        self.write()
+        markdown = (self.directory / 'report.md').read_text(encoding='utf-8')
+        self.assertIn('1. 卡片甲（已选择）', markdown)
+        self.assertIn('2. 卡片乙', markdown)
+        self.assertIn('![操作前](<data/run/frames/', markdown)
+        self.assertGreater(markdown.count('| 项目 | 内容 |'), 1)
+        self.assertEqual({p.name for p in self.directory.iterdir()}, {'data', 'report.md'})
+
+    def test_battle_operations_grouped_by_invocation_not_adjacency(self):
+        self.events.pop()
+        self.add("battle_invocation_start", battle_id=None)
+        self.add("decision_before", battle_id="battle-one", operation="play_card")
+        self.add("decision_after", battle_id="battle-one", decision_id="run:7")
+        self.add("decision_before", battle_id="battle-one", operation="use_drink_task")
+        self.add("battle_invocation_end", battle_id="battle-one")
+        self.add("battle_invocation_start", battle_id=None)
+        self.add("decision_before", battle_id="battle-two", operation="skip_round")
+        self.add("battle_invocation_end", battle_id="battle-two")
+        self.add("produce_session_end", terminal=True, reason="returned_home")
+        self.write()
+        text = (self.directory / "report.md").read_text(encoding="utf-8")
+        self.assertEqual(text.count("### 战斗 "), 2)
+        self.assertEqual(text.count("| 操作 | 时间 |"), 2)
+        first, second = text.split("### 战斗 2", 1)
+        self.assertIn("使用饮料", first)
+        self.assertIn("出牌", first)
+        self.assertNotIn("跳过回合", first)
+        self.assertIn("跳过回合", second)
+
+    def test_machine_export_is_explicit(self):
+        self.write()
+        self.assertFalse((self.directory / "data/report.json").exists())
+        build_report(self.directory, export_data=True)
+        self.assertTrue((self.directory / "data/report.json").exists())
+
+    def test_result_stream_reuses_observation_and_ignores_partial_tail(self):
+        from produce.audit import analysis_records
+        path = self.base / "results.jsonl"
+        path.write_text(json.dumps({"event_id": "one", "observation": {"cards": ["synthetic"]}}) + "\n"
+                        + json.dumps({"event_id": "two", "result_ref": "one"}) + "\n" + '{"event_id":', encoding="utf-8")
+        rows = list(analysis_records(path))
+        self.assertEqual(len(rows), 2)
+        self.assertIs(rows[0][1], rows[1][1])
+
+    def test_user_report_has_no_raw_debug_payload(self):
+        self.write()
+        text = (self.directory / 'report.md').read_text(encoding='utf-8')
+        self.assertIn('选择 休息', text)
+        self.assertIn('分数：12000', text)
+        self.assertNotIn('```', text)
+        self.assertNotIn('sha256', text)
+        self.assertNotIn('framework_action_succeeded', text)
+        self.assertNotIn('run:3', text)
+        self.assertLess(len(text), 5000)
 
     def test_resume_duration_and_fresh_start_contamination(self):
         self.events[-1].update(terminal=False, reason='task_ended_without_home')
@@ -319,18 +383,70 @@ class ReportingTest(unittest.TestCase):
                     'metadata': {'session_id': 's1', 'bindings': self.bindings, 'entry': 'ProduceSkipPreparation', 'version_files': {'agent.py': 'hash'}}}
         (second / 'manifest.json').write_text(json.dumps(manifest), encoding='utf8')
         (second / 'events.jsonl').write_text('\n'.join(json.dumps(e) for e in events), encoding='utf8')
-        self.session['segments'] = [{'run_id': 'run'}, {'run_id': 'run2'}]
+        self.session['segments'] = [{'run_id': 'run', 'relative_path': 'data/run'}, {'run_id': 'run2', 'relative_path': 'data/run2'}]
         self.session['ended_at'] = manifest['ended_at']
-        (self.directory / 'session.json').write_text(json.dumps(self.session), encoding='utf8')
-        report = build_report(self.directory, self.capture)
+        (self.directory / 'data/session.json').write_text(json.dumps(self.session), encoding='utf8')
+        report = build_report(self.directory)
         self.assertEqual(report['integrity']['entry_mode'], 'interrupted_resume')
         self.assertEqual(report['timing']['active_seconds'], 120)
         self.assertEqual(report['timing']['wall_seconds'], 3660)
         self.assertFalse(report['complete'])
         events[1]['fresh_start'] = True
         (second / 'events.jsonl').write_text('\n'.join(json.dumps(e) for e in events), encoding='utf8')
-        report = build_report(self.directory, self.capture)
+        report = build_report(self.directory)
         self.assertIn('fresh_start_in_resume', self.codes(report))
+
+    def test_temporary_evidence_has_no_dead_image_links(self):
+        for event in self.events:
+            if event.get("frame"):
+                event["frame"]["retention"] = "temporary"
+                (self.capture / "run" / event["frame"]["path"]).unlink()
+        report = self.write()
+        self.assertNotIn("frame_integrity", self.codes(report))
+        self.assertTrue(all(row["evidence"]["frame_path"] is None for row in report["timeline"]))
+        self.assertNotIn(".png>", (self.directory / "report.md").read_text(encoding="utf-8"))
+
+    def test_display_directory_and_automatic_final_report(self):
+        import os
+
+        from produce.reporting import process_alive, schedule_report
+        self.write()
+        original = self.capture / "run"
+        new = self.directory / "segments/run"
+        new.parent.mkdir()
+        original.rename(new)
+        self.session["segments"] = [{"run_id": "run", "relative_path": "segments/run"}]
+        (self.directory / "data/session.json").write_text(json.dumps(self.session), encoding="utf-8")
+        (self.directory / "data/report_pending.json").write_text("{}", encoding="utf-8")
+        schedule_report(self.directory)
+        self.assertFalse((self.directory / "data/report_pending.json").exists())
+        status = json.loads((self.directory / "data/report_status.json").read_text(encoding="utf-8"))
+        self.assertEqual(status["status"], "completed")
+        self.assertTrue((self.directory / "report.md").is_file())
+        self.assertTrue(process_alive(os.getpid()))
+
+    def test_report_includes_battle_and_option_operations(self):
+        self.events.pop()
+        self.add("decision_before", operation="play_card", selected_box=[1, 2, 3, 4], reason="game_recommendation")
+        self.add("option_choice", title="工作选择", action="点击第2项", actual_point=[100, 880])
+        self.add("produce_session_end", terminal=True, reason="returned_home")
+        report = self.write()
+        kinds = {row["kind"] for row in report["timeline"]}
+        self.assertIn("decision_before", kinds)
+        self.assertIn("option_choice", kinds)
+        markdown = (self.directory / "report.md").read_text(encoding="utf-8")
+        self.assertIn("· 工作选择", markdown)
+        self.assertIn("| 实际操作 | 点击第2项 |", markdown)
+        self.assertIn("培育回放", markdown)
+
+    def test_report_finishes_without_worker(self):
+        from produce.reporting import schedule_report
+        self.write()
+        schedule_report(self.directory)
+        self.assertFalse((self.directory / "data/report_worker.json").exists())
+        status = json.loads((self.directory / "data/report_status.json").read_text(encoding="utf-8"))
+        self.assertEqual(status["status"], "completed", status)
+        self.assertFalse((self.directory / "data/report_pending.json").exists())
 
 
 if __name__ == '__main__':

@@ -276,7 +276,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     reports = []
-    for path in sorted(args.directory.glob("*/report.json")):
+    for path in sorted(args.directory.glob("*/data/report.json")):
         content = path.read_bytes()
         report = json.loads(content)
         report["_baseline_input_source"] = {"path": str(path.resolve()), "sha256": hashlib.sha256(content).hexdigest()}

@@ -42,7 +42,7 @@ def build_report(directory: Path):
         "game_actions_confirmed": sum(event.get("game_action_confirmed") is True for event in events),
         "unknown_state_fields": manifest.get("state_fields", {}),
         "card_identity_analysis": [
-            json.loads(path.read_text(encoding="utf-8")) for path in sorted((directory / "derived/card_identity").glob("*/status.json"))
+            json.loads(path.read_text(encoding="utf-8")) for path in sorted((directory / "analysis").glob("status.json"))
         ],
     }
     (directory / "report.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
