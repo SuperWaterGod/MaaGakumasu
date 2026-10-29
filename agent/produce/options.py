@@ -10,6 +10,10 @@ from maa.context import Context
 from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
 
+from .state import produce_observation, read_produce_health, read_produce_attributes
+from .console import log_operation
+from .sessions import SESSIONS
+
 
 @AgentServer.custom_action("ProduceChooseWorkAuto")
 class ProduceChooseWorkAuto(CustomAction):
@@ -52,26 +56,17 @@ class ProduceChooseWorkAuto(CustomAction):
                 box = second_roi
             else:
                 box = first_roi
-        context.tasker.controller.post_click(box[0], box[1]).wait()
+        job = context.tasker.controller.post_click(box[0], box[1]).wait()
+        record_option(context, "工作选择", f"点击第{[first_roi, second_roi, third_roi].index(box) + 1}项", image,
+                      {"health": self.health_observation}, {"health": current}, actual_point=box,
+                      framework_action_succeeded=bool(job.status.succeeded))
         return True
 
-    @staticmethod
-    def _get_health(context: Context, image) -> Optional[dict]:
-        """获取当前体力数值"""
-        reco_detail = context.run_recognition("ProduceRecognitionHealth", image)
-        if not (reco_detail and reco_detail.hit):
-            return None
+    def _get_health(self, context: Context, image) -> Optional[dict]:
+        value = read_produce_health(context, image)
+        self.health_observation = produce_observation(value, "ProduceRecognitionHealth")
+        return value
 
-        try:
-            health_parts = reco_detail.best_result.text.split("/")
-            current_health = int("".join(filter(str.isdigit, health_parts[0])))
-            max_health = int("".join(filter(str.isdigit, health_parts[1])))
-            ratio = current_health / max_health
-            logger.info(f"体力: {current_health}/{max_health} ({ratio:.2%})")
-            return {"current": current_health, "max": max_health, "ratio": ratio}
-        except (ValueError, IndexError, ZeroDivisionError):
-            logger.warning("体力数据解析失败")
-            return None
 
     @staticmethod
     def _get_health_position(context: Context, image) -> Optional[list]:
@@ -157,7 +152,7 @@ class ProduceChooseOptionsAuto(CustomAction):
         all_attrs = ["Vo", "Da", "Vi"]
         third = next(attr for attr in all_attrs if attr != self.first and attr != self.second)
         third_score = score.get(third, 0)
-        logger.info(f"第一属性 {self.first}={first_score}, 第二属性 {self.second}={second_score}, 第三属性 {third}={third_score}")
+        logger.debug(f"第一属性 {self.first}={first_score}, 第二属性 {self.second}={second_score}, 第三属性 {third}={third_score}")
 
         # 判断逻辑：根据 THIRD_ATTR_PROBABILITY 概率选择第三属性，剩余概率选择第二属性
         if random.random() < self.THIRD_ATTR_PROBABILITY:
@@ -203,48 +198,23 @@ class ProduceChooseOptionsAuto(CustomAction):
             center_x = target_box[0] + target_box[2] // 2
             center_y = target_box[1] + target_box[3] // 2
             self._double_click(context, center_x, center_y)
-            logger.info(f"已选择选项: {choice}, 坐标: ({center_x}, {center_y})")
+            record_option(context, "属性选择", f"点击 {'无属性选项' if choice == 'null' else {'Vo': '声乐', 'Da': '舞蹈', 'Vi': '形象'}.get(choice, choice)}", image, {"attributes": self.attribute_observations},
+                          {"first": first_score, "second": second_score, "third": third_score},
+                          actual_point=[center_x, center_y], candidates=options)
         else:
             logger.warning("没有可用选项，无法选择")
             return True  # 没有选项可选时默认返回True，避免卡死在这里
         return True
 
-    @staticmethod
-    def _get_current_score(context: Context, image) -> Optional[dict]:
-        """获取当前得分"""
-        score = {
-            "Vo": 0,
-            "Da": 0,
-            "Vi": 0,
-            "max": 0,
-        }
-        roi0_list = [[70 + i * 230, 430, 136, 80] for i in range(3)]
-        roi1_list = [[150 + i * 150, 325, 136, 80] for i in range(3)]
-        first_reco = context.run_recognition(
-            "ProduceRecognitionScore",
-            image,
-            pipeline_override={"ProduceRecognitionScore": {"roi": roi0_list[0]}},
-        )
-        use_roi_list = roi1_list if not (first_reco and first_reco.hit) else roi0_list
+    def _get_current_score(self, context: Context, image) -> Optional[dict]:
+        rois = [[70 + i * 230, 430, 136, 80] for i in range(3)]
+        first = context.run_recognition("ProduceRecognitionScore", image,
+                                       pipeline_override={"ProduceRecognitionScore": {"roi": rois[0]}})
+        if not (first and first.hit):
+            rois = [[150 + i * 150, 325, 136, 80] for i in range(3)]
+        value, self.attribute_observations = read_produce_attributes(context, image, rois)
+        return value
 
-        for i in range(3):
-            reco_detail = context.run_recognition(
-                "ProduceRecognitionScore",
-                image,
-                pipeline_override={"ProduceRecognitionScore": {"roi": use_roi_list[i]}},
-            )
-            if reco_detail and reco_detail.hit and len(reco_detail.filtered_results) == 2:
-                current_score = int("".join(filter(lambda c: c.isdigit(), reco_detail.filtered_results[0].text)))
-                max_score = int("".join(filter(lambda c: c.isdigit(), reco_detail.filtered_results[1].text.replace("/", ""))))
-                logger.debug(f"第{i + 1}列得分: {current_score} / {max_score}")
-                score[["Vo", "Da", "Vi"][i]] = current_score
-                score["max"] = max_score if score["max"] < max_score < 9999 else score["max"]
-        try:
-            logger.info(f"当前得分: Vo={score['Vo']}, Da={score['Da']}, Vi={score['Vi']}, Max={score['max']}")
-            return score
-        except ValueError:
-            logger.warning("积分数据解析失败")
-            return None
 
     def _get_available_options(self, context: Context, image) -> List[Dict[str, Any]]:
         """获取可用选项列表"""
@@ -261,7 +231,7 @@ class ProduceChooseOptionsAuto(CustomAction):
                 available_options.append({option_name: reco_detail.best_result.box})
                 available_options_name += f"{option_name}, "
 
-        logger.info(f"可用选项: {available_options_name.rstrip(', ')}")
+        logger.debug(f"可用选项: {available_options_name.rstrip(', ')}")
         return available_options
 
     def _double_click(self, context: Context, x: int, y: int):
@@ -320,18 +290,22 @@ class ProduceChooseMirrorAuto(CustomAction):
             if not self._check_lock(context, image, target_box):
                 break
 
-            logger.info(f"分数 {target_threshold:,} 已锁定，继续降档")
+            logger.debug(f"分数 {target_threshold:,} 已锁定，继续降档")
 
         # 在点击前判断当前是第几镜，若启用 focus 则点击后进入手动接管
         mirror_idx = self._get_focus_mirror_index(context, image)
 
-        logger.info(f"当前投票: {vote:,}, 目标分数: {target_threshold:,}, 点击坐标: ({x}, {y - 20})")
+        logger.debug(f"当前投票: {vote:,}, 目标分数: {target_threshold:,}, 点击坐标: ({x}, {y - 20})")
         self._double_click(context, x, y - 20)
+        record_option(context, "试镜选择", f"点击门槛 {target_threshold:,}", image,
+                      {"vote": produce_observation(vote, "ProduceRecognitionVote"),
+                       "试镜门槛": "-".join(str(value) for value in sorted(thresholds))}, {},
+                      actual_point=[x, y - 20], target_threshold=target_threshold)
 
         if not mirror_idx:
             return True
 
-        logger.info(f"检测到 focus 配置，进入手动接管模式（第{mirror_idx}镜）")
+        logger.debug(f"进入手动接管模式（第{mirror_idx}镜），由原生 focus 显示弹窗")
         context.run_action(
             "ProduceMirrorFocus",
             pipeline_override={
@@ -410,7 +384,7 @@ class ProduceChooseMirrorAuto(CustomAction):
         if not lowering_level:
             return 0
         else:
-            logger.info(f"检测到启动降档，降低{lowering_level}档")
+            logger.debug(f"检测到启动降档，降低{lowering_level}档")
             return int(lowering_level)
 
     @staticmethod
@@ -424,7 +398,7 @@ class ProduceChooseMirrorAuto(CustomAction):
                 text = "".join(filter(lambda c: c.isdigit(), result.text.replace(",", "")))
                 mirror[text] = [box[0], box[1], box[2], box[3]]
         mirror = dict(sorted(mirror.items(), key=lambda x: int(x[0])))
-        logger.info(f"当前试镜门槛分数: {list(mirror.keys())}")
+        logger.debug(f"当前试镜门槛分数: {list(mirror.keys())}")
         return mirror
 
     @staticmethod
@@ -469,3 +443,14 @@ class ProduceKeepDrinkAuto(CustomAction):
                 time.sleep(0.1)
             context.run_task("ProduceDrinkNoButton")
         return True
+
+
+
+def record_option(context, event, action, image, observations, policy_inputs, **details):
+    """记录已有选项动作，不改变控制流和返回值。"""
+    log_operation(event, action, observations)
+    session = SESSIONS.get(context)
+    if session:
+        session["capture"].record("option_choice", image=image, context=context, title=event, action=action,
+                                  observations=observations, policy_inputs_with_fallbacks=policy_inputs,
+                                  policy="existing_auto", game_action_confirmed=None, **details)

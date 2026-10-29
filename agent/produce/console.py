@@ -1,8 +1,5 @@
 """统一整理并按顺序展示出牌、奖励和结算摘要。"""
 
-import re
-from itertools import groupby
-
 from .state import STANCE_NAMES, state_changes
 from .settlement import FIELDS, evaluation_check
 
@@ -79,102 +76,6 @@ class SettlementConsole:
         return {"message": "\n".join(lines), "scope": "settlement", "event_id": event_id, "evaluation_check": check}
 
 
-DISPLAY_FIELDS = {"goodImpressionTurns": "好印象", "goodConditionTurns": "好调", "perfectConditionTurns": "绝好调",
-                  "cardUsesRemaining": "使用次数", "turnsRemaining": "剩余回合", "halfCostTurns": "体力消耗减少回合",
-                  "doubleCostTurns": "体力消耗增加回合", "concentration": "集中", "motivation": "干劲", "genki": "元气",
-                  "stamina": "体力", "score": "基础参数", "cost": "通用消耗"}
-SPECIAL_EFFECT = "特殊效果（详见数据记录）"
-
-
-def _dsl_parts(text):
-    """拆分展示语句时保留嵌套条件与触发条件。"""
-    parts, start, depth = [], 0, 0
-    for index, character in enumerate(text):
-        if character in "{([":
-            depth += 1
-        elif character in "})]":
-            depth -= 1
-            if depth < 0:
-                return None
-        elif character == ";" and depth == 0:
-            parts.append(text[start:index].strip())
-            start = index + 1
-    if depth:
-        return None
-    parts.append(text[start:].strip())
-    return [part for part in parts if part]
-
-
-def _comparison(text):
-    match = re.fullmatch(r"(\w+)(>=|<=|==|>|<)([0-9]+(?:\.[0-9]+)?)", text.strip())
-    if not match or match[1] not in DISPLAY_FIELDS:
-        return None
-    operator = {">=": "≥", "<=": "≤", "==": "＝", ">": "＞", "<": "＜"}[match[2]]
-    unit = "回合" if match[1] in ("goodConditionTurns", "perfectConditionTurns") else ""
-    return f"{DISPLAY_FIELDS[match[1]]}{operator}{match[3]}{unit}"
-
-
-def _display_clause(text, depth):
-    if depth > 3:
-        return SPECIAL_EFFECT
-    condition = re.fullmatch(r"if:(.+?)\s*\{(.*)\}", text)
-    if condition:
-        label = _comparison(condition[1])
-        return f"{label}时（{_display_dsl(condition[2], depth + 1)}）" if label else SPECIAL_EFFECT
-    trigger = re.fullmatch(r"at:(\w+)(?:\[(\w+)\])?\s*\{(.*)\}", text)
-    if trigger:
-        timing = {"afterStartOfTurn": "后续回合开始后", "startOfTurn": "后续回合开始时", "endOfTurn": "后续回合结束时",
-                  "activeCardUsed": "主动卡使用时", "mentalCardUsed": "精神卡使用时", "cardUsed": "使用卡牌时"}
-        label = timing.get(trigger[1])
-        if trigger[2]:
-            label = {"active": "主动卡使用时", "mental": "精神卡使用时"}.get(trigger[2]) if trigger[1] == "cardUsed" else None
-        return f"{label}（{_display_dsl(trigger[3], depth + 1)}）" if label else SPECIAL_EFFECT
-    change = re.fullmatch(r"(\w+)(\+=|-=|\*=|/=)([0-9]+(?:\.[0-9]+)?)", text)
-    if change and change[1] in DISPLAY_FIELDS:
-        return DISPLAY_FIELDS[change[1]] + {"+=": "＋", "-=": "−", "*=": "×", "/=": "÷"}[change[2]] + change[3]
-    if text == "drawCard":
-        return "抽牌1张"
-    limit = re.fullmatch(r"limit:([0-9]+)", text)
-    if limit:
-        return f"最多触发{limit[1]}次"
-    modifier = re.fullmatch(r"(setConcentrationEffectBuff|setGoodImpressionTurnsBuff)\(([0-9]+(?:\.[0-9]+)?),\s*([0-9]+)\)", text)
-    if modifier:
-        label = "集中效果提升" if modifier[1] == "setConcentrationEffectBuff" else "好印象效果提升"
-        return f"{label}{float(modifier[2]) * 100:g}%（{modifier[3]}回合）"
-    return SPECIAL_EFFECT
-
-
-def _display_dsl(text, depth=0):
-    """仅格式化展示，不解析 OCR、计算实际收益或修改库数据。"""
-    parts = _dsl_parts(text.strip())
-    if parts is None:
-        return SPECIAL_EFFECT
-    lines = []
-    for clause, repeats in groupby(parts):
-        count = sum(1 for _ in repeats)
-        label = _display_clause(clause, depth)
-        lines.append(label + (f"（共{count}次）" if count > 1 else ""))
-    return "；".join(lines)
-
-
-def catalog_lines(identity):
-    """简要展示库默认效果；不支持的 DSL 保留在 JSON 中。"""
-    dsl = identity.get("reference_effect_dsl") or {}
-    result = []
-    if dsl.get("conditions"):
-        result.append("使用条件：" + (_comparison(str(dsl["conditions"])) or SPECIAL_EFFECT))
-    if dsl.get("cost"):
-        result.append("消耗：" + _display_dsl(str(dsl["cost"])))
-    for field in ("actions", "effects"):
-        if dsl.get(field):
-            result.append(_display_dsl(str(dsl[field])))
-    if str(dsl.get("limit", "")).isdigit():
-        result.append(f"每课限用{dsl['limit']}次")
-    elif dsl.get("limit"):
-        result.append("特殊使用限制（详见数据记录）")
-    return result
-
-
 def state_lines(state):
     if not state or not state.get("hud_present"):
         return ["状态：当前画面未确认出牌 HUD"]
@@ -184,7 +85,10 @@ def state_lines(state):
         return fields[key]["value"] if fields[key]["value"] is not None else "?"
 
     lines = [f"状态：剩 {value('turns_remaining')} 回合｜分 {value('score')}｜体 {value('stamina')}｜元 {value('genki')}"]
-    lines.append(f"属性：{value('attribute')} {value('attribute_multiplier_percent')}%")
+    if state.get("layout") == "lesson":
+        lines = [f"状态：剩 {value('turns_remaining')} 回合｜体 {value('stamina')}｜元 {value('genki')}"]
+    else:
+        lines.append(f"属性：{value('attribute')} {value('attribute_multiplier_percent')}%")
     anomaly = state.get("anomaly", {})
     if anomaly.get("held_cards_count", {}).get("value") is not None:
         capacity = anomaly["held_cards_capacity"]["value"]
@@ -236,7 +140,7 @@ def after_console(event, before, result):
     state = result.get("battle_state")
     changes = state_changes(before, state)
     if not state or not state.get("hud_present"):
-        return f"操作后 #{event['seq']}：当前画面未确认出牌 HUD", changes
+        return "操作后：当前画面未确认出牌 HUD", changes
     labels = {
         "turns_remaining": "剩余回合",
         "score": "分数",
@@ -278,8 +182,7 @@ def after_console(event, before, result):
     parts.extend("｜".join(remaining[index : index + 2]) for index in range(0, len(remaining), 2))
     if not parts:
         return None, changes
-    decision = str(event.get("decision_id") or "?").rsplit(":", 1)[-1]
-    return f"操作后 #{event['seq']}（关联 #{decision}）：\n" + "\n".join(parts), changes
+    return "操作后：\n" + "\n".join(parts), changes
 
 
 def compact_state_lines(state):
@@ -299,8 +202,12 @@ def compact_state_lines(state):
         f"体力 {value('stamina')}｜元气 {value('genki')}",
         f"属性 {value('attribute')}｜倍率 {value('attribute_multiplier_percent')}%",
     ]
-    extra = [line for line in lines[2:] if not line.startswith("Buff：")]
-    buffs = [part for line in lines[2:] if line.startswith("Buff：") for part in line.removeprefix("Buff：").split("｜")]
+    offset = 2
+    if state.get("layout") == "lesson":
+        main = [f"剩余 {value('turns_remaining')} 回合", f"体力 {value('stamina')}｜元气 {value('genki')}"]
+        offset = 1
+    extra = [line for line in lines[offset:] if not line.startswith("Buff：")]
+    buffs = [part for line in lines[offset:] if line.startswith("Buff：") for part in line.removeprefix("Buff：").split("｜")]
     buff_rows = ["Buff：" + "｜".join(buffs[index : index + 2]) for index in range(0, len(buffs), 2)]
     return [*main, *extra, *buff_rows]
 
@@ -314,11 +221,14 @@ def operation_console(number, before_event, before_result, after_event=None, aft
     title = {"play_card": "出牌", "use_drink_task": "使用饮料", "skip_round": "跳过回合", "move_cards": "移动卡牌"}.get(operation, "操作后观察")
     selected = next((card for card in cards if card["box"] == before_event.get("selected_box")), None)
     if operation == "play_card":
-        title += "：" + (card_name(selected["identity"]) if selected else "牌名未识别")
-    title = f"操作 {number}｜{title}"
-    started, ended = before_event.get("monotonic_ns"), (after_event or {}).get("monotonic_ns")
-    if isinstance(started, int) and isinstance(ended, int) and ended >= started:
-        title += f"｜{(ended - started) / 1e9:.1f}秒"
+        title = f"出牌#{number}[" + (card_name(selected["identity"]) if selected else "牌名未识别") + "]"
+    title = f"战斗 - {title}" if operation == "play_card" else f"战斗 - {title}#{number}"
+    if operation == "play_card":
+        elapsed = (after_event or {}).get("selection_click_seconds")
+        if isinstance(elapsed, (int, float)) and elapsed >= 0:
+            title += f" {round(elapsed, 1):g}s"
+    elif operation == "skip_round":
+        title += "（无手牌）" if before_event.get("reason") == "no_cards_ocr" else "（无可用牌）"
     lines = [title]
     reason = {
         "game_recommendation": "游戏推荐",
@@ -342,6 +252,8 @@ def operation_console(number, before_event, before_result, after_event=None, aft
     if after_event is None:
         lines[0] += "｜后续观察缺失"
         lines.append("后续观察：未采集到操作后画面，无法比较变化")
+    elif after_event.get("observation_phase") == "next_decision_before" and not after_event.get("frame_reference"):
+        lines.append("观察变化：没有下一次操作前画面，未知")
     elif after_result.get("error"):
         lines.append("操作后识别失败：" + after_result["error"])
     else:
@@ -354,10 +266,6 @@ def operation_console(number, before_event, before_result, after_event=None, aft
             lines.extend(["", "观察变化：", *message.splitlines()[1:]])
         else:
             lines.append("观察变化：前后可读数值未变化；不代表没有其他效果")
-    trace = [f"前 #{before_event['seq']}"] if before_event else []
-    if after_event:
-        trace.append(f"后 #{after_event['seq']}")
-    lines.extend(["", "采集索引：" + " → ".join(trace)])
     return "\n".join(lines), changes
 
 
@@ -384,16 +292,6 @@ class OperationConsole:
     def unfinished(self):
         pending, self.pending = self.pending, {}
         return [(operation_console(number, event, result)[0], event["event_id"], number) for number, event, result in pending.values()]
-
-
-WAIT_REASONS = {
-    "input_failed": "底层点击失败", "input_error": "点击结果异常，是否送达未确认",
-    "different_candidate_selected": "仍选中其他候选", "highlight_unconfirmed": "选中高亮未确认",
-    "layout_candidate_art_changed": "候选图标内容发生变化", "layout_mismatch": "候选位置不一致",
-    "receive_button_missing": "领取按钮未识别", "detail_unstable": "详情仍在变化",
-    "detail_refresh_unconfirmed": "详情刷新未确认", "restore_detail_mismatch": "原选择详情未恢复",
-    "task_stopping": "任务手动停止", "observation_error": "截图或识别异常",
-}
 
 
 def preview_name(result):
@@ -437,58 +335,104 @@ class RewardConsole:
 
     def finish(self, page_id, event_id=None):
         page = self.pending.pop(page_id)
-        start, end, receive = page["start"], page["end"] or {}, page["receive"] or {}
+        start, receive = page["start"], page["receive"] or {}
         selected = receive.get("selected_candidate_id") or start.get("selected_candidate_id")
         selected_name = preview_name(page["previews"].get(selected))
-        policy = policy_name(start.get("policy_choice"))
         success = receive.get("framework_action_succeeded")
-        status = "点击成功" if success is True else "点击失败" if success is False else "结果未确认" if receive else "未记录点击"
+        status = "已点击领取" if success is True else "领取失败" if success is False else "领取未确认"
         candidates = sorted(start.get("layout", {}).get("candidates", []), key=lambda item: item["box"][0])
-        cached_count = sum((result.get("reading") or {}).get("method") == "icon_cache" for result in page["previews"].values())
-        lines = [f"奖励选择 {page['number']}｜{selected_name}｜{policy}",
-                 f"领取按钮：{status}｜候选识别 {len(page['previews'])}/{len(candidates)}｜图标缓存 {cached_count} 项",
-                 "", "候选（从左到右）："]
+        lines = [f"奖励选择 - {status}：{selected_name}"]
         for number, candidate in enumerate(candidates, 1):
             candidate_id = candidate["candidate_id"]
             result = page["previews"].get(candidate_id) or {}
             marker = "→ " if candidate_id == selected else ""
-            lines.append(f"{number}｜{marker}{preview_name(result)}")
-            effects = (result.get("effects") or {}).get("visible_text") or []
-            lines.extend(f"  {text}" for text in effects)
-            if not effects:
-                defaults = catalog_lines(result.get("identity") or {})
-                if defaults:
-                    lines.append("  牌库默认：" + defaults[0])
-                    lines.extend(f"  {text}" for text in defaults[1:])
-                if not defaults:
-                    lines.append("  效果：未确认")
-            elif (result.get("reading") or {}).get("fallback_reason"):
-                lines.append("  详情已补充识别；牌库与当前效果需核对")
-            lines.append("")
-        restored = (page["restore"] or {}).get("verified")
-        unchanged = (page["restore"] or {}).get("method") == "original_selection_unchanged"
-        lines.append("原选择：" + ("保持并核对" if unchanged and restored else "恢复已核对" if restored else "未确认"))
-        defaults = sum((result.get("effects") or {}).get("semantic_status") == "catalog_default" for result in page["previews"].values())
-        if defaults:
-            lines.append(f"牌库默认效果：{defaults} 项｜定制及临时变化未确认")
-        text_only = sum((result.get("effects") or {}).get("semantic_status") == "ocr_text_only"
-                        for result in page["previews"].values())
-        if text_only:
-            lines.append(f"正文留存待核对：{text_only} 项｜未转换为结构化效果")
-        if not end.get("candidate_previews_complete"):
-            lines.append("候选采集不完整；未读取的候选保留未知")
-            diagnostic = end.get("failure_diagnostic") or {}
-            if diagnostic:
-                target = diagnostic.get("candidate_id", "?").removeprefix("reward_")
-                reason = diagnostic.get("reason")
-                lines.append(f"候选 {target}：{WAIT_REASONS.get(reason, reason or '原因未确认')}｜尝试 {diagnostic.get('attempt', '?')} 次")
-        if page["retries"]:
-            lines.append(f"预览重试：{len(page['retries'])} 次｜失败截图与诊断已保存")
-        if not receive:
-            lines.append("未记录领取点击；不推断已获得奖励")
-        lines.append(f"采集索引：#{start.get('seq', '?')}｜画面原文与牌库默认分开保存")
+            known = (result.get("identity") or {}).get("status") == "matched"
+            suffix = "｜识别异常" if result.get("error") else "" if known else "｜未匹配"
+            lines.append(f"{number}｜{marker}{preview_name(result)}" + suffix)
+        readings = [result.get("reading") or {} for result in page["previews"].values()]
+        matched = sum(reading.get("method") == "icon_cache" for reading in readings)
+        stored = sum(reading.get("cache_write") == "stored" for reading in readings)
+        ocr = sum(reading.get("method") == "name_then_catalog" for reading in readings)
+        lines.append(f"模板匹配：{matched} 项｜OCR 匹配：{ocr} 项｜新增缓存：{stored} 项")
         return {"message": "\n".join(lines), "event_id": event_id or start["event_id"],
                 "reward_page_id": page_id, "console_reward_number": page["number"], "scope": "reward"}
 
     def unfinished(self):
         return [self.finish(page_id) for page_id in list(self.pending)]
+
+
+
+def format_operation(title, rows):
+    """MFA 日志使用单个折叠根元素；正文用换行，避免多个块被横向排列。"""
+    from html import escape
+
+    body = "<br/>".join(escape(str(row)) for row in rows if str(row).strip())
+    return (f"<details><summary>{escape(title)}</summary><p>{body}</p></details>"
+            if body else escape(title))
+
+
+def operation_detail_rows(details):
+    """展示字段逐项展开；保留原始结构化记录，不把坐标数组直接堆在正文中。"""
+    names = {"health": "体力", "points": "P 点", "vote": "票数", "Vo": "声乐", "Da": "舞蹈", "Vi": "形象",
+             "target_threshold": "目标门槛", "candidates": "候选"}
+
+    def display(value):
+        if value is None:
+            return "未知"
+        if isinstance(value, bool):
+            return "是" if value else "否"
+        if isinstance(value, dict) and "status" in value and "value" in value:
+            return display(value["value"])
+        if isinstance(value, dict) and "current" in value and "max" in value:
+            return f"{display(value['current'])}/{display(value['max'])}"
+        if isinstance(value, (list, tuple)) and all(isinstance(v, (int, float)) for v in value):
+            if len(value) == 2:
+                return f"x={value[0]}, y={value[1]}"
+            if len(value) == 4:
+                return f"区域 x={value[0]}, y={value[1]}, 宽={value[2]}, 高={value[3]}"
+        return str(value)
+
+    rows = []
+
+    def append(label, value):
+        if label in {"actual_point", "framework_action_succeeded", "box", "roi"}:
+            return
+        if isinstance(value, dict) and not ({"status", "value"} <= value.keys() or {"current", "max"} <= value.keys()):
+            for key, item in value.items():
+                append(names.get(key, key), item)
+            if not value:
+                rows.append(f"{label}：无")
+        elif isinstance(value, (tuple, list)) and any(isinstance(item, dict) for item in value):
+            for index, item in enumerate(value, 1):
+                append(f"{label} {index}", item)
+        else:
+            rows.append(f"{label}：{display(value)}")
+
+    for key, value in details.items():
+        append(names.get(key, key), value)
+    return rows
+
+
+def route_detail_rows(health, attributes, points, candidates, selected):
+    """路线状态分短行，候选逐项编号；箭头表示本次决策选中项。"""
+    rows = operation_detail_rows({"health": health, "points": points})
+    rows = ["｜".join(rows)]
+    rows.extend(operation_detail_rows({"attributes": attributes}))
+    rows.append("可选事件：")
+    names = {"Vo": "声乐", "Da": "舞蹈", "Vi": "形象"}
+    for number, candidate in enumerate(candidates, 1):
+        for name in candidate:
+            if name == "SP":
+                continue
+            key = name + ("_SP" if candidate.get("SP") else "")
+            marker = "→ " if key == selected.get("name") else ""
+            label = names.get(name, name) + (" SP课程" if candidate.get("SP") else "")
+            rows.append(f"{number}｜{marker}{label}")
+    return rows
+
+
+def log_operation(event, action, details):
+    """已有 Custom 动作的同步摘要；不依赖截图、写盘或后台识别。"""
+    from utils import logger
+
+    logger.info(format_operation(f"{event} - {action}", operation_detail_rows(details)))

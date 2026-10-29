@@ -1,8 +1,9 @@
 """MaaFramework 培育动作入口及奖励领取适配。"""
 
 import time
-from maa.context import Context
+
 from utils import logger
+from maa.context import Context
 from produce.battle import ProduceCardsAuto
 from produce.events import ProduceChooseEventAuto, ProduceChooseEventBase, ProduceChooseNIAEventAuto
 from produce.console import policy_name
@@ -43,10 +44,14 @@ class ProduceRewardConfirm(CustomAction):
             image = context.tasker.controller.post_screencap().wait().get()
             return image.copy()
 
+        def recognize(kind, params, image):
+            detail = context.run_recognition_direct(kind, params, image)
+            return detail.all_results if detail else []
+
         preview = RewardPreview(
             capture, screenshot,
             lambda x, y: context.tasker.controller.post_click(x, y).wait().status.succeeded,
-            receive_visible, lambda: context.tasker.stopping,
+            receive_visible, lambda: context.tasker.stopping, recognize=recognize, context=context, item_kind=session.get("reward_kind"),
         )
         try:
             result = preview.collect(choice, session.get("reward_confirmation_id"))
@@ -81,11 +86,11 @@ class ProduceRewardConfirm(CustomAction):
             actual_point=list(action.result.point) if action and getattr(action.result, "point", None) else None,
         )
         if receive_event_id and preview.group_id and capture.merged_console_enabled:
-            emitted = capture.wait_for_console(receive_event_id, cancelled=lambda: context.tasker.stopping)
+            emitted = capture.console_emitted(receive_event_id)
             if not emitted and not context.tasker.stopping:
-                self.log_receive(success, choice, pending=True)
+                self.log_receive(success, choice)
         else:
-            self.log_receive(success, choice)
+            self.log_receive(success, choice, preview_failure=result.get("reason") if result.get("status") == "skipped" else None)
         return success
 
     @staticmethod
@@ -101,13 +106,26 @@ class ProduceRewardConfirm(CustomAction):
         return success
 
     @staticmethod
-    def log_receive(success, choice, pending=False):
+    def log_receive(success, choice, preview_failure=None):
         message = "已点击领取奖励" if success else "奖励领取按钮点击失败"
         if (choice or {}).get("policy_node") == "ProduceChooseSkip":
             message = "已点击跳过奖励确认" if success else "跳过奖励确认点击失败"
         message += f"｜{policy_name(choice)}"
-        if pending:
-            message += "｜候选摘要仍在后台处理，完成后补发"
+        if preview_failure:
+            from produce.console import format_operation
+            reasons = {
+                "ambiguous_spacing": "候选图标间距未确认",
+                "ambiguous_frames": "候选图标边框未确认",
+                "incomplete_frames": "候选图标未完整识别",
+                "selection_unconfirmed": "当前选中项未确认",
+                "unsupported_size": "截图尺寸不支持",
+                "capture_unavailable": "记录不可用",
+                "receive_button_missing": "领取按钮未确认",
+            }
+            message = format_operation("奖励选择 - " + message, [
+                "候选名称：未识别",
+                "详情缺失原因：" + reasons.get(preview_failure, "候选识别未完成"),
+            ])
         (logger.info if success else logger.warning)(message)
 
 

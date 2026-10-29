@@ -9,6 +9,8 @@ from maa.context import Context
 from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
 
+from .state import produce_observation, read_produce_health, read_produce_attributes
+from .console import format_operation, route_detail_rows
 from .sessions import SESSIONS
 
 
@@ -49,12 +51,13 @@ class ProduceChooseEventBase(CustomAction):
         self.second = "Da"
 
     def run(self, context: Context, argv: CustomAction.RunArg) -> bool:
-        logger.success("事件: 选择事件")
+        self.health_observation = produce_observation(None, "ProduceRecognitionHealth")
+        self.attribute_observations = {}
 
         preference = self._get_preference(context, argv)
         self.first = preference["first"]
         self.second = preference["second"]
-        logger.info(f"第一属性: {self.first}, 第二属性: {self.second}")
+        logger.debug(f"第一属性: {self.first}, 第二属性: {self.second}")
 
         image = self._get_screenshot(context)
 
@@ -63,13 +66,14 @@ class ProduceChooseEventBase(CustomAction):
             suggestion = self._get_suggestion(context, image)
 
         health_data = self._get_health(context, image) or {"current": 34, "max": 34, "ratio": 1.0}
-        points = self._get_current_points(context, image) or 0
+        observed_points = self._get_current_points(context, image)
+        points = observed_points or 0
         score = self._get_current_score(context, image) or {"Vo": 0, "Da": 0, "Vi": 0, "max": 1}
         events = self._get_available_events(context, image)
 
         best_event = self._choose_best_event(suggestion, health_data, points, score, events)
         if not best_event:
-            logger.info("无可用事件")
+            logger.warning("路线选择 - 未识别到可用事件")
             return True
 
         # 休息前检查：次数用完（检测到"あと0回"）时不可休息，改选其他事件
@@ -77,24 +81,35 @@ class ProduceChooseEventBase(CustomAction):
             logger.warning("休息次数已用完，改选其他事件")
             best_event = self._choose_best_event(suggestion, health_data, points, score, events, allow_rest=False)
             if not best_event:
-                logger.info("无可用事件")
+                logger.warning("路线选择 - 未识别到可用事件")
                 return True
 
+        name = best_event["name"]
+        label = {"Vo": "声乐", "Da": "舞蹈", "Vi": "形象"}.get(name.removesuffix("_SP"), name.removesuffix("_SP"))
+        label += " SP课程" if name.endswith("_SP") else ""
+        logger.info(format_operation("路线选择 - 选择 " + label, route_detail_rows(
+            self.health_observation, self.attribute_observations,
+            produce_observation(observed_points, "ProduceRecognitionPoint"), events, best_event,
+        )))
         box = best_event["box"]
-        logger.info(f"选择事件: {best_event['name']}, 坐标: ({box[0] + box[2] // 2}, {box[1] + box[3] // 2})")
+        logger.debug(f"选择事件: {best_event['name']}, 坐标: ({box[0] + box[2] // 2}, {box[1] + box[3] // 2})")
         session = SESSIONS.get(context)
         choice_id = None
         if session:
             choice_id = session["capture"].record(
-                "produce_event_choice", image=image, candidates=events, selected=best_event,
+                "produce_event_choice", image=image, context=context, candidates=events, selected=best_event,
                 teacher_suggestion=suggestion, preference={"first": self.first, "second": self.second},
                 policy_inputs_with_fallbacks={"health": health_data, "points": points, "score": score},
-                game_action_confirmed=None,
+                observations={"health": self.health_observation, "attributes": self.attribute_observations,
+                              "points": produce_observation(observed_points, "ProduceRecognitionPoint")},
+                policy="existing_auto", game_action_confirmed=None,
             )
         result = self._execute_event(context, best_event)
         if session:
             session["capture"].record("produce_event_input_result", decision_id=choice_id,
                                       framework_action_succeeded=result, game_action_confirmed=None)
+        if not result:
+            logger.warning("路线选择 - 执行失败：" + label)
         return result
 
     def _get_preference(self, context: Context, argv: CustomAction.RunArg) -> dict:
@@ -122,7 +137,7 @@ class ProduceChooseEventBase(CustomAction):
             },
         )
         if reco_detail and reco_detail.hit:
-            logger.info("休息次数已用完")
+            logger.debug("休息次数已用完")
             return False
         return True
 
@@ -150,7 +165,7 @@ class ProduceChooseEventBase(CustomAction):
             if go_out and points >= 100:
                 return self._make_event("外出", go_out)
             if allow_rest:
-                logger.info("体力过低，选择休息")
+                logger.debug("体力过低，选择休息")
                 return {"name": "rest", "box": [0, 0, 0, 0], "run_task": "ProduceChooseRest"}
             # 休息不可用（次数用完），继续走后续优先级
 
@@ -250,7 +265,7 @@ class ProduceChooseEventBase(CustomAction):
         context.tasker.controller.post_click(x, y).wait()
         time.sleep(self.ACTION_DELAY)
         if run_task:
-            logger.info(f"执行任务{run_task}")
+            logger.debug(f"执行任务{run_task}")
             context.run_task(run_task)
         return True
 
@@ -311,26 +326,14 @@ class ProduceChooseEventBase(CustomAction):
             return ""
 
         suggestion_text = "".join(item.text for item in reco_detail.filtered_results)
-        logger.info(f"老师建议: {suggestion_text}")
+        logger.debug(f"老师建议: {suggestion_text}")
         return suggestion_text
 
-    @staticmethod
-    def _get_health(context: Context, image) -> Optional[dict]:
-        """获取体力比例"""
-        reco_detail = context.run_recognition("ProduceRecognitionHealth", image)
-        if not (reco_detail and reco_detail.hit):
-            return None
+    def _get_health(self, context: Context, image) -> Optional[dict]:
+        value = read_produce_health(context, image)
+        self.health_observation = produce_observation(value, "ProduceRecognitionHealth")
+        return value
 
-        try:
-            health_parts = reco_detail.best_result.text.split("/")
-            current_health = int("".join(filter(str.isdigit, health_parts[0])))
-            max_health = int("".join(filter(str.isdigit, health_parts[1])))
-            ratio = current_health / max_health
-            logger.info(f"体力: {current_health}/{max_health} ({ratio:.2%})")
-            return {"current": current_health, "max": max_health, "ratio": ratio}
-        except (ValueError, IndexError, ZeroDivisionError):
-            logger.warning("体力数据解析失败")
-            return None
 
     @staticmethod
     def _get_current_points(context: Context, image) -> Optional[int]:
@@ -344,39 +347,18 @@ class ProduceChooseEventBase(CustomAction):
             return None
         try:
             points = int(reco_detail.best_result.text.replace(",", ""))
-            logger.info(f"积分: {points}")
+            logger.debug(f"积分: {points}")
             return points
         except ValueError:
             logger.warning("积分数据解析失败")
             return None
 
-    @staticmethod
-    def _get_current_score(context: Context, image) -> Optional[dict]:
-        """获取当前得分"""
-        score = {
-            "Vo": 0,
-            "Da": 0,
-            "Vi": 0,
-            "max": 0,
-        }
-        for i in range(3):
-            reco_detail = context.run_recognition(
-                "ProduceRecognitionScore",
-                image,
-                pipeline_override={"ProduceRecognitionScore": {"roi": [150 + i * 150, 668, 136, 80]}},
-            )
-            if reco_detail and reco_detail.hit and len(reco_detail.filtered_results) == 2:
-                current_score = int("".join(filter(lambda c: c.isdigit(), reco_detail.filtered_results[0].text)))
-                max_score = int("".join(filter(lambda c: c.isdigit(), reco_detail.filtered_results[1].text.replace("/", ""))))
-                logger.debug(f"第{i + 1}列得分: {current_score} / {max_score}")
-                score[["Vo", "Da", "Vi"][i]] = current_score
-                score["max"] = max_score if score["max"] < max_score < 9999 else score["max"]
-        try:
-            logger.info(f"当前得分: Vo={score['Vo']}, Da={score['Da']}, Vi={score['Vi']}, Max={score['max']}")
-            return score
-        except ValueError:
-            logger.warning("积分数据解析失败")
-            return None
+    def _get_current_score(self, context: Context, image) -> Optional[dict]:
+        rois = [[150 + i * 150, 668, 136, 80] for i in range(3)]
+        value, self.attribute_observations = read_produce_attributes(context, image, rois,
+                                                                  current_rois=[[x, 678, 95, 38] for x in (187, 335, 475)])
+        return value
+
 
     def _get_available_events(self, context: Context, image) -> List[Dict[str, Any]]:
         """获取可用事件列表"""
@@ -403,7 +385,7 @@ class ProduceChooseEventBase(CustomAction):
                 available_events.append({event_name: reco_detail.best_result.box})
                 available_events_name += f"{event_name}, "
 
-        logger.info(f"可用事件: {available_events_name.rstrip(', ')}")
+        logger.debug(f"可用事件: {available_events_name.rstrip(', ')}")
         logger.debug(available_events)
         return available_events
 

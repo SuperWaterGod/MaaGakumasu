@@ -28,6 +28,9 @@
     ]
   },
   "ProduceChooseNIAEventFlag": {
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:LimeGreen]路线选择 - 进入事件页面[/color]"
+    },
     "recognition": {
       "type": "TemplateMatch",
       "param": {
@@ -151,7 +154,7 @@
       }
     },
     "focus": {
-      "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择工作[/color]"
+      "Node.Recognition.Succeeded": "[color:LimeGreen]工作选择－进入选项页面[/color]"
     },
     "post_wait_freezes": 500,
     "next": [
@@ -244,7 +247,7 @@
       "param": {}
     },
     "focus": {
-      "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 特别指导[/color]"
+      "Node.Recognition.Succeeded": "[color:LimeGreen]特别指导－进入指导页面[/color]"
     },
     "next": [
       "ProduceGuideExit"
@@ -296,7 +299,7 @@
     },
     "pre_wait_freezes": 200,
     "focus": {
-      "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择试镜难度[/color]"
+      "Node.Recognition.Succeeded": "[color:LimeGreen]试镜选择－进入难度页面[/color]"
     }
   },
   "ProduceNIAFailedFlag": {
@@ -389,7 +392,7 @@
     },
     "post_wait_freezes": 200,
     "focus": {
-      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]尝试降低试镜难度[/color]"
+      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]考试重试－尝试降低难度[/color]"
     },
     "next": [
       "ProduceNIAFailedRetryConfirm"
@@ -415,7 +418,7 @@
       "param": {}
     },
     "focus": {
-      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]已再次开始挑战[/color]"
+      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]考试重试－识别到确认按钮[/color]"
     },
     "next": [
       "ProduceEntryNIA"

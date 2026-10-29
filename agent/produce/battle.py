@@ -9,6 +9,7 @@ from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
 
 from .capture import DecisionCapture
+from .console import log_operation
 from .sessions import SESSIONS
 
 
@@ -49,8 +50,9 @@ class ProduceCardsAuto(CustomAction):
         super().__init__()
         self.start_time = time.time()
         self._capture = None
+        self._context = None
         self._active_decision = None
-        self._last_decision_after = None
+        self._pending_after = None
         self._battle_id = None
         self._last_wait_image = None
         self._frame_observed_at_ns = None
@@ -60,13 +62,13 @@ class ProduceCardsAuto(CustomAction):
         context: Context,
         argv: CustomAction.RunArg,
     ) -> bool:
+        self._context = context
         session = SESSIONS.get(context)
         self._capture = session["capture"] if session else DecisionCapture.from_config({
             "mode": "agent_actions", "action": "ProduceCardsAuto", "entry": getattr(argv, "node_name", None),
             "coverage": "single_action_invocation", "policy": "existing_auto", "game_action_confirmation": "unknown",
-        }, console=logger.info)
+        }, console=logger.info, context=context)
         self._battle_id = self._record("battle_invocation_start", node=getattr(argv, "node_name", None))
-        self._last_decision_after = None
         reason = "action_returned"
         try:
             return self._run(context, argv)
@@ -74,17 +76,18 @@ class ProduceCardsAuto(CustomAction):
             reason = "action_exception"
             raise
         finally:
+            self._flush_decision()
             self._record("battle_invocation_end", reason=reason, task_stopping=context.tasker.stopping)
             if self._capture and not session:
                 self._capture.close("task_stopping" if context.tasker.stopping else reason)
             self._capture = None
+            self._context = None
             self._active_decision = None
-            self._last_decision_after = None
             self._battle_id = None
 
     def _record(self, kind, image=None, **data):
         if self._capture:
-            return self._capture.record(kind, image=image, battle_id=self._battle_id, **data)
+            return self._capture.record(kind, image=image, context=self._context, battle_id=self._battle_id, **data)
         return None
 
     def _begin_decision(self, kind, image, results=(), **data):
@@ -96,29 +99,28 @@ class ProduceCardsAuto(CustomAction):
                 "decision_before", image, operation=kind, candidates=card_candidates(results),
                 source="existing_auto", frame_observed_at_ns=self._frame_observed_at_ns, **data,
             )
+            self._flush_decision(self._active_decision)
         except Exception as exc:
             logger.warning(f"采集候选失败，继续原任务: {exc}")
 
-    def _finish_decision(self, wait_result):
-        self._last_decision_after = self._record(
-            "decision_after", self._last_wait_image, decision_id=self._active_decision,
-            wait_until_playable=wait_result, game_action_confirmed=None,
-            observation_phase="next_playable_or_exit",
-            frame_observed_at_ns=self._frame_observed_at_ns,
-        )
+    def _finish_decision(self, wait_result, *, selection_click_seconds=None):
+        self._pending_after = {
+            "decision_id": self._active_decision, "wait_until_playable": wait_result,
+            "game_action_confirmed": None, "selection_click_seconds": selection_click_seconds,
+            "observation_phase": "next_decision_before",
+        }
         self._active_decision = None
 
-    def _log_battle_exit(self, context):
-        # 后台完成 decision_after 的 OCR 后才会输出合并摘要。
-        # 在边界同步摘要，避免后续流水线日志抢先输出。
-        if self._last_decision_after and self._capture and self._capture.merged_console_enabled:
-            emitted = self._capture.wait_for_console(
-                self._last_decision_after, cancelled=lambda: context.tasker.stopping,
+    def _flush_decision(self, frame_reference=None):
+        if self._pending_after:
+            self._record(
+                "decision_after", frame_reference=frame_reference, **self._pending_after,
             )
-            if not emitted:
-                logger.info("最后一条操作摘要尚未输出；若后台分析完成，将稍后补发")
-        logger.info("未检测到体力")
-        logger.success("事件: 退出出牌")
+            self._pending_after = None
+
+    def _log_battle_exit(self, context):
+        self._flush_decision()
+        logger.info("战斗－退出出牌（未检测到体力标志）")
 
     def _run(self, context: Context, argv: CustomAction.RunArg) -> bool:
         # 使用饮料
@@ -127,7 +129,7 @@ class ProduceCardsAuto(CustomAction):
         self._frame_observed_at_ns = time.time_ns()
         reco_detail = context.run_recognition("ProduceCheckDrinkButton", image)
         hit_count = len(reco_detail.filtered_results)  # 获取饮料数
-        self._record("battle_entry", image, drink_detections=hit_count)
+        self._record("battle_entry", drink_detections=hit_count)
         logger.info(f"识别到{hit_count}瓶饮料")
         for _ in range(hit_count):
             self._begin_decision("use_drink_task", image, reason="existing_use_all_drinks")
@@ -150,7 +152,7 @@ class ProduceCardsAuto(CustomAction):
 
             # 通过检测体力槽判断是否处于出牌场景
             if not self._is_playing_card(context, image):
-                self._record("battle_exit_observation", image, reason="health_flag_not_detected")
+                self._record("battle_exit_observation", reason="health_flag_not_detected")
                 self._log_battle_exit(context)
                 break
 
@@ -179,7 +181,7 @@ class ProduceCardsAuto(CustomAction):
                     self._play_a_card(context, best_box, image, results, "only_available_card")
                 # 没有可用牌时，先判断是否处于出牌场景，确认处于出牌场景后，再跳过回合
                 elif useless > 0 and suggestions == 0 and cards == 0:
-                    logger.warning("!!!!!!!!无可用牌!!!!!!!!!!!")
+                    logger.warning("战斗 - 无可用牌，跳过回合")
                     self._begin_decision("skip_round", image, results, reason="no_available_cards")
                     context.run_task("ProduceRecognitionSkipRound")
                     playable = self._wait_until_playable(context)
@@ -198,7 +200,8 @@ class ProduceCardsAuto(CustomAction):
             else:
                 reco_detail = context.run_recognition("ProduceRecognitionNoCards", image)
                 if reco_detail and reco_detail.hit:
-                    logger.info("无手牌")
+                    if not (self._capture and self._capture.merged_console_enabled):
+                        logger.info("战斗 - 无手牌，跳过回合")
                     self._begin_decision("skip_round", image, reason="no_cards_ocr")
                     context.run_task("ProduceRecognitionSkipRound")
                     playable = self._wait_until_playable(context)
@@ -273,13 +276,21 @@ class ProduceCardsAuto(CustomAction):
         context.tasker.controller.post_click(box[0] + box[2] // 2, box[1] + box[3] // 2).wait()
         self._record("input_issued", decision_id=self._active_decision, click_index=2,
                      point=[box[0] + box[2] // 2, box[1] + box[3] // 2])
-        log_elapsed = logger.debug if self._capture and self._capture.merged_console_enabled else logger.info
-        log_elapsed("出牌 耗时:{:.2f}秒".format(time.time() - self.start_time))
+        elapsed = time.time() - self.start_time
+        logger.debug(f"出牌选择窗口至第二次点击：{elapsed:.2f} 秒")
+        if not (self._capture and self._capture.merged_console_enabled):
+            log_operation("战斗", "已发送出牌点击", {
+                "选择依据": {"game_recommendation": "游戏推荐", "only_available_card": "仅一张可用",
+                             "timeout_detector_confidence": "15 秒超时兜底"}.get(reason, reason),
+                "选择等待及点击耗时": f"{elapsed:.2f} 秒（不含后续动画等待）",
+                "actual_point": [box[0] + box[2] // 2, box[1] + box[3] // 2],
+                "牌名": "牌名识别不可用，未知",
+            })
 
         # 等待回到可出牌状态后，重置计时
         time.sleep(1)
         playable = self._wait_until_playable(context)
-        self._finish_decision(playable)
+        self._finish_decision(playable, selection_click_seconds=elapsed)
         self._reset_window()
 
         return True
@@ -301,7 +312,7 @@ class ProduceCardsAuto(CustomAction):
 
         reco_detail = context.run_recognition("ProduceRecognitionChooseMoveCards", image)
         if reco_detail.hit:
-            self._record("move_cards_screen", image, decision_id=self._active_decision)
+            self._record("move_cards_screen", decision_id=self._active_decision)
             y = 450
             while y < 1100:
                 # 调试示例：按四个固定卡槽位置依次处理饮料。
@@ -315,7 +326,7 @@ class ProduceCardsAuto(CustomAction):
                 image = context.tasker.controller.post_screencap().wait().get()
                 reco_detail = context.run_recognition("ProduceRecognitionChooseMoveCards", image)
                 if not reco_detail.hit:
-                    self._record("move_cards_selection_observation", image, decision_id=self._active_decision)
+                    self._record("move_cards_selection_observation", decision_id=self._active_decision)
                     context.run_task("ProduceMoveCards")
                     return True
                 else:
@@ -385,7 +396,7 @@ class ProduceCardsAuto(CustomAction):
             # 解决莫名其妙的误触问题
             reco_detail = context.run_recognition("ProduceButton", image)
             if reco_detail and reco_detail.hit:
-                self._record("confirmation_task", image, decision_id=self._active_decision, task="ProduceButton")
+                self._record("confirmation_task", decision_id=self._active_decision, task="ProduceButton")
                 context.run_task("ProduceButton")
 
             # 处理移动卡片界面

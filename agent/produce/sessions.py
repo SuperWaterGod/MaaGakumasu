@@ -49,8 +49,24 @@ SETTLEMENT_NAVIGATION = {
     "CloseRoundButton", "ProduceEventResultButton", "ProduceSkip", "ProduceSkipED",
     "ProduceSkipChatFlag", "ProduceYes", "ProduceSkipShowConfirm", "ProduceFollow", "Click_1",
 }
+PROCESS_NODES = {'ProduceShoppingFlag', 'ProduceGeneration', 'ProduceRecognitionWorkOptions', 'ProduceLackAPDecide', 'ProduceChooseIdolFirstDecide', 'ProduceNIAFailedRetryLastChallenge', 'ProduceExit', 'ProduceFailedStop', 'ProduceChooseDeleteFlag', 'ProduceChooseEventRecommend', 'ProduceWorkFlag', 'ProduceChooseGetFlag', 'ProduceFailedFlag', 'ProduceFailedRetryConfirm', 'ProduceNIAFailedFlag', 'ProduceLackAPCancel', 'ProduceChooseFirst', 'ProduceChooseStrengthenClick', 'ProduceSkipED', 'ProduceKeepDrinkFlag', 'ProduceNIAFailedRetryConfirm', 'ProduceHomeFlag', 'ProduceMirrorFlag', 'ProduceGuideFlag', 'ProduceLackAP', 'ProduceEnd', 'ProduceBackHome', 'ProduceChooseRecommend'}
 ENTRY_NODES = {"ProduceStart", "ProduceContinue", "ProduceSkipPreparation", "ProduceEntryFlag"}
 GAMEPLAY_NODES = {"ProduceEntry", "ProduceEntryNIA"}
+
+
+def session_directory_name(bindings):
+    """固定开局显示名称；身份未知或文件名非法时使用安全占位。"""
+    idol = bindings.get("configured_idol") or {}
+    def safe(value, fallback):
+        value = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", str(value or fallback)).strip(" .")[:48]
+        return re.sub(r"\s+", "", value) or fallback
+    difficulty = bindings.get("difficulty")
+    if isinstance(difficulty, list):
+        difficulty = "-".join(str(item) for item in difficulty)
+    level = safe(bindings.get("scenario"), "未知剧本") + safe(difficulty, "未知难度")
+    return (datetime.now().astimezone().strftime("%Y%m%d_%H%M_")
+            + level + "_" + safe(idol.get("idol_name"), "未知偶像") + "_"
+            + safe(idol.get("song_name"), "未知歌曲"))
 
 
 def capture_window(session):
@@ -58,10 +74,8 @@ def capture_window(session):
 
 
 def save_json(path, value):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(path)
+    from .reporting import atomic_json
+    atomic_json(path, value)
 
 
 def configured_bindings(context):
@@ -112,7 +126,8 @@ class ProduceSessions:
         if not self.active:
             return None
         try:
-            return self.active.get(self.key(context.tasker))
+            session = self.active.get(self.key(context.tasker))
+            return session
         except Exception:
             logger.warning("无法关联培育会话，继续原任务")
             return None
@@ -151,7 +166,7 @@ class ProduceSessions:
         if pointer.exists() and not fresh_start:
             try:
                 previous = json.loads(pointer.read_text(encoding="utf-8"))
-                if not isinstance(previous, dict) or not isinstance(previous.get("segments"), list):
+                if not isinstance(previous, dict) or previous.get("schema_version") != 4:
                     previous = None
                 elif not isinstance(previous.get("session_id"), str) or not re.fullmatch(r"[0-9a-f]{32}", previous["session_id"]):
                     previous = None
@@ -175,30 +190,44 @@ class ProduceSessions:
                 previous = None
         session_id = previous["session_id"] if previous else uuid.uuid4().hex
         bindings["deck"]["deck_id"] = f"{session_id}:deck"
+        directory_name = previous["directory_name"] if previous else session_directory_name(bindings)
+        if Path(directory_name).name != directory_name or directory_name in (".", ".."):
+            directory_name = session_id
+        session_directory = base / directory_name
+        if not previous:
+            base.mkdir(parents=True, exist_ok=True)
+            number = 1
+            while True:
+                try:
+                    session_directory.mkdir()
+                    break
+                except FileExistsError:
+                    number += 1
+                    session_directory = base / f"{directory_name}_{number}"
+            directory_name = session_directory.name
         capture = DecisionCapture.from_config(
             {
                 "mode": "agent_actions",
                 "coverage": "produce_session_segment",
                 "session_id": session_id,
                 "policy": "existing_auto",
+                "reward_language_layout": context.get_node_data("ProduceRewardReceive"),
                 "bindings": bindings,
                 "entry": entry,
                 "task_started_at": (self.task_origins.get(key) or {}).get("task_started_at"),
                 "version_files": version_hashes,
             },
-            console=logger.info,
+            console=logger.info, context=context,
+            session_directory=session_directory,
+            save_screenshots=bool((context.get_node_data("Produce") or {}).get("attach", {}).get("save_screenshots", False)),
         )
         if not capture:
             self.disabled.add(key)
             return None
         origin = self.task_origins.get(key, {})
         now = started_at or datetime.now(timezone.utc).isoformat()
-        if previous and previous.get("timing_basis") != "gameplay_loop":
-            previous["legacy_started_at"] = previous["started_at"]
-            previous["started_at"] = previous["gameplay_started_at"]
-            previous["start_source"] = "legacy_gameplay_entry"
         state = previous or {
-            "schema_version": 2,
+            "schema_version": 4,
             "session_id": session_id,
             "bindings": bindings,
             "started_at": now,
@@ -213,21 +242,24 @@ class ProduceSessions:
             "settlement_observed": False,
         }
         state["timing_basis"] = "gameplay_loop"
-        state.setdefault("start_source", "legacy_preparation_entry")
-        state.update(status="recording", root_task_id=task_id)
+        state.setdefault("start_source", entry)
+        state.update(status="recording", root_task_id=task_id, directory_name=directory_name)
+        state.setdefault("local_started_at", datetime.fromisoformat(state["started_at"]).astimezone().isoformat())
         state.pop("ended_at", None)
         state.pop("stop_reason", None)
-        state["segments"].append({"run_id": capture.run_id, "metadata": capture._manifest["metadata"]})
+        state["segments"].append({"run_id": capture.run_id, "metadata": capture._manifest["metadata"],
+                                  "relative_path": str(capture.directory.relative_to(session_directory)).replace("\\", "/")})
         capture.record(
             "produce_session_resume" if previous else "produce_session_start",
             bindings=bindings,
             continuity="explicit_resume_with_matching_configuration" if previous else "new_or_partial",
+            context=context,
         )
         session = {
             "capture": capture,
             "state": state,
             "pointer": pointer,
-            "path": base / session_id / "session.json",
+            "path": session_directory / "data/session.json",
             "pending": [],
             "actions": {},
             "recognitions": {},
@@ -238,7 +270,8 @@ class ProduceSessions:
         }
         self.active[key] = session
         self.persist(session)
-        logger.info(f"[培育采集] 会话 {session_id[:8]}｜起点 {state.get('start_source', entry)}｜分段 {capture.run_id}")
+        save_json(session_directory / "data/report_pending.json", {"requested_at": now, "reason": "session_open"})
+        logger.info(f"培育记录－{'继续本局' if previous else '开始本局'}；回放目录：{directory_name}")
         logger.debug(f"培育会话完整 ID: {session_id}; started_at={state['started_at']}")
         return session
 
@@ -260,6 +293,9 @@ class ProduceSessions:
         self.persist(session)
         if terminal:
             session["pointer"].unlink(missing_ok=True)
+        from .reporting import schedule_report
+
+        schedule_report(session["path"].parent.parent)
 
     def close_all(self):
         for key in list(self.active):
@@ -281,6 +317,17 @@ def safe_image(context):
 
 
 class ProduceContextSink(ContextEventSink):
+    def on_node_pipeline_node(self, context, noti_type, detail):
+        if noti_type != NotificationType.Failed:
+            return
+        try:
+            session = SESSIONS.get(context)
+            if session:
+                session["capture"].record("pipeline_failure", image=safe_image(context), node=detail.name,
+                                          frame_source="last_cached_at_failure", game_action_confirmed=None, context=context)
+        except Exception:
+            logger.exception("培育异常画面记录失败，继续原失败处理")
+
     def on_node_wait_freezes(self, context, noti_type, detail):
         if detail.phase != "pre" or detail.name not in (SETTLEMENT_ENTRIES | SETTLEMENT_NAVIGATION):
             return
@@ -308,6 +355,8 @@ class ProduceContextSink(ContextEventSink):
             return
         try:
             session = SESSIONS.get(context)
+            if session and session["capture"]._analyzing:
+                return
             # 在 DirectHit 兜底之前只保留最近一次图像识别编号。
             # 输入前读取一次画面，不在每个未命中的候选节点上重复读取。
             if session and capture_window(session) and noti_type in (NotificationType.Succeeded, NotificationType.Failed):
@@ -343,6 +392,7 @@ class ProduceContextSink(ContextEventSink):
                         game_action_confirmed=None,
                         intervening_route_inputs=len(session["pending"]),
                         observation_phase="next_successful_image_recognition",
+                        context=context,
                     )
                 session["pending"].clear()
         except Exception:
@@ -352,7 +402,8 @@ class ProduceContextSink(ContextEventSink):
         if detail.name in SETTLEMENT_NAVIGATION and not any(capture_window(item) for item in list(SESSIONS.active.values())):
             return
         watched = (
-            ENTRY_NODES
+            PROCESS_NODES
+            | ENTRY_NODES
             | GAMEPLAY_NODES
             | set(ROUTE_NODES)
             | PREPARATION_NODES
@@ -384,6 +435,12 @@ class ProduceContextSink(ContextEventSink):
     def observe(self, context, noti_type, detail):
         name = detail.name
         key = SESSIONS.key(context.tasker)
+        session = SESSIONS.get(context)
+        if session and name in PROCESS_NODES and name not in ROUTE_NODES:
+            if noti_type in (NotificationType.Succeeded, NotificationType.Failed):
+                session["capture"].record("pipeline_action", node=name, action_id=detail.action_id,
+                                          framework_action_succeeded=noti_type == NotificationType.Succeeded,
+                                          game_action_confirmed=None, context=context)
         if noti_type == NotificationType.Starting:
             if name in {"ProduceCardsFlag", "ProduceChooseEventFlag", "ProduceChooseNIAEventFlag", "ProduceChooseGetFlag"}:
                 session = SESSIONS.get(context)
@@ -432,10 +489,10 @@ class ProduceContextSink(ContextEventSink):
                     session["gameplay_entry_recorded"] = True
                     capture = session["capture"]
                     for preparation in origin.get("preparations", {}).values():
-                        capture.record("preparation_observation", **preparation, buffered_before_gameplay=True)
+                        capture.record("preparation_observation", **preparation, buffered_before_gameplay=True, context=context)
                     origin.get("preparations", {}).clear()
                     origin.get("recognitions", {}).clear()
-                    capture.record("produce_gameplay_entry", node=name, fresh_start=session["fresh_game_started_in_segment"])
+                    capture.record("produce_gameplay_entry", node=name, fresh_start=session["fresh_game_started_in_segment"], context=context)
                 return
             session = SESSIONS.get(context)
             if not session:
@@ -467,6 +524,9 @@ class ProduceContextSink(ContextEventSink):
             if name in ROUTE_NODES:
                 node = context.get_node_data(name)
                 reco = session["recognitions"].pop(name, None)
+                if name == "ProduceChooseGetFlag":
+                    from .rewards import reward_kind
+                    session["reward_kind"] = reward_kind(getattr(getattr(reco, "best_result", None), "text", ""))
                 raw_image = getattr(reco, "raw_image", None)
                 event_id = capture.record(
                     "route_before",
@@ -480,6 +540,7 @@ class ProduceContextSink(ContextEventSink):
                     candidates_complete=False,
                     actual_cost=None,
                     game_action_confirmed=None,
+                    context=context,
                 )
                 session["actions"][detail.action_id] = event_id
                 if name == "ProduceChooseConfirm":
@@ -490,18 +551,17 @@ class ProduceContextSink(ContextEventSink):
                 SESSIONS.persist(session)
             elif name in PREPARATION_NODES:
                 reco = session["recognitions"].pop(name, None)
-                capture.record("preparation_observation", image=safe_image(context), node=name, recognition=getattr(reco, "raw_detail", None))
+                capture.record("preparation_observation", image=safe_image(context), node=name, recognition=getattr(reco, "raw_detail", None), context=context)
             elif name in {"ProduceFailedFlag", "ProduceNIAFailedFlag", "ProduceFailedRetry", "ProduceNIAFailedRetry"}:
-                capture.record("exam_failure_or_retry", image=safe_image(context), node=name)
+                capture.record("exam_failure_or_retry", image=safe_image(context), node=name, context=context)
             return
         session = SESSIONS.get(context)
         if not session:
             return
         if name == "ProduceCardsFlag" and noti_type == NotificationType.Succeeded:
-            if session["state"]["bindings"].get("scenario") == "初":
-                # 考试结果页可能先于最终演出出现，限制额外观察的翻页次数，
-                # 再由明确的最终考试标签判断其含义。
-                session["exam_result_capture_remaining"] = 16
+            # 初/NIA 成功或失败都可能先显示结果，再直接进入回忆生成。
+            # 旁路观察原有翻页；下一场战斗、路线或奖励会清除此有限窗口。
+            session["exam_result_capture_remaining"] = 16
             return
         if detail.action_id in session["actions"]:
             decision = session["actions"].pop(detail.action_id)
@@ -518,6 +578,7 @@ class ProduceContextSink(ContextEventSink):
                 actual_point=list(action.result.point) if action and getattr(action.result, "point", None) else None,
                 actual_box=list(action.box) if action else None,
                 game_action_confirmed=None,
+                context=context,
             )
             if noti_type == NotificationType.Succeeded and name in {
                 "ProduceChooseFirst", "ProduceChooseRecommend", "ProduceChooseEventRecommend", "ProduceChooseSkip",
@@ -583,6 +644,7 @@ class ProduceContextSink(ContextEventSink):
             wait_freezes=freeze,
             observation_phase="ending_navigation_before_input" if kind == "settlement_observation" else "post_battle_navigation_before_input",
             evaluation_page_confirmed=None,
+            context=context,
         )
 
 
@@ -597,7 +659,8 @@ class ProduceTaskSink(TaskerEventSink):
             # 因此使用之前保存的任务编号关联收尾。
             for key, session in list(SESSIONS.active.items()):
                 if detail.task_id == session["state"]["root_task_id"]:
-                    SESSIONS.close(key, "task_ended_without_home")
+                    failed = bool(session["state"].get("failure_stop_observed"))
+                    SESSIONS.close(key, "failure_terminated" if failed else "task_ended_without_home", terminal=failed)
             for key, origin in list(SESSIONS.task_origins.items()):
                 if origin.get("root_task_id") == detail.task_id:
                     SESSIONS.task_origins.pop(key, None)
@@ -609,5 +672,9 @@ class ProduceTaskSink(TaskerEventSink):
 def install_produce_capture():
     from maa.agent.agent_server import AgentServer
 
+    from .reporting import recover_reports, notify_ready_reports
+
+    recover_reports(ROOT / "debug/produce_sessions")
+    notify_ready_reports(ROOT / "debug/produce_sessions", logger.info)
     AgentServer.add_context_sink(ProduceContextSink())
     AgentServer.add_tasker_sink(ProduceTaskSink())

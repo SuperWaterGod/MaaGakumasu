@@ -384,6 +384,50 @@ def read_fields(tokens, read_ocr=None):
     return result
 
 
+def ranking_observation(tokens):
+    """排名页仅玩家行有日志按钮；按同一行读取分数和名次，不假定玩家位置。"""
+    tokens = eligible(tokens)
+    logs = [t for t in tokens if re.fullmatch(r"ログ|日志|日誌", text_value(t["text"]))
+            and t["box"][0] > 550 and 250 < t["box"][1] < 1080]
+    if len(logs) != 1:
+        return None
+    y = logs[0]["box"][1]
+    scores = [t for t in tokens if 190 < t["box"][0] < 350 and abs(t["box"][1] - y) < 55
+              and re.fullmatch(r"[\d,]+Pt", text_value(t["text"]), re.IGNORECASE)]
+    ranks = [t for t in tokens if t["box"][0] < 150 and abs(t["box"][1] - y) < 70
+             and re.fullmatch(r"[1-9](?:st|nd|rd|th)", text_value(t["text"]), re.IGNORECASE)]
+    if len(scores) != 1 or len(ranks) != 1:
+        return None
+    return {"score": {"value": int(re.sub(r"\D", "", scores[0]["text"])), "status": "observed", "evidence": [logs[0], scores[0]]},
+            "place": {"value": int(ranks[0]["text"][0]), "status": "observed", "evidence": [logs[0], ranks[0]]}}
+
+
+class FinalExamTracker:
+    """排名先出现、最终考试标签后出现；仅关联同一场结束窗口，拒绝跨战斗沿用。"""
+
+    def __init__(self, scenario):
+        self.scenario = scenario
+        self.pending = None
+
+    def observe(self, event, observation=None):
+        if event.get("kind") in ("battle_invocation_start", "exam_failure_or_retry", "produce_gameplay_entry"):
+            self.pending = None
+        if self.scenario != "初" or observation is None:
+            return
+        ranking = observation.get("exam_ranking")
+        if ranking:
+            self.pending = {key: {**value, "source_event_id": event.get("event_id")} for key, value in ranking.items()}
+        tokens = eligible(observation.get("raw_ocr", []))
+        # 只接受左上角的最终考试页面标签，不用完成卡上的历史标签关联旧排名。
+        confirmed = any(re.fullmatch(r"最終試験|最终考试|最終考試", text_value(t["text"]))
+                        and t["box"][0] < 200 and t["box"][1] < 180 for t in tokens)
+        if confirmed and self.pending:
+            final = observation["final_exam"]
+            for key, value in self.pending.items():
+                final[key] = merge_readings([final[key], value])
+            self.pending = None
+
+
 def settlement_observation(tokens, read_ocr=None, match_templates=None):
     fields = read_fields(tokens, read_ocr)
     parameters = parameter_panel(tokens, read_ocr, match_templates)
@@ -402,6 +446,7 @@ def settlement_observation(tokens, read_ocr=None, match_templates=None):
     return {"schema_version": 2, "settlement": fields, "raw_ocr": tokens,
             "fan_votes": fan_votes,
             "final_exam": final_exam,
+            "exam_ranking": ranking_observation(tokens),
             "evaluation_page_observed": any(value["value"] is not None for value in fields.values()),
             "settlement_fields_complete": all(value["value"] is not None for value in fields.values()),
             "game_action_confirmed": None}

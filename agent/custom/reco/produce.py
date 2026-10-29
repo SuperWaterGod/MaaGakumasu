@@ -156,7 +156,7 @@ class ProduceCardsFlagAuto(CustomRecognition):
         cards_reco_detail = context.run_recognition("ProduceRecognitionCards", argv.image)
         health_reco_detail = context.run_recognition("ProduceRecognitionHealthFlag", argv.image)
         if cards_reco_detail and cards_reco_detail.hit and health_reco_detail and health_reco_detail.hit:
-            logger.success("事件: 出牌场景")
+            logger.success("战斗 - 进入出牌场景")
             return CustomRecognition.AnalyzeResult(box=[0, 0, 1, 1], detail={"detail": "识别到出牌场景"})
         else:
             return CustomRecognition.AnalyzeResult(box=None, detail={"detail": "未识别到选择场景"})

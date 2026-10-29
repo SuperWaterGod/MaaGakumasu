@@ -7,6 +7,7 @@
         "培育难度",
         "培育偶像-zh_CN",
         "培育次数",
+        "开启截图记录",
         "使用体力药",
         "使用道具",
         "跳过选择偶像",
@@ -28,6 +29,34 @@
     }
   ],
   "option": {
+    "开启截图记录": {
+      "type": "switch",
+      "default_case": "No",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "Produce": {
+              "attach": {
+                "save_screenshots": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "Produce": {
+              "attach": {
+                "save_screenshots": false
+              }
+            }
+          }
+        }
+      ],
+      "label": "$开启截图记录",
+      "description": "$截图记录说明"
+    },
     "培育偶像-zh_CN": {
       "type": "select",
       "default_case": "紫云清夏",

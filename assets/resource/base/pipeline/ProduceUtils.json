@@ -517,7 +517,7 @@
       }
     },
     "focus": {
-      "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择冲刺/上课/外出[/color]"
+      "Node.Recognition.Succeeded": "[color:LimeGreen]行动选择－进入冲刺/上课/外出选项[/color]"
     }
   },
   "ProduceRecognitionUncheckedMark": {

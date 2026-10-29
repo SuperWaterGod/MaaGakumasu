@@ -861,7 +861,7 @@
             "param": {}
         },
         "focus": {
-            "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 演出开始[/color]"
+            "Node.Recognition.Succeeded": "[color:LimeGreen]演出－进入演出阶段[/color]"
         },
         "next": [
             "ProduceEnd",
@@ -907,6 +907,9 @@
         "post_delay": 0
     },
     "ProduceChooseEventFlag": {
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:LimeGreen]路线选择 - 进入事件页面[/color]"
+    },
         "recognition": {
             "type": "TemplateMatch",
             "param": {
@@ -957,7 +960,7 @@
         },
         "post_wait_freezes": 200,
         "focus": {
-            "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 选择饮料/物品/卡牌[/color]"
+            "Node.Recognition.Succeeded": "[color:LimeGreen]奖励选择－进入选择页面[/color]"
         },
         "next": [
             "ProduceChooseSkip",
@@ -981,9 +984,6 @@
                     124
                 ]
             }
-        },
-        "focus": {
-            "Node.Action.Succeeded": "已选择第一项奖励"
         },
         "next": [
             "ProduceChooseConfirm"
@@ -1016,9 +1016,6 @@
                 ]
             }
         },
-        "focus": {
-            "Node.Action.Succeeded": "已选择推荐奖励"
-        },
         "next": [
             "ProduceChooseConfirm"
         ]
@@ -1048,9 +1045,6 @@
                     0
                 ]
             }
-        },
-        "focus": {
-            "Node.Action.Succeeded": "已选择活动推荐奖励"
         },
         "next": [
             "ProduceChooseConfirm"
@@ -1170,7 +1164,8 @@
         },
         "post_wait_freezes": 200,
         "focus": {
-            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]选择强化[/color]"
+      "Node.Action.Succeeded": "强化选择 - 已点击选牌",
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]强化选择－进入选牌页面[/color]"
         },
         "next": [
             "ProduceChooseStrengthen",
@@ -1178,6 +1173,9 @@
         ]
     },
     "ProduceChooseStrengthen": {
+    "focus": {
+      "Node.Action.Succeeded": "强化选择 - 已点击强化按钮"
+    },
         "recognition": {
             "type": "TemplateMatch",
             "param": {
@@ -1238,13 +1236,17 @@
         },
         "post_wait_freezes": 500,
         "focus": {
-            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]选择删除/复制/变换[/color]"
+      "Node.Action.Succeeded": "卡牌调整 - 已点击选牌",
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]卡牌调整－进入删除/复制/变换页面[/color]"
         },
         "next": [
             "ProduceChooseDeleteClick"
         ]
     },
     "ProduceChooseDeleteClick": {
+    "focus": {
+      "Node.Action.Succeeded": "卡牌调整 - 已点击删除／复制／变换按钮"
+    },
         "recognition": {
             "type": "TemplateMatch",
             "param": {
@@ -1274,7 +1276,7 @@
             "param": {}
         },
         "focus": {
-            "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 演出结束[/color]"
+            "Node.Recognition.Succeeded": "[color:LimeGreen]演出－进入结束页面[/color]"
         },
         "next": [
             "ProduceGeneration",
@@ -1328,7 +1330,7 @@
             }
         },
         "focus": {
-            "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 播放ED[/color]"
+            "Node.Recognition.Succeeded": "[color:LimeGreen]演出－进入 ED[/color]"
         }
     },
     "ProduceGeneration": {
@@ -1363,7 +1365,7 @@
         },
         "post_delay": 0,
         "focus": {
-            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]回忆已生成[/color]"
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]结算－识别到生成按钮[/color]"
         },
         "next": [
             "ProduceFinished",
@@ -1442,7 +1444,7 @@
         },
         "focus": {
             "Node.Action.Succeeded": {
-                "content": "[color:LimeGreen]✅ 考试通过，成功培育[/color]",
+                "content": "[color:LimeGreen]✅ 培育流程－已返回主页[/color]",
                 "display": [
                     "log",
                     "notification"
@@ -1526,7 +1528,7 @@
         },
         "post_wait_freezes": 200,
         "focus": {
-            "Node.Recognition.Succeeded": "[color:LimeGreen]事件: 商店购买[/color]"
+            "Node.Recognition.Succeeded": "[color:LimeGreen]商店－进入购买页面[/color]"
         },
         "next": [
             "ProduceShoppingBuySale",
@@ -1720,7 +1722,7 @@
             "param": {}
         },
         "focus": {
-            "Node.Recognition.Succeeded": "[color:orange]已终止培育[/color]"
+            "Node.Recognition.Succeeded": "[color:orange]培育终止－识别到结束按钮[/color]"
         },
         "next": [
             "ProduceGeneration",
@@ -1772,7 +1774,7 @@
             "param": {}
         },
         "focus": {
-            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]已再次开始挑战[/color]"
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]考试重试－识别到确认按钮[/color]"
         },
         "next": [
             "ProduceEntry"

@@ -57,6 +57,18 @@ def buff_number(raw, roi, format_name):
     return result
 
 
+def lesson_turns(raw, roi):
+    """课程的追加回合显示为剩余数＋追加数；保留原始读数，不把加号丢弃后拼成整数。"""
+    normalized = []
+    for item in raw:
+        text = unicodedata.normalize("NFKC", item["text"]).strip()
+        match = re.fullmatch(r"(\d{1,2})\s*\+\s*(\d{1,2})", text)
+        normalized.append({**item, "text": str(int(match[1]) + int(match[2]))} if match else item)
+    result = number_field(normalized, roi, maximum=99)
+    result["raw_ocr"] = raw
+    return result
+
+
 def number_views(views):
     """合并可读数值视图，存在分歧时保留未知。"""
     values = {view["value"] for view in views if view["value"] is not None}
@@ -180,6 +192,10 @@ class BattleStateReader:
             for entry in self.templates:
                 if entry["kind"] != kind:
                     continue
+                if getattr(self, "layout", None) == "lesson":
+                    # 课程 HUD 比考试更靠上，保留原模板像素，只调整搜索区域。
+                    x, y, w, h = entry["roi"]
+                    entry = {**entry, "roi": [x, max(0, y - 40), w, h + min(40, y)]}
                 try:
                     for hit in self.match_templates(array, entry):
                         if hit["score"] >= entry["threshold"] - self.ambiguity_margin:
@@ -334,9 +350,6 @@ class BattleStateReader:
 
     def _anomaly(self, array, errors, buffs=()):
         result = {key: unknown_field() for key in ANOMALY_FIELDS}
-        held_views = [held_card_fields(self._ocr(array, roi, errors), roi) for roi in ([503, 1140, 124, 35], [514, 1146, 112, 29])]
-        result["held_cards_count"] = number_views([view[0] for view in held_views])
-        result["held_cards_capacity"] = number_views([view[1] for view in held_views])
         result["pointer_condition"] = {"value": None, "status": "unknown", "raw_ocr": []}
         current, result["stance"] = self._single_icon(array, "stance", errors)
         result["hud_present"] = current is not None
@@ -366,6 +379,9 @@ class BattleStateReader:
             result["stance"] = {**unknown_field("neutral_icon_without_anomaly_context"), "icon_evidence": result["stance"]["icon_evidence"]}
             result["hud_present"] = False
             return result
+        held_views = [held_card_fields(self._ocr(array, roi, errors), roi) for roi in ([503, 1140, 124, 35], [514, 1146, 112, 29])]
+        result["held_cards_count"] = number_views([view[0] for view in held_views])
+        result["held_cards_capacity"] = number_views([view[1] for view in held_views])
         if entry.get("reading"):
             stage = self._numeric_views(array, box, entry["reading"], errors)
             result["stance_stage"] = stage if stage["value"] in (1, 2) else {**stage, "value": None, "status": "unknown"}
@@ -388,6 +404,7 @@ class BattleStateReader:
 
     def read(self, array):
         errors = []
+        self.layout = "exam"
         rgb = array[..., ::-1]
         fields = {key: unknown_field() for key in STATE_FIELDS}
         fields["turns_remaining"] = number_views(
@@ -417,9 +434,26 @@ class BattleStateReader:
             value, confidence = max(attributes, key=lambda item: item[1])
             fields["attribute"] = {"value": value, "status": "observed", "roi": roi, "raw_ocr": raw, "confidence": confidence}
         present = sum(fields[key]["value"] is not None for key in ("turns_remaining", "stamina", "genki", "attribute_multiplier_percent")) >= 3
+        if not present:
+            # 初/NIA 的普通课程共用课程 HUD；考试与试镜仍走原有排名布局。
+            header = self._ocr(array, [15, 25, 170, 43], errors)
+            lesson = any(item["confidence"] >= 0.8 and re.search(r"残りターン数|剩余回合|剩餘回合", item["text"]) for item in header)
+            if lesson:
+                self.layout = "lesson"
+                for key, roi, maximum in (
+                    ("turns_remaining", [65, 65, 98, 50], 99),
+                    ("stamina", [570, 169, 70, 40], 999),
+                    ("genki", [655, 129, 65, 45], 99999),
+                ):
+                    raw = self._ocr(array, roi, errors)
+                    fields[key] = lesson_turns(raw, roi) if key == "turns_remaining" else number_field(raw, roi, maximum=maximum)
+                fields["attribute"] = unknown_field("lesson_has_no_exam_attribute_label")
+                fields["attribute_multiplier_percent"] = unknown_field("lesson_has_no_exam_multiplier")
+                present = sum(fields[key]["value"] is not None for key in ("turns_remaining", "stamina", "genki")) >= 2
         state = {
             "schema_version": 1,
             "hud_present": present,
+            "layout": self.layout,
             "fields": fields,
             "buffs": [],
             "unknown_buffs": [],
@@ -435,7 +469,7 @@ class BattleStateReader:
         if not present:
             state["fields"] = {key: unknown_field("battle_hud_not_confirmed", field["roi"], field["raw_ocr"]) for key, field in fields.items()}
             return state
-        score_roi = player_score_roi(rgb)
+        score_roi = player_score_roi(rgb) if self.layout == "exam" else None
         if score_roi:
             state["fields"]["score"] = number_field(self._ocr(array, score_roi, errors), score_roi, maximum=999999999)
             state["score_locator"] = "unique_wide_white_player_rank_frame"
@@ -470,3 +504,65 @@ def state_changes(before, after):
         if old is not None and buff["value"] is not None and old != buff["value"]:
             changes[buff["key"]] = {"before": old, "after": buff["value"]}
     return changes
+
+
+
+def read_produce_health(context, image):
+    """复用培育页面体力解析；无法读取时保留未知。"""
+    detail = context.run_recognition("ProduceRecognitionHealth", image)
+    if not (detail and detail.hit):
+        return None
+    try:
+        parts = detail.best_result.text.split("/")
+        current = int("".join(filter(str.isdigit, parts[0])))
+        maximum = int("".join(filter(str.isdigit, parts[1])))
+        return {"current": current, "max": maximum, "ratio": current / maximum}
+    except (ValueError, IndexError, ZeroDivisionError):
+        return None
+
+
+def read_produce_attributes(context, image, rois, current_rois=None):
+    """共享三维解析，页面布局由调用方提供；兜底与观测分别返回。"""
+    legacy = {"Vo": 0, "Da": 0, "Vi": 0, "max": 0}
+    observed = {}
+    for name, roi in zip(("Vo", "Da", "Vi"), rois):
+        detail = context.run_recognition("ProduceRecognitionScore", image,
+                                         pipeline_override={"ProduceRecognitionScore": {"roi": roi}})
+        value = None
+        if detail and detail.hit and len(detail.filtered_results) == 2:
+            try:
+                current = int("".join(filter(str.isdigit, detail.filtered_results[0].text)))
+                maximum = int("".join(filter(str.isdigit, detail.filtered_results[1].text.replace("/", ""))))
+                value = {"current": current, "max": maximum}
+                legacy[name] = current
+                # 保留旧策略最大值规则，本次不改变选择阈值。
+                legacy["max"] = maximum if legacy["max"] < maximum < 9999 else legacy["max"]
+            except (ValueError, TypeError):
+                pass
+        if value is None and current_rois and detail and detail.hit:
+            # 图标或描边会让检测器拆散当前数值；已读到上限时只补读数值行。
+            import re
+            limits = [re.fullmatch(r"/\s*(\d{1,4})", item.text.strip()) for item in detail.filtered_results]
+            limits = [int(match[1]) for match in limits if match]
+            if len(limits) == 1 and limits[0] > 0:
+                retry = context.run_recognition("ProduceRecognitionScore", image, pipeline_override={
+                    "ProduceRecognitionScore": {"roi": current_rois[("Vo", "Da", "Vi").index(name)],
+                                                "only_rec": True, "expected": r"^\d{1,4}$"},
+                })
+                items = retry.filtered_results if retry and retry.hit else []
+                if len(items) == 1 and items[0].score >= .8 and re.fullmatch(r"\d{1,4}", items[0].text.strip()):
+                    current, maximum = int(items[0].text.strip()), limits[0]
+                    if 0 <= current <= maximum:
+                        value = {"current": current, "max": maximum}
+                        legacy[name] = current
+                        legacy["max"] = maximum if legacy["max"] < maximum < 9999 else legacy["max"]
+        observed[name] = produce_observation(value, "ProduceRecognitionScore", roi)
+    return legacy, observed
+
+
+def produce_observation(value, source, roi=None):
+    """当前决策图像的观测，不混入旧策略默认值。"""
+    from datetime import datetime, timezone
+    return {"value": value, "status": "observed" if value is not None else "unknown",
+            "source": source, "roi": roi, "observed_at": datetime.now(timezone.utc).isoformat(),
+            "unknown_reason": "unreadable" if value is None else None}

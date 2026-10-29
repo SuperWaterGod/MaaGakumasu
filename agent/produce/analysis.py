@@ -1,4 +1,4 @@
-"""对已采集的对局和路线画面执行后台 OCR 与分析，不发送游戏输入。"""
+"""对已采集的对局和路线画面执行内存图像 OCR 与分析，不发送游戏输入。"""
 
 import os
 import re
@@ -12,7 +12,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from importlib.metadata import version
 
-# 内置 Python 不自动加入脚本目录，在入口设置后台进程和命令行工具的导入路径。
+# 内置 Python 不自动加入脚本目录，在入口设置离线命令行工具的导入路径。
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -21,7 +21,8 @@ from utils.image_io import bgr_image, read_image, resize_image
 from produce.catalog import SkillCardCatalog, clean, normalize_name
 from produce.console import RewardConsole, OperationConsole, SettlementConsole, state_lines, hand_summary
 from produce.rewards import RewardReader
-from produce.settlement import PARAMETER_ICONS, settlement_observation
+from produce.reporting import read_json
+from produce.settlement import PARAMETER_ICONS, FinalExamTracker, settlement_observation
 
 
 def normalized_image(image):
@@ -167,19 +168,22 @@ def selection_evidence(observation, action):
 
 
 class OfflineVision:
-    def __init__(self, resource_path, log_directory):
+    def __init__(self, resource_path, context=None):
+        self.context = context
+        if context is not None:
+            self._ocr_cache = {}
+            return
         import numpy as np
         from maa.define import LoggingLevelEnum
         from maa.tasker import Tasker
-        from maa.toolkit import Toolkit
         from maa.resource import Resource
         from maa.controller import CustomController
 
-        Toolkit.init_option(str(log_directory))
-        # OCR 证据已写入派生 JSON 和 analysis.log，
-        # 关闭原生逐次识别追踪日志，避免每次回放产生大量重复日志。
+        # 独立 OCR 进程不初始化 Toolkit 的落盘日志，也不自动保存识别绘图。
         Tasker.set_log_dir("")
         Tasker.set_stdout_level(LoggingLevelEnum.Error)
+        Tasker.set_save_draw(False)
+        Tasker.set_save_on_error(False)
         self.resource = Resource()
         if not self.resource.post_bundle(resource_path).wait().status.succeeded:
             raise RuntimeError("Cannot load analysis resource")
@@ -203,6 +207,12 @@ class OfflineVision:
         self._ocr_cache = {}
 
     def recognize(self, kind, param, image):
+        if self.context is not None:
+            context = self.context() if callable(self.context) else self.context
+            if context is None:
+                raise RuntimeError("当前记录缺少有效识别 Context")
+            detail = context.run_recognition_direct(kind, param, image)
+            return detail.all_results if detail else []
         job = self.tasker.post_recognition(kind, param, image).wait()
         if not job.status.succeeded:
             raise RuntimeError(f"Recognition job failed: {kind}")
@@ -327,35 +337,15 @@ class OfflineVision:
         return result
 
 
-def analyze_capture(directory, resource, database, aliases=None, follow=False, max_frames=None):
+def analyze_stream(directory, resource, database, aliases=None, *, context=None, emit=None):
     directory = directory.resolve()
     catalog = SkillCardCatalog(database, aliases)
     reward_reader = RewardReader(catalog, database.with_name("produce_reward_items.json"), directory)
     model_sha = hashlib.sha256((resource / "model/detect/cards.onnx").read_bytes()).hexdigest()
     state_templates = database.with_name("battle_buff_templates.json")
-    state_reader = BattleStateReader(state_templates, None, image_root=resource / "image")
-    signature = hashlib.sha256(
-        (
-            catalog.sha256
-            + model_sha
-            + version("maafw")
-            + (hashlib.sha256(aliases.read_bytes()).hexdigest() if aliases and aliases.exists() else "")
-            + "".join(path.read_text(encoding="utf-8") for path in sorted(Path(__file__).parent.glob("*.py")))
-            + Path(__file__).parents[1].joinpath("utils/image_io.py").read_text(encoding="utf-8")
-            + (reward_reader.catalog.item_sha256 or "missing_reward_items")
-            + (state_reader.template_sha256 or "missing_buff_templates")
-            + "".join(hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else "missing_settlement_icon"
-                      for definition in PARAMETER_ICONS.values() for path in [resource / "image" / definition["template"]])
-        ).encode()
-    ).hexdigest()[:16]
-    output = directory / "derived" / "card_identity" / signature
+    signature = "current"
+    output = directory / "analysis"
     output.mkdir(parents=True, exist_ok=True)
-    lock = output / "worker.lock"
-    try:
-        descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError:
-        raise RuntimeError(f"Analysis worker lock already exists: {lock}") from None
-    os.close(descriptor)
     status = {
         "schema_version": 1,
         "pid": os.getpid(),
@@ -391,25 +381,27 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
         "reward_reading_counts": reward_reader.counts,
     }
     status_path = output / "status.json"
-    console_path = directory / "analysis_console.jsonl"
+    capture_manifest = read_json(directory / "manifest.json")
 
     def notice(message, **extra):
-        with console_path.open("a", encoding="utf-8", buffering=1) as stream:
-            stream.write(json.dumps({"message": message, "analysis_id": signature, **extra}, ensure_ascii=False) + "\n")
+        if emit:
+            emit(message, **extra)
 
     def save_status():
         status["updated_at"] = datetime.now(timezone.utc).isoformat()
-        temporary = status_path.with_suffix(".tmp")
-        temporary.write_text(json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8")
-        temporary.replace(status_path)
+        from produce.reporting import atomic_json
+        atomic_json(status_path, status)
 
     action_console = OperationConsole()
     reward_console = RewardConsole()
-    bindings = json.loads((directory / "manifest.json").read_text(encoding="utf-8")).get("metadata", {}).get("bindings", {})
+    bindings = capture_manifest.get("metadata", {}).get("bindings", {})
     settlement_console = SettlementConsole(bindings)
+    exam_tracker = FinalExamTracker(bindings.get("scenario"))
     try:
         save_status()
-        vision = OfflineVision(resource, output)
+        vision = OfflineVision(resource, context)
+        if reward_reader.icons:
+            reward_reader.icons.recognize = vision.recognize
         vision.state_reader = BattleStateReader(state_templates, vision._read_title, vision.match_buff_templates, resource / "image")
         status["buff_backend"] = "MaaFramework.TemplateMatch"
         status["buff_templates"] = [entry["id"] for entry in vision.state_reader.templates if entry["kind"] == "buff"]
@@ -423,35 +415,16 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
         status["framework_version"] = Library.version()
         status["status"] = "processing"
         save_status()
-        notice("后台手牌与状态识别已就绪。手牌按从左到右排列：→ 选中，荐 推荐，禁 不可用，≈ 前缀匹配。")
-        last_status_update = time.monotonic()
         cached = {}
         route_pending = {}
         last_summary = None
-        last_event = time.monotonic()
-        events_path = directory / "events.jsonl"
-        while not events_path.exists():
-            if time.monotonic() - last_event > 30:
-                raise RuntimeError("Capture did not create events.jsonl")
-            time.sleep(0.2)
-        with events_path.open(encoding="utf-8") as source, (output / "index.jsonl").open("w", encoding="utf-8", buffering=1) as index:
+        with (output / "results.jsonl").open("w", encoding="utf-8", buffering=1) as index:
             while True:
-                position = source.tell()
-                line = source.readline()
-                if not line or not line.endswith("\n"):
-                    source.seek(position)
-                    manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
-                    writer_alive = time.time() - manifest.get("heartbeat_at", 0) < 15
-                    if not follow or manifest["status"] != "recording" or (time.monotonic() - last_event > 120 and not writer_alive):
-                        status["stop_reason"] = "snapshot_complete" if not follow else "capture_closed_or_idle"
-                        break
-                    if time.monotonic() - last_status_update >= 5:
-                        save_status()
-                        last_status_update = time.monotonic()
-                    time.sleep(0.5)
-                    continue
-                last_event = time.monotonic()
-                event = json.loads(line)
+                packet = yield
+                if packet is None:
+                    break
+                event, supplied_image = packet
+                exam_tracker.observe(event)
                 if event["kind"] == "produce_session_end":
                     summary = settlement_console.finish(event.get("event_id"))
                     if summary:
@@ -466,10 +439,7 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                 if event["kind"] == "reward_candidate_preview":
                     result = {"error": "missing_frame", "detail_verified": False}
                     try:
-                        frame_path = (directory / event["frame"]["path"]).resolve()
-                        if not frame_path.is_relative_to(directory):
-                            raise ValueError("Frame escaped capture directory")
-                        array = normalized_image(read_image(frame_path))
+                        array = normalized_image(supplied_image)
                         result = reward_reader.read(array, event, vision._read_title)
                         result.update(source_frame_sha256=event["frame"]["sha256"], catalog_sha256=catalog.sha256)
                         semantic_status = result["effects"]["semantic_status"]
@@ -478,13 +448,13 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     except Exception as exc:
                         result["error"] = str(exc)
                         status["reward_preview_errors"] += 1
-                    result_path = output / f"reward_{event['seq']}.json"
-                    result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                        from utils import logger
+                        logger.exception("奖励名称识别异常")
                     index.write(json.dumps({
                         "event_id": event["event_id"], "session_id": event.get("session_id"),
                         "reward_page_id": event.get("reward_page_id"),
                         "candidate_id": event.get("candidate", {}).get("candidate_id"),
-                        "result": str(result_path.relative_to(directory)).replace("\\", "/"),
+                        "observation": result,
                     }, ensure_ascii=False) + "\n")
                     status["event_links"] += 1
                     reward_console.observe(event, result)
@@ -504,10 +474,7 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     result = {"error": "missing_frame", "candidates": []}
                     try:
 
-                        frame_path = (directory / event["frame"]["path"]).resolve()
-                        if not frame_path.is_relative_to(directory):
-                            raise ValueError("Frame escaped capture directory")
-                        array = normalized_image(read_image(frame_path))
+                        array = normalized_image(supplied_image)
                         tokens = vision._read_title(array, [0, 0, 720, 1280])
                         result = route_observation(tokens, catalog, event)
                         if event["kind"] in ("settlement_observation", "exam_result_observation"):
@@ -521,20 +488,23 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     except Exception as exc:
                         result["error"] = str(exc)
                         status["route_errors"] += 1
-                    result_path = output / f"route_{event['seq']}.json"
-                    result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
                     if event["kind"] == "route_before":
                         route_pending[event["event_id"]] = result
                     if event["kind"] in ("settlement_observation", "exam_result_observation"):
+                        exam_tracker.observe(event, result)
                         settlement_console.observe(event, result)
                     index.write(json.dumps({
                         "event_id": event["event_id"], "session_id": event.get("session_id"),
                         "decision_id": event.get("decision_id"),
-                        "result": str(result_path.relative_to(directory)).replace("\\", "/"),
+                        "observation": result,
                         "game_action_confirmed": None,
                     }, ensure_ascii=False) + "\n")
                     status["event_links"] += 1
                     save_status()
+                    continue
+                if event["kind"] == "decision_after" and "frame" not in event:
+                    message, changes, number = action_console.finish(event, {"error": "本场最后一次操作，无后续出牌前画面"})
+                    notice(message, event_id=event["event_id"], decision_id=event.get("decision_id"), console_operation_number=number)
                     continue
                 if "frame" not in event or event["kind"] not in (
                     "decision_before",
@@ -548,16 +518,13 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     continue
                 sha = event["frame"]["sha256"]
                 # 操作前的检测候选优于重新检测结果，按原始事件分别保留。
-                key = sha + ("_" + str(event["seq"]) if event.get("candidates") else "")
-                result_path = output / f"{key}.json"
+                key = event.get("frame_reference") or (event["event_id"] if event["kind"] == "decision_before" else sha)
+                result_ref = cached.get(key, (None, None))[1]
                 if key not in cached:
                     try:
-                        frame_path = (directory / event["frame"]["path"]).resolve()
-                        if not frame_path.is_relative_to(directory):
-                            raise ValueError("Frame escaped capture directory")
-                        image = read_image(frame_path)
+                        image = supplied_image
                         source_size = event["frame"].get("source_size", [image.shape[1], image.shape[0]])
-                        candidates = (event.get("candidates") or None) if source_size == [720, 1280] else None
+                        candidates = event.get("candidates") if source_size == [720, 1280] else None
                         result = vision.analyze(image, catalog, candidates)
                         result["capture_source_size"] = source_size
                         result.update(schema_version=1, source_frame_sha256=sha, catalog_sha256=catalog.sha256)
@@ -578,11 +545,12 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                     except Exception as exc:
                         result = {"schema_version": 1, "error": str(exc), "cards": [], "source_frame_sha256": sha}
                         status["errors"] += 1
-                    result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-                    cached[key] = True
+                    cached[key] = (result, event["event_id"])
+                    if len(cached) > 128:
+                        cached.pop(next(iter(cached)))
                     status["unique_frames_processed"] += 1
                 else:
-                    result = json.loads(result_path.read_text(encoding="utf-8"))
+                    result = cached[key][0]
                 changes = None
                 console_operation_number = None
                 if event["kind"] == "decision_before":
@@ -610,7 +578,7 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                             "session_id": event.get("session_id"),
                             "battle_id": event.get("battle_id"),
                             "frame_sha256": sha,
-                            "result": str(result_path.relative_to(directory)).replace("\\", "/"),
+                            **({"result_ref": result_ref} if result_ref else {"observation": result}),
                             "decision_id": event.get("decision_id"),
                             "state_changes": changes,
                             "game_action_confirmed": None,
@@ -623,9 +591,6 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
                 status["event_links"] += 1
                 if status["event_links"] % 5 == 0:
                     save_status()
-                if (output / "STOP").exists() or (max_frames and status["unique_frames_processed"] >= max_frames):
-                    status["stop_reason"] = "stop_file_or_frame_limit"
-                    break
         for message, event_id, number in action_console.unfinished():
             notice(message, decision_id=event_id, console_operation_number=number)
         for summary in reward_console.unfinished():
@@ -646,12 +611,43 @@ def analyze_capture(directory, resource, database, aliases=None, follow=False, m
             notice(message, decision_id=event_id, console_operation_number=number)
         for summary in reward_console.unfinished():
             notice(**summary)
-        notice(f"手牌分析停止：{exc}；采集与培育继续。", finished=True)
+        notice(f"记录分析失败：{exc}；培育继续。", finished=True)
         raise
     finally:
         save_status()
-        lock.unlink(missing_ok=True)
     return status
+
+
+def analyze_capture(directory, resource, database, aliases=None, follow=False, max_frames=None):
+    """离线 CLI 读取已有证据；客户端不经由磁盘传递待识别截图。"""
+    stream = analyze_stream(directory, resource, database, aliases)
+    next(stream)
+    frames = 0
+    with (directory / "events.jsonl").open(encoding="utf-8") as source:
+        while True:
+            position = source.tell()
+            line = source.readline()
+            if not line or not line.endswith("\n"):
+                source.seek(position)
+                if not follow or read_json(directory / "manifest.json")["status"] != "recording":
+                    break
+                time.sleep(.5)
+                continue
+            event = json.loads(line)
+            image = None
+            if event.get("frame", {}).get("path"):
+                path = (directory / event["frame"]["path"]).resolve()
+                if not path.is_relative_to(directory.resolve()):
+                    raise ValueError("Frame escaped capture directory")
+                image = read_image(path)
+                frames += 1
+            stream.send((event, image))
+            if max_frames and frames >= max_frames:
+                break
+    try:
+        stream.send(None)
+    except StopIteration as finished:
+        return finished.value
 
 
 def main():
@@ -663,14 +659,7 @@ def main():
     parser.add_argument("--follow", action="store_true")
     parser.add_argument("--max-frames", type=int)
     args = parser.parse_args()
-    print(
-        json.dumps(
-            analyze_capture(args.capture_dir, args.resource, args.database, args.aliases, args.follow, args.max_frames),
-            ensure_ascii=False,
-            indent=2,
-        ),
-        flush=True,
-    )
+    analyze_capture(args.capture_dir, args.resource, args.database, args.aliases, args.follow, args.max_frames)
 
 
 if __name__ == "__main__":

@@ -1,20 +1,22 @@
-"""奖励候选预览、身份缓存，以及优先读取名称的后台识别。"""
+"""奖励候选预览、身份缓存，以及优先读取名称的同步识别。"""
 
+import os
 import re
 import copy
 import json
 import time
 import hashlib
 from pathlib import Path
+from contextlib import contextmanager
 from collections import Counter, OrderedDict
 
 import numpy as np
-from utils.image_io import bgr_image, encode_png, decode_image, resize_image
+from utils.image_io import bgr_image, encode_png
 
 from .catalog import RewardCatalog, clean, catalog_effects
 
-# 第一版缓存使用 Pillow/RGB 重采样，不能与原生 BGR 缩略图混合比较。
-CACHE_VERSION = 2
+# 原尺寸裁切模板，不复用旧版 64×64 缩略图。
+CACHE_VERSION = 4
 
 
 def icon_image(image, box):
@@ -24,14 +26,28 @@ def icon_image(image, box):
         raise ValueError("Unsupported reward icon bounds")
     # 保留角标和强化标记，只去掉图标自身的外框。
     crop = image[y + 4:y + height - 4, x + 4:x + width - 4]
-    return resize_image(crop, 64, 64)
+    return bgr_image(crop)
+
+
+def reward_kind(text):
+    """复用页面标题分类；未确认类别时不排除任何模板。"""
+    text = clean(text)
+    if re.search(r"P[・･ ·]?ドリンク|饮料|飲料", text):
+        return "drink"
+    if re.search(r"スキルカード|技能卡", text):
+        return "skill_card"
+    if re.search(r"P[・･ ·]?アイテム|P道具|P 道具", text):
+        return "p_item"
+    return None
 
 
 class RewardIdentityCache:
-    def __init__(self, directory, hashes=None):
+    def __init__(self, directory, hashes=None, scope=None, recognize=None):
         self.directory = Path(directory).resolve()
         self.path = self.directory / "reward_identity_cache.json"
         self.hashes = hashes
+        self.scope = scope
+        self.recognize = recognize
         self._stamp = None
         self._data = None
         self._icons = {}
@@ -43,63 +59,123 @@ class RewardIdentityCache:
             if self._data is not None and stamp == self._stamp:
                 return self._data
             data = json.loads(self.path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict) or not isinstance(data.get("entries"), list):
+                return None
             if data.get("cache_version") != CACHE_VERSION or len(data.get("entries", [])) > 128:
                 return None
             if self.hashes is not None and data.get("catalog_hashes") != self.hashes:
+                return None
+            if data.get("scope") != self.scope:
                 return None
             self._stamp, self._data = stamp, data
             return data
         except (OSError, ValueError, TypeError):
             return None
 
-    def lookup(self, image, box):
+    def _score(self, icon, entries):
+        """使用 MaaFramework 原生模板识别；不另实现图像匹配算法。"""
+        from maa.pipeline import JTemplateMatch, JRecognitionType
+
+        if self.recognize is None:
+            return 0.0
+        entries = entries if isinstance(entries, list) else [entries]
+        paths = []
+        for entry in entries:
+            path = (self.directory / entry["icon_path"]).resolve()
+            if not path.is_relative_to(self.directory):
+                continue
+            key = entry["icon_file_sha256"]
+            try:
+                if key not in self._icons:
+                    if hashlib.sha256(path.read_bytes()).hexdigest() != key:
+                        continue
+                    self._icons[key] = True
+                    if len(self._icons) > 128:
+                        self._icons.pop(next(iter(self._icons)))
+                paths.append(path.as_posix())
+            except OSError:
+                continue
+        if not paths:
+            return 0.0
+        results = self.recognize(JRecognitionType.TemplateMatch,
+                                 JTemplateMatch(template=paths, threshold=[.96], method=5), icon)
+        return max((float(item.score) for item in results), default=0.0)
+
+    def lookup(self, image, box, item_kind=None):
         data = self._load()
         if not data:
             return None
-        try:
-            icon = np.asarray(icon_image(image, box)).astype(np.int16)
-            matches = []
-            for entry in data["entries"]:
-                path = (self.directory / entry["icon_path"]).resolve()
-                if not path.is_relative_to(self.directory):
-                    continue
-                key = entry["icon_file_sha256"]
-                if key not in self._icons:
-                    raw = path.read_bytes()
-                    if hashlib.sha256(raw).hexdigest() != key:
-                        continue
-                    self._icons[key] = decode_image(raw).astype(np.int16)
-                    if len(self._icons) > 128:
-                        self._icons.pop(next(iter(self._icons)))
-                before = self._icons[key]
-                if before.shape != icon.shape:
-                    continue
-                delta = np.abs(before - icon)
-                mean = float(delta.mean())
-                fraction = float((delta.max(axis=2) > 24).mean())
-                if mean <= 1.5 and fraction <= .01:
-                    matches.append((mean, fraction, entry))
-            # 已学习的身份互相冲突时，即使某项更接近也不复用。
-            if len({entry["catalog_id"] for _, _, entry in matches}) != 1:
-                return None
-            mean, fraction, entry = min(matches, key=lambda value: value[0])
-            return {**entry, "catalog_hashes": data["catalog_hashes"], "mean_delta": round(mean, 4),
-                    "changed_fraction": round(fraction, 4), "method": "learned_icon_identity_only"}
-        except (OSError, ValueError, KeyError, TypeError):
+        icon_image(image, box)  # 核验原图尺寸与候选区域边界。
+        x, y, width, height = box
+        icon = bgr_image(image[y:y + height, x:x + width])
+        groups = {}
+        for entry in data["entries"]:
+            if item_kind and entry["item_kind"] != item_kind:
+                continue
+            family = (entry["item_kind"], entry["database_name"].rstrip("+")
+                      if entry["item_kind"] == "skill_card" else entry["catalog_id"])
+            groups.setdefault(family, []).append(entry)
+        families = []
+        for entries in groups.values():
+            try:
+                families.append((self._score(icon, entries), entries))
+            except (OSError, ValueError, KeyError, TypeError, RuntimeError):
+                continue
+        families.sort(key=lambda item: item[0], reverse=True)
+        if not families or families[0][0] < .98:
             return None
+        score, entries = families[0]
+        if any(score - other_score < .02 for other_score, _ in families[1:]):
+            return None
+        if len(entries) == 1:
+            matches = [(score, entries[0])]
+        else:
+            # 同卡家族先合并调用，只有命中家族才逐变体核验强化标记。
+            matches = [(self._score(icon, entry), entry) for entry in entries]
+        matches.sort(key=lambda item: item[0], reverse=True)
+        if not matches or matches[0][0] < .98:
+            return None
+        score, entry = matches[0]
+        # 相近身份（包括不同强化版本）不得仅因排名靠前就直接复用。
+        if any(other["catalog_id"] != entry["catalog_id"] and score - value < .02 for value, other in matches[1:]):
+            return None
+        return {**entry, "catalog_hashes": data["catalog_hashes"], "query_icon_sha256": hashlib.sha256(icon.tobytes()).hexdigest(),
+                "similarity": round(score, 4),
+                "method": "learned_icon_identity_only"}
 
     def learn(self, image, event, observation):
+        # 跨客户端进程序列化读改写；忙时跳过学习，不影响领取。
+        self.directory.mkdir(parents=True, exist_ok=True)
+        with cache_write_lock(self.directory / "write.lock") as acquired:
+            if acquired:
+                self._stamp = None
+                return self._learn(image, event, observation)
+
+    def _learn(self, image, event, observation):
         identity = observation.get("identity") or {}
         if (not observation.get("detail_verified") or identity.get("status") != "matched" or
-                identity.get("needs_full_ocr", True) or not identity.get("effective_effect_dsl") or
                 observation.get("reading", {}).get("fallback_reason") or event.get("customization_hint")):
             return
         icon = icon_image(image, event["candidate"]["box"])
-        pixel_sha = hashlib.sha256(icon.tobytes()).hexdigest()
-        data = self._load() or {"cache_version": CACHE_VERSION, "catalog_hashes": self.hashes, "entries": []}
-        if any(entry["icon_pixel_sha256"] == pixel_sha and entry["catalog_id"] == identity["catalog_id"] for entry in data["entries"]):
+        if float(icon.std()) < 1:
             return
-        icon_path = self.directory / "derived/reward_icons" / (pixel_sha + ".png")
+        pixel_sha = hashlib.sha256(icon.tobytes()).hexdigest()
+        data = self._load() or {"cache_version": CACHE_VERSION, "catalog_hashes": self.hashes, "scope": self.scope, "entries": []}
+        previous = list(data["entries"])
+        same_identity = [entry for entry in previous if entry["catalog_id"] == identity["catalog_id"]]
+        for entry in same_identity:
+            path = (self.directory / entry["icon_path"]).resolve()
+            try:
+                valid = path.is_relative_to(self.directory / "icons") and hashlib.sha256(path.read_bytes()).hexdigest() == entry["icon_file_sha256"]
+            except OSError:
+                valid = False
+            if valid:
+                if len(same_identity) > 1:
+                    data["entries"] = [item for item in previous if item not in same_identity or item is entry]
+                    self._save(data, previous)
+                return "reused"
+        data["entries"] = [entry for entry in previous if entry not in same_identity]
+        icon_path = self.directory / "icons" / (re.sub(r"[^A-Za-z0-9_-]", "_", identity["catalog_id"]) + "_" + pixel_sha[:12] + ".png")
         icon_path.parent.mkdir(parents=True, exist_ok=True)
         if not icon_path.exists():
             icon_path.write_bytes(encode_png(icon))
@@ -110,9 +186,25 @@ class RewardIdentityCache:
         data["entries"] = [e for e in data["entries"] if not (e["icon_pixel_sha256"] == pixel_sha and e["catalog_id"] == entry["catalog_id"])]
         data["entries"].append(entry)
         data["entries"] = data["entries"][-128:]
+        self._save(data, previous)
+        return "stored"
+
+    def _save(self, data, previous):
+        """先更新索引，再移除已合并或超出容量的已知图标文件；由调用方持有写锁。"""
         temporary = self.path.with_suffix(".tmp")
         temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
         temporary.replace(self.path)
+        self._stamp = None
+        retained = {entry["icon_path"] for entry in data["entries"]}
+        for entry in previous:
+            if entry["icon_path"] in retained:
+                continue
+            path = (self.directory / entry["icon_path"]).resolve()
+            if path.is_relative_to(self.directory / "icons"):
+                try:
+                    path.unlink(missing_ok=True)
+                except OSError:
+                    pass
 
 
 ROW_ROI = (55, 790, 610, 185)
@@ -179,9 +271,19 @@ def reward_layout(image):
     w, h = (int(np.median([b[i] for b in seeds])) for i in (2, 3))
     y = int(np.median([b[1] for b in seeds]))
     gaps = [b[0] - a[0] for a, b in zip(seeds, seeds[1:])]
-    pitch = min(gaps)
-    if not w + 4 <= pitch <= w + 24 or any(abs(gap / pitch - round(gap / pitch)) > .04 for gap in gaps):
-        return {"status": "ambiguous_spacing", "candidates": [], "selected_index": None}
+    # 选中项的边框可能断开，两个完整边框之间会隔着一张候选。
+    # 从间隔推回唯一的网格步长，随后仍逐格核验边框与选中括号。
+    centers = [box[0] + box[2] / 2 for box in seeds]
+    center_gaps = [b - a for a, b in zip(centers, centers[1:])]
+    pitches = {round(min(center_gaps) / divisor) for divisor in range(1, 4)}
+    pitches = {round(float(np.median([gap / max(1, round(gap / pitch)) for gap in center_gaps])))
+               for pitch in pitches if w + 4 <= pitch <= w + 24}
+    pitches = [pitch for pitch in pitches if w + 4 <= pitch <= w + 24
+               and all(abs(gap - round(gap / pitch) * pitch) <= 4 for gap in center_gaps)]
+    if len(pitches) != 1:
+        return {"status": "ambiguous_spacing", "candidates": [], "selected_index": None,
+                "detected_frames": seeds, "frame_gaps": gaps}
+    pitch = pitches[0]
     # 只补齐经过画面核验的网格位置；角标可能将选中卡牌的边框分成多段，
     # 少了一段边框不代表少了一张候选牌。
     boxes = []
@@ -198,7 +300,7 @@ def reward_layout(image):
         ]
         if sum(value > .55 for value in sides) >= 3 or (max(sides) > .55 and selection_pixels(array, [x, y, w, h]) >= 600):
             boxes.append([x, y, w, h])
-    if not 2 <= len(boxes) <= 4 or any(not any(abs(seed[0] - box[0]) <= 3 for box in boxes) for seed in seeds):
+    if not 2 <= len(boxes) <= 4 or any(not any(abs(seed[0] + seed[2] / 2 - box[0] - box[2] / 2) <= 3 for box in boxes) for seed in seeds):
         return {"status": "incomplete_frames", "candidates": [], "selected_index": None}
     scores = [selection_pixels(array, box) for box in boxes]
     selected = [i for i, score in enumerate(scores) if score >= 600]
@@ -246,10 +348,12 @@ def detail_difference(left, right):
 
 
 class RewardPreview:
-    """动作入口提供输入适配；OCR 在后台独立处理已保存的画面。"""
+    """动作入口提供输入适配；OCR 直接处理当前内存画面。"""
 
-    def __init__(self, capture, screenshot, click, receive_visible, stopping, *, timeout=1.8, interval=.12):
+    def __init__(self, capture, screenshot, click, receive_visible, stopping, *, recognize=None, context=None, item_kind=None, timeout=1.8, interval=.12):
         self.capture = capture
+        self.context = context
+        self.item_kind = item_kind
         self.screenshot = screenshot
         self.click = click
         self.receive_visible = receive_visible
@@ -262,10 +366,11 @@ class RewardPreview:
         self.changed_selection = False
         self.last_image = None
         self.last_wait_diagnostic = None
-        self.identity_cache = RewardIdentityCache(capture.directory) if getattr(capture, "reward_identity_cache_enabled", False) else None
+        self.preview_clicks = 0
+        self.identity_cache = cache_for_capture(capture.directory, recognize=recognize) if getattr(capture, "reward_identity_cache_enabled", False) else None
 
     def record(self, kind, image=None, **data):
-        return self.capture.record(kind, image=image, reward_page_id=self.group_id, **data)
+        return self.capture.record(kind, image=image, context=self.context, reward_page_id=self.group_id, reward_kind=self.item_kind, **data)
 
     def wait_selected(self, index, changed_from=None, expected=None, *, purpose="initial_selection", attempt=1):
         started = time.monotonic()
@@ -358,6 +463,7 @@ class RewardPreview:
             # 发送输入前先记录状态，异常可能发生在输入已经送出之后。
             self.changed_selection = True
             try:
+                self.preview_clicks += 1
                 clicked = self.click(*point)
             except Exception as exc:
                 self.last_wait_diagnostic = {"candidate_id": f"reward_{index + 1}", "purpose": purpose, "attempt": attempt,
@@ -403,7 +509,7 @@ class RewardPreview:
         receive_visible = self.receive_visible(image)
         if self.layout["status"] != "ready" or not receive_visible:
             reason = self.layout["status"] if receive_visible else "receive_button_missing"
-            self.record("reward_preview_skipped", reason=reason, image=image)
+            self.record("reward_preview_skipped", reason=reason, image=image, observed_layout=self.layout)
             return {"safe_to_receive": receive_visible and not self.stopping(), "status": "skipped", "reason": reason}
         image = self.wait_selected(selected)
         if image is None:
@@ -412,13 +518,14 @@ class RewardPreview:
         self.original = image.copy()
         self.last_image = self.original
         self.group_id = self.capture.record(
-            "reward_page_start", image=image, layout=self.layout, selected_candidate_id=f"reward_{selected + 1}",
+            "reward_page_start", image=image, context=self.context, layout=self.layout, selected_candidate_id=f"reward_{selected + 1}",
             policy_choice=choice, decision_id=(choice or {}).get("decision_id"), confirmation_id=confirmation_id,
             detail_rois=DETAIL_ROIS, candidates_complete=False,
         )
         if not self.group_id:
             return {"safe_to_receive": True, "status": "skipped", "reason": "capture_unavailable"}
         recorded = []
+        cache_hits = 0
         reason = None
         failure_diagnostic = None
         safe = True
@@ -427,9 +534,10 @@ class RewardPreview:
                 if self.stopping():
                     reason = "task_stopping"
                     break
-                cached = (self.identity_cache.lookup(self.original, self.layout["candidates"][index]["box"])
-                          if self.identity_cache and index != selected else None)
+                cached = (self.identity_cache.lookup(self.original, self.layout["candidates"][index]["box"], self.item_kind)
+                          if self.identity_cache else None)
                 if cached:
+                    cache_hits += 1
                     event_id = self.record("reward_candidate_preview", self.original, candidate=self.layout["candidates"][index],
                                            observation_method="icon_cache", cached_identity=cached, detail_refreshed=False,
                                            selected_highlight_verified=False, game_action_confirmed=None)
@@ -473,7 +581,7 @@ class RewardPreview:
                 self.record("reward_selection_restored", self.original, selected_candidate_id=f"reward_{selected + 1}",
                             verified=not self.stopping(), method="original_selection_unchanged", game_action_confirmed=None)
             safe = safe and not self.stopping()
-            self.record("reward_page_end", previews=recorded, expected_count=len(self.layout["candidates"]),
+            self.record("reward_page_end", previews=recorded, cache_hits=cache_hits, preview_clicks=self.preview_clicks, expected_count=len(self.layout["candidates"]),
                         candidate_previews_complete=len(recorded) == len(self.layout["candidates"]) and reason is None,
                         safe_to_receive=safe, stop_reason=reason, failure_diagnostic=failure_diagnostic,
                         elapsed_seconds=round(time.monotonic() - started, 3))
@@ -481,18 +589,21 @@ class RewardPreview:
 
 
 class RewardReader:
-    def __init__(self, skills, items_path, directory=None):
+    def __init__(self, skills, items_path, directory=None, recognize=None):
         self.catalog = RewardCatalog(skills, items_path)
-        self.icons = RewardIdentityCache(directory, self.catalog.hashes) if directory else None
+        self.icons = cache_for_capture(directory, self.catalog.hashes, recognize) if directory else None
         self.details = OrderedDict()
-        self.seen_names = {}
-        self.counts = {"name_ocr": 0, "body_ocr": 0, "cost_ocr": 0, "detail_cache": 0, "icon_cache": 0}
+        self.counts = {"name_ocr": 0, "detail_cache": 0, "icon_cache": 0}
 
     def read(self, image, event, read_roi):
         cached_icon = event.get("cached_identity")
         if event.get("observation_method") == "icon_cache":
-            match = self.icons.lookup(image, event["candidate"]["box"]) if self.icons else None
-            if not match or not cached_icon or match["catalog_id"] != cached_icon.get("catalog_id"):
+            x, y, width, height = event["candidate"]["box"]
+            digest = hashlib.sha256(bgr_image(image[y:y + height, x:x + width]).tobytes()).hexdigest()
+            match = cached_icon
+            if (not match or match.get("query_icon_sha256") != digest
+                    or match.get("catalog_hashes") != self.catalog.hashes
+                    or self.catalog.by_id(match.get("catalog_id")).get("status") != "matched"):
                 return reward_preview_observation({}, self.catalog.skills, event, self.catalog,
                                                   {"method": "icon_cache_rejected", "fallback_reason": "cached_icon_not_confirmed"})
             self.counts["icon_cache"] += 1
@@ -514,30 +625,15 @@ class RewardReader:
         else:
             self.counts["name_ocr"] += 1
             tokens = {"name": read_roi(image, DETAIL_ROIS["name"])}
-            identity = self.catalog.match_tokens(tokens["name"])
-            identifier = identity.get("catalog_id")
-            reason = ("customization_hint" if event.get("customization_hint") else "unknown_or_missing_catalog_effect"
-                      if identity.get("needs_full_ocr", True) else "same_name_detail_changed"
-                      if identifier in self.seen_names and digest not in self.seen_names[identifier] else None)
-            if reason:
-                self.counts["body_ocr"] += 1
-                self.counts["cost_ocr"] += 1
-                tokens.update(effects=read_roi(image, DETAIL_ROIS["effects"]), cost=read_roi(image, DETAIL_ROIS["cost"]))
             result = reward_preview_observation(tokens, self.catalog.skills, event, self.catalog,
-                                                {"method": "name_then_catalog" if not reason else "full_ocr_fallback",
-                                                 "fallback_reason": reason, "full_body_ocr": bool(reason), "source_event_id": event["event_id"]})
-            if identifier:
-                self.seen_names.setdefault(identifier, set()).add(digest)
-                if len(self.seen_names[identifier]) > 4:
-                    self.seen_names[identifier] = {digest}
-                if len(self.seen_names) > 128:
-                    self.seen_names.pop(next(iter(self.seen_names)))
+                                                {"method": "name_then_catalog", "full_body_ocr": False,
+                                                 "source_event_id": event["event_id"]})
             self.details[cache_key] = copy.deepcopy(result)
             if len(self.details) > 128:
                 self.details.popitem(last=False)
         if self.icons:
             try:
-                self.icons.learn(image, event, result)
+                result["reading"]["cache_write"] = self.icons.learn(image, event, result)
             except (OSError, ValueError, KeyError, TypeError) as exc:
                 result["reading"]["cache_error"] = str(exc)[:250]
         return result
@@ -602,3 +698,50 @@ def reward_preview_observation(tokens_by_roi, catalog, event, rewards=None, read
         "raw_ocr_by_roi": tokens_by_roi,
         "game_action_confirmed": None,
     }
+
+
+@contextmanager
+def cache_write_lock(path):
+    """使用系统文件锁，进程退出自动释放，避免遗留锁阻断后续学习。"""
+    with path.open("a+b") as stream:
+        stream.seek(0, 2)
+        if stream.tell() == 0:
+            stream.write(b"0")
+            stream.flush()
+        stream.seek(0)
+        acquired = False
+        try:
+            if os.name == "nt":
+                import msvcrt
+                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            acquired = True
+        except OSError:
+            pass
+        try:
+            yield acquired
+        finally:
+            if acquired:
+                stream.seek(0)
+                if os.name == "nt":
+                    msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+
+
+def cache_for_capture(directory, hashes=None, recognize=None):
+    """统一缓存目录；格式、卡库或识别布局变化时重新学习，不迁移旧测试缓存。"""
+    try:
+        manifest = json.loads((Path(directory) / "manifest.json").read_text(encoding="utf-8"))
+        if manifest.get("reward_identity_cache_enabled") is False:
+            return None
+        scope = manifest["metadata"]["reward_cache"]
+        expected = scope["catalog_hashes"]
+        if hashes is not None and hashes != expected:
+            return None
+        root = Path(__file__).resolve().parents[2] / "debug/cache/reward_identity"
+        return RewardIdentityCache(root, expected, scope, recognize)
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
