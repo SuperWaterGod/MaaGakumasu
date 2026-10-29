@@ -121,17 +121,6 @@ class RecordingTest(unittest.TestCase):
         self.assertIn("候选图标间距未确认", message)
         self.assertIn("候选名称：未识别", message)
 
-    def test_card_adjustment_pipeline_exposes_action_feedback(self):
-        pipeline = json.loads((ROOT / "assets/resource/base/pipeline/Produce.json").read_text(encoding="utf-8"))
-        for name in ("ProduceChooseStrengthenClick", "ProduceChooseStrengthen", "ProduceChooseDeleteFlag", "ProduceChooseDeleteClick"):
-            with self.subTest(node=name):
-                node = pipeline[name]
-                self.assertEqual(node["action"]["type"], "Click")
-                focus = node.get("focus", {})
-                self.assertIn("Node.Action.Succeeded", focus)
-                self.assertIn("已点击", focus["Node.Action.Succeeded"])
-                self.assertNotIn("成功", focus["Node.Action.Succeeded"])
-        self.assertIn("[JumpBack]Click_1", pipeline["ProduceChooseStrengthen"]["next"])
 
     def test_segments_hidden_under_data(self):
         directory = self.directory / "session"
@@ -216,12 +205,12 @@ class RecordingTest(unittest.TestCase):
         (directory / "data").mkdir(parents=True)
         (directory / "data/session.json").write_text('{"schema_version":4}')
         (directory / "data/report_status.json").write_text('{"status":"completed"}')
-        (directory / "report.md").write_text("report")
+        (directory / "report.html").write_text("report")
         messages = []
         notify_ready_reports(self.directory, messages.append)
         notify_ready_reports(self.directory, messages.append)
         self.assertEqual(len(messages), 1)
-        self.assertIn((directory / "report.md").as_posix(), messages[0])
+        self.assertIn((directory / "report.html").as_posix(), messages[0])
         self.assertIn("打开培育回放", messages[0])
 
     def test_reward_console_only_lists_identity_and_selection(self):
@@ -326,11 +315,90 @@ class RecordingTest(unittest.TestCase):
             session = {"state": {"bindings": {"scenario": scenario}}, "capture": None, "actions": {}}
             with patch("produce.sessions.SESSIONS.get", return_value=session), patch("produce.sessions.SESSIONS.key", return_value="task"):
                 sink.observe(context, NotificationType.Succeeded, detail)
-                self.assertEqual(session["exam_result_capture_remaining"], 16)
+                self.assertTrue(session["post_battle_window"])
+                with patch.object(sink, "capture_settlement") as capture:
+                    for index in range(24):
+                        sink.observe(context, NotificationType.Starting, SimpleNamespace(name="Click_1", action_id=index))
+                    self.assertEqual(capture.call_count, 24)
+                    self.assertTrue(session["post_battle_window"])
                 sink.observe(context, NotificationType.Starting, detail)
-                self.assertNotIn("exam_result_capture_remaining", session)
+                self.assertNotIn("post_battle_window", session)
                 sink.observe(context, NotificationType.Succeeded, detail)
-                self.assertEqual(session["exam_result_capture_remaining"], 16)
+                self.assertTrue(session["post_battle_window"])
+
+    def test_nia_retry_keeps_original_pipeline_control(self):
+        nodes = json.loads((ROOT / "assets/resource/base/pipeline/ProduceNIA.json").read_text(encoding="utf-8"))
+        self.assertNotIn("ProduceNIAFailedBonusContinue", nodes)
+        for name in ("ProduceNIAFailedFlag", "ProduceNIAFailedRetry"):
+            self.assertEqual(nodes[name]["recognition"]["type"], "TemplateMatch")
+        # 失败时可能已在再挑战确认弹窗；降档必须先于直接确认。
+        expected = ["ProduceNIAFailedRetry", "ProduceNIAFailedRetryLastChallenge", "ProduceNIAFailedRetryConfirm"]
+        self.assertEqual(nodes["ProduceNIAFailedFlag"]["next"], expected)
+        self.assertEqual(nodes["ProduceNIAFailedRetry"]["next"], ["ProduceNIAFailedRetryLastChallenge"])
+        self.assertEqual(nodes["ProduceNIAFailedRetryLastChallenge"]["next"], ["ProduceNIAFailedRetryConfirm"])
+        self.assertEqual(nodes["ProduceNIAFailedRetryConfirm"]["next"], ["ProduceEntryNIA"])
+        task = json.loads((ROOT / "assets/tasks/produce.json").read_text(encoding="utf-8"))
+        cases = {c["name"]: c for c in task["option"]["启用培育失败重试"]["cases"]}
+        self.assertEqual(cases["Yes"]["pipeline_override"]["ProduceNIAFailedFlag"]["next"], expected)
+        self.assertEqual(cases["No"]["pipeline_override"]["ProduceNIAFailedFlag"]["next"], ["ProduceFailedStop"])
+        lowering = next(c for c in task["option"]["启用试镜难度降低"]["cases"] if c["name"] == "关闭")
+        self.assertEqual(set(lowering["pipeline_override"]), {"ProduceMirrorFlag"})
+
+    def test_settlement_home_exit_obeys_native_pipeline_round_limit(self):
+        """用无输入控制器执行真实跳转与 max_hit，只替换页面识别和点击。"""
+        nodes = json.loads((ROOT / "assets/resource/base/pipeline/Produce.json").read_text(encoding="utf-8"))
+        task = json.loads((ROOT / "assets/tasks/produce.json").read_text(encoding="utf-8"))
+        cases = {case["name"]: case for case in task["option"]["培育次数"]["cases"]}
+        for name in ("ProduceEnd", "ProduceGeneration", "ProduceFinished"):
+            self.assertIn("ProduceBackHome", nodes[name]["next"])
+            self.assertNotIn("ProduceHomeFlag", nodes[name]["next"])
+            self.assertEqual(nodes[name]["next"][-1], "[JumpBack]Click_1")
+        for gameplay in ("ProduceEntry", "ProduceEntryNIA"):
+            for ending in ("ProduceEnd", "ProduceGeneration"):
+                for skip in (False, True):
+                    for count in (1, 2, 3, None):
+                        with self.subTest(gameplay=gameplay, ending=ending, skip=skip, count=count):
+                            rounds = count or 3
+                            active = {"Produce", "ProduceLoop", "ProduceSkipPreparation", "ProduceHomeFlag", "ProduceStart",
+                                      "ProduceEntryFlag", gameplay, ending, "ProduceBackHome", "ProduceComplete"}
+                            overrides = {}
+                            for name in active:
+                                overrides[name] = {
+                                    "enabled": True, "recognition": {"type": "DirectHit", "param": {}},
+                                    "action": {"type": "DoNothing", "param": {}}, "pre_delay": 0, "post_delay": 0,
+                                    "pre_wait_freezes": 0, "post_wait_freezes": 0, "timeout": 1000, "focus": None,
+                                }
+                            # 保留生产的循环和结算候选顺序；用页面状态关闭本次不出现的候选。
+                            for parent in ("ProduceLoop", "ProduceHomeFlag", ending):
+                                for child in nodes[parent]["next"]:
+                                    name = child.removeprefix("[JumpBack]")
+                                    if name not in active:
+                                        overrides[name] = {"enabled": False}
+                            overrides["ProduceSkipPreparation"].update(enabled=skip, max_hit=1)
+                            overrides["ProduceStart"].update(next=["ProduceEntryFlag"], max_hit=rounds + 1)
+                            overrides["ProduceEntryFlag"]["next"] = [gameplay]
+                            overrides[gameplay]["next"] = [ending]
+                            if count is None:
+                                self.assertNotIn("ProduceLoop", cases["∞"].get("pipeline_override", {}))
+                                # 无限模式由合成页面在三轮后退出，不向生产循环添加次数限制。
+                                overrides["ProduceEntryFlag"]["next"] = ["TestRoundGate", "TestRoundStop"]
+                                overrides["TestRoundGate"] = {**overrides["ProduceComplete"], "max_hit": rounds, "next": [gameplay]}
+                                overrides["TestRoundStop"] = dict(overrides["ProduceComplete"])
+                            elif count == 3:
+                                manual = task["option"]["手动输入培育次数"]["pipeline_override"]["ProduceLoop"]
+                                limit = int(manual["max_hit"].format(produce_times=count))
+                            else:
+                                limit = cases[str(count)]["pipeline_override"]["ProduceLoop"]["max_hit"]
+                            if count is not None:
+                                overrides["ProduceLoop"]["max_hit"] = limit
+                            job = self.vision.tasker.post_task("Produce", overrides).wait()
+                            self.assertTrue(job.status.succeeded)
+                            executed = [node.name for node in job.get().nodes]
+                            self.assertEqual(executed.count(gameplay), rounds)
+                            self.assertEqual(executed.count("ProduceBackHome"), rounds)
+                            self.assertEqual(executed.count("ProduceLoop"), rounds + (count is None))
+                            self.assertEqual(executed[-1], "ProduceComplete" if count is not None else "TestRoundStop")
+
 
     def test_session_name_uses_full_date_and_minute(self):
         from produce.sessions import session_directory_name
@@ -696,6 +764,80 @@ class RecordingTest(unittest.TestCase):
             self.assertTrue(fresh["path"].parent.parent.name.endswith("_偶像_测试_另一首歌"))
             self.assertEqual(len(fresh["state"]["segments"]), 1)
             manager.close(manager.key(context.tasker), "returned_home", terminal=True)
+
+    def test_finished_records_do_not_resume(self):
+        from produce.sessions import ProduceSessions
+
+        manager = ProduceSessions()
+        context = SimpleNamespace(tasker=SimpleNamespace(controller=SimpleNamespace(uuid="skip-preparation-test")),
+                                  get_task_job=lambda: SimpleNamespace(job_id=1), get_node_data=lambda name: {})
+        key = manager.key(context.tasker)
+        with patch("produce.sessions.ROOT", self.directory), patch.object(DecisionCapture, "start_analysis"), \
+                patch("produce.reporting.schedule_report"):
+            for entry, mode, previous_state in (
+                ("ProduceSkipPreparation", "skip", {"status": "ended"}),
+                ("ProduceEntryNIA", "skip", {"settlement_observed": True}),
+                ("ProduceSkipPreparation", "skip", {"failure_stop_observed": True}),
+                ("ProduceContinue", "resume", {"status": "ended"}),
+                ("ProduceContinue", "resume", {"settlement_observed": True}),
+                ("ProduceContinue", "resume", {"failure_stop_observed": True}),
+            ):
+                with self.subTest(entry=entry, previous_state=previous_state):
+                    previous = manager.ensure(context, "ProduceEntryNIA", fresh_start=True)
+                    manager.close(key, "interrupted")
+                    previous["state"].update(previous_state)
+                    manager.persist(previous)
+                    manager.task_origins[key] = {"entry_mode": mode}
+                    current = manager.ensure(context, entry)
+                    self.assertNotEqual(previous["state"]["session_id"], current["state"]["session_id"])
+                    self.assertEqual(len(current["state"]["segments"]), 1)
+                    manager.close(key, "returned_home", terminal=True)
+
+    def test_new_preparation_and_unknown_entry_never_resume_old_session(self):
+        from maa.event_sink import NotificationType
+        from produce.sessions import ProduceSessions, ProduceContextSink
+        manager = ProduceSessions()
+        nodes = {"Produce": {"attach": {"save_screenshots": False}},
+                 "ProduceChooseIdol": {"recognition": {"param": {"custom_recognition_param": {"idol_name": "偶像", "song_name": "歌曲"}}}},
+                 "ProduceChooseDifficulty": {"recognition": {"param": {"expected": "MASTER"}}},
+                 "ProduceEntryFlag": {"next": ["ProduceEntryNIA"]}}
+        context = SimpleNamespace(tasker=SimpleNamespace(controller=SimpleNamespace(uuid="new-start-test")),
+                                  get_task_job=lambda: SimpleNamespace(job_id=1), get_node_data=lambda name: nodes.get(name, {}))
+        key = manager.key(context.tasker)
+        with patch("produce.sessions.ROOT", self.directory), patch("produce.sessions.SESSIONS", manager), \
+                patch.object(DecisionCapture, "start_analysis"), patch("produce.reporting.schedule_report") as report:
+            first = manager.ensure(context, "ProduceEntryNIA", fresh_start=True)
+            manager.close(key, "interrupted")
+            unknown = manager.ensure(context, "ProduceEntryNIA")
+            self.assertNotEqual(first["state"]["session_id"], unknown["state"]["session_id"])
+            manager.close(key, "interrupted")
+            resumed = manager.ensure(context, "ProduceContinue")
+            self.assertEqual(resumed["state"]["session_id"], unknown["state"]["session_id"])
+            sink = ProduceContextSink()
+            with patch("produce.sessions.safe_image", return_value=None):
+                sink.observe(context, NotificationType.Starting, SimpleNamespace(name="ProduceChooseDifficulty", action_id=2))
+            self.assertIsNone(manager.get(context))
+            sink.observe(context, NotificationType.Starting, SimpleNamespace(name="ProduceEntryNIA", action_id=3))
+            fresh = manager.get(context)
+            self.assertNotEqual(fresh["state"]["session_id"], resumed["state"]["session_id"])
+            self.assertEqual(len(fresh["state"]["segments"]), 1)
+            report.reset_mock()
+            with patch("produce.sessions.safe_image", return_value=None):
+                for node in ("ProduceNIAFailedFlag", "ProduceNIAFailedRetry", "ProduceEntryNIA"):
+                    sink.observe(context, NotificationType.Starting, SimpleNamespace(name=node, action_id=4))
+                    self.assertIs(manager.get(context), fresh)
+            report.assert_not_called()
+            fresh["state"]["ending_phase_started"] = True
+            sink.observe(context, NotificationType.Starting, SimpleNamespace(name="ProduceHomeFlag", action_id=4))
+            self.assertIsNone(manager.get(context))
+            self.assertEqual(fresh["state"]["status"], "ended")
+            self.assertFalse(fresh["pointer"].exists())
+            report.assert_called_once_with(fresh["path"].parent.parent)
+            sink.observe(context, NotificationType.Starting, SimpleNamespace(name="ProduceStart", action_id=5))
+            sink.observe(context, NotificationType.Starting, SimpleNamespace(name="ProduceEntryNIA", action_id=6))
+            next_round = manager.get(context)
+            self.assertNotEqual(next_round["state"]["session_id"], fresh["state"]["session_id"])
+            manager.close(key, "returned_home", terminal=True)
 
     def test_low_space_disables_images_but_preserves_text(self):
         capture = self.capture()

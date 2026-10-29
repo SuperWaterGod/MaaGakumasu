@@ -70,7 +70,7 @@ def session_directory_name(bindings):
 
 
 def capture_window(session):
-    return bool(session.get("settlement_window") or session.get("exam_result_capture_remaining", 0))
+    return bool(session.get("settlement_window") or session.get("post_battle_window"))
 
 
 def save_json(path, value):
@@ -163,7 +163,10 @@ class ProduceSessions:
         base = ROOT / "debug/produce_sessions"
         pointer = base / f"active_{key}.json"
         previous = None
-        if pointer.exists() and not fresh_start:
+        origin = self.task_origins.get(key, {})
+        # 继续或跳过准备可以接续未完成记录；已结束的记录不能复用。
+        explicit_resume = entry in {"ProduceContinue", "ProduceSkipPreparation"} or origin.get("entry_mode") in {"resume", "skip"}
+        if pointer.exists() and not fresh_start and explicit_resume:
             try:
                 previous = json.loads(pointer.read_text(encoding="utf-8"))
                 if not isinstance(previous, dict) or previous.get("schema_version") != 4:
@@ -175,6 +178,8 @@ class ProduceSessions:
                     or not isinstance(previous.get("start_observed"), bool)
                     or not isinstance(previous.get("settlement_observed"), bool)
                     or previous.get("status") not in ("recording", "interrupted")
+                    or previous.get("settlement_observed")
+                    or previous.get("failure_stop_observed")
                 ):
                     previous = None
                 elif not previous.get("gameplay_started_at"):
@@ -442,10 +447,25 @@ class ProduceContextSink(ContextEventSink):
                                           framework_action_succeeded=noti_type == NotificationType.Succeeded,
                                           game_action_confirmed=None, context=context)
         if noti_type == NotificationType.Starting:
+            # 选择难度是实际新开局证据；同偶像同歌曲也不能沿用上一局。
+            # 从结算返回主页先收尾，避免后续准备阶段写进旧局。
+            if name in {"ProduceStart", "ProduceChooseDifficulty"} or (
+                name in {"ProduceLoop", "ProduceHomeFlag"} and session and session["state"].get("ending_phase_started")
+            ):
+                if session:
+                    ended = bool(session["state"].get("ending_phase_started") or session["state"].get("settlement_observed"))
+                    SESSIONS.close(key, "returned_home" if ended else "new_preparation_started", terminal=ended)
+                    session = None
+                origin = SESSIONS.task_origins.setdefault(key, {
+                    "task_started_at": None, "root_task_id": context.get_task_job().job_id,
+                    "preparations": {}, "recognitions": {},
+                })
+                origin.update(entry_mode="fresh", preparations={}, recognitions={},
+                              preparation_started_at=datetime.now(timezone.utc).isoformat())
             if name in {"ProduceCardsFlag", "ProduceChooseEventFlag", "ProduceChooseNIAEventFlag", "ProduceChooseGetFlag"}:
                 session = SESSIONS.get(context)
                 if session:
-                    session.pop("exam_result_capture_remaining", None)
+                    session.pop("post_battle_window", None)
                     if not session.get("settlement_window"):
                         session.pop("settlement_latest_recognition", None)
             if name in {"ProduceLoop", "ProduceHomeFlag", "ProduceStart"}:
@@ -454,7 +474,7 @@ class ProduceContextSink(ContextEventSink):
                     session.pop("settlement_window", None)
                     session.pop("settlement_latest_recognition", None)
                     session.pop("settlement_pre_wait", None)
-                    session.pop("exam_result_capture_remaining", None)
+                    session.pop("post_battle_window", None)
                     if session["state"].pop("ending_phase_started", None):
                         SESSIONS.persist(session)
             if name == "Produce":
@@ -474,7 +494,10 @@ class ProduceContextSink(ContextEventSink):
                     SESSIONS.task_origins[key].update(entry_mode=None, preparations={}, recognitions={})
                 return
             if name in {"ProduceStart", "ProduceContinue", "ProduceSkipPreparation"}:
-                origin = SESSIONS.task_origins.get(key)
+                origin = SESSIONS.task_origins.setdefault(key, {
+                    "task_started_at": None, "root_task_id": context.get_task_job().job_id,
+                    "preparations": {}, "recognitions": {},
+                })
                 if origin:
                     origin["entry_mode"] = {"ProduceStart": "fresh", "ProduceContinue": "resume",
                                             "ProduceSkipPreparation": "skip"}[name]
@@ -518,8 +541,6 @@ class ProduceContextSink(ContextEventSink):
                 if capture_window(session):
                     kind = "settlement_observation" if session.get("settlement_window") else "exam_result_observation"
                     self.capture_settlement(session, name, context, kind)
-                    if session.get("exam_result_capture_remaining"):
-                        session["exam_result_capture_remaining"] -= 1
                 return
             if name in ROUTE_NODES:
                 node = context.get_node_data(name)
@@ -560,8 +581,9 @@ class ProduceContextSink(ContextEventSink):
             return
         if name == "ProduceCardsFlag" and noti_type == NotificationType.Succeeded:
             # 初/NIA 成功或失败都可能先显示结果，再直接进入回忆生成。
-            # 旁路观察原有翻页；下一场战斗、路线或奖励会清除此有限窗口。
-            session["exam_result_capture_remaining"] = 16
+            # 旁路观察原有翻页，直到下一场战斗、路线或奖励。
+            # 动画中的兜底点击次数不固定，不能据此截断最终评价页。
+            session["post_battle_window"] = True
             return
         if detail.action_id in session["actions"]:
             decision = session["actions"].pop(detail.action_id)

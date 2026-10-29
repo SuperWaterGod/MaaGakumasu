@@ -337,6 +337,7 @@
     },
     "next": [
       "ProduceNIAFailedRetry",
+      "ProduceNIAFailedRetryLastChallenge",
       "ProduceNIAFailedRetryConfirm"
     ]
   },

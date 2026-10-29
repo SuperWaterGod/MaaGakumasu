@@ -10,6 +10,7 @@ POLICY_NAMES = {
     "ProduceChooseSkip": "跳过奖励",
 }
 
+
 def policy_name(choice):
     return POLICY_NAMES.get((choice or {}).get("policy_node"), "原选择")
 
@@ -23,9 +24,13 @@ class SettlementConsole:
         self.frames = 0
         self.sent = False
         self.ending_observed = False
+        self.final_audition = None
 
     def observe(self, event, observation):
         self.frames += 1
+        if observation.get("final_audition"):
+            self.final_audition = observation["final_audition"]
+            self.ending_observed = True
         self.ending_observed |= (event.get("kind") == "settlement_observation" or
                                  any(reading.get("value") is not None for reading in (observation.get("final_exam") or {}).values()))
         fields = {**(observation.get("settlement") or {}), "fan_votes": observation.get("fan_votes") or {},
@@ -73,6 +78,12 @@ class SettlementConsole:
             lines.append("部分画面读数冲突，已保留未知；不按公式覆盖原始结果")
         lines.append("已使用最终三维，名次属性奖励不重复增加。" if scenario == "初" else
                      "公式值与画面值分开保留，完整证据见采集记录。")
+        if self.final_audition:
+            result = self.final_audition
+            outcome = "不合格" if result["outcome"] == "failed" else "合格"
+            lines[0] = f"{scenario} {difficulty}｜最终试镜{outcome}"
+            lines.insert(1, f"试镜得分：{show(result['score']['value'])} Pt｜名次 {show(result['place']['value'])}")
+            lines.insert(2, f"最终培育评价：{show(observed)}｜评级 {show(check['observed_rank'])}")
         return {"message": "\n".join(lines), "scope": "settlement", "event_id": event_id, "evaluation_check": check}
 
 
@@ -111,7 +122,7 @@ def state_lines(state):
         number = buff["value"] if buff["value"] is not None else "?"
         descriptions.append(f"{buff['name']} {number}{suffix}")
     for index in range(0, len(descriptions), 3):
-        lines.append("Buff：" + "｜".join(descriptions[index : index + 3]))
+        lines.append("Buff：" + "｜".join(descriptions[index: index + 3]))
     return lines
 
 
@@ -179,7 +190,7 @@ def after_console(event, before, result):
             continue
         unit = "%" if key == "attribute_multiplier_percent" else ""
         remaining.append(f"{labels.get(key, key)} {display(value['before'])}{unit} → {display(value['after'])}{unit}")
-    parts.extend("｜".join(remaining[index : index + 2]) for index in range(0, len(remaining), 2))
+    parts.extend("｜".join(remaining[index: index + 2]) for index in range(0, len(remaining), 2))
     if not parts:
         return None, changes
     return "操作后：\n" + "\n".join(parts), changes
@@ -208,7 +219,7 @@ def compact_state_lines(state):
         offset = 1
     extra = [line for line in lines[offset:] if not line.startswith("Buff：")]
     buffs = [part for line in lines[offset:] if line.startswith("Buff：") for part in line.removeprefix("Buff：").split("｜")]
-    buff_rows = ["Buff：" + "｜".join(buffs[index : index + 2]) for index in range(0, len(buffs), 2)]
+    buff_rows = ["Buff：" + "｜".join(buffs[index: index + 2]) for index in range(0, len(buffs), 2)]
     return [*main, *extra, *buff_rows]
 
 
@@ -312,7 +323,7 @@ class RewardConsole:
         if kind == "reward_page_start":
             self.count += 1
             self.pending[event["event_id"]] = {"number": self.count, "start": event, "previews": {}, "end": None,
-                                                "restore": None, "receive": None, "retries": []}
+                                               "restore": None, "receive": None, "retries": []}
             return None
         page_id = event.get("reward_page_id")
         page = self.pending.get(page_id)
@@ -359,7 +370,6 @@ class RewardConsole:
 
     def unfinished(self):
         return [self.finish(page_id) for page_id in list(self.pending)]
-
 
 
 def format_operation(title, rows):

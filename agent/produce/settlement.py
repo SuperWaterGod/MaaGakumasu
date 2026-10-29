@@ -408,16 +408,35 @@ class FinalExamTracker:
     def __init__(self, scenario):
         self.scenario = scenario
         self.pending = None
+        self.final_audition = None
 
     def observe(self, event, observation=None):
         if event.get("kind") in ("battle_invocation_start", "exam_failure_or_retry", "produce_gameplay_entry"):
             self.pending = None
-        if self.scenario != "初" or observation is None:
+            self.final_audition = None
+        if observation is None:
             return
         ranking = observation.get("exam_ranking")
         if ranking:
             self.pending = {key: {**value, "source_event_id": event.get("event_id")} for key, value in ranking.items()}
         tokens = eligible(observation.get("raw_ocr", []))
+        if self.scenario == "NIA":
+            heading = [t for t in tokens if re.fullmatch(r"最終オーディション|最终试镜|最終試鏡", text_value(t["text"]))
+                       and 180 < t["box"][0] < 450 and 200 < t["box"][1] < 400]
+            outcomes = [t for t in tokens if re.fullmatch(r"不合格|合格", text_value(t["text"]))
+                        and 250 < t["box"][0] < 550 and 550 < t["box"][1] < 800]
+            if len(heading) == len(outcomes) == 1:
+                outcome = "failed" if text_value(outcomes[0]["text"]) == "不合格" else "passed"
+                if self.final_audition is None or self.final_audition["outcome"] != outcome:
+                    self.final_audition = {"outcome": outcome, "event_id": event.get("event_id"),
+                                           "evidence": [*heading, *outcomes],
+                                           "score": (self.pending or {}).get("score", unknown("ranking_not_observed")),
+                                           "place": (self.pending or {}).get("place", unknown("ranking_not_observed"))}
+                observation["final_audition"] = self.final_audition
+                self.pending = None
+            return
+        if self.scenario != "初":
+            return
         # 只接受左上角的最终考试页面标签，不用完成卡上的历史标签关联旧排名。
         confirmed = any(re.fullmatch(r"最終試験|最终考试|最終考試", text_value(t["text"]))
                         and t["box"][0] < 200 and t["box"][1] < 180 for t in tokens)

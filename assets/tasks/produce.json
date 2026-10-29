@@ -556,6 +556,7 @@
             "ProduceNIAFailedFlag": {
               "next": [
                 "ProduceNIAFailedRetry",
+                "ProduceNIAFailedRetryLastChallenge",
                 "ProduceNIAFailedRetryConfirm"
               ]
             }
