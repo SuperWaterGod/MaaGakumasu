@@ -439,6 +439,30 @@ class ReportingTest(unittest.TestCase):
         self.assertIn("| 实际操作 | 点击第2项 |", markdown)
         self.assertIn("培育回放", markdown)
 
+    def test_report_shows_recorded_card_adjustments(self):
+        for node in ("ProduceChooseStrengthenFlag", "ProduceChooseStrengthen", "ProduceChooseDeleteFlag", "ProduceChooseDeleteClick"):
+            before = self.add("route_before", node=node, frame=True)
+            self.add("route_input_result", node=node, decision_id=before["event_id"], framework_action_succeeded=True)
+        self.write()
+        markdown = (self.directory / "report.md").read_text(encoding="utf-8")
+        self.assertIn("确认强化", markdown)
+        self.assertIn("选择删除、复制或变换对象", markdown)
+        self.assertIn("实际效果未确认", markdown)
+
+    def test_report_collapses_images_and_omits_empty_choice_changes(self):
+        self.add("option_choice", title="工作选择", action="点击第2项", frame=True)
+        self.add("option_choice", title="属性选择", action="点击声乐")
+        self.add("reward_receive_input", framework_action_succeeded=True)
+        self.write()
+        markdown = (self.directory / "report.md").read_text(encoding="utf-8")
+        self.assertIn("<details>\n<summary>查看截图</summary>\n\n![", markdown)
+        for section in markdown.split("### ")[1:]:
+            if any(name in section.splitlines()[0] for name in ("工作选择", "属性选择", "奖励选择")):
+                self.assertNotIn("| 观察变化 | 未确认 |", section)
+        for section in markdown.split("<details>")[1:]:
+            self.assertIn("![", section.split("</details>")[0])
+        self.assertEqual(markdown.count("<details>"), markdown.count("</details>"))
+
     def test_report_finishes_without_worker(self):
         from produce.reporting import schedule_report
         self.write()
@@ -447,6 +471,63 @@ class ReportingTest(unittest.TestCase):
         status = json.loads((self.directory / "data/report_status.json").read_text(encoding="utf-8"))
         self.assertEqual(status["status"], "completed", status)
         self.assertFalse((self.directory / "data/report_pending.json").exists())
+
+
+class LayoutReadingTest(unittest.TestCase):
+    @staticmethod
+    def token(text, x, y, w=80, h=30):
+        return {"text": text, "box": [x, y, w, h], "confidence": 0.99}
+
+    def test_final_exam_requires_following_label_and_same_battle(self):
+        from produce.settlement import FinalExamTracker, settlement_observation
+        tokens = [self.token("ログ", 605, 460), self.token("2nd", 35, 438),
+                  self.token("9,876Pt", 210, 480), self.token("1st", 35, 295),
+                  self.token("20,000Pt", 210, 335)]
+        for scenario in ("初", "NIA"):
+            for reset in (None, "battle_invocation_start", "exam_failure_or_retry"):
+                tracker = FinalExamTracker(scenario)
+                ranking = settlement_observation(tokens)
+                tracker.observe({"event_id": "ranking"}, ranking)
+                self.assertIsNone(ranking["final_exam"]["score"]["value"])
+                if reset:
+                    tracker.observe({"kind": reset})
+                final = settlement_observation([self.token("最終試験", 55, 110)])
+                tracker.observe({"event_id": "confirmation"}, final)
+                expected = 9876 if scenario == "初" and reset is None else None
+                self.assertEqual(final["final_exam"]["score"]["value"], expected)
+        incomplete = settlement_observation(tokens[:1] + tokens[3:])
+        self.assertIsNone(incomplete["exam_ranking"])
+
+    def test_lesson_layout_keeps_partial_values_with_verified_label(self):
+        import numpy as np
+        from produce.state import BattleStateReader
+        values = {(15, 25, 170, 43): "残りターン数", (65, 65, 98, 50): "0+2",
+                  (570, 169, 70, 40): "37", (655, 129, 65, 45): "0"}
+        def read(image, roi):
+            text = values.get(tuple(roi))
+            return [self.token(text, roi[0], roi[1])] if text else []
+        reader = BattleStateReader(ROOT / "assets/data/battle_buff_templates.json", read)
+        image = np.zeros((1280, 720, 3), dtype=np.uint8)
+        state = reader.read(image)
+        self.assertTrue(state["hud_present"])
+        self.assertEqual(state["fields"]["genki"]["value"], 0)
+        self.assertEqual(state["fields"]["turns_remaining"]["value"], 2)
+        self.assertIsNone(state["fields"]["score"]["value"])
+        values[(655, 129, 65, 45)] = "O"
+        partial = reader.read(image)
+        self.assertTrue(partial["hud_present"])
+        self.assertEqual(partial["fields"]["stamina"]["value"], 37)
+        self.assertIsNone(partial["fields"]["genki"]["value"])
+        from produce.console import state_lines, compact_state_lines
+        for render in (state_lines, compact_state_lines):
+            text = " ".join(render(partial))
+            self.assertNotIn("倍率", text)
+            self.assertNotIn("属性", text)
+            self.assertIn("37", text)
+        values.pop((570, 169, 70, 40))
+        self.assertFalse(reader.read(image)["hud_present"])
+        values.pop((15, 25, 170, 43))
+        self.assertFalse(reader.read(image)["hud_present"])
 
 
 if __name__ == '__main__':

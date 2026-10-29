@@ -7,7 +7,7 @@ import argparse
 from pathlib import Path
 from collections import Counter, defaultdict
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path[:0] = [str(Path(__file__).resolve().parents[2]), str(Path(__file__).resolve().parents[2] / "agent")]
 from research.produce.produce_reporting import cell, metric, percent, evidence_links
 
 POLICY_FILES = ("agent/produce/events.py", "agent/produce/battle.py", "agent/produce/options.py", "agent/custom/action/produce.py")

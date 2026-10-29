@@ -121,6 +121,18 @@ class RecordingTest(unittest.TestCase):
         self.assertIn("候选图标间距未确认", message)
         self.assertIn("候选名称：未识别", message)
 
+    def test_card_adjustment_pipeline_exposes_action_feedback(self):
+        pipeline = json.loads((ROOT / "assets/resource/base/pipeline/Produce.json").read_text(encoding="utf-8"))
+        for name in ("ProduceChooseStrengthenClick", "ProduceChooseStrengthen", "ProduceChooseDeleteFlag", "ProduceChooseDeleteClick"):
+            with self.subTest(node=name):
+                node = pipeline[name]
+                self.assertEqual(node["action"]["type"], "Click")
+                focus = node.get("focus", {})
+                self.assertIn("Node.Action.Succeeded", focus)
+                self.assertIn("已点击", focus["Node.Action.Succeeded"])
+                self.assertNotIn("成功", focus["Node.Action.Succeeded"])
+        self.assertIn("[JumpBack]Click_1", pipeline["ProduceChooseStrengthen"]["next"])
+
     def test_segments_hidden_under_data(self):
         directory = self.directory / "session"
         first = DecisionCapture(self.directory, {}, session_directory=directory, min_free_bytes=0)
@@ -222,7 +234,7 @@ class RecordingTest(unittest.TestCase):
                          "effects": {"visible_text": ["不应展示的效果"]}})
         result = console.observe({"kind": "reward_receive_input", "reward_page_id": "page", "event_id": "receive",
                                   "framework_action_succeeded": True})
-        self.assertEqual(result["message"].splitlines(), ["奖励选择 - 已点击领取：合成卡", "1｜合成卡（已选择）",
+        self.assertEqual(result["message"].splitlines(), ["奖励选择 - 已点击领取：合成卡", "1｜→ 合成卡",
                                                        "模板匹配：0 项｜OCR 匹配：0 项｜新增缓存：0 项"])
 
     def test_cache_tolerates_brightness_deduplicates_and_rejects_conflicts(self):
@@ -304,10 +316,31 @@ class RecordingTest(unittest.TestCase):
         reused = next(result for result in results if result["event_id"] == after[first]["event_id"])
         self.assertEqual(reused["result_ref"], second)
 
+    def test_post_battle_capture_covers_hajime_and_nia_and_resets_on_retry(self):
+        from maa.event_sink import NotificationType
+        from produce.sessions import ProduceContextSink
+        sink = ProduceContextSink()
+        context = SimpleNamespace(tasker=object())
+        detail = SimpleNamespace(name="ProduceCardsFlag", action_id=1)
+        for scenario in ("初", "NIA"):
+            session = {"state": {"bindings": {"scenario": scenario}}, "capture": None, "actions": {}}
+            with patch("produce.sessions.SESSIONS.get", return_value=session), patch("produce.sessions.SESSIONS.key", return_value="task"):
+                sink.observe(context, NotificationType.Succeeded, detail)
+                self.assertEqual(session["exam_result_capture_remaining"], 16)
+                sink.observe(context, NotificationType.Starting, detail)
+                self.assertNotIn("exam_result_capture_remaining", session)
+                sink.observe(context, NotificationType.Succeeded, detail)
+                self.assertEqual(session["exam_result_capture_remaining"], 16)
+
     def test_session_name_uses_full_date_and_minute(self):
         from produce.sessions import session_directory_name
-        name = session_directory_name({"configured_idol": {"idol_name": "偶像", "song_name": "歌曲"}})
-        self.assertRegex(name, r"^\d{8}_\d{4}_偶像_歌曲$")
+        for scenario, difficulty in (("初", "MASTER"), ("NIA", ["PRO"])):
+            name = session_directory_name({"scenario": scenario, "difficulty": difficulty,
+                                           "configured_idol": {"idol_name": "偶 像", "song_name": "歌 曲"}})
+            level = "MASTER" if scenario == "初" else "PRO"
+            self.assertRegex(name, rf"^\d{{8}}_\d{{4}}_{scenario}{level}_偶像_歌曲$")
+        unknown = session_directory_name({})
+        self.assertTrue(unknown.endswith("_未知剧本未知难度_未知偶像_未知歌曲"))
 
     def test_reward_reader_never_requests_effect_or_cost_ocr(self):
         from collections import OrderedDict
@@ -523,18 +556,17 @@ class RecordingTest(unittest.TestCase):
                 for name, value in values.items():
                     stack.enter_context(patch.object(action, name, return_value=value))
                 stack.enter_context(patch("produce.events.SESSIONS.get", return_value=None))
-                log = stack.enter_context(patch("produce.events.log_operation"))
                 logger = stack.enter_context(patch("produce.events.logger"))
                 execute = stack.enter_context(patch.object(action, "_execute_event", return_value=True))
                 self.assertTrue(action.run(context, SimpleNamespace()))
                 execute.assert_called_once()
                 self.assertEqual(execute.call_args.args[1]["name"], "Da_SP")
                 details = logger.info.call_args.args[0]
-                self.assertIn("路线选择 - 进入事件页面", details)
+                self.assertIn("路线选择 - 选择 舞蹈 SP课程", details)
                 self.assertIn("1｜声乐", details)
                 self.assertIn("2｜→ 舞蹈 SP课程", details)
                 self.assertIn("3｜形象", details)
-                self.assertEqual(log.call_count, 1)
+                logger.info.assert_called_once()
 
     def test_attribute_retry_reads_number_only_with_verified_limit(self):
         def result(*texts):
@@ -571,6 +603,58 @@ class RecordingTest(unittest.TestCase):
             self.assertEqual(clicks, [expected])
             self.assertEqual(action.health_observation["status"], "unknown" if health is None else "observed")
 
+    def test_reward_cache_filters_category_and_groups_upgrades(self):
+        from produce.rewards import reward_kind
+        self.assertEqual(reward_kind("受け取るPドリンクを選んでください"), "drink")
+        self.assertEqual(reward_kind("请选择技能卡"), "skill_card")
+        self.assertIsNone(reward_kind("选择奖励"))
+        cache = self.identity_cache(self.directory / "group_cache")
+        entries = [
+            {"catalog_id": "base", "database_name": "合成卡", "item_kind": "skill_card"},
+            {"catalog_id": "plus", "database_name": "合成卡+", "item_kind": "skill_card"},
+            {"catalog_id": "other", "database_name": "另一张", "item_kind": "skill_card"},
+            {"catalog_id": "drink", "database_name": "合成饮料", "item_kind": "drink"},
+        ]
+        calls = []
+        def score(image, group):
+            group = group if isinstance(group, list) else [group]
+            ids = [entry["catalog_id"] for entry in group]
+            calls.append(ids)
+            return max({"base": .965, "plus": 1., "other": .7, "drink": 1.}[key] for key in ids)
+        with patch.object(cache, "_load", return_value={"entries": entries, "catalog_hashes": {}}), patch.object(cache, "_score", side_effect=score):
+            match = cache.lookup(self.image, [55, 790, 150, 150], "skill_card")
+            self.assertEqual(match["catalog_id"], "plus")
+            self.assertEqual(calls[0], ["base", "plus"])
+            self.assertNotIn(["drink"], calls)
+            calls.clear()
+            match = cache.lookup(self.image, [55, 790, 150, 150], "drink")
+            self.assertEqual(match["catalog_id"], "drink")
+            self.assertEqual(calls, [["drink"]])
+        with patch.object(cache, "_load", return_value={"entries": entries[:2], "catalog_hashes": {}}), patch.object(cache, "_score", return_value=1.):
+            self.assertIsNone(cache.lookup(self.image, [55, 790, 150, 150], "skill_card"))
+
+    def test_reward_reader_reuses_verified_match_without_second_template_pass(self):
+        import hashlib
+
+        from produce.catalog import SkillCardCatalog
+        from produce.rewards import RewardReader
+        reader = RewardReader(SkillCardCatalog(ROOT / "assets/data/produce_skill_cards.json"),
+                              ROOT / "assets/data/produce_reward_items.json")
+        identifier = next(key for key, (kind, _) in reader.catalog.ids.items() if kind == "drink")
+        event = {"event_id": "synthetic:1", "candidate": {"candidate_id": "reward_1", "box": [55, 790, 150, 150]},
+                 "observation_method": "icon_cache", "cached_identity": {
+                     "catalog_id": identifier, "source_event_id": "synthetic:0", "catalog_hashes": reader.catalog.hashes,
+                     "query_icon_sha256": hashlib.sha256(self.image[790:940, 55:205].tobytes()).hexdigest()}}
+        def forbidden(*args):
+            raise AssertionError("重复识别")
+        reader.icons = SimpleNamespace(lookup=forbidden)
+        result = reader.read(self.image, event, forbidden)
+        self.assertEqual(result["reading"]["method"], "icon_cache")
+        self.assertTrue(result["identity_verified"])
+        changed = self.image.copy()
+        changed[800, 60] = 255
+        self.assertEqual(reader.read(changed, event, forbidden)["reading"]["method"], "icon_cache_rejected")
+
     def test_cache_conflict_does_not_choose_closest_identity(self):
         cache = self.identity_cache(self.directory / "cache", {"skill_cards": "s"})
         event = {"event_id": "synthetic:1", "candidate": {"box": [55, 790, 150, 150]}}
@@ -598,7 +682,7 @@ class RecordingTest(unittest.TestCase):
             identifier = first["state"]["session_id"]
             directory = first["path"].parent.parent
             self.assertIn("偶像_测试_歌曲_测试", directory.name)
-            self.assertRegex(directory.name, r"^\d{8}_\d{4}_偶像_测试_歌曲_测试$")
+            self.assertRegex(directory.name, r"^\d{8}_\d{4}_NIAPRO_偶像_测试_歌曲_测试$")
             manager.close(manager.key(context.tasker), "interrupted")
             resumed = manager.ensure(context, "ProduceSkipPreparation")
             self.assertEqual(resumed["state"]["session_id"], identifier)
@@ -606,8 +690,11 @@ class RecordingTest(unittest.TestCase):
             self.assertEqual(len(resumed["state"]["segments"]), 2)
             manager.close(manager.key(context.tasker), "returned_home", terminal=True)
             self.assertFalse(resumed["pointer"].exists())
+            nodes["ProduceChooseIdol"]["recognition"]["param"]["custom_recognition_param"]["song_name"] = "另一首歌"
             fresh = manager.ensure(context, "ProduceEntryNIA", fresh_start=True)
             self.assertNotEqual(fresh["state"]["session_id"], identifier)
+            self.assertTrue(fresh["path"].parent.parent.name.endswith("_偶像_测试_另一首歌"))
+            self.assertEqual(len(fresh["state"]["segments"]), 1)
             manager.close(manager.key(context.tasker), "returned_home", terminal=True)
 
     def test_low_space_disables_images_but_preserves_text(self):

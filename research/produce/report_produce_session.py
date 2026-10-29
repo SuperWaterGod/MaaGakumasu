@@ -26,14 +26,15 @@ def refresh_settlement(run: Path, resource: Path, vision=None):
     """只读取已保存的结束阶段画面，将结果写入独立版本目录。"""
     from utils.image_io import read_image
     from produce.analysis import OfflineVision, normalized_image
-    from produce.settlement import PARAMETER_ICONS, settlement_observation
+    from produce.settlement import PARAMETER_ICONS, FinalExamTracker, settlement_observation
 
     run = run.resolve()
     if read_json(run / "manifest.json").get("status") != "closed":
         raise ValueError("Settlement refresh requires a closed capture")
     event_bytes = (run / "events.jsonl").read_bytes()
-    events = [event for line in event_bytes.decode("utf-8").splitlines()
-              if (event := json.loads(line))["kind"] in ("settlement_observation", "exam_result_observation")]
+    events = [json.loads(line) for line in event_bytes.decode("utf-8").splitlines()]
+    bindings = read_json(run / "manifest.json").get("metadata", {}).get("bindings", {})
+    exam_tracker = FinalExamTracker(bindings.get("scenario"))
     code_root = Path(__file__).resolve().parents[2] / "agent"
     provenance = {
         "events_sha256": hashlib.sha256(event_bytes).hexdigest(),
@@ -67,6 +68,9 @@ def refresh_settlement(run: Path, resource: Path, vision=None):
         seen = {}
         with (output / "index.jsonl").open("w", encoding="utf-8") as stream:
             for event in events:
+                exam_tracker.observe(event)
+                if event["kind"] not in ("settlement_observation", "exam_result_observation"):
+                    continue
                 frame = event.get("frame") or {}
                 frame_path = (run / frame.get("path", "")).resolve()
                 if not frame_path.is_relative_to(run) or not frame_path.is_file():
@@ -78,6 +82,7 @@ def refresh_settlement(run: Path, resource: Path, vision=None):
                     tokens = vision._read_title(array, [0, 0, 720, 1280])
                     result = settlement_observation(tokens, lambda roi: vision._read_title(array, roi),
                                                     lambda definition: vision.match_buff_templates(array, definition))
+                    exam_tracker.observe(event, result)
                     result["source_frame_sha256"] = frame["sha256"]
                     result_path = output / f"settlement_{event['seq']}.json"
                     result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
