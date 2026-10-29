@@ -312,12 +312,12 @@ class ReportingTest(unittest.TestCase):
             {'box': [5, 6, 3, 4], 'identity': {'database_name': '卡片乙'}}]}
         self.add('produce_session_end', terminal=True, reason='returned_home')
         self.write()
-        markdown = (self.directory / 'report.md').read_text(encoding='utf-8')
-        self.assertIn('1. 卡片甲（已选择）', markdown)
-        self.assertIn('2. 卡片乙', markdown)
-        self.assertIn('![操作前](<data/run/frames/', markdown)
-        self.assertGreater(markdown.count('| 项目 | 内容 |'), 1)
-        self.assertEqual({p.name for p in self.directory.iterdir()}, {'data', 'report.md'})
+        html = (self.directory / 'report.html').read_text(encoding='utf-8')
+        self.assertIn('1. 卡片甲（已选择）', html)
+        self.assertIn('2. 卡片乙', html)
+        self.assertIn('src="data/run/frames/', html)
+        self.assertGreater(html.count('<table>'), 1)
+        self.assertEqual({p.name for p in self.directory.iterdir()}, {'data', 'report.html'})
 
     def test_battle_operations_grouped_by_invocation_not_adjacency(self):
         self.events.pop()
@@ -331,10 +331,10 @@ class ReportingTest(unittest.TestCase):
         self.add("battle_invocation_end", battle_id="battle-two")
         self.add("produce_session_end", terminal=True, reason="returned_home")
         self.write()
-        text = (self.directory / "report.md").read_text(encoding="utf-8")
-        self.assertEqual(text.count("### 战斗 "), 2)
-        self.assertEqual(text.count("| 操作 | 时间 |"), 2)
-        first, second = text.split("### 战斗 2", 1)
+        text = (self.directory / "report.html").read_text(encoding="utf-8")
+        self.assertEqual(text.count("<h3>战斗 "), 2)
+        self.assertEqual(text.count('<table class="battle">'), 2)
+        first, second = text.split("<h3>战斗 2", 1)
         self.assertIn("使用饮料", first)
         self.assertIn("出牌", first)
         self.assertNotIn("跳过回合", first)
@@ -345,6 +345,16 @@ class ReportingTest(unittest.TestCase):
         self.assertFalse((self.directory / "data/report.json").exists())
         build_report(self.directory, export_data=True)
         self.assertTrue((self.directory / "data/report.json").exists())
+
+    def test_retry_report_distinguishes_lowering_attempt_and_confirmation(self):
+        self.add("pipeline_action", node="ProduceNIAFailedRetryLastChallenge", framework_action_succeeded=True)
+        self.add("pipeline_action", node="ProduceNIAFailedRetryConfirm", framework_action_succeeded=True)
+        self.add("pipeline_action", node="ProduceFailedRetryConfirm", framework_action_succeeded=False)
+        self.write()
+        text = (self.directory / "report.html").read_text(encoding="utf-8")
+        self.assertIn("尝试选择上次挑战的下一档试镜（实际档位未核验）", text)
+        self.assertIn("确认重试试镜", text)
+        self.assertIn("确认重试考试（执行失败）", text)
 
     def test_result_stream_reuses_observation_and_ignores_partial_tail(self):
         from produce.audit import analysis_records
@@ -357,14 +367,14 @@ class ReportingTest(unittest.TestCase):
 
     def test_user_report_has_no_raw_debug_payload(self):
         self.write()
-        text = (self.directory / 'report.md').read_text(encoding='utf-8')
+        text = (self.directory / 'report.html').read_text(encoding='utf-8')
         self.assertIn('选择 休息', text)
-        self.assertIn('分数：12000', text)
+        self.assertIn('分数：</span><strong>12000', text)
         self.assertNotIn('```', text)
         self.assertNotIn('sha256', text)
         self.assertNotIn('framework_action_succeeded', text)
         self.assertNotIn('run:3', text)
-        self.assertLess(len(text), 5000)
+        self.assertNotIn("<script", text)
 
     def test_resume_duration_and_fresh_start_contamination(self):
         self.events[-1].update(terminal=False, reason='task_ended_without_home')
@@ -404,7 +414,7 @@ class ReportingTest(unittest.TestCase):
         report = self.write()
         self.assertNotIn("frame_integrity", self.codes(report))
         self.assertTrue(all(row["evidence"]["frame_path"] is None for row in report["timeline"]))
-        self.assertNotIn(".png>", (self.directory / "report.md").read_text(encoding="utf-8"))
+        self.assertNotIn("<img ", (self.directory / "report.html").read_text(encoding="utf-8"))
 
     def test_display_directory_and_automatic_final_report(self):
         import os
@@ -422,7 +432,7 @@ class ReportingTest(unittest.TestCase):
         self.assertFalse((self.directory / "data/report_pending.json").exists())
         status = json.loads((self.directory / "data/report_status.json").read_text(encoding="utf-8"))
         self.assertEqual(status["status"], "completed")
-        self.assertTrue((self.directory / "report.md").is_file())
+        self.assertTrue((self.directory / "report.html").is_file())
         self.assertTrue(process_alive(os.getpid()))
 
     def test_report_includes_battle_and_option_operations(self):
@@ -434,34 +444,34 @@ class ReportingTest(unittest.TestCase):
         kinds = {row["kind"] for row in report["timeline"]}
         self.assertIn("decision_before", kinds)
         self.assertIn("option_choice", kinds)
-        markdown = (self.directory / "report.md").read_text(encoding="utf-8")
-        self.assertIn("· 工作选择", markdown)
-        self.assertIn("| 实际操作 | 点击第2项 |", markdown)
-        self.assertIn("培育回放", markdown)
+        html = (self.directory / "report.html").read_text(encoding="utf-8")
+        self.assertIn("· 工作选择", html)
+        self.assertIn('<th scope="row">实际操作</th><td>点击第2项</td>', html)
+        self.assertIn("培育回放", html)
 
     def test_report_shows_recorded_card_adjustments(self):
         for node in ("ProduceChooseStrengthenFlag", "ProduceChooseStrengthen", "ProduceChooseDeleteFlag", "ProduceChooseDeleteClick"):
             before = self.add("route_before", node=node, frame=True)
             self.add("route_input_result", node=node, decision_id=before["event_id"], framework_action_succeeded=True)
         self.write()
-        markdown = (self.directory / "report.md").read_text(encoding="utf-8")
-        self.assertIn("确认强化", markdown)
-        self.assertIn("选择删除、复制或变换对象", markdown)
-        self.assertIn("实际效果未确认", markdown)
+        html = (self.directory / "report.html").read_text(encoding="utf-8")
+        self.assertIn("确认强化", html)
+        self.assertIn("选择删除、复制或变换对象", html)
+        self.assertIn("实际效果未确认", html)
 
     def test_report_collapses_images_and_omits_empty_choice_changes(self):
         self.add("option_choice", title="工作选择", action="点击第2项", frame=True)
         self.add("option_choice", title="属性选择", action="点击声乐")
         self.add("reward_receive_input", framework_action_succeeded=True)
         self.write()
-        markdown = (self.directory / "report.md").read_text(encoding="utf-8")
-        self.assertIn("<details>\n<summary>查看截图</summary>\n\n![", markdown)
-        for section in markdown.split("### ")[1:]:
+        html = (self.directory / "report.html").read_text(encoding="utf-8")
+        self.assertIn('<details>\n<summary>查看截图</summary>\n<div class="pictures">', html)
+        for section in html.split("<article><h3>")[1:]:
             if any(name in section.splitlines()[0] for name in ("工作选择", "属性选择", "奖励选择")):
-                self.assertNotIn("| 观察变化 | 未确认 |", section)
-        for section in markdown.split("<details>")[1:]:
-            self.assertIn("![", section.split("</details>")[0])
-        self.assertEqual(markdown.count("<details>"), markdown.count("</details>"))
+                self.assertNotIn('<th scope="row">观察变化</th><td>未确认</td>', section)
+        for section in html.split("<details>")[1:]:
+            self.assertIn("<img ", section.split("</details>")[0])
+        self.assertEqual(html.count("<details>"), html.count("</details>"))
 
     def test_report_finishes_without_worker(self):
         from produce.reporting import schedule_report
@@ -471,6 +481,41 @@ class ReportingTest(unittest.TestCase):
         status = json.loads((self.directory / "data/report_status.json").read_text(encoding="utf-8"))
         self.assertEqual(status["status"], "completed", status)
         self.assertFalse((self.directory / "data/report_pending.json").exists())
+
+    def test_html_escapes_content_and_encodes_external_output_image_paths(self):
+        from html.parser import HTMLParser
+        from urllib.parse import unquote
+
+        self.bindings['configured_idol']['song_name'] = '<script>alert("song")</script> & 歌曲'
+        self.add('option_choice', title='<img src=x onerror=alert(1)>', action='甲 | 乙\n下一行', frame=True)
+        self.write()
+        output = self.base / '导出 # 报告'
+        report = build_report(self.directory, output)
+        html = Path(report['report_path']).read_text(encoding='utf-8')
+        self.assertTrue(html.startswith('<!doctype html>'))
+        self.assertIn('&lt;script&gt;', html)
+        self.assertNotIn('<script>', html)
+        self.assertIn('甲 | 乙<br>下一行', html)
+        self.assertFalse((output / 'report.md').exists())
+
+        class Images(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.sources = []
+                self.details = []
+
+            def handle_starttag(self, tag, attrs):
+                if tag == 'img':
+                    self.sources.append(dict(attrs)['src'])
+                if tag == 'details':
+                    self.details.append(dict(attrs))
+
+        parsed = Images()
+        parsed.feed(html)
+        self.assertTrue(parsed.sources)
+        self.assertTrue(parsed.details)
+        self.assertTrue(all('open' not in attrs for attrs in parsed.details))
+        self.assertTrue(all((output / unquote(src)).is_file() for src in parsed.sources))
 
 
 class LayoutReadingTest(unittest.TestCase):
@@ -497,6 +542,28 @@ class LayoutReadingTest(unittest.TestCase):
                 self.assertEqual(final["final_exam"]["score"]["value"], expected)
         incomplete = settlement_observation(tokens[:1] + tokens[3:])
         self.assertIsNone(incomplete["exam_ranking"])
+
+    def test_nia_final_failure_uses_own_ranking_without_formula_score(self):
+        from produce.console import SettlementConsole
+        from produce.settlement import FinalExamTracker, settlement_observation
+        tracker = FinalExamTracker("NIA")
+        ranking = settlement_observation([self.token("ログ", 605, 460), self.token("2nd", 35, 438),
+                                          self.token("12,345Pt", 210, 480)])
+        tracker.observe({"event_id": "ranking"}, ranking)
+        tokens = [self.token("最終オーディション", 247, 305), self.token("不合格", 336, 645)]
+        final = settlement_observation(tokens)
+        tracker.observe({"event_id": "final"}, final)
+        result = final["final_audition"]
+        self.assertEqual(result["outcome"], "failed")
+        self.assertEqual(result["score"]["value"], 12345)
+        self.assertIsNone(final["settlement"]["score"]["value"])
+        console = SettlementConsole({"scenario": "NIA", "difficulty": "MASTER"})
+        console.observe({"kind": "exam_result_observation"}, final)
+        self.assertIn("最终试镜不合格", console.finish()["message"])
+        tracker.observe({"kind": "battle_invocation_start"})
+        final = settlement_observation(tokens)
+        tracker.observe({"event_id": "new"}, final)
+        self.assertIsNone(final["final_audition"]["score"]["value"])
 
     def test_lesson_layout_keeps_partial_values_with_verified_label(self):
         import numpy as np

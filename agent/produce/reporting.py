@@ -7,6 +7,8 @@ import time
 import uuid
 import hashlib
 from pathlib import Path
+from html import escape
+from urllib.parse import quote
 from datetime import datetime, timezone
 from collections import Counter
 
@@ -215,6 +217,11 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
             entry = route[phase]
             if entry and "frame" not in entry["event"]:
                 missing_frames.append(entry["event"]["event_id"])
+    final_audition = None
+    for entry in (*settlements, *exam_results):
+        observation = (entry.get("derived") or {}).get("observation") or {}
+        if observation.get("final_audition"):
+            final_audition = observation["final_audition"]
     final_settlement = {}
     for field in ("score", "rank", "Vo", "Da", "Vi", "fan_votes", "exam_score", "place"):
         observations = []
@@ -259,6 +266,7 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
         "final_settlement": final_settlement,
         "final_fan_votes": final_fan_votes,
         "final_exam": final_exam,
+        "final_audition": final_audition,
         "exam_result_observations": exam_results,
         "evaluation_check": formula_check,
         "settlement_fields_complete": settlement_complete,
@@ -293,13 +301,13 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
     }
     output = (output_directory or directory).resolve()
     output.mkdir(parents=True, exist_ok=True)
-    report["report_path"] = str(output / "report.md")
+    report["report_path"] = str(output / "report.html")
     report["report_provenance"] = {"generated_at": datetime.now(timezone.utc).isoformat()}
     enrich_report(report, records, directory, capture_root)
     if export_data:
         atomic_json(output / "data/report.json", report)
     replay = render_replay(report)
-    atomic_text(output / "report.md", "\n".join(replay))
+    atomic_text(output / "report.html", "\n".join(replay))
     return report
 
 
@@ -344,7 +352,12 @@ def process_alive(pid):
 
 def render_replay(report):
     """用户回放只展示游戏过程；原始参数、审计与版本信息留在结构化数据中。"""
-    from produce.audit import cell
+    def cell(value):
+        return escape(str(value)).replace("\n", "<br>")
+
+    def table_row(label, value):
+        return f'<tr><th scope="row">{cell(label)}</th><td>{cell(value)}</td></tr>'
+
     session = report["session"]
     bindings = session["bindings"]
     configured = bindings.get("configured_idol") or {}
@@ -370,22 +383,57 @@ def render_replay(report):
                   "ProduceShoppingExit": "离开商店", "ProduceChooseStrengthenFlag": "进入强化并选择对象",
                   "ProduceChooseDeleteFlag": "进入删除、复制或变换并选择对象", "ProduceChooseStrengthen": "确认强化", "ProduceChooseStrengthenClick": "选择强化对象",
                   "ProduceChooseDeleteClick": "选择删除、复制或变换对象", "ProduceChooseConfirm": "确认选择",
-                  "ProduceGeneration": "点击生成", "ProduceFinished": "完成结算"}
+                  "ProduceGeneration": "点击生成", "ProduceFinished": "完成结算",
+                  "ProduceNIAFailedRetryLastChallenge": "尝试选择上次挑战的下一档试镜（实际档位未核验）",
+                  "ProduceNIAFailedRetryConfirm": "确认重试试镜", "ProduceFailedRetryConfirm": "确认重试考试"}
     status = "已结束" if session["status"] == "ended" else "未完成"
     if session.get("failure_stop_observed"):
         status = "失败终止"
+    if (report.get("final_audition") or {}).get("outcome") == "failed":
+        status += "；最终试镜不合格"
     difficulty = bindings.get("difficulty") or "未知"
     if isinstance(difficulty, list):
         difficulty = "/".join(difficulty)
-    lines = ["# 培育回放", "",
-             f"- 配置偶像：{configured.get('idol_name') or '未知'}；歌曲：{configured.get('song_name') or '未知'}",
-             f"- 剧本：{bindings.get('scenario', '未知')} / {difficulty}；状态：{status}",
-             f"- 开始：{clock(session['started_at'])}；结束：{clock(session.get('ended_at'))}",
-             "", "## 结算", "",
-             "；".join(f"{labels.get(key, key)}：{show(item.get('value'))}" for key, item in report['final_settlement'].items()),
-             "", "## 过程", "",
-             "时间按本局时区显示。“选择前观测”是与上次读取的比较，不是本次操作的效果；战斗变化来自操作后的观测。", "",
-             ]
+    lines = ['<!doctype html>', '<html lang="zh-CN"><head><meta charset="utf-8">',
+             '<meta name="viewport" content="width=device-width, initial-scale=1">',
+             '<title>培育回放</title>', '<style>',
+             ':root{color-scheme:light;--paper:#f4f5f2;--ink:#24342f;--muted:#65736d;--line:#dce3dc;--accent:#32644f}',
+             '*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);'
+             'font:16px/1.7 "Segoe UI","Microsoft YaHei",sans-serif;overflow-wrap:anywhere}',
+             'main{max-width:1120px;margin:auto;padding:48px 28px}header{border-bottom:2px solid var(--ink);padding-bottom:24px}',
+             'h1{font-size:40px;letter-spacing:.06em;margin:4px 0 20px}h2{font-size:25px;margin:40px 0 16px}'
+             'h3{font-size:18px;margin:0 0 16px}p{margin:8px 0}nav{display:flex;gap:24px;margin-top:20px}',
+             'a{color:var(--accent);text-underline-offset:4px}a:hover{color:var(--ink)}'
+             'a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}',
+             '.meta,.note{color:var(--muted)}.metrics{display:flex;flex-wrap:wrap;gap:12px}'
+             '.metric{flex:1 1 140px;background:white;border:1px solid var(--line);padding:20px;border-radius:8px}'
+             '.metric span{display:block;font-size:14px;color:var(--muted)}.metric strong{font-size:28px;font-weight:600}',
+             'article{background:white;border:1px solid var(--line);border-radius:8px;padding:24px;margin:20px 0}'
+             '.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:15px}'
+             'th,td{text-align:left;vertical-align:top;padding:12px;border-bottom:1px solid var(--line);white-space:normal}'
+             'th{font-weight:600;background:var(--paper)}th[scope=row]{width:112px}'
+             '.battle{min-width:680px}.battle th:first-child{width:60px}.battle th:nth-child(2){width:96px}',
+             'details{margin-top:20px;border-top:1px solid var(--line)}summary{cursor:pointer;color:var(--accent);padding:12px 0}'
+             'summary:hover{color:var(--ink)}.pictures{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}'
+             'figure{margin:0}figure img{display:block;max-width:100%;max-height:640px;margin:auto;object-fit:contain}'
+             'figcaption{color:var(--muted);text-align:center;font-size:14px;padding:8px}',
+             '@media(max-width:600px){main{padding:24px 16px}h1{font-size:30px}article{padding:16px}.metric{padding:14px}}'
+             '@media print{body{background:white}main{padding:0}nav{display:none}article{break-inside:avoid}}',
+             '</style></head><body><main><header>', '<p class="meta">MaaGakumasu · 培育记录</p><h1>培育回放</h1>',
+             f"<p>配置偶像：{cell(configured.get('idol_name') or '未知')}；歌曲：{cell(configured.get('song_name') or '未知')}</p>",
+             f"<p>剧本：{cell(bindings.get('scenario', '未知'))} / {cell(difficulty)}；状态：{cell(status)}</p>",
+             f"<p class=\"meta\">开始：{clock(session['started_at'])}；结束：{clock(session.get('ended_at'))}</p>",
+             '<nav aria-label="报告导航"><a href="#settlement">结算</a><a href="#timeline">过程</a></nav></header>',
+             '<section id="settlement"><h2>结算</h2><div class="metrics">']
+    for key, item in report['final_settlement'].items():
+        lines.append(f'<div class="metric"><span>{cell(labels.get(key, key))}：</span><strong>{cell(show(item.get("value")))}</strong></div>')
+    lines.append('</div>')
+    audition = report.get("final_audition")
+    if audition:
+        outcome = "不合格" if audition["outcome"] == "failed" else "合格"
+        lines.append(f"<p>最终试镜：{outcome}；试镜得分：{cell(show(audition['score']['value']))} Pt；名次：{cell(show(audition['place']['value']))}</p>")
+    lines.extend(['</section><section id="timeline"><h2>过程</h2>',
+                  '<p class="note">时间按本局时区显示。“选择前观测”是与上次读取的比较，不是本次操作的效果；战斗变化来自操作后的观测。</p>'])
     timeline = report["timeline"]
     after = {row["detail"].get("decision_id"): row for row in timeline if row["kind"] in ("decision_after", "produce_event_input_result", "route_input_result")}
     reward_names = {}
@@ -432,22 +480,32 @@ def render_replay(report):
             path = (picture or {}).get("evidence", {}).get("frame_path")
             if path and path not in shown and Path(path).is_file():
                 shown.add(path)
-                relative = Path(os.path.relpath(path, Path(report["report_path"]).parent)).as_posix()
-                images.extend([f"![{caption}](<{relative}>)", ""])
+                try:
+                    relative = quote(Path(os.path.relpath(path, Path(report["report_path"]).parent)).as_posix(), safe="/")
+                except ValueError:
+                    # 自定义输出目录位于另一盘符时使用本地文件地址。
+                    relative = Path(path).resolve().as_uri()
+                url = escape(relative, quote=True)
+                images.append(f'<figure><a href="{url}" target="_blank" rel="noopener"><img src="{url}" '
+                              f'alt="{cell(caption)}" loading="lazy"></a><figcaption>{cell(caption)} · 点击查看原图</figcaption></figure>')
         if images:
-            lines.extend(["", "<details>", "<summary>查看截图</summary>", "", *images, "</details>", ""])
+            lines.extend(['<details>', '<summary>查看截图</summary>', '<div class="pictures">', *images, '</div></details>'])
 
     def flush_battle():
         nonlocal battle_key, battle_number
         if not battle_rows:
             return
         battle_number += 1
-        lines.extend(["", f"### 战斗 {battle_number} · {battle_rows[0][1]}—{battle_rows[-1][1]}", "",
-                      "每行是一次操作；范围为已记录的操作时间，不能据此认定考试成功。", "",
-                      "| 操作 | 时间 | 当时手牌 / 选项 | 实际选择与依据 | 观察变化 |", "| --- | --- | --- | --- | --- |"])
+        lines.extend([f'<article><h3>战斗 {battle_number} · {battle_rows[0][1]}—{battle_rows[-1][1]}</h3>',
+                      '<p class="note">每行是一次操作；范围为已记录的操作时间，不能据此认定考试成功。</p>',
+                      '<div class="table-wrap"><table class="battle"><thead><tr>' +
+                      ''.join(f'<th scope="col">{label}</th>' for label in ('操作', '时间', '当时手牌 / 选项', '实际选择与依据', '观察变化')) +
+                      '</tr></thead><tbody>'])
         for values in battle_rows:
-            lines.append("| " + " | ".join(cell(value) for value in values) + " |")
+            lines.append('<tr>' + ''.join(f'<td>{cell(value)}</td>' for value in values) + '</tr>')
+        lines.append('</tbody></table></div>')
         append_pictures(battle_pictures)
+        lines.append('</article>')
         battle_rows.clear()
         battle_pictures.clear()
         battle_key = None
@@ -505,6 +563,8 @@ def render_replay(report):
             changes = "实际效果未确认"
         elif kind == "pipeline_action" and detail.get("node") in node_names:
             event, operation = "流程操作", node_names[detail["node"]]
+            if detail.get("framework_action_succeeded") is False:
+                operation += "（执行失败）"
         elif kind == "pipeline_failure":
             event, operation = "流程异常", "识别或执行未成功"
         elif kind == "exam_failure_or_retry":
@@ -534,20 +594,21 @@ def render_replay(report):
             battle_pictures.append((f"操作 {number} 前", row))
             continue
         flush_battle()
-        lines.extend(["", f"### {clock(row['evidence']['time'])} · {cell(event)}", "",
-                      "| 项目 | 内容 |", "| --- | --- |", f"| 实际操作 | {cell(operation)} |"])
+        lines.extend([f"<article><h3>{clock(row['evidence']['time'])} · {cell(event)}</h3>",
+                      '<div class="table-wrap"><table><tbody>', table_row('实际操作', operation)])
         if kind in ("produce_event_choice", "option_choice"):
             candidates = []
             for candidate in detail.get("candidates") or []:
                 if isinstance(candidate, dict):
                     candidates.extend(str(name).replace("null", "无属性选项") + (" SP" if candidate.get("SP") else "")
                                       for name in candidate if name != "SP")
-            lines.append(f"| 可选项 | {cell('、'.join(candidates) or '未记录')} |")
+            lines.append(table_row('可选项', '、'.join(candidates) or '未记录'))
         elif kind == "reward_receive_input":
             candidates = [name or "未识别" for (page, _), name in reward_names.items() if page == detail.get("reward_page_id")]
-            lines.append(f"| 奖励候选 | {cell('、'.join(candidates) or '未识别')} |")
+            lines.append(table_row('奖励候选', '、'.join(candidates) or '未识别'))
         if changes or event not in {"奖励选择", "工作选择", "属性选择"}:
-            lines.append(f"| 观察变化 | {cell(changes or '未确认')} |")
+            lines.append(table_row('观察变化', changes or '未确认'))
+        lines.append('</tbody></table></div>')
         pictures = [("操作前", row)]
         if kind == "reward_receive_input":
             page = report.get("reward_pages", {}).get(detail.get("reward_page_id"), {})
@@ -555,6 +616,7 @@ def render_replay(report):
             start_row = next((item for item in timeline if item["evidence"]["event_id"] == start.get("event_id")), None)
             pictures = [("奖励页面", start_row)]
         append_pictures(pictures)
+        lines.append('</article>')
 
     flush_battle()
     warnings = []
@@ -563,8 +625,8 @@ def render_replay(report):
     if report.get("gaps") or report.get("integrity", {}).get("errors"):
         warnings.append("本局部分记录或识别结果缺失，以上仅展示已记录内容，不能视为完整过程。")
     if warnings:
-        lines.extend(["", "## 记录说明", "", *["- " + warning for warning in warnings]])
-    return [*lines, ""]
+        lines.extend(['<aside><h2>记录说明</h2>', *[f'<p>{cell(warning)}</p>' for warning in warnings], '</aside>'])
+    return [*lines, '</section></main></body></html>', ""]
 
 
 def notify_ready_reports(root, emit):
@@ -577,10 +639,12 @@ def notify_ready_reports(root, emit):
             session = read_json(path.parent / "session.json")
             if session.get("schema_version") != 4 or session.get("status") == "recording":
                 continue
-            report = path.parent.parent / "report.md"
+            report = path.parent.parent / "report.html"
+            if not report.exists() and (path.parent.parent / "report.md").exists():
+                # 兼容升级前已完成但尚未通知的报告，不删除历史文件。
+                report = path.parent.parent / "report.md"
             if report.exists():
                 label = "培育回放已生成" if status["status"] == "completed" else "培育回放已保存，部分记录处理失败"
-                from html import escape
                 emit(f'{label}：<a href="{escape(report.resolve().as_posix(), quote=True)}">打开培育回放</a>')
             else:
                 emit("培育回放生成失败，请查看本局记录目录：" + str(path.parent))
