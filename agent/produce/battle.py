@@ -152,6 +152,11 @@ class ProduceCardsAuto(CustomAction):
 
             # 通过检测体力槽判断是否处于出牌场景
             if not self._is_playing_card(context, image):
+                # 动画可能暂时遮住体力标志，复用等待逻辑复核，恢复后重新截图。
+                if self._wait_until_playable(context):
+                    continue
+                if context.tasker.stopping:
+                    return True
                 self._record("battle_exit_observation", reason="health_flag_not_detected")
                 self._log_battle_exit(context)
                 break
@@ -312,7 +317,7 @@ class ProduceCardsAuto(CustomAction):
 
         reco_detail = context.run_recognition("ProduceRecognitionChooseMoveCards", image)
         if reco_detail.hit:
-            self._record("move_cards_screen", decision_id=self._active_decision)
+            self._record("move_cards_screen", image=image, decision_id=self._active_decision, operation="move_cards")
             y = 450
             while y < 1100:
                 # 调试示例：按四个固定卡槽位置依次处理饮料。
@@ -392,6 +397,8 @@ class ProduceCardsAuto(CustomAction):
                 count_exit += 1
                 if count_exit >= 2:
                     return False
+            else:
+                count_exit = 0
 
             # 解决莫名其妙的误触问题
             reco_detail = context.run_recognition("ProduceButton", image)
