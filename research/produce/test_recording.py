@@ -16,8 +16,8 @@ sys.path[:0] = [str(ROOT), str(ROOT / "agent")]
 
 from produce.state import read_produce_health, read_produce_attributes
 from produce.capture import DecisionCapture
-from produce.rewards import RewardIdentityCache, cache_write_lock, cache_for_capture
 from produce.reporting import process_alive, segment_directory
+from produce.icon_cache import RewardIdentityCache, cache_write_lock, cache_for_capture
 
 
 class RecordingTest(unittest.TestCase):
@@ -229,7 +229,7 @@ class RecordingTest(unittest.TestCase):
     def test_cache_tolerates_brightness_deduplicates_and_rejects_conflicts(self):
         cache = self.identity_cache(self.directory / "tolerant_cache", {})
         image = np.random.default_rng(42).integers(20, 220, size=self.image.shape, dtype=np.uint8)
-        event = {"event_id": "a", "candidate": {"box": [55, 790, 150, 150]}}
+        event = {"kind": "reward_candidate_preview", "event_id": "a", "candidate": {"box": [55, 790, 150, 150]}}
         observation = {"detail_verified": True, "identity": {"status": "matched", "catalog_id": "a",
                        "database_name": "合成甲", "item_kind": "skill_card"}}
         self.assertEqual(cache.learn(image, event, observation), "stored")
@@ -239,8 +239,9 @@ class RecordingTest(unittest.TestCase):
         # OCR 已确认同一身份，图像差异不应再产生第二份缓存。
         changed = np.flip(image, axis=1).copy()
         self.assertEqual(cache.learn(changed, event, observation), "reused")
-        self.assertEqual(len(list((cache.directory / "icons").glob("*.png"))), 1)
+        self.assertEqual(len(list(cache.directory.rglob("*.png"))), 1)
         observation["identity"]["catalog_id"] = "b"
+        observation["identity"]["database_name"] = "合成乙"
         cache.learn(image, event, observation)
         self.assertIsNone(cache.lookup(image, event["candidate"]["box"]))
 
@@ -251,11 +252,13 @@ class RecordingTest(unittest.TestCase):
             self.assertEqual(read_json(self.directory / "manifest.json"), {"status": "recording"})
         sleep.assert_called_once()
 
-    def test_icon_crop_keeps_original_pixels(self):
-        from produce.rewards import icon_image
+    def test_icon_crop_normalizes_and_ignores_border(self):
+        from produce.icon_cache import icon_image
         crop = icon_image(self.image, [55, 790, 130, 132])
-        self.assertEqual(crop.shape, (124, 122, 3))
-        np.testing.assert_array_equal(crop, self.image[794:918, 59:181])
+        self.assertEqual(crop.shape, (128, 128, 3))
+        changed = self.image.copy()
+        changed[790:810, 55:80] = 255
+        np.testing.assert_array_equal(crop, icon_image(changed, [55, 790, 130, 132]))
 
     def test_saved_frame_keeps_framework_dimensions(self):
         from utils.image_io import read_image
@@ -419,7 +422,7 @@ class RecordingTest(unittest.TestCase):
         reader.icons = None
         reader.details = OrderedDict()
         reader.counts = {"name_ocr": 0}
-        event = {"event_id": "preview", "detail_refreshed": True, "selected_highlight_verified": True,
+        event = {"kind": "reward_candidate_preview", "event_id": "preview", "detail_refreshed": True, "selected_highlight_verified": True,
                  "customization_hint": True}
         with patch("produce.rewards.reward_preview_observation", return_value={"reading": {}}):
             calls = []
@@ -548,7 +551,7 @@ class RecordingTest(unittest.TestCase):
     def test_shared_cache_survives_another_instance_and_checks_version(self):
         hashes = {"skill_cards": "s", "reward_items": "i"}
         cache = self.identity_cache(self.directory / "cache", hashes)
-        event = {"event_id": "first:1", "candidate": {"box": [55, 790, 150, 150]}, "frame": {"sha256": "frame"}}
+        event = {"kind": "reward_candidate_preview", "event_id": "first:1", "candidate": {"box": [55, 790, 150, 150]}, "frame": {"sha256": "frame"}}
         observation = {"detail_verified": True, "identity": {"status": "matched", "needs_full_ocr": False,
                        "effective_effect_dsl": "effect", "catalog_id": "card-1", "database_name": "合成卡", "item_kind": "skill_card"}}
         cache.learn(self.image, event, observation)
@@ -556,9 +559,9 @@ class RecordingTest(unittest.TestCase):
         self.assertEqual(second.lookup(self.image, event["candidate"]["box"])["catalog_id"], "card-1")
         self.assertIsNone(self.identity_cache(cache.directory, {"skill_cards": "changed"}).lookup(self.image, event["candidate"]["box"]))
         modified = self.image.copy()
-        modified[810:835, 70:100] = 255
+        modified[840:880, 110:145] = 255
         self.assertIsNone(second.lookup(modified, event["candidate"]["box"]))
-        icon = next((cache.directory / "icons").glob("*.png"))
+        icon = next(cache.directory.rglob("*.png"))
         icon.write_bytes(b"corrupt")
         self.assertIsNone(self.identity_cache(cache.directory, hashes).lookup(self.image, event["candidate"]["box"]))
 
@@ -576,7 +579,7 @@ class RecordingTest(unittest.TestCase):
 
     def test_cache_scope_change_does_not_reuse_identity(self):
         cache = self.identity_cache(self.directory / "scope_cache", {}, {"language": "ja"})
-        event = {"event_id": "first:1", "candidate": {"box": [55, 790, 150, 150]}}
+        event = {"kind": "reward_candidate_preview", "event_id": "first:1", "candidate": {"box": [55, 790, 150, 150]}}
         observation = {"detail_verified": True, "identity": {"status": "matched", "needs_full_ocr": False,
                        "effective_effect_dsl": "effect", "catalog_id": "card-1", "database_name": "合成卡", "item_kind": "skill_card"}}
         cache.learn(self.image, event, observation)
@@ -591,6 +594,101 @@ class RecordingTest(unittest.TestCase):
                 self.assertFalse(second)
         with cache_write_lock(path) as third:
             self.assertTrue(third)
+
+    def test_icon_cache_only_learns_rewards_and_merges_variants(self):
+        cache = self.identity_cache(self.directory / "body_cache")
+        event = {"kind": "route_before", "event_id": "synthetic", "candidate": {"box": [55, 790, 128, 128]}}
+        observation = {"detail_verified": True, "identity": {"status": "matched", "catalog_id": "base",
+                       "database_name": "合成卡", "item_kind": "skill_card"}}
+        self.assertIsNone(cache.learn(self.image, event, observation))
+        self.assertFalse(cache.path.exists())
+        event["kind"] = "reward_candidate_preview"
+        self.assertEqual(cache.learn(self.image, event, observation), "stored")
+        changed = self.image.copy()
+        changed[790:815, 55:80] = 255
+        changed[820:918, 160:183] = 255
+        observation["identity"].update(catalog_id="plus", database_name="合成卡+")
+        self.assertEqual(cache.learn(changed, event, observation), "reused")
+        self.assertEqual(len(cache._load()["entries"]), 1)
+        self.assertEqual(len(list((cache.directory / "skill_card").glob("*.png"))), 1)
+        self.assertEqual(cache.lookup(changed, event["candidate"]["box"])["database_name"], "合成卡")
+
+    def test_icon_scan_native_scaled_page_and_read_only(self):
+        from utils.image_io import resize_image
+        cache = self.identity_cache(self.directory / "scan_cache")
+        event = {"kind": "reward_candidate_preview", "event_id": "synthetic", "candidate": {"box": [55, 790, 128, 128]}}
+        cache.learn(self.image, event, {"detail_verified": True, "identity": {"status": "matched", "catalog_id": "base",
+                    "database_name": "合成卡", "item_kind": "skill_card"}})
+        page = np.zeros_like(self.image)
+        page[700:820, 80:200] = resize_image(self.image[790:918, 55:183], 120, 120)
+        before = cache.path.read_bytes()
+        hits = cache.scan(page, "strengthen")
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0]["database_name"], "合成卡")
+        self.assertLessEqual(abs(hits[0]["box"][0] - 80), 2)
+        self.assertFalse(hits[0]["variant_verified"])
+        self.assertEqual(before, cache.path.read_bytes())
+        self.assertEqual(cache.scan(page, "unsupported"), [])
+        cache.recognize = lambda *args: [SimpleNamespace(score=.7, box=[52, 42, 56, 64])]
+        self.assertEqual(cache.scan(page, "strengthen"), [])
+
+    def test_green_mask_distinguishes_art_outside_old_center_crop(self):
+        from produce.icon_cache import icon_mask, icon_image
+        cache = self.identity_cache(self.directory / "green_cache")
+        rng = np.random.default_rng(71)
+        image = self.image.copy()
+        image[790:918, 55:183] = rng.integers(25, 210, size=(128, 128, 3), dtype=np.uint8)
+        other = image.copy()
+        # 两张卡的旧中央裁片相同，左侧主体不同，新模板必须能区分。
+        other[832:870, 63:95] = 255 - other[832:870, 63:95]
+        event = {"kind": "reward_candidate_preview", "event_id": "synthetic", "candidate": {"box": [55, 790, 128, 128]}}
+        for name, frame in (("first", image), ("second", other)):
+            cache.learn(frame, event, {"detail_verified": True, "identity": {"status": "matched", "catalog_id": name,
+                        "database_name": name, "item_kind": "skill_card"}})
+        self.assertEqual(cache.lookup(image, event["candidate"]["box"])["database_name"], "first")
+        self.assertEqual(cache.lookup(other, event["candidate"]["box"])["database_name"], "second")
+        template = icon_image(image, event["candidate"]["box"])
+        self.assertTrue(np.all(template[~icon_mask()] == [0, 255, 0]))
+        changed = image.copy()
+        crop = changed[790:918, 55:183]
+        crop[~icon_mask()] = rng.integers(0, 255, size=(int((~icon_mask()).sum()), 3), dtype=np.uint8)
+        self.assertEqual(cache.lookup(changed, event["candidate"]["box"])["database_name"], "first")
+        cache.recognize = lambda *args: [SimpleNamespace(score=float("nan"), box=[20, 20, 128, 128])]
+        self.assertEqual(cache.scan(image, "shop"), [])
+
+    def test_item_cache_preserves_art_in_card_badge_regions(self):
+        from utils.image_io import read_image
+        from produce.icon_cache import icon_mask
+        box = [55, 790, 128, 128]
+        image = np.random.default_rng(93).integers(25, 210, size=self.image.shape, dtype=np.uint8)
+        for kind in ("drink", "p_item"):
+            with self.subTest(kind=kind):
+                cache = self.identity_cache(self.directory / kind)
+                cache.learn(image, {"kind": "reward_candidate_preview", "event_id": "synthetic", "candidate": {"box": box}},
+                            {"detail_verified": True, "identity": {"status": "matched", "catalog_id": kind,
+                             "database_name": kind, "item_kind": kind}})
+                entry = cache._load()["entries"][0]
+                template = read_image(cache.directory / entry["icon_path"])
+                visible = icon_mask(kind)
+                self.assertEqual(int(visible.sum()), 118 * 118)
+                np.testing.assert_array_equal(template[visible], image[790:918, 55:183][visible])
+                self.assertTrue(np.all(template[~visible] == [0, 255, 0]))
+                self.assertEqual(cache.lookup(image, box, kind)["item_kind"], kind)
+                changed = image.copy()
+                # 卡牌角标区域在饮料和 P 道具中属于有效图案，不能忽略。
+                changed[800:825, 65:95] = 255 - changed[800:825, 65:95]
+                self.assertIsNone(cache.lookup(changed, box, kind))
+
+    def test_icon_log_is_collapsed_and_escapes_names(self):
+        from produce.console import format_icon_matches
+        message = format_icon_matches("shop", [{"database_name": '<bad>"', "icon_path": str(self.directory / "card.png"),
+                                               "similarity": .95}])
+        self.assertTrue(message.startswith("<details><summary>"))
+        self.assertNotIn("\n", message)
+        self.assertNotIn("<bad>", message)
+        self.assertNotIn("<img", message)
+        self.assertNotIn("file:", message)
+        self.assertIn("&lt;bad&gt;", message)
 
     def test_health_zero_and_unknown(self):
         context = SimpleNamespace(run_recognition=lambda *a, **k: SimpleNamespace(hit=True, best_result=SimpleNamespace(text="0/34")))
@@ -691,7 +789,8 @@ class RecordingTest(unittest.TestCase):
             return max({"base": .965, "plus": 1., "other": .7, "drink": 1.}[key] for key in ids)
         with patch.object(cache, "_load", return_value={"entries": entries, "catalog_hashes": {}}), patch.object(cache, "_score", side_effect=score):
             match = cache.lookup(self.image, [55, 790, 150, 150], "skill_card")
-            self.assertEqual(match["catalog_id"], "plus")
+            self.assertEqual(match["database_name"], "合成卡")
+            self.assertFalse(match["variant_verified"])
             self.assertEqual(calls[0], ["base", "plus"])
             self.assertNotIn(["drink"], calls)
             calls.clear()
@@ -699,7 +798,7 @@ class RecordingTest(unittest.TestCase):
             self.assertEqual(match["catalog_id"], "drink")
             self.assertEqual(calls, [["drink"]])
         with patch.object(cache, "_load", return_value={"entries": entries[:2], "catalog_hashes": {}}), patch.object(cache, "_score", return_value=1.):
-            self.assertIsNone(cache.lookup(self.image, [55, 790, 150, 150], "skill_card"))
+            self.assertFalse(cache.lookup(self.image, [55, 790, 150, 150], "skill_card")["variant_verified"])
 
     def test_reward_reader_reuses_verified_match_without_second_template_pass(self):
         import hashlib
@@ -709,7 +808,7 @@ class RecordingTest(unittest.TestCase):
         reader = RewardReader(SkillCardCatalog(ROOT / "assets/data/produce_skill_cards.json"),
                               ROOT / "assets/data/produce_reward_items.json")
         identifier = next(key for key, (kind, _) in reader.catalog.ids.items() if kind == "drink")
-        event = {"event_id": "synthetic:1", "candidate": {"candidate_id": "reward_1", "box": [55, 790, 150, 150]},
+        event = {"kind": "reward_candidate_preview", "event_id": "synthetic:1", "candidate": {"candidate_id": "reward_1", "box": [55, 790, 150, 150]},
                  "observation_method": "icon_cache", "cached_identity": {
                      "catalog_id": identifier, "source_event_id": "synthetic:0", "catalog_hashes": reader.catalog.hashes,
                      "query_icon_sha256": hashlib.sha256(self.image[790:940, 55:205].tobytes()).hexdigest()}}
@@ -722,10 +821,17 @@ class RecordingTest(unittest.TestCase):
         changed = self.image.copy()
         changed[800, 60] = 255
         self.assertEqual(reader.read(changed, event, forbidden)["reading"]["method"], "icon_cache_rejected")
+        identifier = next(key for key, (kind, _) in reader.catalog.ids.items() if kind == "skill_card")
+        event["cached_identity"].update(catalog_id=identifier, database_name="本体名称")
+        result = reader.read(self.image, event, forbidden)
+        self.assertTrue(result["art_identity_verified"])
+        self.assertFalse(result["identity_verified"])
+        self.assertIsNone(result["identity"]["effective_effect_dsl"])
+        self.assertEqual(result["observed_name"], "本体名称")
 
     def test_cache_conflict_does_not_choose_closest_identity(self):
         cache = self.identity_cache(self.directory / "cache", {"skill_cards": "s"})
-        event = {"event_id": "synthetic:1", "candidate": {"box": [55, 790, 150, 150]}}
+        event = {"kind": "reward_candidate_preview", "event_id": "synthetic:1", "candidate": {"box": [55, 790, 150, 150]}}
         for identifier in ("first", "second"):
             cache.learn(self.image, event, {"detail_verified": True, "identity": {
                 "status": "matched", "needs_full_ocr": False, "effective_effect_dsl": "effect",

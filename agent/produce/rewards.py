@@ -1,32 +1,18 @@
 """奖励候选预览、身份缓存，以及优先读取名称的同步识别。"""
 
-import os
 import re
 import copy
 import json
 import time
 import hashlib
 from pathlib import Path
-from contextlib import contextmanager
 from collections import Counter, OrderedDict
 
 import numpy as np
-from utils.image_io import bgr_image, encode_png
+from utils.image_io import bgr_image
 
 from .catalog import RewardCatalog, clean, catalog_effects
-
-# 原尺寸裁切模板，不复用旧版 64×64 缩略图。
-CACHE_VERSION = 4
-
-
-def icon_image(image, box):
-    image = bgr_image(image)
-    x, y, width, height = box
-    if image.shape != (1280, 720, 3) or min(width, height) <= 8 or min(x, y) < 0 or x + width > 720 or y + height > 1280:
-        raise ValueError("Unsupported reward icon bounds")
-    # 保留角标和强化标记，只去掉图标自身的外框。
-    crop = image[y + 4:y + height - 4, x + 4:x + width - 4]
-    return bgr_image(crop)
+from .icon_cache import cache_for_capture
 
 
 def reward_kind(text):
@@ -39,172 +25,6 @@ def reward_kind(text):
     if re.search(r"P[・･ ·]?アイテム|P道具|P 道具", text):
         return "p_item"
     return None
-
-
-class RewardIdentityCache:
-    def __init__(self, directory, hashes=None, scope=None, recognize=None):
-        self.directory = Path(directory).resolve()
-        self.path = self.directory / "reward_identity_cache.json"
-        self.hashes = hashes
-        self.scope = scope
-        self.recognize = recognize
-        self._stamp = None
-        self._data = None
-        self._icons = {}
-
-    def _load(self):
-        try:
-            stat = self.path.stat()
-            stamp = (stat.st_mtime_ns, stat.st_size)
-            if self._data is not None and stamp == self._stamp:
-                return self._data
-            data = json.loads(self.path.read_text(encoding="utf-8"))
-            if not isinstance(data, dict) or not isinstance(data.get("entries"), list):
-                return None
-            if data.get("cache_version") != CACHE_VERSION or len(data.get("entries", [])) > 128:
-                return None
-            if self.hashes is not None and data.get("catalog_hashes") != self.hashes:
-                return None
-            if data.get("scope") != self.scope:
-                return None
-            self._stamp, self._data = stamp, data
-            return data
-        except (OSError, ValueError, TypeError):
-            return None
-
-    def _score(self, icon, entries):
-        """使用 MaaFramework 原生模板识别；不另实现图像匹配算法。"""
-        from maa.pipeline import JTemplateMatch, JRecognitionType
-
-        if self.recognize is None:
-            return 0.0
-        entries = entries if isinstance(entries, list) else [entries]
-        paths = []
-        for entry in entries:
-            path = (self.directory / entry["icon_path"]).resolve()
-            if not path.is_relative_to(self.directory):
-                continue
-            key = entry["icon_file_sha256"]
-            try:
-                if key not in self._icons:
-                    if hashlib.sha256(path.read_bytes()).hexdigest() != key:
-                        continue
-                    self._icons[key] = True
-                    if len(self._icons) > 128:
-                        self._icons.pop(next(iter(self._icons)))
-                paths.append(path.as_posix())
-            except OSError:
-                continue
-        if not paths:
-            return 0.0
-        results = self.recognize(JRecognitionType.TemplateMatch,
-                                 JTemplateMatch(template=paths, threshold=[.96], method=5), icon)
-        return max((float(item.score) for item in results), default=0.0)
-
-    def lookup(self, image, box, item_kind=None):
-        data = self._load()
-        if not data:
-            return None
-        icon_image(image, box)  # 核验原图尺寸与候选区域边界。
-        x, y, width, height = box
-        icon = bgr_image(image[y:y + height, x:x + width])
-        groups = {}
-        for entry in data["entries"]:
-            if item_kind and entry["item_kind"] != item_kind:
-                continue
-            family = (entry["item_kind"], entry["database_name"].rstrip("+")
-                      if entry["item_kind"] == "skill_card" else entry["catalog_id"])
-            groups.setdefault(family, []).append(entry)
-        families = []
-        for entries in groups.values():
-            try:
-                families.append((self._score(icon, entries), entries))
-            except (OSError, ValueError, KeyError, TypeError, RuntimeError):
-                continue
-        families.sort(key=lambda item: item[0], reverse=True)
-        if not families or families[0][0] < .98:
-            return None
-        score, entries = families[0]
-        if any(score - other_score < .02 for other_score, _ in families[1:]):
-            return None
-        if len(entries) == 1:
-            matches = [(score, entries[0])]
-        else:
-            # 同卡家族先合并调用，只有命中家族才逐变体核验强化标记。
-            matches = [(self._score(icon, entry), entry) for entry in entries]
-        matches.sort(key=lambda item: item[0], reverse=True)
-        if not matches or matches[0][0] < .98:
-            return None
-        score, entry = matches[0]
-        # 相近身份（包括不同强化版本）不得仅因排名靠前就直接复用。
-        if any(other["catalog_id"] != entry["catalog_id"] and score - value < .02 for value, other in matches[1:]):
-            return None
-        return {**entry, "catalog_hashes": data["catalog_hashes"], "query_icon_sha256": hashlib.sha256(icon.tobytes()).hexdigest(),
-                "similarity": round(score, 4),
-                "method": "learned_icon_identity_only"}
-
-    def learn(self, image, event, observation):
-        # 跨客户端进程序列化读改写；忙时跳过学习，不影响领取。
-        self.directory.mkdir(parents=True, exist_ok=True)
-        with cache_write_lock(self.directory / "write.lock") as acquired:
-            if acquired:
-                self._stamp = None
-                return self._learn(image, event, observation)
-
-    def _learn(self, image, event, observation):
-        identity = observation.get("identity") or {}
-        if (not observation.get("detail_verified") or identity.get("status") != "matched" or
-                observation.get("reading", {}).get("fallback_reason") or event.get("customization_hint")):
-            return
-        icon = icon_image(image, event["candidate"]["box"])
-        if float(icon.std()) < 1:
-            return
-        pixel_sha = hashlib.sha256(icon.tobytes()).hexdigest()
-        data = self._load() or {"cache_version": CACHE_VERSION, "catalog_hashes": self.hashes, "scope": self.scope, "entries": []}
-        previous = list(data["entries"])
-        same_identity = [entry for entry in previous if entry["catalog_id"] == identity["catalog_id"]]
-        for entry in same_identity:
-            path = (self.directory / entry["icon_path"]).resolve()
-            try:
-                valid = path.is_relative_to(self.directory / "icons") and hashlib.sha256(path.read_bytes()).hexdigest() == entry["icon_file_sha256"]
-            except OSError:
-                valid = False
-            if valid:
-                if len(same_identity) > 1:
-                    data["entries"] = [item for item in previous if item not in same_identity or item is entry]
-                    self._save(data, previous)
-                return "reused"
-        data["entries"] = [entry for entry in previous if entry not in same_identity]
-        icon_path = self.directory / "icons" / (re.sub(r"[^A-Za-z0-9_-]", "_", identity["catalog_id"]) + "_" + pixel_sha[:12] + ".png")
-        icon_path.parent.mkdir(parents=True, exist_ok=True)
-        if not icon_path.exists():
-            icon_path.write_bytes(encode_png(icon))
-        entry = {"catalog_id": identity["catalog_id"], "database_name": identity["database_name"], "item_kind": identity["item_kind"],
-                 "source_event_id": event["event_id"], "source_frame_sha256": event.get("frame", {}).get("sha256"),
-                 "icon_path": icon_path.relative_to(self.directory).as_posix(), "icon_file_sha256": hashlib.sha256(icon_path.read_bytes()).hexdigest(),
-                 "icon_pixel_sha256": pixel_sha}
-        data["entries"] = [e for e in data["entries"] if not (e["icon_pixel_sha256"] == pixel_sha and e["catalog_id"] == entry["catalog_id"])]
-        data["entries"].append(entry)
-        data["entries"] = data["entries"][-128:]
-        self._save(data, previous)
-        return "stored"
-
-    def _save(self, data, previous):
-        """先更新索引，再移除已合并或超出容量的已知图标文件；由调用方持有写锁。"""
-        temporary = self.path.with_suffix(".tmp")
-        temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-        temporary.replace(self.path)
-        self._stamp = None
-        retained = {entry["icon_path"] for entry in data["entries"]}
-        for entry in previous:
-            if entry["icon_path"] in retained:
-                continue
-            path = (self.directory / entry["icon_path"]).resolve()
-            if path.is_relative_to(self.directory / "icons"):
-                try:
-                    path.unlink(missing_ok=True)
-                except OSError:
-                    pass
 
 
 ROW_ROI = (55, 790, 610, 185)
@@ -608,6 +428,10 @@ class RewardReader:
                                                   {"method": "icon_cache_rejected", "fallback_reason": "cached_icon_not_confirmed"})
             self.counts["icon_cache"] += 1
             identity = self.catalog.by_id(match["catalog_id"])
+            if identity.get("item_kind") == "skill_card":
+                # 本体命中不能确认强化版本，也不为核验版本新增预览点击。
+                identity = {"status": "base_match_variant_unresolved", "database_name": match["database_name"],
+                            "item_kind": "skill_card", "catalog_id": None, "effective_effect_dsl": None}
             return reward_preview_observation({}, self.catalog.skills, event, self.catalog,
                                               {"method": "icon_cache", "identity": identity, "identity_verified": True,
                                                "source_event_id": match["source_event_id"], "full_body_ocr": False})
@@ -684,7 +508,9 @@ def reward_preview_observation(tokens_by_roi, catalog, event, rewards=None, read
         "observed_name": identity.get("database_name") if cache_verified else " ".join(token["text"] for token in names) if refreshed else None,
         "identity": identity,
         "detail_verified": refreshed,
-        "identity_verified": refreshed and bool(identity.get("catalog_id") or identity.get("database_card_id")) or cache_verified,
+        "identity_verified": refreshed and bool(identity.get("catalog_id") or identity.get("database_card_id"))
+                             or cache_verified and identity.get("status") == "matched",
+        "art_identity_verified": cache_verified,
         "reading": {key: value for key, value in reading.items() if key != "identity"},
         "unknown_reason": "current_detail_not_opened" if cache_verified else None if refreshed else "detail_refresh_not_verified",
         "effects": {
@@ -698,50 +524,3 @@ def reward_preview_observation(tokens_by_roi, catalog, event, rewards=None, read
         "raw_ocr_by_roi": tokens_by_roi,
         "game_action_confirmed": None,
     }
-
-
-@contextmanager
-def cache_write_lock(path):
-    """使用系统文件锁，进程退出自动释放，避免遗留锁阻断后续学习。"""
-    with path.open("a+b") as stream:
-        stream.seek(0, 2)
-        if stream.tell() == 0:
-            stream.write(b"0")
-            stream.flush()
-        stream.seek(0)
-        acquired = False
-        try:
-            if os.name == "nt":
-                import msvcrt
-                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
-            else:
-                import fcntl
-                fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            acquired = True
-        except OSError:
-            pass
-        try:
-            yield acquired
-        finally:
-            if acquired:
-                stream.seek(0)
-                if os.name == "nt":
-                    msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
-                else:
-                    fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
-
-
-def cache_for_capture(directory, hashes=None, recognize=None):
-    """统一缓存目录；格式、卡库或识别布局变化时重新学习，不迁移旧测试缓存。"""
-    try:
-        manifest = json.loads((Path(directory) / "manifest.json").read_text(encoding="utf-8"))
-        if manifest.get("reward_identity_cache_enabled") is False:
-            return None
-        scope = manifest["metadata"]["reward_cache"]
-        expected = scope["catalog_hashes"]
-        if hashes is not None and hashes != expected:
-            return None
-        root = Path(__file__).resolve().parents[2] / "debug/cache/reward_identity"
-        return RewardIdentityCache(root, expected, scope, recognize)
-    except (OSError, ValueError, KeyError, TypeError):
-        return None

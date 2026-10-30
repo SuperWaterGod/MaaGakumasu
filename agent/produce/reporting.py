@@ -551,15 +551,18 @@ def render_replay(report):
             operation = "点击领取：" + (name or "奖励名称未识别")
             if detail.get("framework_action_succeeded") is False:
                 operation += "（点击失败）"
-        elif kind == "route_before" and detail.get("node") in node_names and detail.get("node") != "ProduceChooseConfirm":
+        elif kind == "route_before" and (detail.get("node") in node_names or "icon_matches" in detail) and detail.get("node") != "ProduceChooseConfirm":
             node = detail["node"]
             event = "卡牌调整" if "ChooseDelete" in node else "强化" if "Strengthen" in node else "商店"
-            operation = node_names[node]
+            operation = node_names.get(node, "观察当前页面")
             following = after.get(row["evidence"]["event_id"])
             if not following:
                 operation += "（执行结果未记录）"
             elif following["detail"].get("framework_action_succeeded") is False:
                 operation += "（点击失败）"
+            changes = "实际效果未确认"
+        elif kind == "move_cards_screen":
+            event, operation = "移动卡牌", "观察当前页面"
             changes = "实际效果未确认"
         elif kind == "pipeline_action" and detail.get("node") in node_names:
             event, operation = "流程操作", node_names[detail["node"]]
@@ -606,6 +609,13 @@ def render_replay(report):
         elif kind == "reward_receive_input":
             candidates = [name or "未识别" for (page, _), name in reward_names.items() if page == detail.get("reward_page_id")]
             lines.append(table_row('奖励候选', '、'.join(candidates) or '未识别'))
+        if "icon_matches" in detail:
+            names = Counter(hit.get("database_name") or "未知名称" for hit in detail["icon_matches"] or [])
+            text = '、'.join(f'{name} ×{count}' for name, count in names.items())
+            lines.append(table_row('当前画面图标识别', text or '未命中缓存中的已知图标'))
+            lines.append(table_row('识别范围', '仅识别当前可见图标本体；强化、可选状态及实际获得情况未核验，不代表完整列表。'))
+        elif kind == "route_before" and detail.get("visible_candidates"):
+            lines.append(table_row('当前画面文字识别', '、'.join(name for name in detail['visible_candidates'] if name)))
         if changes or event not in {"奖励选择", "工作选择", "属性选择"}:
             lines.append(table_row('观察变化', changes or '未确认'))
         lines.append('</tbody></table></div>')

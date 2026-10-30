@@ -424,6 +424,22 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                 if packet is None:
                     break
                 event, supplied_image = packet
+                icon_matches = None
+                if (reward_reader.icons and supplied_image is not None
+                        and (event["kind"] == "route_before" or event["kind"] == "move_cards_screen")
+                        and event.get("operation") in {"shop", "strengthen", "delete_copy_exchange", "move_cards"}):
+                    try:
+                        matches = reward_reader.icons.scan(normalized_image(supplied_image), event["operation"])
+                        icon_matches = matches
+                        if event["kind"] == "move_cards_screen":
+                            index.write(json.dumps({"event_id": event["event_id"], "icon_matches": matches,
+                                                    "game_action_confirmed": None}, ensure_ascii=False) + "\n")
+                        if matches:
+                            notice("页面图标识别", scope="icons", event_id=event["event_id"],
+                                   operation=event["operation"], icon_matches=matches)
+                    except Exception:
+                        from utils import logger
+                        logger.exception("页面图标缓存识别失败，继续原流程")
                 exam_tracker.observe(event)
                 if event["kind"] == "produce_session_end":
                     summary = settlement_console.finish(event.get("event_id"))
@@ -477,6 +493,8 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                         array = normalized_image(supplied_image)
                         tokens = vision._read_title(array, [0, 0, 720, 1280])
                         result = route_observation(tokens, catalog, event)
+                        if icon_matches is not None:
+                            result["icon_matches"] = icon_matches
                         if event["kind"] in ("settlement_observation", "exam_result_observation"):
                             result.update(settlement_observation(tokens, lambda roi: vision._read_title(array, roi),
                                                                  lambda definition: vision.match_buff_templates(array, definition)))

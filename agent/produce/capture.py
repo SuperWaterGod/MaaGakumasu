@@ -127,6 +127,11 @@ class DecisionCapture:
         from .analysis import analyze_stream
 
         def notice(message, **extra):
+            if extra.get("scope") == "icons":
+                if self._console:
+                    from .console import format_icon_matches
+                    self._console(format_icon_matches(extra["operation"], extra["icon_matches"]))
+                return
             if self._emit_console(message) and extra.get("event_id"):
                 self._console_event = extra["event_id"]
 

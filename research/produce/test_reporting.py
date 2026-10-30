@@ -459,6 +459,25 @@ class ReportingTest(unittest.TestCase):
         self.assertIn("选择删除、复制或变换对象", html)
         self.assertIn("实际效果未确认", html)
 
+    def test_report_shows_icon_names_without_claiming_availability(self):
+        for node in ("ProduceChooseStrengthenFlag", "ProduceChooseDeleteClick", "ProduceShoppingBuy"):
+            event = self.add("route_before", node=node, frame=True)
+            self.results[event["event_id"]] = {
+                "icon_matches": [{"database_name": "合成<卡>", "variant_verified": False}] * 2}
+        event = self.add("route_before", node="ProduceShoppingExit", frame=True)
+        self.results[event["event_id"]] = {"icon_matches": []}
+        event = self.add("move_cards_screen", operation="move_cards", frame=True)
+        self.results[event["event_id"]] = {"icon_matches": [{"database_name": "移动卡"}]}
+        report = self.write()
+        html = Path(report["report_path"]).read_text(encoding="utf-8")
+        self.assertEqual(html.count("合成&lt;卡&gt; ×2"), 3)
+        self.assertIn("移动卡 ×1", html)
+        self.assertIn("未命中缓存中的已知图标", html)
+        self.assertIn("强化、可选状态及实际获得情况未核验", html)
+        self.assertNotIn("<卡>", html)
+        rows = [row for row in report["timeline"] if row["kind"] == "route_before"]
+        self.assertEqual(len(rows[0]["detail"]["icon_matches"]), 2)
+
     def test_report_collapses_images_and_omits_empty_choice_changes(self):
         self.add("option_choice", title="工作选择", action="点击第2项", frame=True)
         self.add("option_choice", title="属性选择", action="点击声乐")

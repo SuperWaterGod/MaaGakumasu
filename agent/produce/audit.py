@@ -298,7 +298,7 @@ def enrich_report(report, records, directory, capture_root):
     timeline = []
     kinds = {"preparation_observation", "produce_session_start", "produce_session_resume", "produce_gameplay_entry", "produce_session_end",
              "produce_event_choice", "produce_event_input_result", "route_before", "route_input_result", "route_after",
-             "settlement_observation", "exam_result_observation", "decision_before", "decision_after",
+             "settlement_observation", "exam_result_observation", "decision_before", "decision_after", "move_cards_screen",
              "battle_entry", "battle_exit", "battle_invocation_start", "battle_invocation_end", "pipeline_action", "pipeline_failure", "option_choice", "exam_failure_or_retry"}
     for entry in valid:
         event = entry["event"]
@@ -320,6 +320,10 @@ def enrich_report(report, records, directory, capture_root):
             detail["teacher_suggestion"] = event.get("teacher_suggestion")
         if kind == "route_before":
             detail["visible_candidates"] = [c.get("identity", {}).get("database_name") for c in obs.get("candidates", [])]
+        if kind in ("route_before", "move_cards_screen"):
+            link = ((entry.get("derived") or {}).get("link") or {})
+            if "icon_matches" in obs or "icon_matches" in link:
+                detail["icon_matches"] = obs.get("icon_matches", link.get("icon_matches"))
         if kind == "reward_page_start":
             detail["candidates"] = event.get("layout", {}).get("candidates")
         if kind == "reward_candidate_preview":

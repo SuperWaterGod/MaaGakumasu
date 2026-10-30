@@ -68,7 +68,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 
 - `agent/`：Python 自定义逻辑扩展，供 MaaFramework 的 Custom recognition/action 调用。
 - `agent/custom/action/produce.py`：MaaFramework 培育动作入口，显式导入注册事件、出牌、选项动作，并处理奖励领取的框架适配；注册名称与流水线保持一致。
-- `agent/produce/`：培育业务模块。`events.py` 管理事件选择，`battle.py` 管理出牌/饮料/15 秒兜底，`options.py` 管理工作/属性/试镜/饮料保留等选项；`catalog.py` 统一技能卡、饮料与 P 道具查库；`rewards.py` 聚合奖励预览、身份缓存和名称读取；`capture.py` 管理同步证据保存与内存识别，`sessions.py` 管理整轮生命周期及 sinks；`state.py` 读取战斗 HUD 与共享培育状态；`reporting.py` / `audit.py` 负责单轮回放、同步收尾和审计；`analysis.py` 执行同步识别与路线分析；`console.py` 统一出牌/奖励日志及库效果文案。
+- `agent/produce/`：培育业务模块。`events.py` 管理事件选择，`battle.py` 管理出牌/饮料/15 秒兜底，`options.py` 管理工作/属性/试镜/饮料保留等选项；`catalog.py` 统一技能卡、饮料与 P 道具查库；`rewards.py` 聚合奖励预览、详情缓存和名称读取；`icon_cache.py` 统一奖励本体图标缓存、分类存储和各页面只读匹配；`capture.py` 管理同步证据保存与内存识别，`sessions.py` 管理整轮生命周期及 sinks；`state.py` 读取战斗 HUD 与共享培育状态；`reporting.py` / `audit.py` 负责单轮回放、同步收尾和审计；`analysis.py` 执行同步识别与路线分析；`console.py` 统一出牌/奖励日志及库效果文案。
 - `agent/utils/`：仅放通用基础设施，当前为日志和 MaaFramework 图像接口；培育专用业务不得继续散放在此。
 - `agent/produce/settlement.py`：统一结算页的最终评价分数、评级及 Vo/Da/Vi 读取；按文字标签或核验后的属性图标定位及 OCR，不按评级各建模板；初 REGULAR/PRO/MASTER 与 NIA 的公式值、实测值分开保存并作一致性校验，控制台按段输出一条折叠结算日志；考前倒推暂不接入。翻页证据由 `sessions.py` 监听结束阶段的现有输入保存，同步识别及跨分段汇总分别接入 `analysis.py` 和 `research/produce/report_produce_session.py`。
 - `assets/resource/base/pipeline/`：MaaFramework 任务流水线。自动培育通用核心逻辑在 `Produce.json`，NIA 相关流程在 `ProduceNIA.json`，共用节点在 `ProduceUtils.json`。

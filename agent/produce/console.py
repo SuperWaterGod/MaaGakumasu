@@ -306,7 +306,7 @@ class OperationConsole:
 
 
 def preview_name(result):
-    if not result or not (result.get("detail_verified") or result.get("identity_verified")):
+    if not result or not (result.get("detail_verified") or result.get("identity_verified") or result.get("art_identity_verified")):
         return "牌名未确认"
     identity = result.get("identity") or {}
     canonical = identity.get("database_name") if identity.get("status") == "matched" else None
@@ -358,7 +358,8 @@ class RewardConsole:
             result = page["previews"].get(candidate_id) or {}
             marker = "→ " if candidate_id == selected else ""
             known = (result.get("identity") or {}).get("status") == "matched"
-            suffix = "｜识别异常" if result.get("error") else "" if known else "｜未匹配"
+            suffix = ("｜识别异常" if result.get("error") else "" if known else
+                      "｜强化未核验" if result.get("art_identity_verified") else "｜未匹配")
             lines.append(f"{number}｜{marker}{preview_name(result)}" + suffix)
         readings = [result.get("reading") or {} for result in page["previews"].values()]
         matched = sum(reading.get("method") == "icon_cache" for reading in readings)
@@ -370,6 +371,17 @@ class RewardConsole:
 
     def unfinished(self):
         return [self.finish(page_id) for page_id in list(self.pending)]
+
+
+def format_icon_matches(operation, matches):
+    """只列出识别名称，整块保持单行且默认折叠，不加载图片。"""
+    from html import escape
+
+    name = {"shop": "商店", "strengthen": "强化", "delete_copy_exchange": "删除／复制／变换",
+            "move_cards": "移动"}.get(operation, "页面")
+    rows = [escape(match["database_name"]) for match in matches]
+    return (f'<details><summary>{name}｜图标命中 {len(matches)} 项</summary><p>'
+            + '<br/>'.join(rows) + '<br/>仅识别图标本体，强化、可选状态及实际获得情况未核验。</p></details>')
 
 
 def format_operation(title, rows):
