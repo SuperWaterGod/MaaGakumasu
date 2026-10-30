@@ -907,9 +907,6 @@
         "post_delay": 0
     },
     "ProduceChooseEventFlag": {
-    "focus": {
-      "Node.Recognition.Succeeded": "[color:LimeGreen]路线选择 - 进入事件页面[/color]"
-    },
         "recognition": {
             "type": "TemplateMatch",
             "param": {
@@ -937,7 +934,10 @@
                 "custom_action": "ProduceChooseEventAuto"
             }
         },
-        "post_delay": 0
+        "post_delay": 0,
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:LimeGreen]路线选择 - 进入事件页面[/color]"
+        }
     },
     "ProduceChooseGetFlag": {
         "recognition": {
@@ -1164,7 +1164,7 @@
         },
         "post_wait_freezes": 200,
         "focus": {
-      "Node.Action.Succeeded": "强化选择 - 已点击选牌",
+            "Node.Action.Succeeded": "强化选择 - 已点击选牌",
             "Node.Recognition.Succeeded": "[color:DeepSkyBlue]强化选择－进入选牌页面[/color]"
         },
         "next": [
@@ -1173,9 +1173,6 @@
         ]
     },
     "ProduceChooseStrengthen": {
-    "focus": {
-      "Node.Action.Succeeded": "强化选择 - 已点击强化按钮"
-    },
         "recognition": {
             "type": "TemplateMatch",
             "param": {
@@ -1187,6 +1184,9 @@
             "param": {}
         },
         "post_wait_freezes": 200,
+        "focus": {
+            "Node.Action.Succeeded": "强化选择 - 已点击强化按钮"
+        },
         "next": [
             "ProduceChooseStrengthen",
             "ProduceChooseStrengthenConfirm",
@@ -1236,7 +1236,7 @@
         },
         "post_wait_freezes": 500,
         "focus": {
-      "Node.Action.Succeeded": "卡牌调整 - 已点击选牌",
+            "Node.Action.Succeeded": "卡牌调整 - 已点击选牌",
             "Node.Recognition.Succeeded": "[color:DeepSkyBlue]卡牌调整－进入删除/复制/变换页面[/color]"
         },
         "next": [
@@ -1244,9 +1244,6 @@
         ]
     },
     "ProduceChooseDeleteClick": {
-    "focus": {
-      "Node.Action.Succeeded": "卡牌调整 - 已点击删除／复制／变换按钮"
-    },
         "recognition": {
             "type": "TemplateMatch",
             "param": {
@@ -1261,6 +1258,9 @@
         "action": {
             "type": "Click",
             "param": {}
+        },
+        "focus": {
+            "Node.Action.Succeeded": "卡牌调整 - 已点击删除／复制／变换按钮"
         },
         "post_wait_freezes": 500
     },

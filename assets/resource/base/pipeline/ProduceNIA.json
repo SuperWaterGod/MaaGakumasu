@@ -28,9 +28,6 @@
     ]
   },
   "ProduceChooseNIAEventFlag": {
-    "focus": {
-      "Node.Recognition.Succeeded": "[color:LimeGreen]路线选择 - 进入事件页面[/color]"
-    },
     "recognition": {
       "type": "TemplateMatch",
       "param": {
@@ -65,7 +62,10 @@
         }
       }
     },
-    "post_delay": 0
+    "post_delay": 0,
+    "focus": {
+      "Node.Recognition.Succeeded": "[color:LimeGreen]路线选择 - 进入事件页面[/color]"
+    }
   },
   "ProduceNIAButton": {
     "recognition": {

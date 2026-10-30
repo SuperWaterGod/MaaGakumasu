@@ -109,7 +109,7 @@
       170
     ],
     "threshold": 0.9
-    },
+  },
   "ShoppingCoinGachaBuy": {
     "recognition": {
       "type": "OCR",
@@ -126,9 +126,9 @@
           "非凡扭蛋"
         ],
         "roi": [
-          40, 
-          280, 
-          300, 
+          40,
+          280,
+          300,
           900
         ]
       }
