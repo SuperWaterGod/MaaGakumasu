@@ -22,6 +22,41 @@ def observation(entry):
     return ((entry.get("derived") or {}).get("observation") or {})
 
 
+def card_adjustment(event, obs):
+    """按页面标题和按钮细分共用节点；预览名称不视为操作成功证据。"""
+    node = event.get("node", "")
+    if node not in {"ProduceChooseDeleteFlag", "ProduceChooseDeleteClick", "ProduceChooseStrengthenFlag",
+                    "ProduceChooseStrengthenClick", "ProduceChooseStrengthen"}:
+        return None
+    strengthen = "Strengthen" in node
+    confirm = node in {"ProduceChooseDeleteClick", "ProduceChooseStrengthen"}
+    evidence = []
+    kinds = set()
+    for token in obs.get("raw_ocr", []):
+        x, y, w, h = token.get("box", [0, 0, 0, 0])
+        if token.get("confidence", 0) < .8 or not ((0 <= x < 190 and 20 <= y < 90) or (200 <= x < 500 and 1100 <= y < 1210)):
+            continue
+        text = token.get("text", "")
+        for kind, words in {"delete": ("削除", "除去", "删除", "刪除", "移除"),
+                            "copy": ("コピー", "复制", "複製"),
+                            "exchange": ("チェンジ", "变换", "變換"),
+                            "strengthen": ("強化", "强化")}.items():
+            if any(word in text for word in words):
+                kinds.add(kind)
+                evidence.append(token)
+    operation = "strengthen" if strengthen else next(iter(kinds)) if len(kinds) == 1 and "strengthen" not in kinds else None
+    previews = {}
+    if confirm:
+        for key, top, bottom in (("target", 90, 200), ("upgraded_preview", 390, 500)):
+            if key == "upgraded_preview" and not strengthen:
+                continue
+            names = {c.get("identity", {}).get("database_name") for c in obs.get("candidates", [])
+                     if 170 <= c.get("name_box", [0, 0])[0] < 500 and top <= c.get("name_box", [0, 0])[1] < bottom}
+            names.discard(None)
+            previews[key] = next(iter(names)) if len(names) == 1 else None
+    return {"operation": operation, "stage": "confirm" if confirm else "select", "evidence": evidence, **previews}
+
+
 def analysis_records(path):
     """逐行读取识别结果；相同截图通过事件引用复用，不重复存整份结果。"""
     values = {}
@@ -320,6 +355,9 @@ def enrich_report(report, records, directory, capture_root):
             detail["teacher_suggestion"] = event.get("teacher_suggestion")
         if kind == "route_before":
             detail["visible_candidates"] = [c.get("identity", {}).get("database_name") for c in obs.get("candidates", [])]
+            adjustment = card_adjustment(event, obs)
+            if adjustment:
+                detail["card_adjustment"] = adjustment
         if kind in ("route_before", "move_cards_screen"):
             link = ((entry.get("derived") or {}).get("link") or {})
             if "icon_matches" in obs or "icon_matches" in link:

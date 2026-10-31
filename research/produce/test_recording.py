@@ -565,6 +565,31 @@ class RecordingTest(unittest.TestCase):
         icon.write_bytes(b"corrupt")
         self.assertIsNone(self.identity_cache(cache.directory, hashes).lookup(self.image, event["candidate"]["box"]))
 
+    def test_reward_cache_searches_small_offsets_without_matching_neighbor(self):
+        cache = self.identity_cache(self.directory / "offset_cache")
+        art = np.random.default_rng(73).integers(30, 230, (128, 128, 3), dtype=np.uint8)
+        original = np.zeros_like(self.image)
+        original[800:928, 100:228] = art
+        event = {"kind": "reward_candidate_preview", "event_id": "synthetic:offset",
+                 "candidate": {"box": [100, 800, 128, 128]}}
+        observation = {"detail_verified": True, "identity": {"status": "matched", "catalog_id": "offset",
+                       "database_name": "合成彩色卡", "item_kind": "skill_card"}}
+        self.assertEqual(cache.learn(original, event, observation), "stored")
+        for dx, dy in [(0, 0), (-2, -2), (-1, 1), (1, -1), (2, 2)]:
+            with self.subTest(dx=dx, dy=dy):
+                image = np.zeros_like(original)
+                image[800 + dy:928 + dy, 100 + dx:228 + dx] = art
+                self.assertEqual(cache.lookup(image, event["candidate"]["box"])["catalog_id"], "offset")
+        # 同一模板只出现在搜索范围外或相邻卡位时，不能认成当前候选。
+        for dx in (5, 140):
+            image = np.zeros_like(original)
+            image[800:928, 100 + dx:228 + dx] = art
+            self.assertIsNone(cache.lookup(image, event["candidate"]["box"]))
+        # 屏幕边缘只裁去不存在的搜索余量，不补像素或改变图标尺度。
+        edge = np.zeros_like(original)
+        edge[:128, :128] = art
+        self.assertEqual(cache.lookup(edge, [0, 0, 128, 128])["catalog_id"], "offset")
+
     def test_shared_cache_scope_independent_of_session(self):
         scope = {"version": 2, "layout": "synthetic", "language_layout": "ja", "catalog_hashes": {"skill_cards": "s"}}
         directories = [self.directory / "first", self.directory / "second"]
@@ -613,6 +638,40 @@ class RecordingTest(unittest.TestCase):
         self.assertEqual(len(list((cache.directory / "skill_card").glob("*.png"))), 1)
         self.assertEqual(cache.lookup(changed, event["candidate"]["box"])["database_name"], "合成卡")
 
+    def test_selected_confirmation_learns_only_verified_top_preview(self):
+        from copy import deepcopy
+        from utils.image_io import resize_image
+        cache = self.identity_cache(self.directory / "selected_cache")
+        image = self.image.copy()
+        image[109:253, 36:180] = resize_image(self.image[790:918, 55:183], 144, 144)
+        event = {"kind": "route_before", "node": "ProduceChooseStrengthen", "event_id": "synthetic"}
+        observation = {"raw_ocr": [{"text": "強化", "confidence": .99, "box": [55, 34, 70, 40]}],
+                       "candidates": [{"name_box": [193, 106, 200, 32], "identity": {
+                           "status": "matched", "match_method": "exact", "ocr_confidence": .99,
+                           "database_card_id": "base", "database_name": "合成卡", "observed_plus_count": 0}},
+                           {"name_box": [193, 405, 200, 32], "identity": {"database_name": "错误的下方预览"}}]}
+        for change in ("low_confidence", "ambiguous", "missing_header", "wrong_node"):
+            candidate = deepcopy(observation)
+            current = dict(event)
+            if change == "low_confidence":
+                candidate['candidates'][0]['identity']['ocr_confidence'] = .8
+            elif change == "ambiguous":
+                candidate['candidates'].append(deepcopy(candidate['candidates'][0]))
+            elif change == "missing_header":
+                candidate['raw_ocr'] = []
+            else:
+                current['node'] = 'ProduceChooseStrengthenClick'
+            self.assertIsNone(cache.learn(image, current, candidate))
+            self.assertFalse(cache.path.exists())
+        self.assertEqual(cache.learn(image, event, observation), 'stored')
+        self.assertEqual(cache._load()['entries'][0]['database_name'], '合成卡')
+        self.assertEqual(cache._load()['entries'][0]['source_kind'], 'route_before')
+        for title in ('削除', 'コピー', 'チェンジ'):
+            event['node'] = 'ProduceChooseDeleteClick'
+            observation['raw_ocr'][0]['text'] = title
+            self.assertEqual(cache.learn(image, event, observation), 'reused')
+        self.assertEqual(len(cache._load()['entries']), 1)
+
     def test_icon_scan_native_scaled_page_and_read_only(self):
         from utils.image_io import resize_image
         cache = self.identity_cache(self.directory / "scan_cache")
@@ -629,8 +688,34 @@ class RecordingTest(unittest.TestCase):
         self.assertFalse(hits[0]["variant_verified"])
         self.assertEqual(before, cache.path.read_bytes())
         self.assertEqual(cache.scan(page, "unsupported"), [])
+        cache._scan_cache = None
         cache.recognize = lambda *args: [SimpleNamespace(score=.7, box=[52, 42, 56, 64])]
         self.assertEqual(cache.scan(page, "strengthen"), [])
+
+    def test_icon_scan_reuses_frame_and_rejects_dimmed_art(self):
+        from utils.image_io import resize_image
+        cache = self.identity_cache(self.directory / "scan_brightness")
+        image = self.image.copy()
+        rng = np.random.default_rng(12)
+        image[790:918, 55:183] = resize_image(rng.integers(80, 240, (12, 12, 3), dtype=np.uint8), 128, 128)
+        event = {"kind": "reward_candidate_preview", "event_id": "synthetic", "candidate": {"box": [55, 790, 128, 128]}}
+        cache.learn(image, event, {"detail_verified": True, "identity": {"status": "matched", "catalog_id": "base",
+                    "database_name": "合成卡", "item_kind": "skill_card"}})
+        page = np.zeros_like(image)
+        tile = resize_image(image[790:918, 55:183], 120, 120)
+        page[700:820, 80:200] = tile
+        page[700:820, 230:350] = (tile * .5).astype(np.uint8)
+        # 使用平滑合成图标避免随机高频纹理被双重缩放破坏。
+        with patch.object(cache, 'recognize', wraps=cache.recognize) as recognize:
+            hits = cache.scan(page, "strengthen")
+            self.assertEqual(len(hits), 1)
+            count = recognize.call_count
+            hits[0]['database_name'] = '调用方修改'
+            self.assertEqual(cache.scan(page, "strengthen")[0]['database_name'], '合成卡')
+            self.assertEqual(recognize.call_count, count)
+            page[700:820, 80:200] = (tile * .5).astype(np.uint8)
+            self.assertEqual(cache.scan(page, "strengthen"), [])
+            self.assertGreater(recognize.call_count, count)
 
     def test_green_mask_distinguishes_art_outside_old_center_crop(self):
         from produce.icon_cache import icon_mask, icon_image
@@ -796,7 +881,8 @@ class RecordingTest(unittest.TestCase):
             calls.clear()
             match = cache.lookup(self.image, [55, 790, 150, 150], "drink")
             self.assertEqual(match["catalog_id"], "drink")
-            self.assertEqual(calls, [["drink"]])
+            self.assertTrue(calls)
+            self.assertTrue(all(group == ["drink"] for group in calls))
         with patch.object(cache, "_load", return_value={"entries": entries[:2], "catalog_hashes": {}}), patch.object(cache, "_score", return_value=1.):
             self.assertFalse(cache.lookup(self.image, [55, 790, 150, 150], "skill_card")["variant_verified"])
 

@@ -455,9 +455,35 @@ class ReportingTest(unittest.TestCase):
             self.add("route_input_result", node=node, decision_id=before["event_id"], framework_action_succeeded=True)
         self.write()
         html = (self.directory / "report.html").read_text(encoding="utf-8")
-        self.assertIn("确认强化", html)
-        self.assertIn("选择删除、复制或变换对象", html)
+        self.assertIn("点击强化按钮", html)
+        self.assertIn("点击卡牌调整按钮（类型未识别）", html)
         self.assertIn("实际效果未确认", html)
+
+    def test_adjustment_type_and_preview_are_separate_from_success(self):
+        from produce.audit import card_adjustment
+        for title, kind, name in (("削除", "delete", "删除"), ("コピー", "copy", "复制"), ("チェンジ", "exchange", "变换")):
+            event = self.add("route_before", node="ProduceChooseDeleteClick", frame=True)
+            self.results[event["event_id"]] = {
+                "raw_ocr": [{"text": title, "confidence": .99, "box": [20, 30, 120, 40]}],
+                "candidates": [{"identity": {"database_name": "合成卡"}, "name_box": [193, 106, 200, 32]}]}
+            self.assertEqual(card_adjustment(event, self.results[event['event_id']])["operation"], kind)
+        event = self.add("route_before", node="ProduceChooseStrengthen", frame=True)
+        self.results[event["event_id"]] = {"candidates": [
+            {"identity": {"database_name": name}, "name_box": [193, y, 200, 32]}
+            for name, y in (("合成卡", 106), ("合成卡+", 405), ("其他卡", 800))]}
+        report = self.write()
+        html = Path(report["report_path"]).read_text(encoding="utf-8")
+        for name in ("删除", "复制", "变换", "强化"):
+            self.assertIn(f"点击{name}按钮", html)
+        self.assertIn('确认页对象</th><td>合成卡', html)
+        self.assertIn('强化后预览</th><td>合成卡+', html)
+        self.assertIn("实际效果未确认", html)
+        event = {"node": "ProduceChooseDeleteFlag"}
+        tokens = [{"text": "コピー", "confidence": .99, "box": [300, 450, 100, 40]}]
+        self.assertIsNone(card_adjustment(event, {"raw_ocr": tokens})["operation"])
+        tokens = [{"text": title, "confidence": .99, "box": box} for title, box in
+                  (("削除", [20, 30, 100, 40]), ("コピー", [300, 1130, 100, 40]))]
+        self.assertIsNone(card_adjustment(event, {"raw_ocr": tokens})["operation"])
 
     def test_report_shows_icon_names_without_claiming_availability(self):
         for node in ("ProduceChooseStrengthenFlag", "ProduceChooseDeleteClick", "ProduceShoppingBuy"):

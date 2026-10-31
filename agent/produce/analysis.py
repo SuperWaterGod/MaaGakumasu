@@ -434,9 +434,8 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                         if event["kind"] == "move_cards_screen":
                             index.write(json.dumps({"event_id": event["event_id"], "icon_matches": matches,
                                                     "game_action_confirmed": None}, ensure_ascii=False) + "\n")
-                        if matches:
-                            notice("页面图标识别", scope="icons", event_id=event["event_id"],
-                                   operation=event["operation"], icon_matches=matches)
+                        notice("页面图标识别", scope="icons", event_id=event["event_id"],
+                               operation=event["operation"], icon_matches=matches)
                     except Exception:
                         from utils import logger
                         logger.exception("页面图标缓存识别失败，继续原流程")
@@ -493,6 +492,14 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                         array = normalized_image(supplied_image)
                         tokens = vision._read_title(array, [0, 0, 720, 1280])
                         result = route_observation(tokens, catalog, event)
+                        if reward_reader.icons and event["kind"] == "route_before":
+                            try:
+                                learned = reward_reader.icons.learn(array, event, result)
+                                if learned:
+                                    result["selected_icon_cache_write"] = learned
+                            except Exception:
+                                from utils import logger
+                                logger.exception("已选卡牌图标缓存学习失败，继续原流程")
                         if icon_matches is not None:
                             result["icon_matches"] = icon_matches
                         if event["kind"] in ("settlement_observation", "exam_result_observation"):

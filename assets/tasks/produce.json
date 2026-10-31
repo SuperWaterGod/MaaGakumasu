@@ -557,7 +557,8 @@
               "next": [
                 "ProduceNIAFailedRetry",
                 "ProduceNIAFailedRetryLastChallenge",
-                "ProduceNIAFailedRetryConfirm"
+                "ProduceNIAFailedRetryConfirm",
+                "[JumpBack]Click_1"
               ]
             }
           }

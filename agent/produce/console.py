@@ -380,6 +380,8 @@ def format_icon_matches(operation, matches):
     name = {"shop": "商店", "strengthen": "强化", "delete_copy_exchange": "删除／复制／变换",
             "move_cards": "移动"}.get(operation, "页面")
     rows = [escape(match["database_name"]) for match in matches]
+    if not rows:
+        rows = ["未命中缓存中的已知图标；不代表没有可选项。"]
     return (f'<details><summary>{name}｜图标命中 {len(matches)} 项</summary><p>'
             + '<br/>'.join(rows) + '<br/>仅识别图标本体，强化、可选状态及实际获得情况未核验。</p></details>')
 

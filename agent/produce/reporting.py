@@ -380,9 +380,9 @@ def render_replay(report):
                     "existing_use_all_drinks": "使用现有饮料", "no_cards_ocr": "未发现手牌"}
     action_names = {"play_card": "出牌", "use_drink_task": "使用饮料", "skip_round": "跳过回合", "move_cards": "移动卡牌"}
     node_names = {"ProduceShoppingBuy": "点击购买", "ProduceShoppingBuySale": "点击折扣商品", "ProduceShoppingDecide": "确认购物",
-                  "ProduceShoppingExit": "离开商店", "ProduceChooseStrengthenFlag": "进入强化并选择对象",
-                  "ProduceChooseDeleteFlag": "进入删除、复制或变换并选择对象", "ProduceChooseStrengthen": "确认强化", "ProduceChooseStrengthenClick": "选择强化对象",
-                  "ProduceChooseDeleteClick": "选择删除、复制或变换对象", "ProduceChooseConfirm": "确认选择",
+                  "ProduceShoppingExit": "离开商店", "ProduceChooseStrengthenFlag": "点击强化选牌位置",
+                  "ProduceChooseDeleteFlag": "点击卡牌调整选牌位置", "ProduceChooseStrengthen": "点击强化按钮", "ProduceChooseStrengthenClick": "点击强化选牌位置",
+                  "ProduceChooseDeleteClick": "点击卡牌调整按钮（类型未识别）", "ProduceChooseConfirm": "确认选择",
                   "ProduceGeneration": "点击生成", "ProduceFinished": "完成结算",
                   "ProduceNIAFailedRetryLastChallenge": "尝试选择上次挑战的下一档试镜（实际档位未核验）",
                   "ProduceNIAFailedRetryConfirm": "确认重试试镜", "ProduceFailedRetryConfirm": "确认重试考试"}
@@ -555,6 +555,11 @@ def render_replay(report):
             node = detail["node"]
             event = "卡牌调整" if "ChooseDelete" in node else "强化" if "Strengthen" in node else "商店"
             operation = node_names.get(node, "观察当前页面")
+            adjustment = detail.get("card_adjustment") or {}
+            adjustment_name = {"delete": "删除", "copy": "复制", "exchange": "变换", "strengthen": "强化"}.get(adjustment.get("operation"))
+            if adjustment_name:
+                event = adjustment_name
+                operation = f"点击{adjustment_name}按钮" if adjustment.get("stage") == "confirm" else f"点击{adjustment_name}选牌位置"
             following = after.get(row["evidence"]["event_id"])
             if not following:
                 operation += "（执行结果未记录）"
@@ -616,6 +621,11 @@ def render_replay(report):
             lines.append(table_row('识别范围', '仅识别当前可见图标本体；强化、可选状态及实际获得情况未核验，不代表完整列表。'))
         elif kind == "route_before" and detail.get("visible_candidates"):
             lines.append(table_row('当前画面文字识别', '、'.join(name for name in detail['visible_candidates'] if name)))
+        adjustment = detail.get("card_adjustment") or {}
+        if adjustment.get("stage") == "confirm":
+            lines.append(table_row('确认页对象', adjustment.get('target') or '未识别'))
+            if adjustment.get("operation") == "strengthen":
+                lines.append(table_row('强化后预览', adjustment.get('upgraded_preview') or '未识别'))
         if changes or event not in {"奖励选择", "工作选择", "属性选择"}:
             lines.append(table_row('观察变化', changes or '未确认'))
         lines.append('</tbody></table></div>')

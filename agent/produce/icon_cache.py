@@ -1,9 +1,10 @@
-"""奖励图标的共享本体缓存与只读页面检索；图像缩放和匹配使用 MaaFramework。"""
+"""已核验名称的共享本体图标缓存与只读页面检索。"""
 
 import os
 import json
 import math
 import hashlib
+from copy import deepcopy
 from pathlib import Path
 from contextlib import contextmanager
 
@@ -55,6 +56,7 @@ class RewardIdentityCache:
         self._stamp = None
         self._data = None
         self._icons = {}
+        self._scan_cache = None
 
     def _load(self):
         try:
@@ -109,14 +111,15 @@ class RewardIdentityCache:
         return max((float(item.score) for item in results if math.isfinite(float(item.score))), default=0.0)
 
     def scan(self, image, operation):
-        """只检索当前画面的候选区域，不学习、不点击、不推断强化及可用状态。"""
+        """检索外观一致的当前图标，排除明显变暗项；不据此确认可选或获得。"""
         from maa.pipeline import JTemplateMatch, JRecognitionType
 
         layouts = {
             "shop": ([50, 465, 620, 345], (128,), None),
-            "strengthen": ([65, 690, 600, 420], (119, 120), "skill_card"),
-            "delete_copy_exchange": ([65, 390, 600, 720], (119, 120), "skill_card"),
-            "move_cards": ([65, 390, 600, 720], (119, 120, 128), "skill_card"),
+            # 119/120 是同一布局的取整差异，统一按 120 检索，避免重复全区域扫描。
+            "strengthen": ([65, 690, 600, 420], (120,), "skill_card"),
+            "delete_copy_exchange": ([65, 390, 600, 720], (120,), "skill_card"),
+            "move_cards": ([65, 390, 600, 720], (120, 128), "skill_card"),
         }
         data = self._load()
         if operation not in layouts or not data or self.recognize is None:
@@ -125,6 +128,9 @@ class RewardIdentityCache:
         if image.shape != (1280, 720, 3):
             return []
         (x, y, w, h), sizes, kind = layouts[operation]
+        key = (operation, self._stamp, hashlib.sha256(image[y:y + h, x:x + w].tobytes()).digest())
+        if self._scan_cache is not None and self._scan_cache[0] == key:
+            return deepcopy(self._scan_cache[1])
         hits = []
         for size in sizes:
             scale = ICON_SIZE / size
@@ -136,19 +142,31 @@ class RewardIdentityCache:
                 if not paths:
                     continue
                 results = self.recognize(JRecognitionType.TemplateMatch,
-                                         JTemplateMatch(template=paths, threshold=[.75], method=5, green_mask=True), scene)
+                                         JTemplateMatch(template=paths, threshold=[.08], method=1, green_mask=True), scene)
                 for result in results:
-                    # all_results 包含未过阈值的最佳候选，必须独立验收分数。
-                    if not math.isfinite(float(result.score)) or float(result.score) < .75:
+                    # 平方差越小越接近；all_results 仍需显式验收，不能沿用相关系数的高分规则。
+                    difference = float(result.score)
+                    if not math.isfinite(difference) or not 0 <= difference <= .08:
                         continue
                     left, top, _, _ = result.box
+                    left, top = int(left), int(top)
+                    crop = scene[top:top + ICON_SIZE, left:left + ICON_SIZE]
+                    if crop.shape != (ICON_SIZE, ICON_SIZE, 3):
+                        continue
+                    # 再验证卡面结构，避免低对比度、颜色相近的不同卡通过平方差筛选。
+                    verified = self.recognize(JRecognitionType.TemplateMatch,
+                                             JTemplateMatch(template=paths, threshold=[.80], method=5, green_mask=True), crop)
+                    score = max((float(item.score) for item in verified if math.isfinite(float(item.score))), default=0.)
+                    if score < .80:
+                        continue
                     # 匹配框就是完整图标，映射回原图；仅保留完整可见项。
                     bx, by = x + left / scale, y + top / scale
                     if bx < x - 3 or by < y - 3 or bx + size > x + w + 3 or by + size > y + h + 3:
                         continue
                     hits.append({"database_name": entry["database_name"], "item_kind": entry["item_kind"],
                                  "icon_path": paths[0], "box": [round(bx), round(by), size, size],
-                                 "similarity": round(float(result.score), 4), "variant_verified": False})
+                                 "similarity": round(score, 4), "appearance_difference": round(difference, 4),
+                                 "variant_verified": False})
         # 合并同位置的多尺度命中；同位置不同身份分数接近时保留未知。
         accepted = []
         while hits:
@@ -162,14 +180,23 @@ class RewardIdentityCache:
                    and best["similarity"] - hit["similarity"] < .05 for hit in neighbors):
                 continue
             accepted.append(best)
-        return sorted(accepted, key=lambda hit: (round(hit["box"][1] / 20), hit["box"][0]))
+        accepted = sorted(accepted, key=lambda hit: (round(hit["box"][1] / 20), hit["box"][0]))
+        self._scan_cache = (key, deepcopy(accepted))
+        return accepted
 
     def lookup(self, image, box, item_kind=None):
         data = self._load()
         if not data:
             return None
-        icon = icon_image(image, box, masked=False)
+        aligned_icon = icon_image(image, box, masked=False)
         x, y, width, height = box
+        # 奖励裁框可能有少量像素偏差。保留原图标尺度，仅扩大搜索画布，
+        # 不把扩展后的区域压回 128×128，也不搜索整页中的其他候选。
+        left, top = max(0, x - 2), max(0, y - 2)
+        right, bottom = min(720, x + width + 2), min(1280, y + height + 2)
+        icon = resize_image(image[top:bottom, left:right],
+                            round((right - left) * ICON_SIZE / width),
+                            round((bottom - top) * ICON_SIZE / height))
         groups = {}
         for entry in data["entries"]:
             if item_kind and entry["item_kind"] != item_kind:
@@ -180,7 +207,11 @@ class RewardIdentityCache:
         families = []
         for entries in groups.values():
             try:
-                families.append((self._score(icon, entries), entries))
+                score = self._score(icon, entries)
+                if width != ICON_SIZE or height != ICON_SIZE:
+                    # 非标准尺寸扩大后取整会改变插值采样，保留原裁框作为额外候选。
+                    score = max(score, self._score(aligned_icon, entries))
+                families.append((score, entries))
             except (OSError, ValueError, KeyError, TypeError, RuntimeError):
                 continue
         families.sort(key=lambda item: item[0], reverse=True)
@@ -196,7 +227,31 @@ class RewardIdentityCache:
                 "method": "learned_icon_identity_only"}
 
     def learn(self, image, event, observation):
-        if event.get("kind") != "reward_candidate_preview":
+        if event.get("kind") == "route_before":
+            # 仅确认按钮前的已选对象详情；不学习列表、强化后预览或未知布局。
+            node = event.get("node")
+            titles = {"ProduceChooseStrengthen": ("強化", "强化"),
+                      "ProduceChooseDeleteClick": ("削除", "除去", "删除", "刪除", "移除", "コピー", "复制", "複製", "チェンジ", "变换", "變換")}
+            if node not in titles or observation.get("error"):
+                return None
+            headers = [token for token in observation.get("raw_ocr", [])
+                       if token.get("confidence", 0) >= .95 and 0 <= token["box"][0] < 190 and 20 <= token["box"][1] < 90]
+            if not any(any(word in token["text"] for word in titles[node]) for token in headers):
+                return None
+            names = [c for c in observation.get("candidates", [])
+                     if 185 <= c["name_box"][0] < 500 and 95 <= c["name_box"][1] < 150]
+            if len(names) != 1:
+                return None
+            identity = names[0].get("identity") or {}
+            if (identity.get("status") != "matched" or identity.get("match_method") != "exact"
+                    or identity.get("ocr_confidence", 0) < .95 or not identity.get("database_card_id")
+                    or identity.get("customization") or identity.get("observed_plus_count", 0) > 1):
+                return None
+            identity = {**identity, "item_kind": "skill_card", "catalog_id": identity["database_card_id"]}
+            # 720×1280 确认页左上详情图标，与右侧名称绑定；不从点击坐标猜测列表对象。
+            event = {**event, "candidate": {"box": [36, 109, 144, 144]}}
+            observation = {"identity": identity, "selected_name_verified": True}
+        elif event.get("kind") != "reward_candidate_preview":
             return None
         # 跨客户端进程序列化读改写；忙时跳过学习，不影响领取。
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -207,7 +262,7 @@ class RewardIdentityCache:
 
     def _learn(self, image, event, observation):
         identity = observation.get("identity") or {}
-        if (identity.get("item_kind") not in ITEM_KINDS or not observation.get("detail_verified") or identity.get("status") != "matched" or
+        if (identity.get("item_kind") not in ITEM_KINDS or not (observation.get("detail_verified") or observation.get("selected_name_verified")) or identity.get("status") != "matched" or
                 observation.get("reading", {}).get("fallback_reason") or event.get("customization_hint")):
             return
         icon = icon_image(image, event["candidate"]["box"], item_kind=identity["item_kind"])
@@ -235,6 +290,7 @@ class RewardIdentityCache:
         if not icon_path.exists():
             icon_path.write_bytes(encode_png(icon))
         entry = {"catalog_id": identity["catalog_id"], "database_name": name, "item_kind": identity["item_kind"],
+                 "source_kind": event["kind"],
                  "source_event_id": event["event_id"], "source_frame_sha256": event.get("frame", {}).get("sha256"),
                  "icon_path": icon_path.relative_to(self.directory).as_posix(), "icon_file_sha256": hashlib.sha256(icon_path.read_bytes()).hexdigest(),
                  "icon_pixel_sha256": pixel_sha}
