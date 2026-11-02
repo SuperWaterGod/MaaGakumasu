@@ -22,6 +22,7 @@ PNG_PATH = re.compile(r"images/(skillCards|pDrinks|pItems)/[1-9][0-9]*(?:_[1-9][
 SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 MAX_MANIFEST = 8 * 1024**2
 MAX_TOTAL = 1024**3
+MAX_INCREMENTAL_FILES = 256
 
 
 class UpdateCancelled(Exception):
@@ -128,7 +129,7 @@ def validate_catalogs(directory):
 class ResourceUpdater:
     """同步检查、下载和事务安装；网络失败不得破坏原有资源。"""
 
-    def __init__(self, root, base_url=DEFAULT_URL, *, stopping=None, log=None, timeout=20):
+    def __init__(self, root, base_url=DEFAULT_URL, *, stopping=None, log=None, debug=None, timeout=20):
         self.root = Path(root).resolve()
         self.data = data_directory(self.root)
         self.temp = self.root / "temp/produce_update"
@@ -140,6 +141,7 @@ class ResourceUpdater:
             raise ValueError("无效的更新地址")
         self.stopping = stopping or (lambda: False)
         self.log = log or (lambda message: None)
+        self.debug = debug or (lambda message: None)
         self.timeout = timeout
         self.work = None
         self.repairing = False
@@ -190,7 +192,7 @@ class ResourceUpdater:
             raise ValueError("更新清单过大")
         return json.loads(raw)
 
-    def download(self, suffix, target, size, digest):
+    def download(self, suffix, target, size, digest, *, progress=True):
         """按不可变 URL 续传；服务端忽略 Range 时从头下载。"""
         target = Path(target)
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -223,7 +225,7 @@ class ResourceUpdater:
                             if written > size:
                                 raise ValueError("下载内容超过声明大小")
                             stream.write(block)
-                            if size >= 1024**2 and (time.monotonic() - last_notice >= 2 or written == size):
+                            if progress and size >= 1024**2 and (time.monotonic() - last_notice >= 2 or written == size):
                                 self.log(f"下载进度：{written / 1024**2:.1f}/{size / 1024**2:.1f} MiB（{written * 100 / size:.0f}%）")
                                 last_notice = time.monotonic()
                 if target.stat().st_size != size:
@@ -235,7 +237,7 @@ class ResourceUpdater:
             except (OSError, ValueError) as exc:
                 if attempt == 2:
                     raise
-                self.log(f"下载重试 {attempt + 1}/2：{exc}")
+                self.log(f"下载重试 {attempt + 1}/2（{target.name}）：{exc}")
                 for _ in range(5):
                     self.check_stop()
                     time.sleep(.1)
@@ -372,12 +374,15 @@ class ResourceUpdater:
         self.work = self.temp / version
         self.work.mkdir(parents=True, exist_ok=True)
         manifest_file = self.work / "manifest.json"
-        self.download(f"/v1/releases/{version}/manifest.json", manifest_file, latest["manifest_size"], digest)
-        manifest = validate_manifest(json.loads(manifest_file.read_text(encoding="utf-8")))
+        state_file = self.data / STATE_NAME
+        if state_file.is_file() and state_file.stat().st_size == manifest_size and file_hash(state_file) == digest:
+            manifest = validate_manifest(json.loads(state_file.read_text(encoding="utf-8")))
+        else:
+            self.download(f"/v1/releases/{version}/manifest.json", manifest_file, manifest_size, digest)
+            manifest = validate_manifest(json.loads(manifest_file.read_text(encoding="utf-8")))
         if manifest["version"] != version:
             raise ValueError("下载清单版本不一致")
         previous = None
-        state_file = self.data / STATE_NAME
         if state_file.exists():
             try:
                 previous = validate_manifest(json.loads(state_file.read_text(encoding="utf-8")))
@@ -396,9 +401,9 @@ class ResourceUpdater:
             return {"status": "unchanged", "version": version, "updated": 0}
         required = sum(by_name[name]["size"] for name in changed)
         bundle = manifest["bundle"]
-        # 手工放置的图标也参与复用；只有完全没有可复用图标时才优先整包。
+        # 手工放置的图标也参与复用；没有可复用图标或增量请求过多时使用整包。
         reusable_icons = any(PNG_PATH.fullmatch(name) and name not in changed for name in by_name)
-        full = not reusable_icons or required >= bundle["size"]
+        full = not reusable_icons or len(changed) >= MAX_INCREMENTAL_FILES or required >= bundle["size"]
         needed = (sum(row["size"] for row in by_name.values()) + bundle["size"] if full else required)
         needed += sum(managed_path(self.data, name).stat().st_size for name in [*changed, *deleted] if managed_path(self.data, name).is_file())
         if shutil.disk_usage(self.work).free < needed + 32 * 1024**2:
@@ -410,10 +415,20 @@ class ResourceUpdater:
             self.download(f"/v1/releases/{version}/full.zip", archive, bundle["size"], bundle["sha256"])
             self.unpack(archive, stage, manifest)
         else:
+            last_notice = time.monotonic()
+            prepared = 0
             for index, name in enumerate(changed, 1):
                 entry = by_name[name]
-                self.log(f"下载资源 {index}/{len(changed)}：{name}")
-                self.download(f"/v1/objects/{entry['sha256']}", managed_path(stage, name), entry["size"], entry["sha256"])
+                self.debug(f"下载资源 {index}/{len(changed)}：{name}")
+                try:
+                    self.download(f"/v1/objects/{entry['sha256']}", managed_path(stage, name), entry["size"], entry["sha256"], progress=False)
+                except (OSError, ValueError):
+                    self.log(f"资源下载失败：{name}")
+                    raise
+                prepared += entry["size"]
+                if time.monotonic() - last_notice >= 2 or index == len(changed):
+                    self.log(f"增量更新进度：{index}/{len(changed)} 个文件，{prepared / 1024**2:.1f}/{required / 1024**2:.1f} MiB")
+                    last_notice = time.monotonic()
         # 数据库有未变化文件时借用正式文件校验，但不把整库复制进正式版本目录。
         for name in DATABASES:
             path = stage / name

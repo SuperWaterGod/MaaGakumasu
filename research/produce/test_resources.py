@@ -143,7 +143,54 @@ class ResourceTest(unittest.TestCase):
         self.assert_ready()
         self.requests.clear()
         self.assertEqual(self.updater.update()["status"], "unchanged")
-        self.assertFalse(any("/objects/" in path or path.endswith("/full.zip") for path, _ in self.requests))
+        self.assertEqual(self.requests, [("/v1/latest.json", None)])
+
+    def test_incremental_logs_are_aggregated_and_details_are_debug_only(self):
+        for number in range(1, 33):
+            self.add_image("skillCards", f"1_{number}.png")
+        self.publish()
+        self.updater.update()
+        names = [f"images/skillCards/1_{number}.png" for number in range(1, 9)]
+        for name in names:
+            (self.root / "data" / name).write_bytes(b"damaged")
+        info, debug = [], []
+        self.updater.log, self.updater.debug = info.append, debug.append
+        self.requests.clear()
+        result = self.updater.update()
+        self.assertEqual(result["updated"], len(names))
+        self.assertEqual(len(debug), len(names))
+        self.assertFalse(any("images/" in message for message in info))
+        self.assertTrue(any("增量更新进度：8/8" in message for message in info))
+        self.assertEqual(len([path for path, _ in self.requests if "/objects/" in path]), len(names))
+
+    def test_many_small_changes_use_one_bundle(self):
+        import zipfile
+
+        from produce.resources import MAX_INCREMENTAL_FILES
+
+        names = [f"images/skillCards/1_{number}.png" for number in range(1, MAX_INCREMENTAL_FILES + 1)]
+        for name in names:
+            self.add_image("skillCards", Path(name).name)
+        manifest, output = self.publish()
+        # 有效 ZIP 注释扩大整包，确保此次切换确实由请求数量触发。
+        with zipfile.ZipFile(output / "full.zip", "a") as archive:
+            archive.comment = b"synthetic" * 7000
+        manifest["bundle"] = {"size": (output / "full.zip").stat().st_size, "sha256": file_hash(output / "full.zip")}
+        atomic_json(output / "manifest.json", manifest)
+        latest = json.loads((output / "latest.json").read_text())
+        latest.update(manifest_size=(output / "manifest.json").stat().st_size, manifest_sha256=file_hash(output / "manifest.json"))
+        self.served["/v1/latest.json"] = json.dumps(latest).encode()
+        prefix = f"/v1/releases/{manifest['version']}"
+        self.served[prefix + "/manifest.json"] = (output / "manifest.json").read_bytes()
+        self.served[prefix + "/full.zip"] = (output / "full.zip").read_bytes()
+        self.updater.update()
+        for name in names:
+            (self.root / "data" / name).write_bytes(b"damaged")
+        required = sum(row["size"] for row in manifest["files"] if row["path"] in names)
+        self.assertLess(required, manifest["bundle"]["size"])
+        self.requests.clear()
+        self.assertEqual(self.updater.update()["updated"], MAX_INCREMENTAL_FILES)
+        self.assertEqual(self.requests, [("/v1/latest.json", None), (prefix + "/full.zip", None)])
 
     def test_incremental_reuses_manual_icons_and_repairs(self):
         manifest, output = self.publish()
@@ -191,11 +238,14 @@ class ResourceTest(unittest.TestCase):
         (self.root / "data" / first["path"]).write_bytes(b"original")
         before = (self.root / "data" / first["path"]).read_bytes()
         self.served[f"/v1/objects/{first['sha256']}"] = b"x" * first["size"]
+        logs = []
+        self.updater.log = logs.append
         with patch("produce.resources.time.sleep"):
             with self.assertRaises(ValueError):
                 self.updater.update()
         self.assertEqual((self.root / "data" / first["path"]).read_bytes(), before)
         self.assertFalse((self.root / "data" / PENDING_NAME).exists())
+        self.assertTrue(any(first["path"] in message for message in logs))
 
     def test_download_resume_and_cancellation(self):
         manifest, output = self.publish()
@@ -318,7 +368,9 @@ class ResourceTest(unittest.TestCase):
         self.publish()
         self.updater.update()
         (self.root / "data" / STATE_NAME).write_text("broken")
+        self.requests.clear()
         self.assertEqual(self.updater.update()["status"], "unchanged")
+        self.assertTrue(any(path.endswith("/manifest.json") for path, _ in self.requests))
         self.assert_ready()
 
     def test_parallel_updaters_do_not_share_a_transaction(self):

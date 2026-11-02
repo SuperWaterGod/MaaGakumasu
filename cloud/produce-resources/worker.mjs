@@ -16,7 +16,13 @@ export default {
             return new Response("Not Found", { status: 404 });
         }
         const key = path.slice(1);
-        const metadata = await env.PRODUCE_RESOURCES.head(key);
+        // 普通 GET 直接读取对象，元数据和内容来自同一次读取。
+        // HEAD 及需要 If-Range 校验的续传请求保留元数据检查。
+        const needsHead =
+            request.method === "HEAD" || request.headers.has("Range");
+        const metadata = needsHead
+            ? await env.PRODUCE_RESOURCES.head(key)
+            : await env.PRODUCE_RESOURCES.get(key);
         if (!metadata) return new Response("Not Found", { status: 404 });
         const etag = `"${metadata.customMetadata?.sha256 || metadata.etag}"`;
         const headers = new Headers({
@@ -34,10 +40,11 @@ export default {
         if (
             (request.headers.get("If-None-Match") || "")
                 .split(",")
-                .map((value) => value.trim())
+                .map((value) => value.trim().replace(/^W\//, ""))
                 .includes(etag) ||
             request.headers.get("If-None-Match") === "*"
         ) {
+            if ("body" in metadata) await metadata.body.cancel();
             return new Response(null, { status: 304, headers });
         }
         let range;
@@ -77,11 +84,13 @@ export default {
         headers.set("Content-Length", String(range?.length ?? metadata.size));
         if (request.method === "HEAD")
             return new Response(null, { status: range ? 206 : 200, headers });
-        // 使用内部 ETag 避免指针在 head/get 之间切换时发送错配的长度或响应头。
-        const object = await env.PRODUCE_RESOURCES.get(key, {
-            range,
-            onlyIf: { etagMatches: metadata.etag },
-        });
+        // 续传使用内部 ETag，拒绝两次读取之间被替换的对象。
+        const object = needsHead
+            ? await env.PRODUCE_RESOURCES.get(key, {
+                  range,
+                  onlyIf: { etagMatches: metadata.etag },
+              })
+            : metadata;
         if (!object || !("body" in object))
             return new Response("Resource changed; retry", { status: 503 });
         return new Response(object.body, {

@@ -40,7 +40,7 @@ class ProduceUpdateResources(CustomAction):
             logger.warning("存在活动培育会话，跳过数据库和素材更新")
             return True
         try:
-            updater = configured_updater(ROOT, stopping=lambda: context.tasker.stopping, log=logger.info)
+            updater = configured_updater(ROOT, stopping=lambda: context.tasker.stopping, log=logger.info, debug=logger.debug)
             result = updater.update()
             if result["status"] == "updated":
                 from produce.icons import load_gallery
