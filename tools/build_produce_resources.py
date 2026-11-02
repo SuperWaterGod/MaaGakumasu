@@ -11,6 +11,7 @@ import zipfile
 import argparse
 import subprocess
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 
 from PIL import Image
 
@@ -204,8 +205,16 @@ class Publisher:
         output = Path(output)
         version = manifest["version"]
         # 同时复用内容寻址对象，避免每个版本重复上传全部图标。
-        for entry in manifest["files"]:
+        def upload(entry):
             self.verified_upload(f"v1/objects/{entry['sha256']}", output / "payload" / entry["path"])
+
+        entries = list({entry["sha256"]: entry for entry in manifest["files"]}.values())
+        total = len(entries)
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            for count, _ in enumerate(pool.map(upload, entries), 1):
+                if count % 100 == 0 or count == total:
+                    print(f"R2 对象上传与校验：{count}/{total}", flush=True)
+        print("全部独立文件已就绪，开始发布整包和清单", flush=True)
         self.verified_upload(f"v1/releases/{version}/full.zip", output / "full.zip")
         self.verified_upload(f"v1/releases/{version}/manifest.json", output / "manifest.json")
         self.verified_upload("v1/latest.json", output / "latest.json", immutable=False)

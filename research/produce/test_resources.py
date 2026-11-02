@@ -401,9 +401,31 @@ class PublisherTest(unittest.TestCase):
         uploads = []
         publisher.verified_upload = lambda key, path, **kwargs: uploads.append(key)
         publisher.prune = lambda version: uploads.append("prune")
-        publisher.publish(Path("build"), {"version": "a" * 64, "files": [{"path": "image.png", "sha256": "b" * 64}]})
+        publisher.publish(Path("build"), {"version": "a" * 64, "files": [
+            {"path": "image.png", "sha256": "b" * 64}, {"path": "same.png", "sha256": "b" * 64},
+        ]})
         self.assertEqual(uploads[-2:], ["v1/latest.json", "prune"])
         self.assertEqual(uploads[0], "v1/objects/" + "b" * 64)
+        self.assertEqual(uploads.count("v1/objects/" + "b" * 64), 1)
+
+    def test_object_upload_failure_does_not_publish_pointer(self):
+        publisher = Publisher.__new__(Publisher)
+        publisher.bucket = "test"
+        uploaded = []
+
+        def upload(key, path, **kwargs):
+            if key.endswith("b" * 64):
+                raise OSError("模拟 R2 上传失败")
+            uploaded.append(key)
+
+        publisher.verified_upload = upload
+        publisher.prune = lambda version: uploaded.append("prune")
+        with self.assertRaises(OSError):
+            publisher.publish(Path("build"), {"version": "a" * 64, "files": [
+                {"path": "1.png", "sha256": "c" * 64}, {"path": "2.png", "sha256": "b" * 64},
+            ]})
+        self.assertNotIn("v1/latest.json", uploaded)
+        self.assertNotIn("prune", uploaded)
 
     def test_pruning_keeps_fourteen_versions_and_shared_objects(self):
         from produce.resources import DATABASES
