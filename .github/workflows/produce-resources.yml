@@ -1,8 +1,7 @@
 name: Publish produce resources
 
 on:
-  schedule:
-    - cron: "0 0 * * *"
+  # 开发阶段仅手动触发；正式合入默认分支后再启用定时检查。
   workflow_dispatch:
     inputs:
       revision:
@@ -35,6 +34,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Check selected branch
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          if not Path('tools/build_produce_resources.py').is_file():
+              raise SystemExit('请在 Run workflow 中选择 decision-capture 分支；main 目前仅提供工作流入口。')
+          PY
       - name: Install publishing dependencies
         run: python -m pip install Pillow boto3
       - name: Verify updater and distribution protocol
@@ -56,7 +62,7 @@ jobs:
               raise SystemExit('revision and rollback are mutually exclusive')
           PY
       - name: Check out fixed upstream source
-        if: inputs.rollback == '' || github.event_name == 'schedule'
+        if: inputs.rollback == ''
         uses: actions/checkout@v4
         with:
           repository: gakumas-tools/gakumas-tools
@@ -68,10 +74,10 @@ jobs:
             packages/gakumas-images/images/pDrinks/icons
             packages/gakumas-images/images/pItems/icons
       - name: Build and publish
-        if: inputs.rollback == '' || github.event_name == 'schedule'
+        if: inputs.rollback == ''
         run: python tools/build_produce_resources.py --source upstream-produce --output "$RUNNER_TEMP/produce-resources" --publish
       - name: Roll back published pointer
-        if: inputs.rollback != '' && github.event_name == 'workflow_dispatch'
+        if: inputs.rollback != ''
         env:
           ROLLBACK: ${{ inputs.rollback }}
         run: python tools/build_produce_resources.py --rollback "$ROLLBACK" --output "$RUNNER_TEMP/produce-resources" --publish
