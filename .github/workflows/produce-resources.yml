@@ -1,0 +1,83 @@
+name: Publish produce resources
+
+on:
+  # 开发阶段仅手动触发；正式合入默认分支后再启用定时检查。
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: "上游完整提交 SHA（留空使用 master）"
+        required: false
+        type: string
+      rollback:
+        description: "回退到保留的资源版本（留空则构建）"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: produce-resources-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'SuperWaterGod/MaaGakumasu'
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      R2_BUCKET: ${{ vars.PRODUCE_R2_BUCKET || 'maagakumasu-produce-resources' }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check selected branch
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          if not Path('tools/build_produce_resources.py').is_file():
+              raise SystemExit('请在 Run workflow 中选择 decision-capture 分支；main 目前仅提供工作流入口。')
+          PY
+      - name: Install publishing dependencies
+        run: python -m pip install Pillow boto3
+      - name: Verify updater and distribution protocol
+        run: |
+          python research/produce/test_resources.py
+          node --test cloud/produce-resources/worker.test.mjs
+      - name: Validate inputs
+        env:
+          REVISION: ${{ inputs.revision }}
+          ROLLBACK: ${{ inputs.rollback }}
+        run: |
+          python - <<'PY'
+          import os, re
+          for key, width in [('REVISION', 40), ('ROLLBACK', 64)]:
+              value = os.environ[key]
+              if value and not re.fullmatch('[0-9a-f]{%d}' % width, value):
+                  raise SystemExit(f'Invalid {key}')
+          if os.environ['REVISION'] and os.environ['ROLLBACK']:
+              raise SystemExit('revision and rollback are mutually exclusive')
+          PY
+      - name: Check out fixed upstream source
+        if: inputs.rollback == ''
+        uses: actions/checkout@v4
+        with:
+          repository: gakumas-tools/gakumas-tools
+          ref: ${{ inputs.revision || 'master' }}
+          path: upstream-produce
+          sparse-checkout: |
+            packages/gakumas-data/json
+            packages/gakumas-images/images/skillCards/icons
+            packages/gakumas-images/images/pDrinks/icons
+            packages/gakumas-images/images/pItems/icons
+      - name: Build and publish
+        if: inputs.rollback == ''
+        run: python tools/build_produce_resources.py --source upstream-produce --output "$RUNNER_TEMP/produce-resources" --publish
+      - name: Roll back published pointer
+        if: inputs.rollback != ''
+        env:
+          ROLLBACK: ${{ inputs.rollback }}
+        run: python tools/build_produce_resources.py --rollback "$ROLLBACK" --output "$RUNNER_TEMP/produce-resources" --publish
