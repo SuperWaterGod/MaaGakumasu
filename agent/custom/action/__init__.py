@@ -5,6 +5,8 @@ from .challenge import *
 from .SupportCards import *
 
 __all__ = [
+    "ProduceUpdateResources",
+    "ProduceResourcesReady",
     "ShoppingCoinGachaAuto",
     "ShoppingDailyExchangeMoneyAuto",
     "ShoppingDailyExchangeAPAuto",

@@ -5,8 +5,10 @@
             "param": {}
         },
         "action": {
-            "type": "DoNothing",
-            "param": {}
+            "type": "Custom",
+            "param": {
+                "custom_action": "ProduceResourcesReady"
+            }
         },
         "next": [
             "ProduceLoop"
@@ -375,7 +377,7 @@
         },
         "post_wait_freezes": 200,
         "focus": {
-            "Node.Action.Succeeded": "[color:LimeGreen]已放弃使用体力药[/color]"
+            "Node.Action.Succeeded": "已放弃使用体力药"
         },
         "next": [
             "BackHome"
@@ -861,7 +863,7 @@
             "param": {}
         },
         "focus": {
-            "Node.Recognition.Succeeded": "[color:LimeGreen]演出－进入演出阶段[/color]"
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]演出－进入演出阶段[/color]"
         },
         "next": [
             "ProduceEnd",
@@ -936,7 +938,7 @@
         },
         "post_delay": 0,
         "focus": {
-            "Node.Recognition.Succeeded": "[color:LimeGreen]路线选择 - 进入事件页面[/color]"
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]路线选择 - 进入事件页面[/color]"
         }
     },
     "ProduceChooseGetFlag": {
@@ -960,7 +962,7 @@
         },
         "post_wait_freezes": 200,
         "focus": {
-            "Node.Recognition.Succeeded": "[color:LimeGreen]奖励选择－进入选择页面[/color]"
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]奖励选择－进入选择页面[/color]"
         },
         "next": [
             "ProduceChooseSkip",
@@ -1276,7 +1278,7 @@
             "param": {}
         },
         "focus": {
-            "Node.Recognition.Succeeded": "[color:LimeGreen]演出－进入结束页面[/color]"
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]演出－进入结束页面[/color]"
         },
         "next": [
             "ProduceGeneration",
@@ -1330,7 +1332,7 @@
             }
         },
         "focus": {
-            "Node.Recognition.Succeeded": "[color:LimeGreen]演出－进入 ED[/color]"
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]演出－进入 ED[/color]"
         }
     },
     "ProduceGeneration": {
@@ -1480,7 +1482,10 @@
                 "custom_action": "ProduceCardsAuto"
             }
         },
-        "post_delay": 100
+        "post_delay": 100,
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]战斗 - 进入出牌场景[/color]"
+        }
     },
     "ProduceKeepDrinkFlag": {
         "recognition": {
@@ -1528,7 +1533,7 @@
         },
         "post_wait_freezes": 200,
         "focus": {
-            "Node.Recognition.Succeeded": "[color:LimeGreen]商店－进入购买页面[/color]"
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]商店－进入购买页面[/color]"
         },
         "next": [
             "ProduceShoppingBuySale",

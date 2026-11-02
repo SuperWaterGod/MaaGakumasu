@@ -62,7 +62,7 @@ def feature(image, kind):
 
 @lru_cache(maxsize=2)
 def load_gallery(data_directory, idol_id):
-    """每个资源目录/偶像只解码一次；缺图跳过，更新图库后重启生效。"""
+    """每个资源目录/偶像只解码一次；缺图跳过，安装更新后显式清除缓存。"""
     directory = Path(data_directory)
     cards = json.loads((directory / "produce_skill_cards.json").read_text(encoding="utf-8"))["cards"]
     items = json.loads((directory / "produce_reward_items.json").read_text(encoding="utf-8"))
@@ -71,7 +71,7 @@ def load_gallery(data_directory, idol_id):
                                ("p_item", "pItems", items["p_items"])):
         by_id = {str(row["id"]): row for row in rows}
         entries, vectors, pixels, originals = [], [], [], []
-        for path in sorted((directory / "images" / folder / "icons").glob("*.png")):
+        for path in sorted((directory / "images" / folder).glob("*.png")):
             parts = path.stem.split("_")
             row = by_id.get(parts[0])
             if row is None or (kind == "skill_card" and idol_id and len(parts) > 1 and parts[-1] != str(idol_id)):

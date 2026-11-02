@@ -1,0 +1,9 @@
+{
+    "ProduceUpdateResources": {
+        "recognition": { "type": "DirectHit", "param": {} },
+        "action": {
+            "type": "Custom",
+            "param": { "custom_action": "ProduceUpdateResources" }
+        }
+    }
+}

@@ -100,7 +100,6 @@ python -m compileall -q agent
 python -m pytest
 python -m ruff check .
 npx prettier --check "**/*.{json,yml,yaml}"
-npx maa-tools check
 python tools/ci/check_resource.py ./assets/resource/base/
 ```
 
@@ -182,7 +181,7 @@ python tools/ci/check_resource.py ./assets/resource/base/
 改动完成后，根据影响范围选择验证：
 
 - Python 自定义逻辑：至少运行 `python -m compileall -q agent`；修改工具脚本时对对应文件执行 `python -m py_compile <脚本路径>`，有测试时运行 `python -m pytest`。
-- 流水线或资源：运行 `npx maa-tools check`，并在可能时进行实际 MaaFramework 调试。
+- 流水线或资源：运行 `python tools/ci/check_resource.py ./assets/resource/base/`，并在可能时进行实际 MaaFramework 调试。
 - JSON/YAML：运行 Prettier 检查或格式化。
 - 自动培育：需要真实设备或模拟器长流程验证；如果无法运行，必须在交付说明中明确未做实机验证。
 

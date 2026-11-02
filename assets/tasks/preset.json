@@ -82,6 +82,10 @@
       "description": "$一键培育描述",
       "task": [
         {
+          "name": "更新数据库和素材",
+          "enabled": true
+        },
+        {
           "name": "开始培育",
           "enabled": true,
           "option": {

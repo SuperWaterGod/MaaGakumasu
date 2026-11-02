@@ -145,6 +145,8 @@ class ProduceSessions:
         version_files = [
             package_data / "produce_skill_cards.json",
             package_data / "produce_reward_items.json",
+            package_data / "produce_resources_source.json",
+            package_data / "produce_resources_manifest.json",
             package_data / "idols_cards.json",
             resource / "model/detect/cards.onnx",
             *sorted(Path(__file__).parent.glob("*.py")),

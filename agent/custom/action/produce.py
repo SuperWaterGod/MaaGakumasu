@@ -6,17 +6,59 @@ from utils import logger
 from maa.context import Context
 from produce.battle import ProduceCardsAuto
 from produce.events import ProduceChooseEventAuto, ProduceChooseEventBase, ProduceChooseNIAEventAuto
+from produce.capture import ROOT
 from produce.console import policy_name
 from produce.options import ProduceKeepDrinkAuto, ProduceChooseWorkAuto, ProduceChooseMirrorAuto, ProduceChooseOptionsAuto
 from produce.rewards import RewardPreview
 from produce.sessions import SESSIONS
 from maa.custom_action import CustomAction
+from produce.resources import RecoveryError, UpdateCancelled, configured_updater, ensure_resources_ready
 from maa.agent.agent_server import AgentServer
 
 __all__ = [
+    "ProduceUpdateResources", "ProduceResourcesReady",
     "ProduceChooseEventBase", "ProduceChooseEventAuto", "ProduceChooseNIAEventAuto", "ProduceCardsAuto",
     "ProduceChooseWorkAuto", "ProduceChooseOptionsAuto", "ProduceChooseMirrorAuto", "ProduceKeepDrinkAuto", "ProduceRewardConfirm", "ProduceSkipShowAuto",
 ]
+
+
+@AgentServer.custom_action("ProduceResourcesReady")
+class ProduceResourcesReady(CustomAction):
+    def run(self, context, argv):
+        try:
+            ensure_resources_ready(ROOT)
+            return not context.tasker.stopping
+        except Exception as exc:
+            logger.error(f"培育资源不可用，请先执行“更新数据库和素材”：{exc}")
+            return False
+
+
+@AgentServer.custom_action("ProduceUpdateResources")
+class ProduceUpdateResources(CustomAction):
+    def run(self, context, argv):
+        if SESSIONS.active:
+            logger.warning("存在活动培育会话，跳过数据库和素材更新")
+            return True
+        try:
+            updater = configured_updater(ROOT, stopping=lambda: context.tasker.stopping, log=logger.info)
+            result = updater.update()
+            if result["status"] == "updated":
+                from produce.icons import load_gallery
+
+                load_gallery.cache_clear()
+            return True
+        except UpdateCancelled:
+            logger.info("资源更新已取消，下载断点保留在 temp/produce_update")
+            return False
+        except Exception as exc:
+            logger.warning(f"数据库和素材更新未完成：{exc}")
+            try:
+                ensure_resources_ready(ROOT)
+            except (RecoveryError, OSError, ValueError) as recovery:
+                logger.error(f"资源需修复，停止后续培育：{recovery}")
+                return False
+            logger.warning("继续使用现有数据库和素材；缺失图标保留未知")
+            return not context.tasker.stopping
 
 
 @AgentServer.custom_action("ProduceRewardConfirm")

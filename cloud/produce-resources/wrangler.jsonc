@@ -1,0 +1,13 @@
+{
+    "name": "maagakumasu-produce-resources",
+    "main": "worker.mjs",
+    "compatibility_date": "2026-11-02",
+    "workers_dev": false,
+    "routes": [{ "pattern": "mag.2j.hk", "custom_domain": true }],
+    "r2_buckets": [
+        {
+            "binding": "PRODUCE_RESOURCES",
+            "bucket_name": "maagakumasu-produce-resources",
+        },
+    ],
+}

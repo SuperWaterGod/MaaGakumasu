@@ -262,6 +262,13 @@ def agent():
         Toolkit.init_option("./")
 
         try:
+            from produce.resources import ResourceUpdater
+
+            ResourceUpdater(parent_dir, log=logger.info).recover()
+        except Exception as exc:
+            logger.error(f"培育资源恢复未完成，请执行数据库和素材更新：{exc}")
+
+        try:
             from produce.sessions import install_produce_capture
 
             install_produce_capture()

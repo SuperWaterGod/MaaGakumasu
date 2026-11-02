@@ -536,7 +536,7 @@ class RecordingTest(unittest.TestCase):
         from produce.icons import UpstreamIcons, load_gallery
         from utils.image_io import encode_png
         data = self.directory / "data"
-        folder = data / "images/skillCards/icons"
+        folder = data / "images/skillCards"
         folder.mkdir(parents=True)
         cards = [{"id": 1, "name": "测试卡"}, {"id": 2, "name": "测试卡+"}, {"id": 3, "name": "其他卡"}]
         (data / "produce_skill_cards.json").write_text(json.dumps({"cards": cards}), encoding="utf-8")
@@ -566,7 +566,7 @@ class RecordingTest(unittest.TestCase):
         from produce.icons import UpstreamIcons, load_gallery
         from utils.image_io import encode_png
         data = self.directory / "versions"
-        folder = data / "images/skillCards/icons"
+        folder = data / "images/skillCards"
         folder.mkdir(parents=True)
         (data / "produce_skill_cards.json").write_text(json.dumps({"cards": [
             {"id": 1, "name": "测试卡"}, {"id": 2, "name": "测试卡+"}]}), encoding="utf-8")

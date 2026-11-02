@@ -367,6 +367,8 @@ __pycache__/
 
 # Temporary local tests (delete after each use)
 /tests/
+/temp/produce_update/
+/cloud/produce-resources/.wrangler/
 
 # Cake - Uncomment if you are using it
 # tools/**
