@@ -2,6 +2,7 @@
 
 import io
 import os
+import csv
 import sys
 import json
 import shutil
@@ -33,7 +34,16 @@ from produce.resources import (
     validate_manifest,
     ensure_resources_ready,
 )
-from build_produce_resources import Publisher, build
+from build_produce_resources import Publisher, build, read_table
+
+
+class CsvTest(unittest.TestCase):
+    def test_upstream_field_types_and_quoted_values(self):
+        rows = read_table(b'id,name,enabled,count,empty,dsl\r\n1,"a, ""b""",TRUE,007,,score+=2\r\n2,"line\nname",FALSE,-2,,\r\n')
+        self.assertEqual(rows, [
+            {"id": 1, "name": 'a, "b"', "enabled": True, "count": 7, "empty": "", "dsl": "score+=2"},
+            {"id": 2, "name": "line\nname", "enabled": False, "count": "-2", "empty": "", "dsl": ""},
+        ])
 
 
 class ResourceTest(unittest.TestCase):
@@ -75,16 +85,24 @@ class ResourceTest(unittest.TestCase):
         self.addCleanup(server.shutdown)
         self.updater = ResourceUpdater(self.root, f"http://127.0.0.1:{server.server_port}")
         self.source = self.directory / "upstream"
-        tables = self.source / "packages/gakumas-data/json"
+        tables = self.source / "packages/gakumas-data/csv"
         tables.mkdir(parents=True)
         (self.source / "LICENSE").write_text("合成测试许可证", encoding="utf-8")
         card = {"id": 1, "name": "测试卡", "cost": "cost-=1", "conditions": "", "actions": "score+=1", "effects": ""}
         for name, rows in (("skill_cards", [card]), ("p_drinks", [{"id": 1, "name": "测试饮料", "actions": "genki+=1"}]),
                            ("p_items", [{"id": 1, "name": "测试道具", "effects": ""}])):
-            (tables / f"{name}.json").write_text(json.dumps(rows), encoding="utf-8")
+            self.write_table(name, rows)
         for folder in ("skillCards", "pDrinks", "pItems"):
             self.add_image(folder, "1.png")
         self.counter = 0
+
+    def write_table(self, name, rows):
+        path = self.source / "packages/gakumas-data/csv" / f"{name}.csv"
+        with path.open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows({key: "TRUE" if value is True else "FALSE" if value is False else value
+                             for key, value in row.items()} for row in rows)
 
     def add_image(self, folder, name, color=40):
         directory = self.source / "packages/gakumas-images/images" / folder / "icons"
@@ -142,10 +160,10 @@ class ResourceTest(unittest.TestCase):
         self.publish()
         self.updater.update()
         self.add_image("skillCards", "1.png", color=180)
-        table = self.source / "packages/gakumas-data/json/skill_cards.json"
-        rows = json.loads(table.read_text())
+        table = self.source / "packages/gakumas-data/csv/skill_cards.csv"
+        rows = read_table(table.read_bytes())
         rows[0]["name"] = "新的测试卡"
-        table.write_text(json.dumps(rows))
+        self.write_table("skill_cards", rows)
         manifest, output = self.publish()
         self.requests.clear()
         self.updater.update()

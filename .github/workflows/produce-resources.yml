@@ -69,7 +69,7 @@ jobs:
           ref: ${{ inputs.revision || 'master' }}
           path: upstream-produce
           sparse-checkout: |
-            packages/gakumas-data/json
+            packages/gakumas-data/csv
             packages/gakumas-images/images/skillCards/icons
             packages/gakumas-images/images/pDrinks/icons
             packages/gakumas-images/images/pItems/icons

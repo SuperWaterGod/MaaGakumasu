@@ -1,6 +1,8 @@
 """从固定上游检出生成培育资源，并发布到 R2；客户端不依赖此维护工具。"""
 
+import io
 import os
+import csv
 import sys
 import json
 import shutil
@@ -20,14 +22,31 @@ from produce.resources import PNG_PATH, PROTOCOL, file_hash, atomic_json, valida
 from sync_reward_items import build_database as build_items
 
 REPOSITORY = "https://github.com/gakumas-tools/gakumas-tools"
-TABLES = {"cards": "skill_cards.json", "drinks": "p_drinks.json", "p_items": "p_items.json"}
+TABLES = {"cards": "skill_cards.csv", "drinks": "p_drinks.csv", "p_items": "p_items.csv"}
+
+
+def read_table(raw):
+    """按上游 utils/csv.js 的规则转换布尔值和纯数字，其余字段保留字符串。"""
+    reader = csv.DictReader(io.StringIO(raw.decode("utf-8"), newline=""), strict=True)
+    if not reader.fieldnames or len(set(reader.fieldnames)) != len(reader.fieldnames):
+        raise ValueError("CSV 表头缺失或重复")
+    rows = []
+    for record in reader:
+        if None in record or any(value is None for value in record.values()):
+            raise ValueError("CSV 行的字段数与表头不一致")
+        rows.append({key: True if value == "TRUE" else False if value == "FALSE"
+                     else int(value) if value.isascii() and value.isdecimal() else value for key, value in record.items()})
+    return rows
 
 
 def selected_sources(source):
     source = Path(source).resolve()
-    tables = source / "packages/gakumas-data/json"
+    tables = source / "packages/gakumas-data/csv"
     selected = {f"tables/{key}": tables / name for key, name in TABLES.items()}
     selected["LICENSE"] = source / "LICENSE"
+    for path in selected.values():
+        if not path.is_file():
+            raise ValueError(f"上游源文件缺失: {path}")
     for folder in ("skillCards", "pDrinks", "pItems"):
         directory = source / "packages/gakumas-images/images" / folder / "icons"
         if not directory.is_dir():
@@ -58,8 +77,11 @@ def build(source, output, previous=None):
     revision = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
     timestamp = subprocess.check_output(["git", "-C", str(source), "show", "-s", "--format=%cI", "HEAD"], text=True).strip()
     raw = {key: selected[f"tables/{key}"].read_bytes() for key in TABLES}
-    skills = build_skills(json.loads(raw["cards"]), revision, hashlib.sha256(raw["cards"]).hexdigest())
-    items = build_items({key: (json.loads(raw[key]), hashlib.sha256(raw[key]).hexdigest()) for key in ("drinks", "p_items")}, revision)
+    skills = build_skills(read_table(raw["cards"]), revision, hashlib.sha256(raw["cards"]).hexdigest())
+    items = build_items({key: (read_table(raw[key]), hashlib.sha256(raw[key]).hexdigest()) for key in ("drinks", "p_items")}, revision)
+    skills["source"]["path"] = "packages/gakumas-data/csv/" + TABLES["cards"]
+    for key in ("drinks", "p_items"):
+        items["source"]["tables"][key]["path"] = "packages/gakumas-data/csv/" + TABLES[key]
     # 固定为提交时间，使同一来源可以重复生成相同内容。
     skills["source"]["fetched_at"] = items["source"]["fetched_at"] = timestamp
     payload = output / "payload"
