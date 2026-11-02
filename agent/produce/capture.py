@@ -28,7 +28,6 @@ class DecisionCapture:
         console=None,
         console_details=True,
         reward_preview=True,
-        reward_identity_cache=True,
         save_screenshots=True,
         session_directory=None,
     ):
@@ -69,7 +68,6 @@ class DecisionCapture:
         self._console = console
         self._console_details = console_details
         self.reward_preview_enabled = reward_preview
-        self.reward_identity_cache_enabled = reward_identity_cache
         self._console_event = None
         self._analysis = None
         self._manifest = {
@@ -83,7 +81,6 @@ class DecisionCapture:
             "python_version": platform.python_version(),
             "limits": { "max_bytes": max_bytes, "min_free_bytes": min_free_bytes},
             "reward_preview_enabled": reward_preview,
-            "reward_identity_cache_enabled": reward_identity_cache,
             "state_fields": {"card_identity": None, "buffs": None, "turn": None, "score": None, "stamina": None},
             "unknown_reason": ("整次培育的分段证据；完整性见培育会话清单。未知牌组、成本和动作确认不推断。"
                                if metadata.get("session_id") else
@@ -170,14 +167,6 @@ class DecisionCapture:
             package_data = ROOT / "data" if (ROOT / "data").is_dir() else ROOT / "assets/data"
             resource = ROOT / "resource/base" if (ROOT / "resource/base").is_dir() else ROOT / "assets/resource/base"
             database = package_data / "produce_skill_cards.json"
-            if database.exists():
-                items = package_data / "produce_reward_items.json"
-                metadata["reward_cache"] = {
-                    "version": 3, "layout": "720x1280_reward_v1",
-                    "catalog_hashes": {"skill_cards": hashlib.sha256(database.read_bytes()).hexdigest(),
-                                       "reward_items": hashlib.sha256(items.read_bytes()).hexdigest() if items.exists() else None},
-                    "language_layout": (metadata.get("reward_language_layout") or {}).get("recognition"),
-                }
             analysis = None
             if config.get("match_cards", True) and database.exists():
                 analysis = {"resource": resource, "database": database, "aliases": package_data / "skill_card_aliases.json", "context": context}
@@ -197,7 +186,6 @@ class DecisionCapture:
                 console=console if config.get("console_summary", True) else None,
                 console_details=config.get("console_details", True),
                 reward_preview=config.get("reward_preview", True) is True,
-                reward_identity_cache=config.get("reward_identity_cache", True) is True,
             )
         except Exception:
             LOGGER.exception("无法开启对局采集，继续原任务")

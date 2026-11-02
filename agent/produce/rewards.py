@@ -1,4 +1,4 @@
-"""奖励候选预览、身份缓存，以及优先读取名称的同步识别。"""
+"""奖励候选预览、上游图标匹配，以及优先读取名称的同步识别。"""
 
 import re
 import copy
@@ -11,8 +11,8 @@ from collections import Counter, OrderedDict
 import numpy as np
 from utils.image_io import bgr_image
 
+from .icons import icons_for_capture
 from .catalog import RewardCatalog, clean, catalog_effects
-from .icon_cache import cache_for_capture
 
 
 def reward_kind(text):
@@ -187,7 +187,7 @@ class RewardPreview:
         self.last_image = None
         self.last_wait_diagnostic = None
         self.preview_clicks = 0
-        self.identity_cache = cache_for_capture(capture.directory, recognize=recognize) if getattr(capture, "reward_identity_cache_enabled", False) else None
+        self.icons = icons_for_capture(capture.directory, recognize=recognize)
 
     def record(self, kind, image=None, **data):
         return self.capture.record(kind, image=image, context=self.context, reward_page_id=self.group_id, reward_kind=self.item_kind, **data)
@@ -354,12 +354,12 @@ class RewardPreview:
                 if self.stopping():
                     reason = "task_stopping"
                     break
-                cached = (self.identity_cache.lookup(self.original, self.layout["candidates"][index]["box"], self.item_kind)
-                          if self.identity_cache else None)
+                cached = (self.icons.lookup(self.original, self.layout["candidates"][index]["box"], self.item_kind)
+                          if self.icons else None)
                 if cached:
                     cache_hits += 1
                     event_id = self.record("reward_candidate_preview", self.original, candidate=self.layout["candidates"][index],
-                                           observation_method="icon_cache", cached_identity=cached, detail_refreshed=False,
+                                           observation_method="upstream_icon", cached_identity=cached, detail_refreshed=False,
                                            selected_highlight_verified=False, game_action_confirmed=None)
                     if not event_id:
                         reason = "capture_unavailable"
@@ -411,13 +411,13 @@ class RewardPreview:
 class RewardReader:
     def __init__(self, skills, items_path, directory=None, recognize=None):
         self.catalog = RewardCatalog(skills, items_path)
-        self.icons = cache_for_capture(directory, self.catalog.hashes, recognize) if directory else None
+        self.icons = icons_for_capture(directory, self.catalog.hashes, recognize) if directory else None
         self.details = OrderedDict()
-        self.counts = {"name_ocr": 0, "detail_cache": 0, "icon_cache": 0}
+        self.counts = {"name_ocr": 0, "detail_cache": 0, "upstream_icon": 0}
 
     def read(self, image, event, read_roi):
         cached_icon = event.get("cached_identity")
-        if event.get("observation_method") == "icon_cache":
+        if event.get("observation_method") in {"icon_cache", "upstream_icon"}:
             x, y, width, height = event["candidate"]["box"]
             digest = hashlib.sha256(bgr_image(image[y:y + height, x:x + width]).tobytes()).hexdigest()
             match = cached_icon
@@ -426,15 +426,15 @@ class RewardReader:
                     or self.catalog.by_id(match.get("catalog_id")).get("status") != "matched"):
                 return reward_preview_observation({}, self.catalog.skills, event, self.catalog,
                                                   {"method": "icon_cache_rejected", "fallback_reason": "cached_icon_not_confirmed"})
-            self.counts["icon_cache"] += 1
+            self.counts["upstream_icon"] += 1
             identity = self.catalog.by_id(match["catalog_id"])
-            if identity.get("item_kind") == "skill_card":
-                # 本体命中不能确认强化版本，也不为核验版本新增预览点击。
+            if identity.get("item_kind") == "skill_card" and not match.get("variant_verified"):
+                # 历史本体匹配记录仍保留版本未知；新记录按具体模板确认版本。
                 identity = {"status": "base_match_variant_unresolved", "database_name": match["database_name"],
                             "item_kind": "skill_card", "catalog_id": None, "effective_effect_dsl": None}
             return reward_preview_observation({}, self.catalog.skills, event, self.catalog,
-                                              {"method": "icon_cache", "identity": identity, "identity_verified": True,
-                                               "source_event_id": match["source_event_id"], "full_body_ocr": False})
+                                              {"method": event["observation_method"], "identity": identity, "identity_verified": True,
+                                               "source_event_id": match.get("source_event_id"), "icon_path": match.get("icon_path"), "full_body_ocr": False})
         verified = event.get("detail_refreshed") is True and event.get("selected_highlight_verified") is True
         if not verified:
             return reward_preview_observation({}, self.catalog.skills, event, self.catalog, {"method": "unverified_detail"})
@@ -455,11 +455,6 @@ class RewardReader:
             self.details[cache_key] = copy.deepcopy(result)
             if len(self.details) > 128:
                 self.details.popitem(last=False)
-        if self.icons:
-            try:
-                result["reading"]["cache_write"] = self.icons.learn(image, event, result)
-            except (OSError, ValueError, KeyError, TypeError) as exc:
-                result["reading"]["cache_error"] = str(exc)[:250]
         return result
 
 
@@ -468,7 +463,7 @@ def reward_preview_observation(tokens_by_roi, catalog, event, rewards=None, read
     refreshed = event.get("detail_refreshed") is True and event.get("selected_highlight_verified") is True
     names = sorted(tokens_by_roi.get("name", []), key=lambda token: (token["box"][1], token["box"][0]))
     reading = reading or {}
-    cache_verified = reading.get("method") == "icon_cache" and reading.get("identity_verified") is True
+    cache_verified = reading.get("method") in {"icon_cache", "upstream_icon"} and reading.get("identity_verified") is True
     if rewards:
         identity = reading.get("identity") if cache_verified else rewards.match_tokens(names) if refreshed else rewards.match("")
         identity = dict(identity)

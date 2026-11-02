@@ -17,7 +17,6 @@ sys.path[:0] = [str(ROOT), str(ROOT / "agent")]
 from produce.state import read_produce_health, read_produce_attributes
 from produce.capture import DecisionCapture
 from produce.reporting import process_alive, segment_directory
-from produce.icon_cache import RewardIdentityCache, cache_write_lock, cache_for_capture
 
 
 class RecordingTest(unittest.TestCase):
@@ -26,8 +25,6 @@ class RecordingTest(unittest.TestCase):
         from produce.analysis import OfflineVision
         cls.vision = OfflineVision(ROOT / "assets/resource/base")
 
-    def identity_cache(self, *args):
-        return RewardIdentityCache(*args, recognize=self.vision.recognize)
 
     def setUp(self):
         root = ROOT.parent / "MaaGakumasuLab/debug/research/produce/tests"
@@ -224,26 +221,8 @@ class RecordingTest(unittest.TestCase):
         result = console.observe({"kind": "reward_receive_input", "reward_page_id": "page", "event_id": "receive",
                                   "framework_action_succeeded": True})
         self.assertEqual(result["message"].splitlines(), ["奖励选择 - 已点击领取：合成卡", "1｜→ 合成卡",
-                                                       "模板匹配：0 项｜OCR 匹配：0 项｜新增缓存：0 项"])
+                                                       "模板匹配：0 项｜OCR 匹配：0 项"])
 
-    def test_cache_tolerates_brightness_deduplicates_and_rejects_conflicts(self):
-        cache = self.identity_cache(self.directory / "tolerant_cache", {})
-        image = np.random.default_rng(42).integers(20, 220, size=self.image.shape, dtype=np.uint8)
-        event = {"kind": "reward_candidate_preview", "event_id": "a", "candidate": {"box": [55, 790, 150, 150]}}
-        observation = {"detail_verified": True, "identity": {"status": "matched", "catalog_id": "a",
-                       "database_name": "合成甲", "item_kind": "skill_card"}}
-        self.assertEqual(cache.learn(image, event, observation), "stored")
-        shifted_brightness = image + 10
-        self.assertEqual(cache.lookup(shifted_brightness, event["candidate"]["box"])["catalog_id"], "a")
-        self.assertEqual(cache.learn(shifted_brightness, event, observation), "reused")
-        # OCR 已确认同一身份，图像差异不应再产生第二份缓存。
-        changed = np.flip(image, axis=1).copy()
-        self.assertEqual(cache.learn(changed, event, observation), "reused")
-        self.assertEqual(len(list(cache.directory.rglob("*.png"))), 1)
-        observation["identity"]["catalog_id"] = "b"
-        observation["identity"]["database_name"] = "合成乙"
-        cache.learn(image, event, observation)
-        self.assertIsNone(cache.lookup(image, event["candidate"]["box"]))
 
     def test_status_read_retries_temporary_access_denial(self):
         from produce.reporting import read_json
@@ -252,13 +231,6 @@ class RecordingTest(unittest.TestCase):
             self.assertEqual(read_json(self.directory / "manifest.json"), {"status": "recording"})
         sleep.assert_called_once()
 
-    def test_icon_crop_normalizes_and_ignores_border(self):
-        from produce.icon_cache import icon_image
-        crop = icon_image(self.image, [55, 790, 130, 132])
-        self.assertEqual(crop.shape, (128, 128, 3))
-        changed = self.image.copy()
-        changed[790:810, 55:80] = 255
-        np.testing.assert_array_equal(crop, icon_image(changed, [55, 790, 130, 132]))
 
     def test_saved_frame_keeps_framework_dimensions(self):
         from utils.image_io import read_image
@@ -548,221 +520,6 @@ class RecordingTest(unittest.TestCase):
         self.assertTrue(process_alive(os.getpid()))
         self.assertFalse(process_alive(None))
 
-    def test_shared_cache_survives_another_instance_and_checks_version(self):
-        hashes = {"skill_cards": "s", "reward_items": "i"}
-        cache = self.identity_cache(self.directory / "cache", hashes)
-        event = {"kind": "reward_candidate_preview", "event_id": "first:1", "candidate": {"box": [55, 790, 150, 150]}, "frame": {"sha256": "frame"}}
-        observation = {"detail_verified": True, "identity": {"status": "matched", "needs_full_ocr": False,
-                       "effective_effect_dsl": "effect", "catalog_id": "card-1", "database_name": "合成卡", "item_kind": "skill_card"}}
-        cache.learn(self.image, event, observation)
-        second = self.identity_cache(cache.directory, hashes)
-        self.assertEqual(second.lookup(self.image, event["candidate"]["box"])["catalog_id"], "card-1")
-        self.assertIsNone(self.identity_cache(cache.directory, {"skill_cards": "changed"}).lookup(self.image, event["candidate"]["box"]))
-        modified = self.image.copy()
-        modified[840:880, 110:145] = 255
-        self.assertIsNone(second.lookup(modified, event["candidate"]["box"]))
-        icon = next(cache.directory.rglob("*.png"))
-        icon.write_bytes(b"corrupt")
-        self.assertIsNone(self.identity_cache(cache.directory, hashes).lookup(self.image, event["candidate"]["box"]))
-
-    def test_reward_cache_searches_small_offsets_without_matching_neighbor(self):
-        cache = self.identity_cache(self.directory / "offset_cache")
-        art = np.random.default_rng(73).integers(30, 230, (128, 128, 3), dtype=np.uint8)
-        original = np.zeros_like(self.image)
-        original[800:928, 100:228] = art
-        event = {"kind": "reward_candidate_preview", "event_id": "synthetic:offset",
-                 "candidate": {"box": [100, 800, 128, 128]}}
-        observation = {"detail_verified": True, "identity": {"status": "matched", "catalog_id": "offset",
-                       "database_name": "合成彩色卡", "item_kind": "skill_card"}}
-        self.assertEqual(cache.learn(original, event, observation), "stored")
-        for dx, dy in [(0, 0), (-2, -2), (-1, 1), (1, -1), (2, 2)]:
-            with self.subTest(dx=dx, dy=dy):
-                image = np.zeros_like(original)
-                image[800 + dy:928 + dy, 100 + dx:228 + dx] = art
-                self.assertEqual(cache.lookup(image, event["candidate"]["box"])["catalog_id"], "offset")
-        # 同一模板只出现在搜索范围外或相邻卡位时，不能认成当前候选。
-        for dx in (5, 140):
-            image = np.zeros_like(original)
-            image[800:928, 100 + dx:228 + dx] = art
-            self.assertIsNone(cache.lookup(image, event["candidate"]["box"]))
-        # 屏幕边缘只裁去不存在的搜索余量，不补像素或改变图标尺度。
-        edge = np.zeros_like(original)
-        edge[:128, :128] = art
-        self.assertEqual(cache.lookup(edge, [0, 0, 128, 128])["catalog_id"], "offset")
-
-    def test_shared_cache_scope_independent_of_session(self):
-        scope = {"version": 2, "layout": "synthetic", "language_layout": "ja", "catalog_hashes": {"skill_cards": "s"}}
-        directories = [self.directory / "first", self.directory / "second"]
-        for directory in directories:
-            directory.mkdir()
-            (directory / "manifest.json").write_text(json.dumps({"metadata": {"reward_cache": scope}}))
-        self.assertEqual(cache_for_capture(directories[0]).directory, cache_for_capture(directories[1]).directory)
-        scope["language_layout"] = "zh"
-        (directories[1] / "manifest.json").write_text(json.dumps({"metadata": {"reward_cache": scope}}))
-        self.assertEqual(cache_for_capture(directories[0]).directory, cache_for_capture(directories[1]).directory)
-        self.assertNotEqual(cache_for_capture(directories[0]).scope, cache_for_capture(directories[1]).scope)
-
-    def test_cache_scope_change_does_not_reuse_identity(self):
-        cache = self.identity_cache(self.directory / "scope_cache", {}, {"language": "ja"})
-        event = {"kind": "reward_candidate_preview", "event_id": "first:1", "candidate": {"box": [55, 790, 150, 150]}}
-        observation = {"detail_verified": True, "identity": {"status": "matched", "needs_full_ocr": False,
-                       "effective_effect_dsl": "effect", "catalog_id": "card-1", "database_name": "合成卡", "item_kind": "skill_card"}}
-        cache.learn(self.image, event, observation)
-        changed = self.identity_cache(cache.directory, {}, {"language": "zh"})
-        self.assertIsNone(changed.lookup(self.image, event["candidate"]["box"]))
-
-    def test_cache_lock_is_released(self):
-        path = self.directory / "cache.lock"
-        with cache_write_lock(path) as first:
-            self.assertTrue(first)
-            with cache_write_lock(path) as second:
-                self.assertFalse(second)
-        with cache_write_lock(path) as third:
-            self.assertTrue(third)
-
-    def test_icon_cache_only_learns_rewards_and_merges_variants(self):
-        cache = self.identity_cache(self.directory / "body_cache")
-        event = {"kind": "route_before", "event_id": "synthetic", "candidate": {"box": [55, 790, 128, 128]}}
-        observation = {"detail_verified": True, "identity": {"status": "matched", "catalog_id": "base",
-                       "database_name": "合成卡", "item_kind": "skill_card"}}
-        self.assertIsNone(cache.learn(self.image, event, observation))
-        self.assertFalse(cache.path.exists())
-        event["kind"] = "reward_candidate_preview"
-        self.assertEqual(cache.learn(self.image, event, observation), "stored")
-        changed = self.image.copy()
-        changed[790:815, 55:80] = 255
-        changed[820:918, 160:183] = 255
-        observation["identity"].update(catalog_id="plus", database_name="合成卡+")
-        self.assertEqual(cache.learn(changed, event, observation), "reused")
-        self.assertEqual(len(cache._load()["entries"]), 1)
-        self.assertEqual(len(list((cache.directory / "skill_card").glob("*.png"))), 1)
-        self.assertEqual(cache.lookup(changed, event["candidate"]["box"])["database_name"], "合成卡")
-
-    def test_selected_confirmation_learns_only_verified_top_preview(self):
-        from copy import deepcopy
-        from utils.image_io import resize_image
-        cache = self.identity_cache(self.directory / "selected_cache")
-        image = self.image.copy()
-        image[109:253, 36:180] = resize_image(self.image[790:918, 55:183], 144, 144)
-        event = {"kind": "route_before", "node": "ProduceChooseStrengthen", "event_id": "synthetic"}
-        observation = {"raw_ocr": [{"text": "強化", "confidence": .99, "box": [55, 34, 70, 40]}],
-                       "candidates": [{"name_box": [193, 106, 200, 32], "identity": {
-                           "status": "matched", "match_method": "exact", "ocr_confidence": .99,
-                           "database_card_id": "base", "database_name": "合成卡", "observed_plus_count": 0}},
-                           {"name_box": [193, 405, 200, 32], "identity": {"database_name": "错误的下方预览"}}]}
-        for change in ("low_confidence", "ambiguous", "missing_header", "wrong_node"):
-            candidate = deepcopy(observation)
-            current = dict(event)
-            if change == "low_confidence":
-                candidate['candidates'][0]['identity']['ocr_confidence'] = .8
-            elif change == "ambiguous":
-                candidate['candidates'].append(deepcopy(candidate['candidates'][0]))
-            elif change == "missing_header":
-                candidate['raw_ocr'] = []
-            else:
-                current['node'] = 'ProduceChooseStrengthenClick'
-            self.assertIsNone(cache.learn(image, current, candidate))
-            self.assertFalse(cache.path.exists())
-        self.assertEqual(cache.learn(image, event, observation), 'stored')
-        self.assertEqual(cache._load()['entries'][0]['database_name'], '合成卡')
-        self.assertEqual(cache._load()['entries'][0]['source_kind'], 'route_before')
-        for title in ('削除', 'コピー', 'チェンジ'):
-            event['node'] = 'ProduceChooseDeleteClick'
-            observation['raw_ocr'][0]['text'] = title
-            self.assertEqual(cache.learn(image, event, observation), 'reused')
-        self.assertEqual(len(cache._load()['entries']), 1)
-
-    def test_icon_scan_native_scaled_page_and_read_only(self):
-        from utils.image_io import resize_image
-        cache = self.identity_cache(self.directory / "scan_cache")
-        event = {"kind": "reward_candidate_preview", "event_id": "synthetic", "candidate": {"box": [55, 790, 128, 128]}}
-        cache.learn(self.image, event, {"detail_verified": True, "identity": {"status": "matched", "catalog_id": "base",
-                    "database_name": "合成卡", "item_kind": "skill_card"}})
-        page = np.zeros_like(self.image)
-        page[700:820, 80:200] = resize_image(self.image[790:918, 55:183], 120, 120)
-        before = cache.path.read_bytes()
-        hits = cache.scan(page, "strengthen")
-        self.assertEqual(len(hits), 1)
-        self.assertEqual(hits[0]["database_name"], "合成卡")
-        self.assertLessEqual(abs(hits[0]["box"][0] - 80), 2)
-        self.assertFalse(hits[0]["variant_verified"])
-        self.assertEqual(before, cache.path.read_bytes())
-        self.assertEqual(cache.scan(page, "unsupported"), [])
-        cache._scan_cache = None
-        cache.recognize = lambda *args: [SimpleNamespace(score=.7, box=[52, 42, 56, 64])]
-        self.assertEqual(cache.scan(page, "strengthen"), [])
-
-    def test_icon_scan_reuses_frame_and_rejects_dimmed_art(self):
-        from utils.image_io import resize_image
-        cache = self.identity_cache(self.directory / "scan_brightness")
-        image = self.image.copy()
-        rng = np.random.default_rng(12)
-        image[790:918, 55:183] = resize_image(rng.integers(80, 240, (12, 12, 3), dtype=np.uint8), 128, 128)
-        event = {"kind": "reward_candidate_preview", "event_id": "synthetic", "candidate": {"box": [55, 790, 128, 128]}}
-        cache.learn(image, event, {"detail_verified": True, "identity": {"status": "matched", "catalog_id": "base",
-                    "database_name": "合成卡", "item_kind": "skill_card"}})
-        page = np.zeros_like(image)
-        tile = resize_image(image[790:918, 55:183], 120, 120)
-        page[700:820, 80:200] = tile
-        page[700:820, 230:350] = (tile * .5).astype(np.uint8)
-        # 使用平滑合成图标避免随机高频纹理被双重缩放破坏。
-        with patch.object(cache, 'recognize', wraps=cache.recognize) as recognize:
-            hits = cache.scan(page, "strengthen")
-            self.assertEqual(len(hits), 1)
-            count = recognize.call_count
-            hits[0]['database_name'] = '调用方修改'
-            self.assertEqual(cache.scan(page, "strengthen")[0]['database_name'], '合成卡')
-            self.assertEqual(recognize.call_count, count)
-            page[700:820, 80:200] = (tile * .5).astype(np.uint8)
-            self.assertEqual(cache.scan(page, "strengthen"), [])
-            self.assertGreater(recognize.call_count, count)
-
-    def test_green_mask_distinguishes_art_outside_old_center_crop(self):
-        from produce.icon_cache import icon_mask, icon_image
-        cache = self.identity_cache(self.directory / "green_cache")
-        rng = np.random.default_rng(71)
-        image = self.image.copy()
-        image[790:918, 55:183] = rng.integers(25, 210, size=(128, 128, 3), dtype=np.uint8)
-        other = image.copy()
-        # 两张卡的旧中央裁片相同，左侧主体不同，新模板必须能区分。
-        other[832:870, 63:95] = 255 - other[832:870, 63:95]
-        event = {"kind": "reward_candidate_preview", "event_id": "synthetic", "candidate": {"box": [55, 790, 128, 128]}}
-        for name, frame in (("first", image), ("second", other)):
-            cache.learn(frame, event, {"detail_verified": True, "identity": {"status": "matched", "catalog_id": name,
-                        "database_name": name, "item_kind": "skill_card"}})
-        self.assertEqual(cache.lookup(image, event["candidate"]["box"])["database_name"], "first")
-        self.assertEqual(cache.lookup(other, event["candidate"]["box"])["database_name"], "second")
-        template = icon_image(image, event["candidate"]["box"])
-        self.assertTrue(np.all(template[~icon_mask()] == [0, 255, 0]))
-        changed = image.copy()
-        crop = changed[790:918, 55:183]
-        crop[~icon_mask()] = rng.integers(0, 255, size=(int((~icon_mask()).sum()), 3), dtype=np.uint8)
-        self.assertEqual(cache.lookup(changed, event["candidate"]["box"])["database_name"], "first")
-        cache.recognize = lambda *args: [SimpleNamespace(score=float("nan"), box=[20, 20, 128, 128])]
-        self.assertEqual(cache.scan(image, "shop"), [])
-
-    def test_item_cache_preserves_art_in_card_badge_regions(self):
-        from utils.image_io import read_image
-        from produce.icon_cache import icon_mask
-        box = [55, 790, 128, 128]
-        image = np.random.default_rng(93).integers(25, 210, size=self.image.shape, dtype=np.uint8)
-        for kind in ("drink", "p_item"):
-            with self.subTest(kind=kind):
-                cache = self.identity_cache(self.directory / kind)
-                cache.learn(image, {"kind": "reward_candidate_preview", "event_id": "synthetic", "candidate": {"box": box}},
-                            {"detail_verified": True, "identity": {"status": "matched", "catalog_id": kind,
-                             "database_name": kind, "item_kind": kind}})
-                entry = cache._load()["entries"][0]
-                template = read_image(cache.directory / entry["icon_path"])
-                visible = icon_mask(kind)
-                self.assertEqual(int(visible.sum()), 118 * 118)
-                np.testing.assert_array_equal(template[visible], image[790:918, 55:183][visible])
-                self.assertTrue(np.all(template[~visible] == [0, 255, 0]))
-                self.assertEqual(cache.lookup(image, box, kind)["item_kind"], kind)
-                changed = image.copy()
-                # 卡牌角标区域在饮料和 P 道具中属于有效图案，不能忽略。
-                changed[800:825, 65:95] = 255 - changed[800:825, 65:95]
-                self.assertIsNone(cache.lookup(changed, box, kind))
 
     def test_icon_log_is_collapsed_and_escapes_names(self):
         from produce.console import format_icon_matches
@@ -774,6 +531,96 @@ class RecordingTest(unittest.TestCase):
         self.assertNotIn("<img", message)
         self.assertNotIn("file:", message)
         self.assertIn("&lt;bad&gt;", message)
+
+    def test_upstream_icons_read_only_pool_gray_and_ambiguity(self):
+        from produce.icons import UpstreamIcons, load_gallery
+        from utils.image_io import encode_png
+        data = self.directory / "data"
+        folder = data / "images/skillCards/icons"
+        folder.mkdir(parents=True)
+        cards = [{"id": 1, "name": "测试卡"}, {"id": 2, "name": "测试卡+"}, {"id": 3, "name": "其他卡"}]
+        (data / "produce_skill_cards.json").write_text(json.dumps({"cards": cards}), encoding="utf-8")
+        (data / "produce_reward_items.json").write_text(json.dumps({"drinks": [], "p_items": []}), encoding="utf-8")
+        rng = np.random.default_rng(19)
+        art = rng.integers(100, 255, (128, 128, 3), dtype=np.uint8)
+        (folder / "1_1.png").write_bytes(encode_png(art))
+        (folder / "2_2.png").write_bytes(encode_png(art))
+        (folder / "3.png").write_bytes(encode_png(rng.integers(100, 255, (128, 128, 3), dtype=np.uint8)))
+        before = {p.relative_to(data): p.read_bytes() for p in data.rglob("*") if p.is_file()}
+        icons = UpstreamIcons(data, 1)
+        frame = np.full((1280, 720, 3), 255, dtype=np.uint8)
+        frame[700:828, 80:208] = art
+        self.assertEqual(icons.lookup(frame, [80, 700, 128, 128], "skill_card")["database_name"], "测试卡")
+        self.assertEqual(len(load_gallery(str(data.resolve()), 1)["skill_card"][0]), 2)
+        self.assertIsNone(icons.lookup(frame, [80, 700, 128, 128], "drink"))
+        frame[700:828, 80:208] = art // 2
+        self.assertIsNone(icons.lookup(frame, [80, 700, 128, 128], "skill_card"))
+        self.assertEqual(before, {p.relative_to(data): p.read_bytes() for p in data.rglob("*") if p.is_file()})
+        frame[700:828, 80:208] = art
+        (folder / "3.png").write_bytes(encode_png(art))
+        load_gallery.cache_clear()
+        self.assertIsNone(icons.lookup(frame, [80, 700, 128, 128], "skill_card"))
+        load_gallery.cache_clear()
+
+    def test_upstream_matches_both_versions_from_markers(self):
+        from produce.icons import UpstreamIcons, load_gallery
+        from utils.image_io import encode_png
+        data = self.directory / "versions"
+        folder = data / "images/skillCards/icons"
+        folder.mkdir(parents=True)
+        (data / "produce_skill_cards.json").write_text(json.dumps({"cards": [
+            {"id": 1, "name": "测试卡"}, {"id": 2, "name": "测试卡+"}]}), encoding="utf-8")
+        (data / "produce_reward_items.json").write_text(json.dumps({"drinks": [], "p_items": []}), encoding="utf-8")
+        rng = np.random.default_rng(71)
+        normal = rng.integers(100, 255, (128, 128, 3), dtype=np.uint8)
+        upgraded = normal.copy()
+        upgraded[8:35, 8:45] = 255 - upgraded[8:35, 8:45]
+        upgraded[46:77, 96:120] = 255 - upgraded[46:77, 96:120]
+        for identifier, art in ((1, normal), (2, upgraded)):
+            (folder / f"{identifier}_1.png").write_bytes(encode_png(art))
+        icons = UpstreamIcons(data, 1)
+        frame = np.full((1280, 720, 3), 255, dtype=np.uint8)
+        shifted = upgraded.copy()
+        shifted[5:41, 5:55] = np.roll(upgraded[5:41, 5:55], (4, -4), axis=(0, 1))
+        shifted[40:83, 92:123] = np.roll(upgraded[40:83, 92:123], (-4, 4), axis=(0, 1))
+        for art, name in ((normal, "测试卡"), (upgraded, "测试卡+"), (shifted, "测试卡+")):
+            frame[700:828, 80:208] = art
+            match = icons.lookup(frame, [80, 700, 128, 128], "skill_card")
+            self.assertIsNotNone(match)
+            self.assertEqual(match["database_name"], name)
+            self.assertTrue(match["variant_verified"])
+        load_gallery.cache_clear()
+
+    def test_upstream_preserves_upgrade_markers(self):
+        from produce.icons import icon_mask
+        for x, y in ((20, 20), (100, 60), (105, 105)):
+            self.assertTrue(icon_mask("skill_card")[y, x])
+        import hashlib
+
+        from produce.catalog import SkillCardCatalog
+        from produce.rewards import RewardReader
+        reader = RewardReader(SkillCardCatalog(ROOT / "assets/data/produce_skill_cards.json"),
+                              ROOT / "assets/data/produce_reward_items.json")
+        identifier, (_, row) = next((key, value) for key, value in reader.catalog.ids.items()
+                                    if value[0] == "skill_card" and value[1].get("upgraded"))
+        event = {"kind": "reward_candidate_preview", "event_id": "synthetic:variant",
+                 "candidate": {"candidate_id": "reward_1", "box": [55, 790, 150, 150]},
+                 "observation_method": "upstream_icon", "cached_identity": {
+                     "catalog_id": identifier, "database_name": row["name"], "variant_verified": True,
+                     "catalog_hashes": reader.catalog.hashes,
+                     "query_icon_sha256": hashlib.sha256(self.image[790:940, 55:205].tobytes()).hexdigest()}}
+        result = reader.read(self.image, event, lambda *args: self.fail("模板已核验，不应调用 OCR"))
+        self.assertTrue(result["identity_verified"])
+        self.assertEqual(result["observed_name"], row["name"])
+        self.assertEqual(result["identity"]["catalog_id"], identifier)
+
+    def test_route_pages_do_not_use_ocr_card_identity(self):
+        from produce.analysis import route_observation
+        catalog = SimpleNamespace(match=lambda *args: self.fail("不应读取 OCR 牌名"))
+        for operation in ("shop", "strengthen", "delete_copy_exchange", "move_cards"):
+            result = route_observation([{"text": "测试卡", "confidence": 1, "box": [200, 110, 100, 30]}],
+                                       catalog, {"kind": "route_before", "operation": operation})
+            self.assertEqual(result["candidates"], [])
 
     def test_health_zero_and_unknown(self):
         context = SimpleNamespace(run_recognition=lambda *a, **k: SimpleNamespace(hit=True, best_result=SimpleNamespace(text="0/34")))
@@ -854,37 +701,6 @@ class RecordingTest(unittest.TestCase):
             self.assertEqual(clicks, [expected])
             self.assertEqual(action.health_observation["status"], "unknown" if health is None else "observed")
 
-    def test_reward_cache_filters_category_and_groups_upgrades(self):
-        from produce.rewards import reward_kind
-        self.assertEqual(reward_kind("受け取るPドリンクを選んでください"), "drink")
-        self.assertEqual(reward_kind("请选择技能卡"), "skill_card")
-        self.assertIsNone(reward_kind("选择奖励"))
-        cache = self.identity_cache(self.directory / "group_cache")
-        entries = [
-            {"catalog_id": "base", "database_name": "合成卡", "item_kind": "skill_card"},
-            {"catalog_id": "plus", "database_name": "合成卡+", "item_kind": "skill_card"},
-            {"catalog_id": "other", "database_name": "另一张", "item_kind": "skill_card"},
-            {"catalog_id": "drink", "database_name": "合成饮料", "item_kind": "drink"},
-        ]
-        calls = []
-        def score(image, group):
-            group = group if isinstance(group, list) else [group]
-            ids = [entry["catalog_id"] for entry in group]
-            calls.append(ids)
-            return max({"base": .965, "plus": 1., "other": .7, "drink": 1.}[key] for key in ids)
-        with patch.object(cache, "_load", return_value={"entries": entries, "catalog_hashes": {}}), patch.object(cache, "_score", side_effect=score):
-            match = cache.lookup(self.image, [55, 790, 150, 150], "skill_card")
-            self.assertEqual(match["database_name"], "合成卡")
-            self.assertFalse(match["variant_verified"])
-            self.assertEqual(calls[0], ["base", "plus"])
-            self.assertNotIn(["drink"], calls)
-            calls.clear()
-            match = cache.lookup(self.image, [55, 790, 150, 150], "drink")
-            self.assertEqual(match["catalog_id"], "drink")
-            self.assertTrue(calls)
-            self.assertTrue(all(group == ["drink"] for group in calls))
-        with patch.object(cache, "_load", return_value={"entries": entries[:2], "catalog_hashes": {}}), patch.object(cache, "_score", return_value=1.):
-            self.assertFalse(cache.lookup(self.image, [55, 790, 150, 150], "skill_card")["variant_verified"])
 
     def test_reward_reader_reuses_verified_match_without_second_template_pass(self):
         import hashlib
@@ -915,14 +731,6 @@ class RecordingTest(unittest.TestCase):
         self.assertIsNone(result["identity"]["effective_effect_dsl"])
         self.assertEqual(result["observed_name"], "本体名称")
 
-    def test_cache_conflict_does_not_choose_closest_identity(self):
-        cache = self.identity_cache(self.directory / "cache", {"skill_cards": "s"})
-        event = {"kind": "reward_candidate_preview", "event_id": "synthetic:1", "candidate": {"box": [55, 790, 150, 150]}}
-        for identifier in ("first", "second"):
-            cache.learn(self.image, event, {"detail_verified": True, "identity": {
-                "status": "matched", "needs_full_ocr": False, "effective_effect_dsl": "effect",
-                "catalog_id": identifier, "database_name": identifier, "item_kind": "skill_card"}})
-        self.assertIsNone(cache.lookup(self.image, event["candidate"]["box"]))
 
     def test_session_resume_keeps_display_directory_and_id(self):
         from produce.sessions import ProduceSessions

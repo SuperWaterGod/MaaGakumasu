@@ -429,7 +429,9 @@
     },
     "post_wait_freezes": 200,
     "next": [
-      "ChallengeRestart"
+      "ChallengeRestart",
+      "[JumpBack]CloseButton",
+      "[JumpBack]ChallengeBack"
     ]
   },
   "ChallengeRestart": {

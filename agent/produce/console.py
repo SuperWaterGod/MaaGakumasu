@@ -37,6 +37,9 @@ class SettlementConsole:
                   "exam_score": (observation.get("final_exam") or {}).get("score") or {},
                   "place": (observation.get("final_exam") or {}).get("place") or {}}
         for key, reading in fields.items():
+            # 试镜途中也有同布局属性面板；其读数保留在事件内，不参与最终三维汇总。
+            if key in ("Vo", "Da", "Vi") and event.get("kind") == "exam_result_observation":
+                continue
             if key in self.readings and reading.get("value") is not None:
                 self.readings[key].append({**reading, "event_id": event.get("event_id")})
 
@@ -362,10 +365,9 @@ class RewardConsole:
                       "｜强化未核验" if result.get("art_identity_verified") else "｜未匹配")
             lines.append(f"{number}｜{marker}{preview_name(result)}" + suffix)
         readings = [result.get("reading") or {} for result in page["previews"].values()]
-        matched = sum(reading.get("method") == "icon_cache" for reading in readings)
-        stored = sum(reading.get("cache_write") == "stored" for reading in readings)
+        matched = sum(reading.get("method") in {"icon_cache", "upstream_icon"} for reading in readings)
         ocr = sum(reading.get("method") == "name_then_catalog" for reading in readings)
-        lines.append(f"模板匹配：{matched} 项｜OCR 匹配：{ocr} 项｜新增缓存：{stored} 项")
+        lines.append(f"模板匹配：{matched} 项｜OCR 匹配：{ocr} 项")
         return {"message": "\n".join(lines), "event_id": event_id or start["event_id"],
                 "reward_page_id": page_id, "console_reward_number": page["number"], "scope": "reward"}
 
@@ -381,7 +383,7 @@ def format_icon_matches(operation, matches):
             "move_cards": "移动"}.get(operation, "页面")
     rows = [escape(match["database_name"]) for match in matches]
     if not rows:
-        rows = ["未命中缓存中的已知图标；不代表没有可选项。"]
+        rows = ["未命中上游图标；不代表没有可选项。"]
     return (f'<details><summary>{name}｜图标命中 {len(matches)} 项</summary><p>'
             + '<br/>'.join(rows) + '<br/>仅识别图标本体，强化、可选状态及实际获得情况未核验。</p></details>')
 

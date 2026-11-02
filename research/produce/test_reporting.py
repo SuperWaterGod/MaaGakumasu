@@ -76,6 +76,27 @@ class ReportingTest(unittest.TestCase):
     def codes(self, report):
         return {item['code'] for item in report['integrity']['issues']}
 
+    def test_midterm_parameters_do_not_conflict_with_final_settlement(self):
+        from produce.console import SettlementConsole
+        midterm = {"settlement": {key: {"value": value} for key, value in {"Vo": 200, "Da": 300, "Vi": 400}.items()}}
+        console = SettlementConsole(self.bindings)
+        console.observe({"kind": "exam_result_observation"}, midterm)
+        final_event = next(e for e in self.events if e["kind"] == "settlement_observation")
+        console.observe(final_event, self.results[final_event["event_id"]])
+        summary = console.finish()
+        self.assertIn("Vo 800 / Da 900 / Vi 1000", summary["message"])
+        self.assertNotIn("读数冲突", summary["message"])
+        event = self.add("exam_result_observation", frame=True)
+        self.results[event["event_id"]] = {**midterm, "source_frame_sha256": event["frame"]["sha256"]}
+        report = self.write()
+        self.assertEqual([report["final_settlement"][key]["value"] for key in ("Vo", "Da", "Vi")], [800, 900, 1000])
+        self.assertFalse(any(report["final_settlement"][key]["conflict"] for key in ("Vo", "Da", "Vi")))
+        console = SettlementConsole(self.bindings)
+        console.observe({"kind": "exam_result_observation"}, midterm)
+        self.assertIsNone(console.finish())
+        console.observe({"kind": "settlement_observation"}, {})
+        self.assertIn("Vo 未读到 / Da 未读到 / Vi 未读到", console.finish()["message"])
+
     def test_normal_and_trace(self):
         report = self.write()
         self.assertTrue(report['complete'])

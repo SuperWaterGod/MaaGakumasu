@@ -6,11 +6,11 @@ import json
 import time
 import uuid
 import hashlib
-from pathlib import Path
 from html import escape
-from urllib.parse import quote
+from pathlib import Path
 from datetime import datetime, timezone
 from collections import Counter
+from urllib.parse import quote
 
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -203,7 +203,7 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
                                                    page["end"]["event"].get("candidate_previews_complete"))
         page["details_verified_count"] = sum(bool(((entry.get("derived") or {}).get("observation") or {}).get("detail_verified"))
                                               for entry in page["previews"])
-        page["identity_cache_count"] = sum(entry["event"].get("observation_method") == "icon_cache" for entry in page["previews"])
+        page["identity_cache_count"] = sum(entry["event"].get("observation_method") in {"icon_cache", "upstream_icon"} for entry in page["previews"])
         page["identities_verified_count"] = sum(bool(((entry.get("derived") or {}).get("observation") or {}).get("identity_verified"))
                                                  for entry in page["previews"])
     missing_frames = []
@@ -226,6 +226,8 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
     for field in ("score", "rank", "Vo", "Da", "Vi", "fan_votes", "exam_score", "place"):
         observations = []
         for entry in (*settlements, *exam_results):
+            if field in ("Vo", "Da", "Vi") and entry["event"]["kind"] == "exam_result_observation":
+                continue
             observation = (entry.get("derived") or {}).get("observation") or {}
             settlement = observation.get("settlement") or {}
             reading = (observation.get("fan_votes") or {}) if field == "fan_votes" else settlement.get(field, {})

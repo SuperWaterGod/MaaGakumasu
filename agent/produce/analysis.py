@@ -73,7 +73,8 @@ def labeled_value(tokens, labels, pattern):
 
 def route_observation(tokens, catalog, event):
     candidates = []
-    for index, token in enumerate(tokens):
+    identity_tokens = [] if event.get("operation") in {"shop", "strengthen", "delete_copy_exchange", "move_cards"} else tokens
+    for index, token in enumerate(identity_tokens):
         identity = catalog.match(token["text"], token.get("confidence", 0))
         # 路线描述也可能包含效果文本，只接受完整匹配的库名称。
         if identity["status"] == "unknown" or identity.get("match_method") != "exact":
@@ -425,7 +426,10 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                     break
                 event, supplied_image = packet
                 icon_matches = None
+                # 强化入口与选牌节点连续观察同一页；入口提示在选牌节点识别成功时发出。
+                # 只在其动作开始前扫描，避免入口提示之前输出一次、随后又重复输出。
                 if (reward_reader.icons and supplied_image is not None
+                        and event.get("node") != "ProduceChooseStrengthenFlag"
                         and (event["kind"] == "route_before" or event["kind"] == "move_cards_screen")
                         and event.get("operation") in {"shop", "strengthen", "delete_copy_exchange", "move_cards"}):
                     try:
@@ -438,7 +442,7 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                                operation=event["operation"], icon_matches=matches)
                     except Exception:
                         from utils import logger
-                        logger.exception("页面图标缓存识别失败，继续原流程")
+                        logger.exception("页面上游图标识别失败，继续原流程")
                 exam_tracker.observe(event)
                 if event["kind"] == "produce_session_end":
                     summary = settlement_console.finish(event.get("event_id"))
@@ -492,14 +496,6 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                         array = normalized_image(supplied_image)
                         tokens = vision._read_title(array, [0, 0, 720, 1280])
                         result = route_observation(tokens, catalog, event)
-                        if reward_reader.icons and event["kind"] == "route_before":
-                            try:
-                                learned = reward_reader.icons.learn(array, event, result)
-                                if learned:
-                                    result["selected_icon_cache_write"] = learned
-                            except Exception:
-                                from utils import logger
-                                logger.exception("已选卡牌图标缓存学习失败，继续原流程")
                         if icon_matches is not None:
                             result["icon_matches"] = icon_matches
                         if event["kind"] in ("settlement_observation", "exam_result_observation"):
