@@ -87,7 +87,7 @@
       "param": {}
     },
     "focus": {
-      "Node.Action.Succeeded": "工作报酬已获得"
+      "Node.Action.Succeeded": "[color:LimeGreen]工作报酬已获得[/color]"
     },
     "next": [
       "WorkFinished",

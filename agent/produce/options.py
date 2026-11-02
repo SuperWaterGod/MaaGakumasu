@@ -312,7 +312,7 @@ class ProduceChooseMirrorAuto(CustomAction):
                 "ProduceMirrorFocus": {
                     "focus": {
                         "Node.ActionNode.Succeeded": {
-                            "content": f"[color:LimeGreen]已暂停自动培育进入手动接管状态（第{mirror_idx}镜）[/color]\n"
+                            "content": f"[color:orange]已暂停自动培育进入手动接管状态（第{mirror_idx}镜）[/color]\n"
                             '退出手动接管请点击下方"确定"按钮',
                             "display": ["log", "modal", "notification"],
                         }

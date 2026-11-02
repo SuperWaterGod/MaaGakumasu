@@ -102,6 +102,9 @@
             }
         },
         "post_delay": 100,
+        "focus": {
+            "Node.Recognition.Succeeded": "[color:DeepSkyBlue]战斗 - 进入出牌场景[/color]"
+        },
         "next": [
             "IdolRoadAutoNext",
             "IdolRoadRetry",

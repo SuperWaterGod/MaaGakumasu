@@ -122,7 +122,7 @@
     },
     "post_wait_freezes": 500,
     "focus": {
-      "Node.Action.Succeeded": "[color:DeepSkyBlue]金币兑换已完成[/color]"
+      "Node.Action.Succeeded": "[color:LimeGreen]金币兑换已完成[/color]"
     },
     "next": [
       "ShoppingFreeRefresh",
@@ -157,7 +157,7 @@
       "param": {}
     },
     "focus": {
-      "Node.Action.Succeeded": "免费刷新已使用"
+      "Node.Action.Succeeded": "[color:LimeGreen]免费刷新已使用[/color]"
     },
     "next": [
       "ShoppingDailyExchangeMoney"
@@ -224,7 +224,7 @@
       }
     },
     "focus": {
-      "Node.Action.Succeeded": "[color:DeepSkyBlue]AP兑换已完成[/color]"
+      "Node.Action.Succeeded": "[color:LimeGreen]AP兑换已完成[/color]"
     },
     "next": [
       "BackHome"

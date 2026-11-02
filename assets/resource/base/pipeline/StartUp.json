@@ -139,7 +139,7 @@
       "param": {}
     },
     "focus": {
-      "Node.Action.Succeeded": "[color:DeepSkyBlue]好友点数获取成功[/color]"
+      "Node.Action.Succeeded": "[color:LimeGreen]好友点数获取成功[/color]"
     },
     "next": [
       "StartUpCloseButton"

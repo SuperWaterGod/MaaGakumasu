@@ -64,7 +64,7 @@
     },
     "post_delay": 0,
     "focus": {
-      "Node.Recognition.Succeeded": "[color:LimeGreen]路线选择 - 进入事件页面[/color]"
+      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]路线选择 - 进入事件页面[/color]"
     }
   },
   "ProduceNIAButton": {
@@ -154,7 +154,7 @@
       }
     },
     "focus": {
-      "Node.Recognition.Succeeded": "[color:LimeGreen]工作选择－进入选项页面[/color]"
+      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]工作选择－进入选项页面[/color]"
     },
     "post_wait_freezes": 500,
     "next": [
@@ -247,7 +247,7 @@
       "param": {}
     },
     "focus": {
-      "Node.Recognition.Succeeded": "[color:LimeGreen]特别指导－进入指导页面[/color]"
+      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]特别指导－进入指导页面[/color]"
     },
     "next": [
       "ProduceGuideExit"
@@ -299,7 +299,7 @@
     },
     "pre_wait_freezes": 200,
     "focus": {
-      "Node.Recognition.Succeeded": "[color:LimeGreen]试镜选择－进入难度页面[/color]"
+      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]试镜选择－进入难度页面[/color]"
     }
   },
   "ProduceNIAFailedFlag": {

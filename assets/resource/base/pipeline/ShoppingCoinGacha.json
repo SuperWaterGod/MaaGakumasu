@@ -92,7 +92,7 @@
       }
     },
     "focus": {
-      "Node.Action.Succeeded": "[color:DeepSkyBlue]扭蛋已兑换[/color]"
+      "Node.Action.Succeeded": "[color:LimeGreen]扭蛋已兑换[/color]"
     },
     "next": [
       "[JumpBack]CloseButton",

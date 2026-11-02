@@ -33,7 +33,7 @@ class SupportCardsAuto(CustomAction):
     SIMILARITY_THRESHOLD = 0.7
 
     def run(self, context: Context, argv: CustomAction.RunArg) -> bool:
-        logger.success("事件: 识别支持卡牌")
+        logger.info("事件: 识别支持卡牌")
 
         # 加载支持卡牌数据
         card_data = self.load_card_data()
