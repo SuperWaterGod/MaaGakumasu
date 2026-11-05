@@ -70,7 +70,7 @@ class ProduceChooseIdolAuto(CustomRecognition):
         song_score = 0.0
         if song_detail and song_detail.hit:
             recognized_song = "".join([item.text for item in song_detail.all_results]).replace("[", "").replace("]", "")
-            song_score = self.similarity_ratio(recognized_song, song_name)
+            song_score = self.song_similarity_ratio(recognized_song, song_name)
             logger.info(f"识别到歌曲名称: {recognized_song}，相似度: {song_score:.2f}")
 
         if name_score >= self.SIMILARITY_THRESHOLD and song_score >= self.SIMILARITY_THRESHOLD:
@@ -103,6 +103,17 @@ class ProduceChooseIdolAuto(CustomRecognition):
             ProduceChooseIdolAuto.normalize_text(str1),
             ProduceChooseIdolAuto.normalize_text(str2),
         ).ratio()
+
+    @classmethod
+    def song_similarity_ratio(cls, recognized_song: str, song_name: str) -> float:
+        """歌曲名完整包含时忽略皮肤附加文案，否则沿用相似度比较。"""
+        recognized = cls.normalize_text(recognized_song)
+        configured = cls.normalize_text(song_name)
+        if not recognized or not configured:
+            return 0.0
+        if configured in recognized:
+            return 1.0
+        return SequenceMatcher(None, recognized, configured).ratio()
 
 
 @AgentServer.custom_recognition("ProduceShowStart")
