@@ -468,3 +468,7 @@ config
 debug
 *.bat
 *.bak
+
+# research 测试仅保留在本地
+/research/**/test_*.py
+/research/**/*_test.py

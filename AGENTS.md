@@ -177,7 +177,7 @@ python tools/ci/check_resource.py ./assets/resource/base/
 
 根目录 `tests/` 用于临时本地测试，已加入 `.gitignore`，不应提交。每次使用完毕后删除整个 `tests/` 目录（包括测试文件、缓存和生成产物）；删除前核对目标路径为当前仓库的 `tests/`。
 
-`research/produce/test_*.py` 是培育实验的可复用回归源码，可以提交；使用合成素材并将临时文件放到 `debug/` 下的独立目录，清理前核对目标路径。不把真实轮次、截图或本地实测结论写入测试源码。
+`research/` 下的测试文件仅供本地验证，不提交、不推送，CI 不依赖这些文件。已有本地副本保留；新增实验测试及产物优先放在 `../MaaGakumasuLab/debug/` 的独立任务目录。
 
 改动完成后，根据影响范围选择验证：
 

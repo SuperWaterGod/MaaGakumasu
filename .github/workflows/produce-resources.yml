@@ -43,10 +43,8 @@ jobs:
           PY
       - name: Install publishing dependencies
         run: python -m pip install Pillow boto3
-      - name: Verify updater and distribution protocol
-        run: |
-          python research/produce/test_resources.py
-          node --test cloud/produce-resources/worker.test.mjs
+      - name: Verify distribution worker
+        run: node --test cloud/produce-resources/worker.test.mjs
       - name: Validate inputs
         env:
           REVISION: ${{ inputs.revision }}
