@@ -88,11 +88,14 @@ def snapshot(report):
         restore = (page.get("restore") or {}).get("event") or {}
         receive = (page.get("receive") or {}).get("event") or {}
         selected_id = receive.get("selected_candidate_id")
+        expected_id = (restore.get("selected_candidate_id") if start.get("selection_order") == "observe_then_choose"
+                       else start.get("selected_candidate_id"))
         verified = bool(restore.get("verified") and receive.get("framework_action_succeeded") is True
-                        and selected_id in expected and selected_id == restore.get("selected_candidate_id") == start.get("selected_candidate_id"))
+                        and selected_id in expected and selected_id == restore.get("selected_candidate_id") == expected_id)
         rewards.append({"page_id": page_id, "candidates": candidates, "selected_candidate_id": selected_id,
                         "selection_input_verified": verified, "inventory_change_confirmed": None,
-                        "policy_node": (start.get("policy_choice") or {}).get("policy_node"), "evidence": trace(page["start"])})
+                        "policy_node": (restore.get("policy_choice") or start.get("policy_choice") or {}).get("policy_node"),
+                        "evidence": trace(page["start"])})
     return {"session_id": session["session_id"], "started_at": report["timing"]["started_at"], "dimensions": dimensions,
             "task_settings_version": fingerprint(settings) if settings else None, "policy_version": policy_version,
             "events": events, "rewards": rewards, "recognition": report["recognition"], "timing": report["timing"],

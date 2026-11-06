@@ -5,14 +5,14 @@ from .settlement import FIELDS, evaluation_check
 
 POLICY_NAMES = {
     "ProduceChooseFirst": "第一项",
-    "ProduceChooseRecommend": "游戏推荐",
-    "ProduceChooseEventRecommend": "活动推荐",
+    "ProduceChooseRecommend": "推荐项",
+    "ProduceChooseEventRecommend": "活动推荐项",
     "ProduceChooseSkip": "跳过奖励",
 }
 
 
 def policy_name(choice):
-    return POLICY_NAMES.get((choice or {}).get("policy_node"), "原选择")
+    return POLICY_NAMES.get((choice or {}).get("policy_node"), "选择依据未确认")
 
 
 class SettlementConsole:
@@ -334,7 +334,7 @@ class RewardConsole:
             return None
         if kind == "reward_candidate_preview":
             page["previews"][event.get("candidate", {}).get("candidate_id")] = result or {}
-        elif kind == "reward_selection_restored":
+        elif kind in {"reward_selection_restored", "reward_selection_confirmed"}:
             page["restore"] = event
         elif kind == "reward_page_end":
             page["end"] = event

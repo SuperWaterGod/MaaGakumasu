@@ -284,9 +284,11 @@ def enrich_report(report, records, directory, capture_root):
             issue("reward_page_unfinished", "奖励页缺少结束或领取输入记录。", [page["start"]])
         restored = (page.get("restore") or {}).get("event") or {}
         received = (page.get("receive") or {}).get("event") or {}
-        if not restored.get("verified") or any(e.get("selected_candidate_id") != start.get("selected_candidate_id")
+        expected_selection = (restored.get("selected_candidate_id") if start.get("selection_order") == "observe_then_choose"
+                              else start.get("selected_candidate_id"))
+        if not restored.get("verified") or expected_selection not in expected or any(e.get("selected_candidate_id") != expected_selection
                                                for e in (restored, received) if e):
-            issue("reward_selection_unverified", "奖励实际领取选择与原选择不一致或未核对。",
+            issue("reward_selection_unverified", "奖励实际领取选择与已核验的策略选择不一致或未核对。",
                   [e for e in (page["start"], page["restore"], page["receive"]) if e])
         # 预览重试不是新候选，同画面也不能独立证明重复获得。
         page["actual_selection"] = {"candidate_id": received.get("selected_candidate_id"),
@@ -341,7 +343,8 @@ def enrich_report(report, records, directory, capture_root):
         if kind not in kinds and not kind.startswith("reward_"):
             continue
         detail = {key: event[key] for key in ("node", "operation", "battle_id", "decision_id", "reward_page_id", "selected", "selected_candidate_id",
-                  "candidate", "candidate_id", "candidates", "policy_choice", "framework_action_succeeded", "actual_point", "reason", "terminal",
+                  "candidate", "candidate_id", "candidates", "policy_choice", "selection_order",
+                  "framework_action_succeeded", "actual_point", "reason", "terminal",
                   "action", "selected_box", "selection", "observations", "policy_inputs_with_fallbacks", "policy", "title", "state_changes",
                   "verified", "failure_diagnostic", "stop_reason", "candidate_previews_complete", "safe_to_receive") if key in event}
         obs = observation(entry)
@@ -458,7 +461,11 @@ def timeline_summary(row):
         return (f"候选 {(detail.get('candidate') or {}).get('candidate_id')}：{detail.get('observed_name') or '未识别'}；"
                 f"身份核对：{detail.get('identity_verified')}；效果来源：{detail.get('effects_status') or '未分析'}")
     if kind == "reward_page_start":
+        if detail.get("selection_order") == "observe_then_choose":
+            return f"候选 {len(detail.get('candidates') or [])} 项；开始识别，随后按配置选择"
         return f"候选 {len(detail.get('candidates') or [])} 项；策略原选择：{detail.get('selected_candidate_id')}"
+    if kind == "reward_selection_confirmed":
+        return f"策略选择：{detail.get('selected_candidate_id')}；核对：{detail.get('verified')}"
     if kind == "reward_selection_restored":
         return f"恢复选择：{detail.get('selected_candidate_id')}；核对：{detail.get('verified')}"
     if kind == "reward_page_end":

@@ -304,7 +304,6 @@ class RewardPreview:
                             expected_layout=self.layout, actual_point=point, observation_phase="last_known_before_input")
                 return None
             frame = self.wait_selected(index, changed_from=previous if purpose == "preview" else None,
-                                       expected=self.original if purpose == "restore_policy_choice" else None,
                                        purpose=purpose, attempt=attempt)
             if frame is not None:
                 return frame
@@ -327,20 +326,26 @@ class RewardPreview:
         self.layout = reward_layout(image)
         selected = self.layout["selected_index"]
         receive_visible = self.receive_visible(image)
-        if self.layout["status"] != "ready" or not receive_visible:
+        # 刚进入奖励页时可以尚未选择任何候选；图标识别不依赖选中括号或详情区。
+        # 多个括号同时命中仍属于歧义，不能当成未选择。
+        unselected = (self.layout["status"] == "selection_unconfirmed" and bool(self.layout["candidates"])
+                      and all(candidate["highlight_pixels"] < 600 for candidate in self.layout["candidates"]))
+        if self.layout["status"] != "ready" and not unselected or not receive_visible:
             reason = self.layout["status"] if receive_visible else "receive_button_missing"
             self.record("reward_preview_skipped", reason=reason, image=image, observed_layout=self.layout)
             return {"safe_to_receive": receive_visible and not self.stopping(), "status": "skipped", "reason": reason}
-        image = self.wait_selected(selected)
-        if image is None:
-            self.record("reward_preview_skipped", reason="initial_selection_unstable")
-            return {"safe_to_receive": False, "status": "skipped", "reason": "initial_selection_unstable"}
+        if selected is not None:
+            image = self.wait_selected(selected)
+            if image is None:
+                self.record("reward_preview_skipped", reason="initial_selection_unstable")
+                return {"safe_to_receive": False, "status": "skipped", "reason": "initial_selection_unstable"}
         self.original = image.copy()
         self.last_image = self.original
         self.group_id = self.capture.record(
-            "reward_page_start", image=image, context=self.context, layout=self.layout, selected_candidate_id=f"reward_{selected + 1}",
+            "reward_page_start", image=image, context=self.context, layout=self.layout,
+            selected_candidate_id=f"reward_{selected + 1}" if selected is not None else None,
             policy_choice=choice, decision_id=(choice or {}).get("decision_id"), confirmation_id=confirmation_id,
-            detail_rois=DETAIL_ROIS, candidates_complete=False,
+            detail_rois=DETAIL_ROIS, candidates_complete=False, selection_order="observe_then_choose",
         )
         if not self.group_id:
             return {"safe_to_receive": True, "status": "skipped", "reason": "capture_unavailable"}
@@ -350,7 +355,11 @@ class RewardPreview:
         failure_diagnostic = None
         safe = True
         try:
-            for index in [selected, *[i for i in range(len(self.layout["candidates"])) if i != selected]]:
+            indices = list(range(len(self.layout["candidates"])))
+            if selected is not None:
+                indices.remove(selected)
+                indices.insert(0, selected)
+            for index in indices:
                 if self.stopping():
                     reason = "task_stopping"
                     break
@@ -387,19 +396,7 @@ class RewardPreview:
             reason = f"preview_error:{type(exc).__name__}"
             failure_diagnostic = self.last_wait_diagnostic
         finally:
-            if self.changed_selection:
-                safe = False
-                if not self.stopping():
-                    try:
-                        frame = self.select(selected, "restore_policy_choice")
-                        safe = frame is not None and detail_difference(self.original, frame) < .8
-                    except Exception:
-                        safe = False
-                self.record("reward_selection_restored", self.last_image,
-                            selected_candidate_id=f"reward_{selected + 1}", verified=safe, game_action_confirmed=None)
-            else:
-                self.record("reward_selection_restored", self.original, selected_candidate_id=f"reward_{selected + 1}",
-                            verified=not self.stopping(), method="original_selection_unchanged", game_action_confirmed=None)
+            # 这里只识别候选。随后由流水线按配置选择，领取前再核验最终选中项。
             safe = safe and not self.stopping()
             self.record("reward_page_end", previews=recorded, cache_hits=cache_hits, preview_clicks=self.preview_clicks, expected_count=len(self.layout["candidates"]),
                         candidate_previews_complete=len(recorded) == len(self.layout["candidates"]) and reason is None,

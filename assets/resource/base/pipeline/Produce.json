@@ -961,8 +961,10 @@
             }
         },
         "action": {
-            "type": "DoNothing",
-            "param": {}
+            "type": "Custom",
+            "param": {
+                "custom_action": "ProduceRewardObserve"
+            }
         },
         "post_wait_freezes": 200,
         "focus": {

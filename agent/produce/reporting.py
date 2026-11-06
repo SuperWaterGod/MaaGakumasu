@@ -156,7 +156,8 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
                 page = reward_pages.get(event["reward_page_id"])
                 if page:
                     field = {"reward_candidate_preview": "previews", "reward_preview_input": "inputs",
-                             "reward_selection_restored": "restore", "reward_page_end": "end", "reward_receive_input": "receive",
+                             "reward_selection_restored": "restore", "reward_selection_confirmed": "restore",
+                             "reward_page_end": "end", "reward_receive_input": "receive",
                              "reward_preview_wait_diagnostic": "diagnostics", "reward_preview_retry": "retries"}.get(event["kind"])
                     if field in ("previews", "inputs", "diagnostics", "retries"):
                         page[field].append(entry)
