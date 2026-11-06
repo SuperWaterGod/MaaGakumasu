@@ -90,7 +90,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - Python 版本：`>=3.12`。
 - Python 运行依赖：`maafw`、`loguru`（NumPy 随 maafw 提供）；图像编解码与缩放使用 MaaFramework。维护工具可按需使用 Pillow。
 - 可选开发依赖：`pytest>=7.0`、`ruff>=0.1.0`。
-- Node 侧仅用于工具链，当前 `package.json` 包含 `prettier-plugin-multiline-arrays`。
+- Node 侧仅用于工具链；JSON 排版使用 `jsonc-parser`，首次运行前执行 `npm ci`。
 - Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源版本与公告已更新为 `v1.5.2`，发版入口为 `assets/interface.json`。
 
 常用检查命令：
@@ -99,7 +99,8 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 python -m compileall -q agent
 python -m pytest
 python -m ruff check .
-npx prettier --check "**/*.{json,yml,yaml}"
+npm run format:json
+npm run check:json
 python tools/ci/check_resource.py ./assets/resource/base/
 ```
 
@@ -110,9 +111,9 @@ python tools/ci/check_resource.py ./assets/resource/base/
 ## 代码与格式约定
 
 - Python 代码遵循 `pyproject.toml` 中 Ruff 配置：目标版本 `py312`，行宽 `144`，启用 import 排序规则。
-- JSON/YAML 使用 Prettier 配置：默认缩进 4 空格，YAML 缩进 2 空格，JSON 覆盖配置使用 tab。
+- JSON/JSONC 使用 VS Code 内置 JSON 格式化规则，2 空格缩进；工作区已配置保存时自动排版，并关闭 JSONC 的 `editor.detectIndentation`，避免文件原有缩进覆盖设置。YAML 沿用 2 空格缩进。
 - Markdown 文档没有强制 lint 配置（`docs/.markdownlint.yaml` 已删除），保持与现有文档一致的简洁风格；根目录 `AGENTS.md` 主要服务代理协作，优先清晰准确。
-- 修改 JSON、JSONC 或流水线文件时保持原有排序、注释风格和缩进风格；不要做无关格式化。
+- 每次修改 JSON/JSONC 后必须执行 `npm run format:json`，再执行 `npm run check:json`；脚本默认处理相对 HEAD 修改及新增的文件，也可用 `-- <文件路径>` 指定范围。保留字段顺序、注释和原有换行符，不使用默认 Prettier 重排 JSON，不格式化未修改的文件。
 - 新增用户可见文案时优先使用中文；涉及游戏内名称时保留日文原名，并在已有数据结构支持时补充中文字段。
 - 项目自有代码的说明性注释和文档字符串正文统一使用中文；`Args:`、`Returns:`、`Raises:`、`Attributes:` 等文档结构标记，以及 `:param`、`:return:` 等工具约定必须保留原文，确保 IDE 和文档生成器正常解析。接口名称、字段、类型、技术标识、工具指令和第三方许可证保留原文。
 - 本地会话号、截图哈希、裁剪来源、实测流水和临时验证结论保存到 Git 忽略的 `debug/`，不得写成业务常量或混入正式功能文档。运行所需的识别参数、缓存/完整性校验、版本指纹及第三方来源与许可证说明正常保留。
@@ -183,7 +184,7 @@ python tools/ci/check_resource.py ./assets/resource/base/
 
 - Python 自定义逻辑：至少运行 `python -m compileall -q agent`；修改工具脚本时对对应文件执行 `python -m py_compile <脚本路径>`，有测试时运行 `python -m pytest`。
 - 流水线或资源：运行 `python tools/ci/check_resource.py ./assets/resource/base/`，并在可能时进行实际 MaaFramework 调试。
-- JSON/YAML：运行 Prettier 检查或格式化。
+- JSON/JSONC：运行 `npm run format:json` 与 `npm run check:json`；YAML 检查语法并沿用现有缩进。
 - 自动培育：需要真实设备或模拟器长流程验证；如果无法运行，必须在交付说明中明确未做实机验证。
 
 调试时优先查看 `debug/maa.log`。自动培育一次通常约 30 分钟，会产生大量日志；不要提交日志文件。

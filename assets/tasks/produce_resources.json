@@ -1,11 +1,11 @@
 {
-    "task": [
-        {
-            "name": "更新数据库和素材",
-            "entry": "ProduceUpdateResources",
-            "default_check": false,
-            "label": "$更新数据库和素材",
-            "doc": "$更新数据库和素材说明"
-        }
-    ]
+  "task": [
+    {
+      "name": "更新数据库和素材",
+      "entry": "ProduceUpdateResources",
+      "default_check": false,
+      "label": "$更新数据库和素材",
+      "doc": "$更新数据库和素材说明"
+    }
+  ]
 }

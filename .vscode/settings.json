@@ -1,62 +1,64 @@
 {
-    "json.schemas": [
-        {
-            "fileMatch": [
-                "/assets/resource/**/*.json",
-                "!/assets/resource/mfa_layout.json"
-            ],
-            "url": "/tools/pipeline.schema.json"
-        },
-        {
-            "fileMatch": [
-                "/assets/resource/mfa_layout.json"
-            ],
-            "url": "/tools/mfa_layout.schema.json"
-        },
-        {
-            "fileMatch": [
-                "/assets/interface.json"
-            ],
-            "url": "/tools/interface.schema.json"
-        },
-        {
-            "fileMatch": [
-                "/assets/tasks/**/*.json"
-            ],
-            "url": "/tools/interface_import.schema.json"
-        },
-    ],
-    "json.schemaDownload.enable": true,
-    "json.validate.enable": true,
-    "[jsonc]": {
-        "editor.formatOnSave": true,
-        "editor.insertSpaces": true,
-        "editor.tabSize": 4,
-        "editor.indentSize": "tabSize",
-        "editor.quickSuggestions": {
-            "other": true,
-            "strings": true,
-            "comments": false
-        }
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "/assets/resource/**/*.json",
+        "!/assets/resource/mfa_layout.json"
+      ],
+      "url": "/tools/pipeline.schema.json"
     },
-    "[python]": {
-        "editor.defaultFormatter": "charliermarsh.ruff",
-        "editor.formatOnSave": true,
-        "editor.rulers": [
-            144
-        ],
-        "editor.codeActionsOnSave": {
-            "source.organizeImports.ruff": "explicit",
-            "source.fixAll.ruff": "explicit"
-        }
+    {
+      "fileMatch": [
+        "/assets/resource/mfa_layout.json"
+      ],
+      "url": "/tools/mfa_layout.schema.json"
     },
-    "files.associations": {
-        "*.json": "jsonc"
+    {
+      "fileMatch": [
+        "/assets/interface.json"
+      ],
+      "url": "/tools/interface.schema.json"
     },
-    "python.analysis.typeCheckingMode": "basic",
-    "python.analysis.diagnosticSeverityOverrides": {
-        "reportAttributeAccessIssue": "none",
-        "reportOptionalMemberAccess": "none",
-        "reportArgumentType": "warning"
+    {
+      "fileMatch": [
+        "/assets/tasks/**/*.json"
+      ],
+      "url": "/tools/interface_import.schema.json"
+    },
+  ],
+  "json.schemaDownload.enable": true,
+  "json.validate.enable": true,
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.detectIndentation": false,
+    "editor.formatOnSave": true,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.indentSize": "tabSize",
+    "editor.quickSuggestions": {
+      "other": true,
+      "strings": true,
+      "comments": false
     }
+  },
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.rulers": [
+      144
+    ],
+    "editor.codeActionsOnSave": {
+      "source.organizeImports.ruff": "explicit",
+      "source.fixAll.ruff": "explicit"
+    }
+  },
+  "files.associations": {
+    "*.json": "jsonc"
+  },
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportAttributeAccessIssue": "none",
+    "reportOptionalMemberAccess": "none",
+    "reportArgumentType": "warning"
+  }
 }
