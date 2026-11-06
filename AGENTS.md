@@ -132,6 +132,7 @@ python tools/ci/check_resource.py ./assets/resource/base/
 ## MaaFramework 流水线规则
 
 - 先理解节点的 `recognition`、`action`、`next`、`timeout`、`pre_delay`、`post_delay`、`post_wait_freezes` 与 `focus`，再改流水线。
+- 优先保留已有 `pre_wait_freezes`、`post_wait_freezes` 及其区域、阈值、时长和超时，尤其是用户手工编写和调试的节点。禁止仅为快速模式、采集或性能优化删除、缩短或覆盖这些等待；确需调整时，须给出具体节点与问题证据，单独说明并验证。
 - `DirectHit` 节点通常用于流程入口或无条件跳转，不要随意替换成模板识别。
 - `[JumpBack]` 节点用于在循环中回退重试，修改 `next` 顺序时要考虑优先级和误触风险。
 - `TemplateMatch` 应明确模板路径、ROI、阈值和必要的匹配方法。新增模板时使用与现有资源一致的分辨率基准。

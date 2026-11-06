@@ -1,6 +1,6 @@
 # 训练与实验代码
 
-`research/` 集中保存训练、策略实验、样本验证和可复用回归代码。当前培育实验在 `produce/`，尚未实现策略模型训练。
+`research/` 集中保存训练、策略实验、样本验证代码。当前培育实验在 `produce/`，尚未实现策略模型训练。
 
 ## 职责边界
 
@@ -23,12 +23,11 @@ python research/produce/report_produce_session.py <会话根目录> --all --outp
 python research/produce/report_decision_capture.py <单个采集目录>
 python research/produce/build_buff_templates.py --capture-root <采集目录> --preview ../MaaGakumasuLab/debug/research/produce/buff_preview.png
 python research/produce/analyze_choices.py <已验收报告根目录> --output ../MaaGakumasuLab/debug/research/produce/baseline
-python research/produce/test_reporting.py
 ```
 
 `capture_battle.py` 是显式启动的只读 ADB 旁路采样入口，参数见 `--help`；不会因生成报告或运行测试而启动。它使用可选开发依赖 OpenCV，模板取样使用 Pillow，均不增加客户端运行依赖。详细操作见 [出牌数据采集](../docs/zh_cn/出牌数据采集.md)。
 
-回归测试使用合成事件和文件，不连接设备，临时素材写入 `../MaaGakumasuLab/debug/research/produce/tests/`，校验路径后由测试清理。已有轮次及历史派生结果保持原位。迁移前 `tools/` 中的六个实验入口已移到本目录，统一使用新路径，不保留转发文件。
+本地测试不提交到仓库。实验测试、素材和输出统一放在 `../MaaGakumasuLab/debug/`。
 
 `analyze_choices.py` 读取已经验收的 `*/data/report.json`，输出 `baseline.json` / `baseline.md`。仅纳入正常结束且 `complete=true` 的轮次，重复会话去重、跨会话重复分段排除；按剧本、难度、配置偶像、歌曲与完整代码指纹分组。事件按候选出现的决策次数、奖励按每页唯一库条目统计选择频率，预览重试不增加分母。身份未知、选择未核对和未采集字段分别保留，不把选择输入当作实际获得。
 
@@ -44,19 +43,6 @@ python research/produce/test_reporting.py
 - `produce_reporting.py`、`analyze_choices.py`：跨轮汇总和描述性基线分析；不是客户端的第二套回放。
 - `capture_battle.py`、`report_decision_capture.py`：独立 ADB 旁路采样及其单段报告，后者仍由前者调用，不能直接删除。
 - `build_buff_templates.py`：正式识别模板的离线取样工具。
-- `test_recording.py`、`test_reporting.py`：可复用回归，保留。
 - 旧奖励效果重放工具及客户端加载分支已删除：当前奖励只识别身份，不采集效果正文；历史实验产物不删除。
 
 源码指纹字段仅在研究输入实际提供时用于分组；缺失时标为未知，不能用当前源码替历史记录补造版本，也不能据此声称已完成可信策略基线。
-
-## 回归测试能证明什么
-
-| 范围 | 具体检查 | 不能替代的验证 |
-| --- | --- | --- |
-| 记录与会话 | 目录、续跑、零值/未知、写盘异常、截图开关、图像引用 | 实机中断/重启及连续多轮 |
-| 识别与缓存 | 合成边框、四候选、恢复选中、模板冲突、损坏、分类及变体分组 | 各设备真实画面与活动布局覆盖 |
-| 日志 | 字符串含标题/详情/箭头、不会拆成多行、Pipeline 操作节点配置完成提示 | MFA 实际渲染、颜色、折叠、按钮打开 |
-| 报告与审计 | 输入事件转为表格、图片折叠标记、缺口、重复事件、不同会话隔离 | Markdown 阅读器实际折叠行为 |
-| 研究统计 | 分母去重、未知项保留、样本排除规则 | 策略收益或真实游戏效果 |
-
-测试以合成事件、合成图像和模拟 Context 为主，部分模板/编解码测试调用真实 MaaFramework。子测试是同一用例的参数组合，不是多轮实机测试。测试通过只说明上述检查通过，不证明全部 UI、原生 Context 生命周期和长期运行行为正常。实机截图离线重放与真实设备运行须单独报告。
