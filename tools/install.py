@@ -75,15 +75,13 @@ def install_resource():
         )
         print("Copied lang folder for i18n support")
 
-    # Copy lang folder for MFAAvalonia data support
-    lang_src = working_dir / "assets" / "data"
-    if lang_src.exists():
-        shutil.copytree(
-            lang_src,
-            install_path / "data",
-            dirs_exist_ok=True,
-        )
-        print("Copied data folder for data support")
+    # 仅复制随客户端发布的配置；数据库、原始图库及其清单由更新服务安装。
+    data_src = working_dir / "assets" / "data"
+    data_dst = install_path / "data"
+    data_dst.mkdir(parents=True, exist_ok=True)
+    for name in ("idols_cards.json", "support_cards.json", "battle_buff_templates.json"):
+        shutil.copy2(data_src / name, data_dst / name)
+    print("Copied bundled data configurations")
 
     with open(install_path / "interface.json", "r", encoding="utf-8") as f:
         interface = json.load(f)

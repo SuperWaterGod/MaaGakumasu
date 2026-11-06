@@ -456,9 +456,10 @@ def ensure_resources_ready(root):
     updater = ResourceUpdater(root)
     updater.recover()
     state = updater.data / STATE_NAME
-    if state.exists():
-        manifest = validate_manifest(json.loads(state.read_text(encoding="utf-8")))
-        # 启动仅检查数据库；完整图库由显式更新任务逐文件核验。
-        core = {**manifest, "files": [row for row in manifest["files"] if row["path"] in DATABASES]}
-        if not files_valid(updater.data, core):
-            raise RecoveryError("培育数据库与上次安装清单不一致，请先执行资源更新")
+    if not state.is_file():
+        raise RecoveryError("尚未安装培育数据库和素材，请先执行“更新数据库和素材”")
+    manifest = validate_manifest(json.loads(state.read_text(encoding="utf-8")))
+    # 完整模式入口仅检查数据库；完整图库由显式更新任务逐文件核验。
+    core = {**manifest, "files": [row for row in manifest["files"] if row["path"] in DATABASES]}
+    if not files_valid(updater.data, core):
+        raise RecoveryError("培育数据库与上次安装清单不一致，请先执行资源更新")

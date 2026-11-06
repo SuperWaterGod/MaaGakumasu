@@ -126,6 +126,7 @@ python tools/ci/check_resource.py ./assets/resource/base/
 - 同一业务使用统一的包导入。只有脚本入口为内置 Python 设置一次 `agent/` 搜索路径；内部模块不各自修改 `sys.path`，不保留“相对导入失败就换裸模块名”的双重导入。包 `__init__.py` 保持轻量，离线导入分析模块不得自动注册输入动作或安装 sinks。
 - 移动/合并模块时一并更新导入、框架注册入口、离线脚本启动路径、源码版本指纹、维护 CLI 和文档。迁移完成后清除旧源码及对应旧字节码，不用一串空转发文件保留内部旧布局；确有外部兼容契约时才保留适配入口并说明原因。
 - 结构整理优先保留既有行为、流水线注册名称、参数、事件和派生数据 schema。验证普通包导入、脚本直接启动、内置 Python/AgentServer 和历史数据读取；同步 beta 时做目标路径检查、备份与 SHA 核对，禁止通过启动客户端完成复制。
+- 客户端打包和 beta 同步的 `data/` 只复制 `idols_cards.json`、`support_cards.json`、`battle_buff_templates.json`。技能卡、饮料、P 道具数据库、原始图库、来源／许可证说明及资源清单由更新服务管理，源码下载至 `assets/data/` 的副本也不得打包或覆盖到 beta；保留客户端已安装的这些资源。
 
 ## MaaFramework 流水线规则
 
