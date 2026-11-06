@@ -9,7 +9,6 @@ from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
 
 from .capture import DecisionCapture, produce_fast_mode
-from .console import log_operation
 from .sessions import SESSIONS
 
 
@@ -209,8 +208,7 @@ class ProduceCardsAuto(CustomAction):
             else:
                 reco_detail = context.run_recognition("ProduceRecognitionNoCards", image)
                 if reco_detail and reco_detail.hit:
-                    if not (self._capture and self._capture.merged_console_enabled):
-                        logger.info("战斗 - 无手牌，跳过回合")
+                    logger.info("战斗 - 无手牌，跳过回合")
                     self._begin_decision("skip_round", image, reason="no_cards_ocr")
                     context.run_task("ProduceRecognitionSkipRound")
                     playable = self._wait_until_playable(context)
@@ -287,14 +285,10 @@ class ProduceCardsAuto(CustomAction):
                      point=[box[0] + box[2] // 2, box[1] + box[3] // 2])
         elapsed = time.time() - self.start_time
         logger.debug(f"出牌选择窗口至第二次点击：{elapsed:.2f} 秒")
+        action_name = {"game_recommendation": "推荐出牌", "only_available_card": "单张出牌",
+                       "timeout_detector_confidence": "超时出牌"}.get(reason, "出牌")
         if not (self._capture and self._capture.merged_console_enabled):
-            log_operation("战斗", "已发送出牌点击", {
-                "选择依据": {"game_recommendation": "游戏推荐", "only_available_card": "仅一张可用",
-                             "timeout_detector_confidence": "15 秒超时兜底"}.get(reason, reason),
-                "选择等待及点击耗时": f"{elapsed:.2f} 秒（不含后续动画等待）",
-                "actual_point": [box[0] + box[2] // 2, box[1] + box[3] // 2],
-                "牌名": "牌名识别不可用，未知",
-            })
+            logger.info(f"战斗 - {action_name} {elapsed:.2f}秒")
 
         # 等待回到可出牌状态后，重置计时
         time.sleep(1)
@@ -320,11 +314,22 @@ class ProduceCardsAuto(CustomAction):
             image = context.tasker.controller.post_screencap().wait().get()
 
         reco_detail = context.run_recognition("ProduceRecognitionChooseMoveCards", image)
-        if reco_detail.hit:
-            self._record("move_cards_screen", image=image, decision_id=self._active_decision, operation="move_cards")
+        if reco_detail and reco_detail.hit:
+            operation = None
+            for kind, template in (("copy", "produce/copy_icon.png"), ("move", "produce/move_icon.png")):
+                detail = context.run_recognition("ProduceRecognitionMoveCards", image, pipeline_override={
+                    "ProduceRecognitionMoveCards": {"recognition": {"param": {"template": [template]}}},
+                })
+                if detail and detail.hit:
+                    operation = kind
+                    break
+            label = {"copy": "复制", "move": "移动"}.get(operation, "移动／复制")
+            logger.info(f"战斗 - {label}选牌")
+            self._record("move_cards_screen", image=image, decision_id=self._active_decision,
+                         operation="move_cards", card_operation=operation)
             y = 450
             while y < 1100:
-                # 调试示例：按四个固定卡槽位置依次处理饮料。
+                # 沿用固定卡槽顺序选牌，不根据日志识别结果改变选牌策略。
                 for x in [140, 285]:
                     context.tasker.controller.post_click(x, y).wait()
                     self._record("move_cards_input", decision_id=self._active_decision, point=[x, y], click_index=1)
@@ -334,9 +339,15 @@ class ProduceCardsAuto(CustomAction):
                     time.sleep(0.2)
                 image = context.tasker.controller.post_screencap().wait().get()
                 reco_detail = context.run_recognition("ProduceRecognitionChooseMoveCards", image)
-                if not reco_detail.hit:
+                if reco_detail and not reco_detail.hit:
                     self._record("move_cards_selection_observation", decision_id=self._active_decision)
-                    context.run_task("ProduceMoveCards")
+                    templates = ["produce/copy.png"] if operation == "copy" else ["produce/move_1.png", "produce/move_2.png"]
+                    override = {"ProduceMoveCards": {"recognition": {"param": {"template": templates}}}}
+                    result = context.run_task("ProduceMoveCards", pipeline_override=override)
+                    if result and result.status.succeeded:
+                        logger.info(f"战斗 - 已点击{label}确认")
+                    else:
+                        logger.warning(f"战斗 - {label}确认未完成")
                     return True
                 else:
                     y = y + 100

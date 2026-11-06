@@ -380,7 +380,7 @@ def format_icon_matches(operation, matches):
     from html import escape
 
     name = {"shop": "商店", "strengthen": "强化", "delete_copy_exchange": "删除／复制／变换",
-            "move_cards": "移动"}.get(operation, "页面")
+            "move_cards": "移动", "copy_cards": "复制"}.get(operation, "页面")
     rows = [escape(match["database_name"]) for match in matches]
     if not rows:
         rows = ["未命中上游图标；不代表没有可选项。"]

@@ -439,7 +439,8 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                             index.write(json.dumps({"event_id": event["event_id"], "icon_matches": matches,
                                                     "game_action_confirmed": None}, ensure_ascii=False) + "\n")
                         notice("页面图标识别", scope="icons", event_id=event["event_id"],
-                               operation=event["operation"], icon_matches=matches)
+                               operation="copy_cards" if event.get("card_operation") == "copy" else event["operation"],
+                               icon_matches=matches)
                     except Exception:
                         from utils import logger
                         logger.exception("页面上游图标识别失败，继续原流程")
@@ -525,7 +526,8 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                     continue
                 if event["kind"] == "decision_after" and "frame" not in event:
                     message, changes, number = action_console.finish(event, {"error": "本场最后一次操作，无后续出牌前画面"})
-                    notice(message, event_id=event["event_id"], decision_id=event.get("decision_id"), console_operation_number=number)
+                    notice(message, event_id=event["event_id"], decision_id=event.get("decision_id"),
+                           console_operation_number=number, scope="battle")
                     continue
                 if "frame" not in event or event["kind"] not in (
                     "decision_before",
@@ -584,6 +586,7 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                         event_id=event["event_id"],
                         decision_id=event.get("decision_id"),
                         console_operation_number=console_operation_number,
+                        scope="battle",
                     )
                 elif result.get("error"):
                     notice(f"本帧识别失败（#{event['seq']}）：{result['error']}", event_id=event["event_id"])
@@ -613,7 +616,7 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                 if status["event_links"] % 5 == 0:
                     save_status()
         for message, event_id, number in action_console.unfinished():
-            notice(message, decision_id=event_id, console_operation_number=number)
+            notice(message, decision_id=event_id, console_operation_number=number, scope="battle")
         for summary in reward_console.unfinished():
             notice(**summary)
         summary = settlement_console.finish()
