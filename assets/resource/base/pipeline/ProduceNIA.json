@@ -105,7 +105,7 @@
         ]
       }
     },
-    "post_delay": 0
+    "post_delay": 1000
   },
   "ProduceWorkEntry": {
     "recognition": {
@@ -308,9 +308,9 @@
       "param": {
         "roi": [
           0,
-          700,
+          160,
           720,
-          250
+          790
         ],
         "template": [
           "produce/exam_failed.png"
@@ -338,8 +338,7 @@
     "next": [
       "ProduceNIAFailedRetry",
       "ProduceNIAFailedRetryLastChallenge",
-      "ProduceNIAFailedRetryConfirm",
-      "[JumpBack]Click_1"
+      "ProduceNIAFailedRetryConfirm"
     ]
   },
   "ProduceNIAFailedRetry": {
@@ -363,7 +362,8 @@
     },
     "post_wait_freezes": 200,
     "next": [
-      "ProduceNIAFailedRetryLastChallenge"
+      "ProduceNIAFailedRetryLastChallenge",
+      "ProduceNIAFailedRetryConfirm"
     ]
   },
   "ProduceNIAFailedRetryLastChallenge": {
@@ -424,6 +424,28 @@
     },
     "next": [
       "ProduceEntryNIA"
+    ]
+  },
+  "ProduceNIAFailedRetryCancel": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "roi": [
+          16,
+          1040,
+          344,
+          220
+        ],
+        "template": "produce/cancel.png"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_wait_freezes": 200,
+    "next": [
+      "ProduceNIAFailedFlag"
     ]
   }
 }

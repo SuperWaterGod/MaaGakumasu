@@ -588,8 +588,7 @@
               "next": [
                 "ProduceNIAFailedRetry",
                 "ProduceNIAFailedRetryLastChallenge",
-                "ProduceNIAFailedRetryConfirm",
-                "[JumpBack]Click_1"
+                "ProduceNIAFailedRetryConfirm"
               ]
             }
           }
@@ -604,6 +603,7 @@
             },
             "ProduceNIAFailedFlag": {
               "next": [
+                "ProduceNIAFailedRetryCancel",
                 "ProduceFailedStop"
               ]
             }
