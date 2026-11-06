@@ -3,7 +3,7 @@
         {
             "name": "更新数据库和素材",
             "entry": "ProduceUpdateResources",
-            "default_check": true,
+            "default_check": false,
             "label": "$更新数据库和素材",
             "doc": "$更新数据库和素材说明"
         }

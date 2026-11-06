@@ -7,17 +7,17 @@
         "培育难度",
         "培育偶像",
         "培育次数",
+        "快速模式",
+        "跳过准备阶段",
+        "跳过选择偶像",
         "使用体力药",
         "使用道具",
-        "跳过选择偶像",
         "启用自动支援卡",
         "启用自动回忆",
         "启用关注租借",
-        "启用培育失败重试",
-        "跳过准备阶段",
-        "开启截图记录",
+        "跟随老师的建议",
         "卡片选择优先级",
-        "跟随老师的建议"
+        "启用培育失败重试"
       ],
       "resource": [
         "官服",
@@ -29,6 +29,37 @@
     }
   ],
   "option": {
+    "快速模式": {
+      "type": "switch",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "Produce": {
+              "attach": {
+                "fast_mode": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "option": [
+            "开启截图记录"
+          ],
+          "pipeline_override": {
+            "Produce": {
+              "attach": {
+                "fast_mode": false
+              }
+            }
+          }
+        }
+      ],
+      "label": "$快速模式",
+      "description": "$快速模式说明"
+    },
     "开启截图记录": {
       "type": "switch",
       "default_case": "No",

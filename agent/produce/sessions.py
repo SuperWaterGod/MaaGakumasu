@@ -13,7 +13,7 @@ from maa.tasker import TaskerEventSink
 from maa.context import ContextEventSink
 from maa.event_sink import NotificationType
 
-from .capture import ROOT, DecisionCapture
+from .capture import ROOT, DecisionCapture, produce_fast_mode
 
 # 只观察流水线已有动作，不新增输入或识别。
 ROUTE_NODES = {
@@ -117,6 +117,39 @@ class ProduceSessions:
         self.disabled = set()
         self.task_origins = {}
         self.task_entry_times = {}
+        self.reward_choices = {}
+        self.reports_recovered = False
+
+    def prepare_reports(self):
+        """首次进入完整模式时补处理历史报告，不在 Agent 启动时执行。"""
+        if self.reports_recovered:
+            return
+        self.reports_recovered = True
+        from .reporting import recover_reports, notify_ready_reports
+
+        try:
+            recover_reports(ROOT / "debug/produce_sessions")
+            notify_ready_reports(ROOT / "debug/produce_sessions", logger.info)
+        except Exception:
+            logger.exception("历史培育报告处理失败，继续任务")
+
+    def begin(self, context):
+        """每次开始培育重新读取模式，并隔离旧任务的采集状态。"""
+        key = self.key(context.tasker)
+        fast = produce_fast_mode(context)
+        self.close(key, "new_task_started", generate_report=not fast)
+        self.disabled.discard(key)
+        self.task_origins.pop(key, None)
+        root_task_id = context.get_task_job().job_id
+        self.reward_choices.pop(root_task_id, None)
+        if fast:
+            # 快速期间存在观测空白，之后不能继续拼接旧局；历史证据保持原样。
+            (ROOT / "debug/produce_sessions" / f"active_{key}.json").unlink(missing_ok=True)
+            return
+        self.task_origins[key] = {
+            "task_started_at": self.task_entry_times.get(root_task_id) or datetime.now(timezone.utc).isoformat(),
+            "root_task_id": root_task_id, "entry_mode": None, "preparations": {}, "recognitions": {},
+        }
 
     @staticmethod
     def key(tasker):
@@ -133,6 +166,9 @@ class ProduceSessions:
             return None
 
     def ensure(self, context, entry="observed_mid_produce", started_at=None, start_source=None, *, fresh_start=False):
+        if produce_fast_mode(context):
+            return None
+        self.prepare_reports()
         key = self.key(context.tasker)
         if key in self.active:
             return self.active[key]
@@ -286,7 +322,7 @@ class ProduceSessions:
         save_json(session["path"], session["state"])
         save_json(session["pointer"], session["state"])
 
-    def close(self, key, reason, terminal=False):
+    def close(self, key, reason, terminal=False, *, generate_report=True):
         session = self.active.pop(key, None)
         if not session:
             return
@@ -300,9 +336,10 @@ class ProduceSessions:
         self.persist(session)
         if terminal:
             session["pointer"].unlink(missing_ok=True)
-        from .reporting import schedule_report
+        if generate_report:
+            from .reporting import schedule_report
 
-        schedule_report(session["path"].parent.parent)
+            schedule_report(session["path"].parent.parent)
 
     def close_all(self):
         for key in list(self.active):
@@ -361,6 +398,8 @@ class ProduceContextSink(ContextEventSink):
         if not SESSIONS.active and detail.name not in PREPARATION_NODES:
             return
         try:
+            if produce_fast_mode(context):
+                return
             session = SESSIONS.get(context)
             if session and session["capture"]._analyzing:
                 return
@@ -441,6 +480,15 @@ class ProduceContextSink(ContextEventSink):
 
     def observe(self, context, noti_type, detail):
         name = detail.name
+        if name == "Produce" and noti_type == NotificationType.Starting:
+            SESSIONS.begin(context)
+            return
+        # 选择依据只保留轻量节点名，快速模式也需要它；不读取画面或创建会话。
+        if name in {"ProduceChooseFirst", "ProduceChooseRecommend", "ProduceChooseEventRecommend", "ProduceChooseSkip"}:
+            if noti_type == NotificationType.Succeeded:
+                SESSIONS.reward_choices[context.get_task_job().job_id] = {"policy_node": name}
+        if produce_fast_mode(context):
+            return
         key = SESSIONS.key(context.tasker)
         session = SESSIONS.get(context)
         if session and name in PROCESS_NODES and name not in ROUTE_NODES:
@@ -479,18 +527,6 @@ class ProduceContextSink(ContextEventSink):
                     session.pop("post_battle_window", None)
                     if session["state"].pop("ending_phase_started", None):
                         SESSIONS.persist(session)
-            if name == "Produce":
-                SESSIONS.disabled.discard(key)  # 每个新任务重新读取采集开关。
-                root_task_id = context.get_task_job().job_id
-                now = SESSIONS.task_entry_times.get(root_task_id) or datetime.now(timezone.utc).isoformat()
-                session = SESSIONS.get(context)
-                if session and session["state"]["root_task_id"] != context.get_task_job().job_id:
-                    SESSIONS.close(key, "new_task_started")
-                SESSIONS.task_origins[key] = {
-                    "task_started_at": now, "root_task_id": root_task_id,
-                    "entry_mode": None, "preparations": {}, "recognitions": {},
-                }
-                return
             if name == "ProduceLoop":
                 if not SESSIONS.get(context) and key in SESSIONS.task_origins:
                     SESSIONS.task_origins[key].update(entry_mode=None, preparations={}, recognitions={})
@@ -689,6 +725,7 @@ class ProduceTaskSink(TaskerEventSink):
                 if origin.get("root_task_id") == detail.task_id:
                     SESSIONS.task_origins.pop(key, None)
             SESSIONS.task_entry_times.pop(detail.task_id, None)
+            SESSIONS.reward_choices.pop(detail.task_id, None)
         except Exception:
             logger.exception("培育会话收尾失败，继续任务")
 
@@ -696,9 +733,5 @@ class ProduceTaskSink(TaskerEventSink):
 def install_produce_capture():
     from maa.agent.agent_server import AgentServer
 
-    from .reporting import recover_reports, notify_ready_reports
-
-    recover_reports(ROOT / "debug/produce_sessions")
-    notify_ready_reports(ROOT / "debug/produce_sessions", logger.info)
     AgentServer.add_context_sink(ProduceContextSink())
     AgentServer.add_tasker_sink(ProduceTaskSink())

@@ -12,7 +12,11 @@
         },
         "next": [
             "ProduceLoop"
-        ]
+        ],
+        "attach": {
+            "fast_mode": true,
+            "save_screenshots": false
+        }
     },
     "ProduceLoop": {
         "recognition": {

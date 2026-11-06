@@ -6,7 +6,7 @@ from utils import logger
 from maa.context import Context
 from produce.battle import ProduceCardsAuto
 from produce.events import ProduceChooseEventAuto, ProduceChooseEventBase, ProduceChooseNIAEventAuto
-from produce.capture import ROOT
+from produce.capture import ROOT, produce_fast_mode
 from produce.console import policy_name
 from produce.options import ProduceKeepDrinkAuto, ProduceChooseWorkAuto, ProduceChooseMirrorAuto, ProduceChooseOptionsAuto
 from produce.rewards import RewardPreview
@@ -25,8 +25,12 @@ __all__ = [
 @AgentServer.custom_action("ProduceResourcesReady")
 class ProduceResourcesReady(CustomAction):
     def run(self, context, argv):
+        if produce_fast_mode(context):
+            logger.info("快速模式：跳过培育采集、额外识别与报告")
+            return not context.tasker.stopping
         try:
             ensure_resources_ready(ROOT)
+            SESSIONS.prepare_reports()
             return not context.tasker.stopping
         except Exception as exc:
             logger.error(f"培育资源不可用，请先执行“更新数据库和素材”：{exc}")
@@ -66,6 +70,8 @@ class ProduceRewardConfirm(CustomAction):
     def run(self, context, argv):
         if context.tasker.stopping:
             return False
+        if produce_fast_mode(context):
+            return self.receive(context, argv.box)
         session = SESSIONS.get(context)
         if session:
             session.pop("reward_receive_action", None)

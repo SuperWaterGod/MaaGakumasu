@@ -16,6 +16,13 @@ ROOT = Path(__file__).resolve().parents[2]
 LOGGER = logging.getLogger(__name__)
 
 
+def produce_fast_mode(context):
+    """读取培育模式；离线工具不传 Context，继续使用显式采集配置。"""
+    if context is None:
+        return False
+    return (context.get_node_data("Produce") or {}).get("attach", {}).get("fast_mode", True) is not False
+
+
 class DecisionCapture:
     def __init__(
         self,
@@ -143,6 +150,9 @@ class DecisionCapture:
     @classmethod
     def from_config(cls, metadata: dict, console=None, *, session_directory=None, save_screenshots=None, context=None):
         try:
+            # 偶像之路共用出牌动作，但不受培育任务选项控制。
+            if metadata.get("entry") != "IdolRoadAuto" and produce_fast_mode(context):
+                return None
             config_path = ROOT / "config" / "decision_capture.json"
             config = {}
             try:

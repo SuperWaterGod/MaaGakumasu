@@ -8,7 +8,7 @@ from maa.context import Context
 from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
 
-from .capture import DecisionCapture
+from .capture import DecisionCapture, produce_fast_mode
 from .console import log_operation
 from .sessions import SESSIONS
 
@@ -63,11 +63,15 @@ class ProduceCardsAuto(CustomAction):
         argv: CustomAction.RunArg,
     ) -> bool:
         self._context = context
-        session = SESSIONS.get(context)
-        self._capture = session["capture"] if session else DecisionCapture.from_config({
-            "mode": "agent_actions", "action": "ProduceCardsAuto", "entry": getattr(argv, "node_name", None),
-            "coverage": "single_action_invocation", "policy": "existing_auto", "game_action_confirmation": "unknown",
-        }, console=logger.info, context=context)
+        entry = getattr(argv, "node_name", None)
+        fast = entry != "IdolRoadAuto" and produce_fast_mode(context)
+        session = None if fast else SESSIONS.get(context)
+        self._capture = None
+        if not fast:
+            self._capture = session["capture"] if session else DecisionCapture.from_config({
+                "mode": "agent_actions", "action": "ProduceCardsAuto", "entry": entry,
+                "coverage": "single_action_invocation", "policy": "existing_auto", "game_action_confirmation": "unknown",
+            }, console=logger.info, context=context)
         self._battle_id = self._record("battle_invocation_start", node=getattr(argv, "node_name", None))
         reason = "action_returned"
         try:
