@@ -211,7 +211,7 @@ class RewardPreview:
                 if first_failure and first_failure[1]["sample"] != last.get("sample"):
                     self.record("reward_preview_wait_diagnostic", first_failure[0], phase="first_failure",
                                 expected_layout=self.layout, **{**diagnostic, **first_failure[1]})
-                self.record("reward_preview_wait_diagnostic", self.last_image, phase="last_observation",
+                self.record("reward_preview_wait_diagnostic", self.last_image, save_frame=True, phase="last_observation",
                             expected_layout=self.layout, **diagnostic)
             return frame
 
@@ -299,7 +299,7 @@ class RewardPreview:
             if not clicked:
                 self.last_wait_diagnostic = {"candidate_id": f"reward_{index + 1}", "purpose": purpose, "attempt": attempt,
                                              "outcome": "input_failed", "reason": "input_failed", "samples": 0}
-                self.record("reward_preview_wait_diagnostic", self.last_image, candidate_id=f"reward_{index + 1}",
+                self.record("reward_preview_wait_diagnostic", self.last_image, save_frame=True, candidate_id=f"reward_{index + 1}",
                             purpose=purpose, attempt=attempt, outcome="input_failed", reason="input_failed",
                             expected_layout=self.layout, actual_point=point, observation_phase="last_known_before_input")
                 return None
@@ -342,7 +342,7 @@ class RewardPreview:
         self.original = image.copy()
         self.last_image = self.original
         self.group_id = self.capture.record(
-            "reward_page_start", image=image, context=self.context, layout=self.layout,
+            "reward_page_start", image=image, context=self.context, save_frame=True, layout=self.layout,
             selected_candidate_id=f"reward_{selected + 1}" if selected is not None else None,
             policy_choice=choice, decision_id=(choice or {}).get("decision_id"), confirmation_id=confirmation_id,
             detail_rois=DETAIL_ROIS, candidates_complete=False, selection_order="observe_then_choose",
@@ -368,6 +368,7 @@ class RewardPreview:
                 if cached:
                     cache_hits += 1
                     event_id = self.record("reward_candidate_preview", self.original, candidate=self.layout["candidates"][index],
+                                           frame_reference=self.group_id,
                                            observation_method="upstream_icon", cached_identity=cached, detail_refreshed=False,
                                            selected_highlight_verified=False, game_action_confirmed=None)
                     if not event_id:
@@ -383,7 +384,7 @@ class RewardPreview:
                     break
                 refreshed = index == selected or detail_difference(previous, frame) >= .8
                 event_id = self.record(
-                    "reward_candidate_preview", frame, candidate=self.layout["candidates"][index],
+                    "reward_candidate_preview", frame, save_frame=True, candidate=self.layout["candidates"][index],
                     detail_rois=DETAIL_ROIS, detail_refreshed=refreshed,
                     selected_highlight_verified=True, game_action_confirmed=None,
                     wait_diagnostic=self.last_wait_diagnostic,

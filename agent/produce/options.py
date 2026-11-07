@@ -451,6 +451,6 @@ def record_option(context, event, action, image, observations, policy_inputs, **
     log_operation(event, action, observations)
     session = SESSIONS.get(context)
     if session:
-        session["capture"].record("option_choice", image=image, context=context, title=event, action=action,
+        session["capture"].record("option_choice", image=image, context=context, save_frame=True, title=event, action=action,
                                   observations=observations, policy_inputs_with_fallbacks=policy_inputs,
                                   policy="existing_auto", game_action_confirmed=None, **details)

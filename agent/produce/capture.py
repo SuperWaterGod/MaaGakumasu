@@ -212,7 +212,8 @@ class DecisionCapture:
             LOGGER.exception("无法开启对局采集，继续原任务")
             return None
 
-    def record(self, kind: str, *, image=None, context=None, **data):
+    def record(self, kind: str, *, image=None, context=None, save_frame=False, **data):
+        """默认只记录事件并识别内存画面；关键业务位置显式请求保存截图。"""
         if self._closed or self._failed or self._analyzing:
             return None
         from .icons import icon_operation_available
@@ -229,7 +230,8 @@ class DecisionCapture:
                 height, width = image.shape[:2]
                 event["frame"] = {"retention": "memory", "sha256": hashlib.sha256(image.tobytes()).hexdigest(),
                                   "width": width, "height": height, "source_size": [width, height], "resized": False}
-                if self.save_screenshots and not self._image_disabled:
+                event["frame_requested"] = save_frame
+                if save_frame and self.save_screenshots and not self._image_disabled:
                     try:
                         if shutil.disk_usage(self.directory).free < self._min_free_bytes:
                             raise OSError("capture_low_disk_space")
@@ -239,7 +241,7 @@ class DecisionCapture:
                         self._manifest["image_error"] = str(exc)
                         event["frame_missing_reason"] = str(exc)
                         self._emit_console("截图保存停止，文字记录与识别继续：" + str(exc))
-                elif self._image_disabled:
+                elif save_frame and self._image_disabled:
                     event["frame_missing_reason"] = self._manifest.get("image_error")
             reference = event.get("frame_reference")
             if reference in self._frames:

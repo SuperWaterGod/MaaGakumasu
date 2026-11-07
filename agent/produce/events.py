@@ -34,6 +34,7 @@ class ProduceChooseEventBase(CustomAction):
     EVENT_CONFIG: dict = {}
     RUN_TASK_MAP: dict = {}
     SUGGESTION_ROI: list = [270, 160, 350, 80]
+    EVENT_ICON_OFFSET = (0, 0)
     REST_COUNT_ROI = [580, 755, 135, 75]
 
     # 阈值常量
@@ -85,6 +86,12 @@ class ProduceChooseEventBase(CustomAction):
                 return True
 
         name = best_event["name"]
+        # 老师建议和保底分支也保留实际课程的 SP 标记，不改变选择优先级。
+        if name in ("Vo", "Da", "Vi") and any(
+            event.get("SP") and event.get(name) == best_event["box"] for event in events
+        ):
+            name += "_SP"
+            best_event["name"] = name
         label = {"Vo": "声乐", "Da": "舞蹈", "Vi": "形象"}.get(name.removesuffix("_SP"), name.removesuffix("_SP"))
         label += " SP课程" if name.endswith("_SP") else ""
         logger.info(format_operation("路线选择 - 选择 " + label, route_detail_rows(
@@ -97,7 +104,7 @@ class ProduceChooseEventBase(CustomAction):
         choice_id = None
         if session:
             choice_id = session["capture"].record(
-                "produce_event_choice", image=image, context=context, candidates=events, selected=best_event,
+                "produce_event_choice", image=image, context=context, save_frame=True, candidates=events, selected=best_event,
                 teacher_suggestion=suggestion, preference={"first": self.first, "second": self.second},
                 policy_inputs_with_fallbacks={"health": health_data, "points": points, "score": score},
                 observations={"health": self.health_observation, "attributes": self.attribute_observations,
@@ -361,9 +368,8 @@ class ProduceChooseEventBase(CustomAction):
 
 
     def _get_available_events(self, context: Context, image) -> List[Dict[str, Any]]:
-        """获取可用事件列表"""
+        """逐项识别可用事件，按课程图标的位置检查 SP，兼容不同按钮数量。"""
         available_events = []
-        available_events_name = ""
 
         for event_name, event_img in self.EVENT_CONFIG.items():
             reco_detail = context.run_recognition(
@@ -374,18 +380,15 @@ class ProduceChooseEventBase(CustomAction):
                 },
             )
             if reco_detail and reco_detail.hit:
+                box = list(reco_detail.best_result.box)
+                event = {event_name: box}
                 if event_name in ["Da", "Vi", "Vo"]:
-                    available_events_name = "Vo, Da, Vi"
-                    available_events = [
-                        {"Vo": [190, 1000, 1, 1], "SP": self._get_sp_course(context, image, [70, 900, 80, 80])},
-                        {"Da": [360, 1000, 1, 1], "SP": self._get_sp_course(context, image, [250, 900, 80, 80])},
-                        {"Vi": [530, 1000, 1, 1], "SP": self._get_sp_course(context, image, [430, 900, 80, 80])},
-                    ]
-                    break
-                available_events.append({event_name: reco_detail.best_result.box})
-                available_events_name += f"{event_name}, "
+                    # 从图标本体还原按钮锚点，徽标范围同时覆盖初/NIA。
+                    offset_x, offset_y = self.EVENT_ICON_OFFSET
+                    sp_roi = [max(0, box[0] - offset_x - 50), max(0, box[1] - offset_y - 100), 110, 140]
+                    event["SP"] = self._get_sp_course(context, image, sp_roi)
+                available_events.append(event)
 
-        logger.debug(f"可用事件: {available_events_name.rstrip(', ')}")
         logger.debug(available_events)
         return available_events
 
@@ -429,6 +432,8 @@ class ProduceChooseEventAuto(ProduceChooseEventBase):
         "交谈": {"img": "produce/chat.png", "keyword": ["先生に相談して", "咨询"]},
     }
 
+    # 只匹配图标正文，排除渐变底色、边角及事件标签对相关系数的干扰。
+    EVENT_ICON_OFFSET = (30, 20)
     EVENT_CONFIG = {
         "Vo": "produce/Vo.png",
         "Da": "produce/Da.png",

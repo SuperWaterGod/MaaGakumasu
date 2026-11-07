@@ -99,7 +99,7 @@ class ProduceCardsAuto(CustomAction):
         self._active_decision = None
         try:
             self._active_decision = self._record(
-                "decision_before", image, operation=kind, candidates=card_candidates(results),
+                "decision_before", image, save_frame=True, operation=kind, candidates=card_candidates(results),
                 source="existing_auto", frame_observed_at_ns=self._frame_observed_at_ns, **data,
             )
             self._flush_decision(self._active_decision)
@@ -327,7 +327,7 @@ class ProduceCardsAuto(CustomAction):
                     break
             label = {"copy": "复制", "move": "移动"}.get(operation, "移动／复制")
             logger.info(f"战斗 - {label}选牌")
-            self._record("move_cards_screen", image=image, decision_id=self._active_decision,
+            self._record("move_cards_screen", image=image, save_frame=True, decision_id=self._active_decision,
                          operation="move_cards", card_operation=operation)
             y = 450
             while y < 1100:

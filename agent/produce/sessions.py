@@ -35,6 +35,10 @@ ROUTE_NODES = {
     "ProduceChooseDeleteFlag": "delete_copy_exchange",
     "ProduceChooseDeleteClick": "delete_copy_exchange_confirm",
 }
+# 截图只在实际选牌／确认位置保存；奖励和商店使用各自的稳定页面入口。
+ROUTE_SCREENSHOT_NODES = {
+    "ProduceChooseStrengthenClick", "ProduceChooseStrengthen", "ProduceChooseDeleteFlag", "ProduceChooseDeleteClick",
+}
 PREPARATION_NODES = {
     "ProduceChooseDifficulty",
     "ProduceChooseIdol",
@@ -44,6 +48,9 @@ PREPARATION_NODES = {
 }
 SETTLEMENT_NODES = {"ProduceGeneration", "ProduceFinished"}
 SETTLEMENT_ENTRIES = SETTLEMENT_NODES | {"ProduceEnd"}
+SETTLEMENT_SCREENSHOT_NODES = SETTLEMENT_NODES | {
+    "ProduceNext", "ProduceEndNext", "ProduceButton", "ProduceNIAButton",
+}
 SETTLEMENT_NAVIGATION = {
     "ProduceNext", "ProduceEndNext", "ProduceButton", "ProduceNIAButton", "ProduceDecide", "DecideButton",
     "CloseRoundButton", "ProduceEventResultButton", "ProduceSkip", "ProduceSkipED",
@@ -367,7 +374,7 @@ class ProduceContextSink(ContextEventSink):
         try:
             session = SESSIONS.get(context)
             if session:
-                session["capture"].record("pipeline_failure", image=safe_image(context), node=detail.name,
+                session["capture"].record("pipeline_failure", image=safe_image(context), save_frame=True, node=detail.name,
                                           frame_source="last_cached_at_failure", game_action_confirmed=None, context=context)
         except Exception:
             logger.exception("培育异常画面记录失败，继续原失败处理")
@@ -381,7 +388,7 @@ class ProduceContextSink(ContextEventSink):
                 if session and not session["capture"]._analyzing:
                     # 入口识别时仍可能淡入；沿用流水线已有等待，完成后才读最新缓存。
                     session["capture"].record(
-                        "shop_entry_observation", image=safe_image(context), node=detail.name, operation="shop",
+                        "shop_entry_observation", image=safe_image(context), save_frame=True, node=detail.name, operation="shop",
                         frame_source="controller_cached_after_post_wait_freezes",
                         wait_freezes={"succeeded": True, "elapsed_ms": detail.elapsed, "roi": list(detail.roi), "parameters": detail.param},
                         game_action_confirmed=None, context=context,
@@ -566,7 +573,7 @@ class ProduceContextSink(ContextEventSink):
                     session["gameplay_entry_recorded"] = True
                     capture = session["capture"]
                     for preparation in origin.get("preparations", {}).values():
-                        capture.record("preparation_observation", **preparation, buffered_before_gameplay=True, context=context)
+                        capture.record("preparation_observation", **preparation, save_frame=True, buffered_before_gameplay=True, context=context)
                     origin.get("preparations", {}).clear()
                     origin.get("recognitions", {}).clear()
                     capture.record("produce_gameplay_entry", node=name, fresh_start=session["fresh_game_started_in_segment"], context=context)
@@ -605,6 +612,7 @@ class ProduceContextSink(ContextEventSink):
                 raw_image = getattr(reco, "raw_image", None)
                 event_id = capture.record(
                     "route_before",
+                    save_frame=name in ROUTE_SCREENSHOT_NODES,
                     image=raw_image if raw_image is not None and raw_image.size else safe_image(context),
                     operation=ROUTE_NODES[name],
                     node=name,
@@ -627,9 +635,10 @@ class ProduceContextSink(ContextEventSink):
                 SESSIONS.persist(session)
             elif name in PREPARATION_NODES:
                 reco = session["recognitions"].pop(name, None)
-                capture.record("preparation_observation", image=safe_image(context), node=name, recognition=getattr(reco, "raw_detail", None), context=context)
+                capture.record("preparation_observation", image=safe_image(context), save_frame=True,
+                               node=name, recognition=getattr(reco, "raw_detail", None), context=context)
             elif name in {"ProduceFailedFlag", "ProduceNIAFailedFlag", "ProduceFailedRetry", "ProduceNIAFailedRetry"}:
-                capture.record("exam_failure_or_retry", image=safe_image(context), node=name, context=context)
+                capture.record("exam_failure_or_retry", image=safe_image(context), save_frame=True, node=name, context=context)
             return
         session = SESSIONS.get(context)
         if not session:
@@ -716,7 +725,7 @@ class ProduceContextSink(ContextEventSink):
             return
         session["settlement_last_frame"] = digest
         session["capture"].record(
-            kind, image=raw, node=name, reco_id=reco_id,
+            kind, image=raw, save_frame=name in SETTLEMENT_SCREENSHOT_NODES, node=name, reco_id=reco_id,
             recognition=getattr(reco, "raw_detail", None), frame_source=source,
             wait_freezes=freeze,
             observation_phase="ending_navigation_before_input" if kind == "settlement_observation" else "post_battle_navigation_before_input",

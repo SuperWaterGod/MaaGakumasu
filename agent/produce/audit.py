@@ -138,6 +138,8 @@ def enrich_report(report, records, directory, capture_root):
                     frame_cache[key] = None if hashlib.sha256(path.read_bytes()).hexdigest() == frame["sha256"] else "截图 SHA-256 不符"
             if frame_cache[key]:
                 issue("frame_integrity", frame_cache[key], [entry])
+        elif event.get("frame_requested") is False:
+            pass  # 仅用于内存识别的观察没有请求保存截图，不属于截图遗失。
         elif event["kind"] in ("produce_event_choice", "route_before", "route_after", "reward_candidate_preview",
                                 "settlement_observation", "exam_result_observation"):
             issue("missing_frame", "该观察没有保存截图。", [entry])
@@ -336,7 +338,8 @@ def enrich_report(report, records, directory, capture_root):
     kinds = {"preparation_observation", "produce_session_start", "produce_session_resume", "produce_gameplay_entry", "produce_session_end",
              "produce_event_choice", "produce_event_input_result", "route_before", "route_input_result", "route_after",
              "settlement_observation", "exam_result_observation", "decision_before", "decision_after", "move_cards_screen",
-             "battle_entry", "battle_exit", "battle_invocation_start", "battle_invocation_end", "pipeline_action", "pipeline_failure", "option_choice", "exam_failure_or_retry"}
+             "battle_entry", "battle_exit", "battle_invocation_start", "battle_invocation_end", "pipeline_action", "pipeline_failure", "option_choice", "exam_failure_or_retry",
+             "shop_entry_observation"}
     for entry in valid:
         event = entry["event"]
         kind = event["kind"]
@@ -365,6 +368,8 @@ def enrich_report(report, records, directory, capture_root):
             link = ((entry.get("derived") or {}).get("link") or {})
             if "icon_matches" in obs or "icon_matches" in link:
                 detail["icon_matches"] = obs.get("icon_matches", link.get("icon_matches"))
+        if kind == "shop_entry_observation":
+            detail["shop"] = obs.get("shop")
         if kind == "reward_page_start":
             detail["candidates"] = event.get("layout", {}).get("candidates")
         if kind == "reward_candidate_preview":

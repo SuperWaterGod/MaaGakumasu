@@ -475,6 +475,7 @@ def render_replay(report):
     battle_pictures = []
     battle_key = None
     battle_number = 0
+    shop_rows = []
 
     def append_pictures(pictures):
         shown = set()
@@ -513,9 +514,71 @@ def render_replay(report):
         battle_pictures.clear()
         battle_key = None
 
+    def flush_shop():
+        """一次进店集中展示入口画面与操作，连续退出输入只计作一组。"""
+        if not shop_rows:
+            return
+        from .console import icon_name
+
+        steps = []
+        action_rows = []
+        for item in shop_rows:
+            if item["kind"] not in ("route_before", "pipeline_action", "pipeline_failure"):
+                continue
+            detail = item["detail"]
+            label = node_names.get(detail.get("node"))
+            if item["kind"] == "pipeline_failure":
+                label = label or "商店流程异常"
+            if not label:
+                continue
+            result = after.get(item["evidence"]["event_id"])
+            succeeded = (result or item)["detail"].get("framework_action_succeeded")
+            if item["kind"] == "pipeline_failure":
+                succeeded = False
+            state = "输入完成" if succeeded is True else "输入失败" if succeeded is False else "结果未记录"
+            action_rows.append((clock(item["evidence"]["time"]), label, state))
+            if steps and steps[-1][0] == label:
+                steps[-1][1] += 1
+            else:
+                steps.append([label, 1])
+        title = clock(shop_rows[0]["evidence"]["time"]) + "—" + clock(shop_rows[-1]["evidence"]["time"])
+        lines.extend([f'<article><h3>{title} · 商店</h3>', '<div class="table-wrap"><table><tbody>',
+                      table_row('操作记录', ' → '.join(label + (f' ×{count}' if count > 1 else '') for label, count in steps) or '观察商店入口')])
+        entry = next((item for item in shop_rows if item["kind"] == "shop_entry_observation"), None)
+        shop = (entry or {}).get("detail", {}).get("shop") or {}
+        if shop:
+            lines.append(table_row('入口 P 点', show((shop.get('points') or {}).get('value'))))
+            goods = []
+            for candidate in shop.get("candidates") or []:
+                name = icon_name(candidate.get("identity") or {})
+                price = (candidate.get("price") or {}).get("value")
+                goods.append(name + (f'（{price} P 点）' if price is not None else '（价格未知）'))
+            lines.append(table_row('入口可见商品', '、'.join(goods) or '名称未识别，可展开截图查看'))
+        lines.append(table_row('操作结果', '部分输入失败，实际购买结果未核验' if any(state == '输入失败' for _, _, state in action_rows)
+                               else '实际购买结果未核验'))
+        lines.append('</tbody></table></div>')
+        if action_rows:
+            lines.extend(['<details><summary>操作明细</summary><div class="table-wrap"><table><thead><tr>',
+                          '<th scope="col">时间</th><th scope="col">操作</th><th scope="col">框架结果</th>',
+                          '</tr></thead><tbody>'])
+            lines.extend('<tr>' + ''.join(f'<td>{cell(value)}</td>' for value in values) + '</tr>' for values in action_rows)
+            lines.append('</tbody></table></div></details>')
+        append_pictures([('商店入口', entry), *[('操作前', item) for item in shop_rows if item is not entry]])
+        lines.append('</article>')
+        shop_rows.clear()
+
     for row in timeline:
         kind, detail = row["kind"], row["detail"]
+        if kind == "shop_entry_observation" or (kind in {"route_before", "route_after", "route_input_result", "pipeline_action", "pipeline_failure"}
+                                                 and str(detail.get("node", "")).startswith("ProduceShopping")):
+            flush_battle()
+            if shop_rows and (row["evidence"]["run_id"] != shop_rows[0]["evidence"]["run_id"]
+                              or (kind == "route_before" and detail.get("node") == "ProduceShoppingFlag")):
+                flush_shop()
+            shop_rows.append(row)
+            continue
         if kind in ("battle_invocation_start", "battle_invocation_end", "battle_exit"):
+            flush_shop()
             flush_battle()
             continue
         event = operation = ""
@@ -592,6 +655,7 @@ def render_replay(report):
             changes = "；".join(f"{labels[key]} {show(value)}" for key, value in values.items() if key in labels and value is not None)
         else:
             continue
+        flush_shop()
         if kind == "decision_before":
             key = (row["evidence"]["run_id"], detail.get("battle_id") or row["evidence"]["event_id"])
             if battle_key is not None and key != battle_key:
@@ -613,7 +677,8 @@ def render_replay(report):
                 if isinstance(candidate, dict):
                     candidates.extend(str(name).replace("null", "无属性选项") + (" SP" if candidate.get("SP") else "")
                                       for name in candidate if name != "SP")
-            lines.append(table_row('可选项', '、'.join(candidates) or '未记录'))
+            label = '可选项（截图复核）' if detail.get('candidate_source') == 'saved_frame_reanalysis' else '可选项'
+            lines.append(table_row(label, '、'.join(candidates) or '未记录'))
         elif kind == "reward_receive_input":
             candidates = [name or "未识别" for (page, _), name in reward_names.items() if page == detail.get("reward_page_id")]
             lines.append(table_row('奖励候选', '、'.join(candidates) or '未识别'))
@@ -644,6 +709,7 @@ def render_replay(report):
         append_pictures(pictures)
         lines.append('</article>')
 
+    flush_shop()
     flush_battle()
     warnings = []
     if not report["settlement_fields_complete"]:
