@@ -432,7 +432,7 @@
     },
     "启用关注租借": {
       "type": "switch",
-      "default_case": "Yes",
+      "default_case": "No",
       "cases": [
         {
           "name": "Yes",
@@ -474,7 +474,7 @@
     },
     "卡片选择优先级": {
       "type": "select",
-      "default_case": "建议卡>活动卡",
+      "default_case": "活动卡>建议卡",
       "description": "$卡片选择优先级说明",
       "cases": [
         {
@@ -551,7 +551,7 @@
     },
     "跟随老师的建议": {
       "type": "switch",
-      "default_case": "Yes",
+      "default_case": "No",
       "cases": [
         {
           "name": "Yes",
