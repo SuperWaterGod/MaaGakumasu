@@ -312,7 +312,19 @@ class ResourceUpdater:
         """首次运行时事务安装内置数据库；已安装的资源由更新任务维护。"""
         bundled = self.data / "bundled"
         manifest_file = bundled / STATE_NAME
-        if (self.data / STATE_NAME).exists() or not manifest_file.is_file():
+        state = self.data / STATE_NAME
+        if state.exists():
+            if bundled.is_dir():
+                try:
+                    installed = validate_manifest(json.loads(state.read_text(encoding="utf-8")))
+                    core = {**installed, "files": [entry for entry in installed["files"] if entry["path"] in DATABASES]}
+                    if files_valid(self.data, core):
+                        validate_catalogs(self.data)
+                        self.discard_bundled_database()
+                except (OSError, ValueError, KeyError, TypeError):
+                    pass
+            return
+        if not manifest_file.is_file():
             return
         try:
             manifest = validate_manifest(json.loads(manifest_file.read_text(encoding="utf-8")))
@@ -329,6 +341,19 @@ class ResourceUpdater:
         self.install(manifest, sorted(DATABASES), [])
         self.finish_work(self.work)
         self.log("已安装内置数据库，可通过“更新数据库和素材”获取更新及图标")
+
+    def discard_bundled_database(self):
+        """正式数据确认可用后清理内置副本，仅删除打包白名单内的文件。"""
+        bundled = self.data / "bundled"
+        if not bundled.is_dir() or bundled.is_symlink() or bundled.resolve().parent != self.data.resolve():
+            return
+        try:
+            for name in sorted(DATABASES | {STATE_NAME}):
+                (bundled / name).unlink(missing_ok=True)
+            if not any(bundled.iterdir()):
+                bundled.rmdir()
+        except OSError as exc:
+            self.log(f"数据库已就绪，内置副本将在下次启动时重试清理：{exc}")
 
     def install(self, manifest, changed, deleted):
         stage = self.work / "stage"
@@ -364,6 +389,7 @@ class ResourceUpdater:
         except BaseException:
             self.recover()
             raise
+        self.discard_bundled_database()
 
     def unpack(self, bundle, stage, manifest):
         expected = {entry["path"]: entry for entry in manifest["files"]}
