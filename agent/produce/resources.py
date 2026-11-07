@@ -113,14 +113,22 @@ def validate_catalogs(directory):
     revision = skills.get("source", {}).get("revision", "")
     if not re.fullmatch(r"[0-9a-f]{40}", revision) or revision != items.get("source", {}).get("revision"):
         raise ValueError("数据库来源版本不一致")
-    for rows, fields in ((skills.get("cards"), ("cost", "actions", "effects", "conditions")),
-                         (items.get("drinks"), ("actions",)), (items.get("p_items"), ("effects",))):
+    tables = [(skills.get("cards"), ("cost", "actions", "effects", "conditions"), int),
+              (items.get("drinks"), ("actions",), int), (items.get("p_items"), ("effects",), int)]
+    if "support_cards" in items:
+        tables.append((items["support_cards"], (), str))
+    for rows, fields, id_type in tables:
         if not isinstance(rows, list) or not rows:
             raise ValueError("数据库缺少条目")
         ids = set()
         for row in rows:
-            if (not isinstance(row, dict) or type(row.get("id")) is not int or row["id"] <= 0 or row["id"] in ids
+            if (not isinstance(row, dict) or type(row.get("id")) is not id_type or row["id"] in ids
+                    or (id_type is int and row["id"] <= 0)
+                    or (id_type is str and not re.fullmatch(r"s_card-[0-9]+-[0-9]+", row["id"]))
                     or not isinstance(row.get("name"), str) or not row["name"]
+                    or not isinstance(row.get("aliases", []), list)
+                    or any(not isinstance(name, str) or not name.strip() for name in row.get("aliases", []))
+                    or ("name_zh_cn" in row and (not isinstance(row["name_zh_cn"], str) or not row["name_zh_cn"].strip()))
                     or any(not isinstance(row.get(field, ""), str) for field in fields)):
                 raise ValueError("数据库条目格式错误或 ID 重复")
             ids.add(row["id"])
@@ -264,6 +272,7 @@ class ResourceUpdater:
     def _recover(self):
         pending = self.data / PENDING_NAME
         if not pending.exists():
+            self.install_bundled_database()
             return
         try:
             journal = json.loads(pending.read_text(encoding="utf-8"))
@@ -298,6 +307,28 @@ class ResourceUpdater:
             raise
         except Exception as exc:
             raise RecoveryError(f"资源恢复失败：{exc}") from exc
+
+    def install_bundled_database(self):
+        """首次运行时事务安装内置数据库；已安装的资源由更新任务维护。"""
+        bundled = self.data / "bundled"
+        manifest_file = bundled / STATE_NAME
+        if (self.data / STATE_NAME).exists() or not manifest_file.is_file():
+            return
+        try:
+            manifest = validate_manifest(json.loads(manifest_file.read_text(encoding="utf-8")))
+            if {entry["path"] for entry in manifest["files"]} != DATABASES or not files_valid(bundled, manifest):
+                raise ValueError("内置数据库文件与清单不一致")
+            validate_catalogs(bundled)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise RecoveryError(f"内置数据库校验失败，请执行“更新数据库和素材”：{exc}") from exc
+        self.work = self.temp / manifest["version"]
+        stage = self.work / "stage"
+        stage.mkdir(parents=True, exist_ok=True)
+        for name in sorted(DATABASES):
+            shutil.copyfile(bundled / name, stage / name)
+        self.install(manifest, sorted(DATABASES), [])
+        self.finish_work(self.work)
+        self.log("已安装内置数据库，可通过“更新数据库和素材”获取更新及图标")
 
     def install(self, manifest, changed, deleted):
         stage = self.work / "stage"

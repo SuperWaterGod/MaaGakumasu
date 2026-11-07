@@ -38,6 +38,7 @@ class SkillCardCatalog:
         self.cards = database["cards"]
         self.entries = []
         self.exact_names = set()
+        self.literal_entries = defaultdict(set)
         aliases = {}
         if aliases_path and aliases_path.exists():
             aliases = json.loads(aliases_path.read_text(encoding="utf-8-sig"))
@@ -47,6 +48,7 @@ class SkillCardCatalog:
                 base, plus = split_variant(name)
                 self.entries.append((base, plus, card))
                 self.exact_names.add(normalize_name(name))
+                self.literal_entries[clean(name)].add(card["id"])
 
     def _overlap_name(self, normalized):
         """完整库名称已经出现时，允许清理少量混入的相邻卡名尾字。"""
@@ -119,36 +121,39 @@ class SkillCardCatalog:
             result["unknown_reason"] = "name_missing_or_too_short"
             return result
         scores = {}
+        literal_ids = self.literal_entries.get(clean(text))
         for candidate_base, candidate_plus, card in self.entries:
+            if literal_ids and card["id"] not in literal_ids:
+                continue
             # 可见加号选择强化条目；双加号仍标记为待确认的运行时变体。
-            if bool(plus) != bool(candidate_plus):
+            if bool(plus) != bool(candidate_plus) or bool(plus) != bool(card.get("upgraded", candidate_plus)):
                 continue
             # 模糊匹配不得丢弃名称内部尚未解析的强化标记。
             if base.count("+") != candidate_base.count("+"):
                 continue
             similarity = SequenceMatcher(None, base, candidate_base).ratio()
             if card["id"] not in scores or similarity > scores[card["id"]][0]:
-                scores[card["id"]] = (similarity, card)
+                scores[card["id"]] = (similarity, card, candidate_base + "+" * candidate_plus)
         ranked = sorted(scores.values(), key=lambda item: (-item[0], item[1]["id"]))
         result["candidates"] = [
             {
                 "source_id": card["id"],
                 "card_id": f"skill_card_{card['id']:04d}",
                 "name": card["name"],
-                "name_similarity": SequenceMatcher(None, prefix["visible_prefix"], split_variant(card["name"])[0]).ratio() if prefix else score,
+                "name_similarity": SequenceMatcher(None, prefix["visible_prefix"], split_variant(matched_name)[0]).ratio() if prefix else score,
             }
-            for score, card in ranked[:3]
+            for score, card, matched_name in ranked[:3]
         ]
         if not ranked:
             result["unknown_reason"] = "no_catalog_variant"
             return result
-        best, card = ranked[0]
+        best, card, matched_name = ranked[0]
         margin = best - ranked[1][0] if len(ranked) > 1 else 1.0
         result.update(name_similarity=best, similarity_margin=margin, match_method="exact" if best == 1 else "fuzzy")
         if prefix and prefix["ambiguous"]:
             result.update(match_method="prefix_candidates", unknown_reason="shared_visible_prefix")
             return result
-        if not name_match_allowed(recognized, card["name"], ocr_confidence, best, margin):
+        if not name_match_allowed(recognized, matched_name, ocr_confidence, best, margin):
             result["unknown_reason"] = "low_confidence_or_ambiguous_name"
             return result
         if prefix:
@@ -187,6 +192,7 @@ class RewardCatalog:
     def __init__(self, skills, items_path=None):
         self.skills = skills
         self.index = defaultdict(list)
+        self.literal_index = defaultdict(list)
         self.ids = {}
         self.card_names = {}
         self.item_sha256 = None
@@ -198,6 +204,8 @@ class RewardCatalog:
         for base, plus, card in skills.entries:
             self.card_names[base + "+" * plus] = card["name"]
             self.index[base + "+" * plus].append(("skill_card", card))
+        for name, identifiers in skills.literal_entries.items():
+            self.literal_index[name] = [self.ids[f"skill_card_{identifier:04d}"] for identifier in sorted(identifiers)]
         if items_path and Path(items_path).exists():
             try:
                 raw = Path(items_path).read_bytes()
@@ -218,6 +226,8 @@ class RewardCatalog:
                 self.index = defaultdict(list, {key: [(kind, row) for kind, row in values if kind == "skill_card"]
                                                 for key, values in self.index.items()})
                 self.ids = {key: value for key, value in self.ids.items() if value[0] == "skill_card"}
+                self.literal_index = defaultdict(list, {key: [(kind, row) for kind, row in values if kind == "skill_card"]
+                                                        for key, values in self.literal_index.items()})
 
     @property
     def hashes(self):
@@ -230,6 +240,7 @@ class RewardCatalog:
         self.ids[key] = (kind, row)
         for name in names:
             self.index[normalize_name(name)].append((kind, row))
+            self.literal_index[clean(name)].append((kind, row))
 
     @staticmethod
     def dsl(kind, row):
@@ -260,7 +271,8 @@ class RewardCatalog:
 
     def match(self, text, confidence=1.0):
         normalized = normalize_name(text)
-        rows = {(kind, row["id"]): (kind, row) for kind, row in self.index.get(normalized, [])}
+        entries = self.literal_index.get(clean(text)) or self.index.get(normalized, [])
+        rows = {(kind, row["id"]): (kind, row) for kind, row in entries}
         match_evidence = {}
         # 部分上游道具变体的名称省略加号，
         # 按明确的 upgraded 字段区分，不能随意选择首个同名条目。
@@ -290,7 +302,9 @@ class RewardCatalog:
             if match_evidence:
                 identity = self.skills.match(text, confidence)
             else:
-                name = self.card_names.get(normalized, row["name"])
+                name = row["name"]
+                if row.get("upgraded") and not name.endswith("+"):
+                    name += "+"
                 if name not in self._skill_cache:
                     self._skill_cache[name] = self.skills.match(name)
                 identity = copy.deepcopy(self._skill_cache[name])

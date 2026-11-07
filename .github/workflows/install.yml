@@ -65,8 +65,60 @@ jobs:
       is_release: ${{ steps.set_tag.outputs.is_release }}
       is_prerelease: ${{ steps.set_tag.outputs.is_prerelease }}
 
+  databases:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install database build dependencies
+        run: python -m pip install Pillow PyYAML
+      - name: Check out database source
+        uses: actions/checkout@v6
+        with:
+          repository: gakumas-tools/gakumas-tools
+          ref: master
+          path: upstream-produce
+          sparse-checkout: packages/gakumas-data/csv
+      - name: Check out game names
+        uses: actions/checkout@v6
+        with:
+          repository: vertesan/gakumasu-diff
+          ref: main
+          path: upstream-game
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /ProduceCard.yaml
+            /ProduceDrink.yaml
+            /ProduceItem.yaml
+            /ProduceCustomizeItem.yaml
+            /SupportCard.yaml
+      - name: Check out plugin translations
+        uses: actions/checkout@v6
+        with:
+          repository: chinosk6/GakumasTranslationData
+          ref: main
+          path: upstream-translations
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /local-files/masterTrans/ProduceCard.json
+            /local-files/masterTrans/ProduceDrink.json
+            /local-files/masterTrans/ProduceItem.json
+            /local-files/masterTrans/ProduceCustomizeItem.json
+            /local-files/masterTrans/SupportCard.json
+      - name: Build initial databases
+        run: >-
+          python tools/build_produce_resources.py --source upstream-produce
+          --game-source upstream-game --translation-source upstream-translations
+          --databases-only --output build-databases
+      - uses: actions/upload-artifact@v7
+        with:
+          name: produce-databases
+          path: build-databases/payload
+
   windows:
-    needs: meta
+    needs: [meta, databases]
     runs-on: windows-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -79,6 +131,11 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: true
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: produce-databases
+          path: assets/data/bundled
 
       - name: Resolve MaaFramework version
         id: maa_version
@@ -251,7 +308,7 @@ jobs:
           path: "install"
 
   unix:
-    needs: meta
+    needs: [meta, databases]
     runs-on: ${{ matrix.os }}
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -265,6 +322,11 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: true
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: produce-databases
+          path: assets/data/bundled
 
       - name: Resolve MaaFramework version
         id: maa_version
@@ -384,6 +446,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
+          pattern: MaaGakumasu-*
           path: assets
 
       - name: Check assets directory

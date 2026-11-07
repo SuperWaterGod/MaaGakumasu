@@ -1,13 +1,16 @@
-import os
 import json
 import time
 import base64
 from difflib import SequenceMatcher
+from pathlib import Path
 
 from utils import logger
 from maa.context import Context
 from maa.custom_action import CustomAction
+from produce.resources import data_directory, ensure_resources_ready
 from maa.agent.agent_server import AgentServer
+
+ROOT = Path(__file__).resolve().parents[3]
 
 
 @AgentServer.custom_action("SupportCardsAuto")
@@ -27,8 +30,6 @@ class SupportCardsAuto(CustomAction):
     CARD_HEIGHT = 128
     ACTION_DELAY = 0.5
 
-    # 支持卡牌数据文件路径
-    SUPPORT_CARDS_FILE = "data/support_cards.json" if os.path.exists("data/support_cards.json") else "assets/data/support_cards.json"
     # 相似度阈值
     SIMILARITY_THRESHOLD = 0.7
 
@@ -92,27 +93,35 @@ class SupportCardsAuto(CustomAction):
         return True
 
     def load_card_data(self) -> dict:
-        """加载支持卡牌数据"""
+        """从统一数据库读取支援卡的中日文名称，保留同名歧义。"""
         try:
-            with open(self.SUPPORT_CARDS_FILE, "r", encoding="utf-8") as f:
-                cards = json.load(f)
-            # 构建名称到ID的映射
-            return {card["name"]: card["id"] for card in cards}
+            ensure_resources_ready(ROOT)
+            with (data_directory(ROOT) / "produce_reward_items.json").open(encoding="utf-8") as stream:
+                cards = json.load(stream).get("support_cards")
+            if not isinstance(cards, list) or not cards:
+                raise ValueError("统一数据库缺少支援卡数据")
+            names = {}
+            for card in cards:
+                for name in [card["name"], *card.get("aliases", [])]:
+                    names[name] = card["id"] if name not in names or names[name] == card["id"] else None
+            return names
         except Exception as e:
-            logger.error(f"加载卡牌数据失败: {e}")
+            logger.error(f"支援卡数据库加载失败，请先执行“更新数据库和素材”：{e}")
             return {}
 
     def match_card(self, name: str, star: int, card_data: dict) -> str | None:
         """匹配单张卡牌并处理ID"""
         # 精确匹配
         if name in card_data:
-            return self.process_card_id(card_data[name], star)
+            return self.process_card_id(card_data[name], star) if card_data[name] is not None else None
 
         # 模糊匹配
         best_similarity = 0
         best_card_id = None
         best_card_name = None
         for card_name, card_id in card_data.items():
+            if card_id is None:
+                continue
             similarity = self.calculate_similarity(name, card_name)
             if similarity > best_similarity:
                 best_similarity = similarity

@@ -79,7 +79,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - `assets/resource/announcement/01_更新公告.md`：发布给用户看的版本更新公告；当前内容已进入 v1.5.2 说明。
 - `assets/resource/announcement/`：客户端资源公告与首次使用欢迎弹窗。文件按名称数字前缀排序展示（`01_更新公告.md`、`02_常见问题.md`、`03_免责声明与使用须知.md`、`04_欢迎使用.md`、`05_功能介绍.md`）；`04_欢迎使用.md` 被 `assets/interface.json` 的 `welcome` 字段引用；`05_功能介绍.md` 为功能说明.md 的简化版公告，冲突时以功能说明.md 与任务配置为准；`02_常见问题.md` / `03_免责声明与使用须知.md` 为长期静态公告。
 - `docs/zh_cn/`：中文用户与开发文档。
-- `tools/`：项目维护脚本，包括构建/CI、偶像素材与卡片数据更新、支援卡同步、语言同步、正式技能卡与奖励库同步、资源检查。
+- `tools/`：项目维护脚本，包括构建/CI、偶像素材与卡片数据更新、语言同步、统一数据库构建、正式技能卡与奖励库同步、资源检查。
 - `research/produce/`：培育训练与实验代码，包括独立 ADB 采样、离线报告、奖励重放、模板取样和可复用回归测试；不参与客户端运行，当前尚未实现策略模型训练。客户端不得反向依赖此目录。
 - `debug/`：运行日志和调试输出，包括历史截图、离线验证报告和训练素材；已被 Git 忽略，不应作为功能改动的一部分提交。
 - 实验文件归属：分支实验、离线研究、回归验证、临时脚本、测试素材与归档统一写入 `../MaaGakumasuLab/debug/`，不要再写入主仓库 `debug/`。主仓库只保留主线运行日志、错误截图及问题反馈附件；beta 客户端正常运行产生的原始记录保留在 beta 自身的 `debug/`。2026-10-20 已按用户授权将主仓库历史实验材料迁至 `D:/Projects/MaaGakumasuLab/debug/migrated-from-maagakumasu-20261020/`，迁移清单见该目录的 `MIGRATION.json`。
@@ -127,7 +127,7 @@ python tools/ci/check_resource.py ./assets/resource/base/
 - 同一业务使用统一的包导入。只有脚本入口为内置 Python 设置一次 `agent/` 搜索路径；内部模块不各自修改 `sys.path`，不保留“相对导入失败就换裸模块名”的双重导入。包 `__init__.py` 保持轻量，离线导入分析模块不得自动注册输入动作或安装 sinks。
 - 移动/合并模块时一并更新导入、框架注册入口、离线脚本启动路径、源码版本指纹、维护 CLI 和文档。迁移完成后清除旧源码及对应旧字节码，不用一串空转发文件保留内部旧布局；确有外部兼容契约时才保留适配入口并说明原因。
 - 结构整理优先保留既有行为、流水线注册名称、参数、事件和派生数据 schema。验证普通包导入、脚本直接启动、内置 Python/AgentServer 和历史数据读取；同步 beta 时做目标路径检查、备份与 SHA 核对，禁止通过启动客户端完成复制。
-- 客户端打包和 beta 同步的 `data/` 只复制 `idols_cards.json`、`support_cards.json`、`battle_buff_templates.json`。技能卡、饮料、P 道具数据库、原始图库、来源／许可证说明及资源清单由更新服务管理，源码下载至 `assets/data/` 的副本也不得打包或覆盖到 beta；保留客户端已安装的这些资源。
+- 客户端打包和 beta 同步的 `data/` 直接复制 `idols_cards.json`、`battle_buff_templates.json`；内置初始数据库通过 `tools/build_produce_resources.py --databases-only` 生成，连同来源、许可证及校验清单存入 `data/bundled/`。首次启动按事务安装到 `data/`，已有资源安装清单时保留当前数据库。技能卡、饮料、P 道具与支援卡数据库及图标都可通过“一键培育”的“更新数据库和素材”任务更新，无需客户端发版；原始图库通过任务下载。源码运行中的云端资源副本与 `data/` 整目录不得直接覆盖到 beta。支援卡写在 `produce_reward_items.json` 的 `support_cards` 中，由 `SupportCards.py` 直接读取中日文名称与别名。
 
 ## MaaFramework 流水线规则
 

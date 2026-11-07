@@ -8,6 +8,10 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(script_dir)
 
 working_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(working_dir / "agent"))
+
+from produce.resources import DATABASES, STATE_NAME, files_valid, validate_catalogs, validate_manifest
+
 install_path = working_dir / Path("install")
 version = len(sys.argv) > 1 and sys.argv[1] or "v0.0.1"
 platform_tag = len(sys.argv) > 2 and sys.argv[2] or ""
@@ -75,13 +79,22 @@ def install_resource():
         )
         print("Copied lang folder for i18n support")
 
-    # 仅复制随客户端发布的配置；数据库、原始图库及其清单由更新服务安装。
+    # 配置直接随包发布；初始数据库独立存放，首次启动后交给更新服务维护。
     data_src = working_dir / "assets" / "data"
     data_dst = install_path / "data"
     data_dst.mkdir(parents=True, exist_ok=True)
-    for name in ("idols_cards.json", "support_cards.json", "battle_buff_templates.json"):
+    for name in ("idols_cards.json", "battle_buff_templates.json"):
         shutil.copy2(data_src / name, data_dst / name)
-    print("Copied bundled data configurations")
+    bundled = data_src / "bundled"
+    manifest = validate_manifest(json.loads((bundled / STATE_NAME).read_text(encoding="utf-8")))
+    if {entry["path"] for entry in manifest["files"]} != DATABASES or not files_valid(bundled, manifest):
+        raise ValueError("内置数据库不完整，请先通过 build_produce_resources.py --databases-only 生成")
+    validate_catalogs(bundled)
+    bundled_dst = data_dst / "bundled"
+    bundled_dst.mkdir(parents=True, exist_ok=True)
+    for name in (*sorted(DATABASES), STATE_NAME):
+        shutil.copy2(bundled / name, bundled_dst / name)
+    print("Copied bundled configurations and initial databases")
 
     with open(install_path / "interface.json", "r", encoding="utf-8") as f:
         interface = json.load(f)

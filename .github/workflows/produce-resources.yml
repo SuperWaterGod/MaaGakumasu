@@ -8,6 +8,14 @@ on:
         description: "上游完整提交 SHA（留空使用 master）"
         required: false
         type: string
+      game_revision:
+        description: "游戏原文完整提交 SHA（留空使用 main）"
+        required: false
+        type: string
+      translation_revision:
+        description: "插件汉化完整提交 SHA（留空使用 main）"
+        required: false
+        type: string
       rollback:
         description: "回退到保留的资源版本（留空则构建）"
         required: false
@@ -42,22 +50,24 @@ jobs:
               raise SystemExit('请在 Run workflow 中选择 decision-capture 分支；main 目前仅提供工作流入口。')
           PY
       - name: Install publishing dependencies
-        run: python -m pip install Pillow boto3
+        run: python -m pip install Pillow boto3 PyYAML
       - name: Verify distribution worker
         run: node --test cloud/produce-resources/worker.test.mjs
       - name: Validate inputs
         env:
           REVISION: ${{ inputs.revision }}
+          GAME_REVISION: ${{ inputs.game_revision }}
+          TRANSLATION_REVISION: ${{ inputs.translation_revision }}
           ROLLBACK: ${{ inputs.rollback }}
         run: |
           python - <<'PY'
           import os, re
-          for key, width in [('REVISION', 40), ('ROLLBACK', 64)]:
+          for key, width in [('REVISION', 40), ('GAME_REVISION', 40), ('TRANSLATION_REVISION', 40), ('ROLLBACK', 64)]:
               value = os.environ[key]
               if value and not re.fullmatch('[0-9a-f]{%d}' % width, value):
                   raise SystemExit(f'Invalid {key}')
-          if os.environ['REVISION'] and os.environ['ROLLBACK']:
-              raise SystemExit('revision and rollback are mutually exclusive')
+          if os.environ['ROLLBACK'] and any(os.environ[key] for key in ('REVISION', 'GAME_REVISION', 'TRANSLATION_REVISION')):
+              raise SystemExit('source revisions and rollback are mutually exclusive')
           PY
       - name: Check out fixed upstream source
         if: inputs.rollback == ''
@@ -71,9 +81,40 @@ jobs:
             packages/gakumas-images/images/skillCards/icons
             packages/gakumas-images/images/pDrinks/icons
             packages/gakumas-images/images/pItems/icons
+      - name: Check out fixed game names
+        if: inputs.rollback == ''
+        uses: actions/checkout@v4
+        with:
+          repository: vertesan/gakumasu-diff
+          ref: ${{ inputs.game_revision || 'main' }}
+          path: upstream-game
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /ProduceCard.yaml
+            /ProduceDrink.yaml
+            /ProduceItem.yaml
+            /ProduceCustomizeItem.yaml
+            /SupportCard.yaml
+      - name: Check out fixed plugin translations
+        if: inputs.rollback == ''
+        uses: actions/checkout@v4
+        with:
+          repository: chinosk6/GakumasTranslationData
+          ref: ${{ inputs.translation_revision || 'main' }}
+          path: upstream-translations
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /local-files/masterTrans/ProduceCard.json
+            /local-files/masterTrans/ProduceDrink.json
+            /local-files/masterTrans/ProduceItem.json
+            /local-files/masterTrans/ProduceCustomizeItem.json
+            /local-files/masterTrans/SupportCard.json
       - name: Build and publish
         if: inputs.rollback == ''
-        run: python tools/build_produce_resources.py --source upstream-produce --output "$RUNNER_TEMP/produce-resources" --publish
+        run: >-
+          python tools/build_produce_resources.py --source upstream-produce
+          --game-source upstream-game --translation-source upstream-translations
+          --output "$RUNNER_TEMP/produce-resources" --publish
       - name: Roll back published pointer
         if: inputs.rollback != ''
         env:

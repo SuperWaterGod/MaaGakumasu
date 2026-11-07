@@ -377,6 +377,7 @@ __pycache__/
 /assets/data/produce_resources_source.json
 /assets/data/produce_resources_manifest.json
 /assets/data/produce_resources_pending.json
+/assets/data/bundled/
 /assets/data/images/skillCards/
 /assets/data/images/pDrinks/
 /assets/data/images/pItems/

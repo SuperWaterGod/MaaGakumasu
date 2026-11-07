@@ -11,6 +11,7 @@ import zipfile
 import argparse
 import subprocess
 from pathlib import Path
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
 from PIL import Image
@@ -19,8 +20,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "agent"))
 
 from sync_skill_cards import build_database as build_skills
-from produce.resources import PNG_PATH, PROTOCOL, file_hash, atomic_json, validate_catalogs, validate_manifest
+from produce.resources import PNG_PATH, PROTOCOL, STATE_NAME, file_hash, atomic_json, validate_catalogs, validate_manifest
 from sync_reward_items import build_database as build_items
+from produce_translations import enrich
+from produce_translations import selected_sources as translation_sources
 
 REPOSITORY = "https://github.com/gakumas-tools/gakumas-tools"
 TABLES = {"cards": "skill_cards.csv", "drinks": "p_drinks.csv", "p_items": "p_items.csv"}
@@ -40,7 +43,7 @@ def read_table(raw):
     return rows
 
 
-def selected_sources(source):
+def selected_sources(source, *, include_images=True):
     source = Path(source).resolve()
     tables = source / "packages/gakumas-data/csv"
     selected = {f"tables/{key}": tables / name for key, name in TABLES.items()}
@@ -48,6 +51,8 @@ def selected_sources(source):
     for path in selected.values():
         if not path.is_file():
             raise ValueError(f"上游源文件缺失: {path}")
+    if not include_images:
+        return selected
     for folder in ("skillCards", "pDrinks", "pItems"):
         directory = source / "packages/gakumas-images/images" / folder / "icons"
         if not directory.is_dir():
@@ -68,12 +73,17 @@ def source_fingerprint(selected):
     return hashlib.sha256(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def build(source, output, previous=None):
+def build(source, output, previous=None, *, game_source=None, translation_source=None, databases_only=False):
     source, output = Path(source).resolve(), Path(output).resolve()
-    selected = selected_sources(source)
+    selected = selected_sources(source, include_images=not databases_only)
+    if bool(game_source) != bool(translation_source):
+        raise ValueError("游戏原文与插件汉化来源必须同时指定")
+    if game_source:
+        selected.update(translation_sources(game_source, translation_source))
+        selected["builder/resources.py"] = Path(__file__)
     fingerprint = source_fingerprint(selected)
     if previous and previous.get("source_fingerprint") == fingerprint:
-        print("上游所选数据和原图没有变化，跳过发布")
+        print("所选数据、汉化和原图没有变化，跳过发布")
         return None
     revision = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
     timestamp = subprocess.check_output(["git", "-C", str(source), "show", "-s", "--format=%cI", "HEAD"], text=True).strip()
@@ -83,6 +93,11 @@ def build(source, output, previous=None):
     skills["source"]["path"] = "packages/gakumas-data/csv/" + TABLES["cards"]
     for key in ("drinks", "p_items"):
         items["source"]["tables"][key]["path"] = "packages/gakumas-data/csv/" + TABLES[key]
+    translations = None
+    if game_source:
+        translations = enrich(skills, items, game_source, translation_source)
+        timestamp = max((timestamp, translations["game"]["timestamp"], translations["translation"]["timestamp"]),
+                        key=datetime.fromisoformat)
     # 固定为提交时间，使同一来源可以重复生成相同内容。
     skills["source"]["fetched_at"] = items["source"]["fetched_at"] = timestamp
     payload = output / "payload"
@@ -91,6 +106,8 @@ def build(source, output, previous=None):
     atomic_json(payload / "produce_reward_items.json", items)
     shutil.copyfile(selected["LICENSE"], payload / "GAKUMAS_DATA_LICENSE.txt")
     rows_by_folder = {"skillCards": skills["cards"], "pDrinks": items["drinks"], "pItems": items["p_items"]}
+    if databases_only:
+        rows_by_folder = {}
     coverage = {}
     for folder, rows in rows_by_folder.items():
         ids = {row["id"] for row in rows}
@@ -119,6 +136,8 @@ def build(source, output, previous=None):
         "images_path": "packages/gakumas-images/images/{skillCards,pDrinks,pItems}/icons",
         "image_processing": "原始 PNG，未缩放或重新编码", "license": "GAKUMAS_DATA_LICENSE.txt",
         "coverage": coverage,
+        **({"scope": "databases"} if databases_only else {}),
+        **({"translations": translations} if translations else {}),
     })
     validate_catalogs(payload)
     files = [{"path": path.relative_to(payload).as_posix(), "size": path.stat().st_size, "sha256": file_hash(path)}
@@ -139,10 +158,13 @@ def build(source, output, previous=None):
     }
     validate_manifest(manifest)
     atomic_json(output / "manifest.json", manifest)
+    if databases_only:
+        atomic_json(payload / STATE_NAME, manifest)
     atomic_json(output / "latest.json", {"protocol": PROTOCOL, "version": version,
                                          "manifest_size": (output / "manifest.json").stat().st_size,
                                          "manifest_sha256": file_hash(output / "manifest.json")})
-    print(json.dumps({"version": version, "coverage": coverage}, ensure_ascii=False, indent=2))
+    print(json.dumps({"version": version, "coverage": coverage,
+                      **({"translations": translations["coverage"]} if translations else {})}, ensure_ascii=False, indent=2))
     return manifest
 
 
@@ -264,10 +286,17 @@ class Publisher:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path)
+    parser.add_argument("--game-source", type=Path, help="固定提交的 gakumasu-diff 检出目录")
+    parser.add_argument("--translation-source", type=Path, help="固定提交的 GakumasTranslationData 检出目录")
+    parser.add_argument("--databases-only", action="store_true", help="生成安装包内置数据库及校验清单")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--publish", action="store_true")
     parser.add_argument("--rollback", help="将最新版指针回退到保留版本")
     args = parser.parse_args()
+    if bool(args.game_source) != bool(args.translation_source):
+        parser.error("--game-source 和 --translation-source 必须同时指定")
+    if args.databases_only and (args.publish or args.rollback):
+        parser.error("--databases-only 用于客户端打包，不能与 --publish 或 --rollback 同用")
     publisher = Publisher() if args.publish else None
     if args.rollback:
         if not publisher:
@@ -281,7 +310,8 @@ def main():
         latest = publisher.get_json("v1/latest.json")
         if latest:
             previous = publisher.get_json(f"v1/releases/{latest['version']}/manifest.json")
-    manifest = build(args.source, args.output, previous)
+    manifest = build(args.source, args.output, previous, game_source=args.game_source, translation_source=args.translation_source,
+                     databases_only=args.databases_only)
     if manifest and publisher:
         publisher.publish(args.output, manifest)
 
