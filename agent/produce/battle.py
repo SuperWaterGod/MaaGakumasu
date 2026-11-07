@@ -189,8 +189,9 @@ class ProduceCardsAuto(CustomAction):
                     self._play_a_card(context, best_box, image, results, "only_available_card")
                 # 没有可用牌时，先判断是否处于出牌场景，确认处于出牌场景后，再跳过回合
                 elif useless > 0 and suggestions == 0 and cards == 0:
-                    logger.warning("战斗 - 无可用牌，跳过回合")
                     self._begin_decision("skip_round", image, results, reason="no_available_cards")
+                    if not (self._capture and self._capture.merged_console_enabled):
+                        logger.warning("战斗 - 无可用牌，跳过回合")
                     context.run_task("ProduceRecognitionSkipRound")
                     playable = self._wait_until_playable(context)
                     self._finish_decision(playable)
@@ -208,8 +209,9 @@ class ProduceCardsAuto(CustomAction):
             else:
                 reco_detail = context.run_recognition("ProduceRecognitionNoCards", image)
                 if reco_detail and reco_detail.hit:
-                    logger.info("战斗 - 无手牌，跳过回合")
                     self._begin_decision("skip_round", image, reason="no_cards_ocr")
+                    if not (self._capture and self._capture.merged_console_enabled):
+                        logger.info("战斗 - 无手牌，跳过回合")
                     context.run_task("ProduceRecognitionSkipRound")
                     playable = self._wait_until_playable(context)
                     self._finish_decision(playable)
