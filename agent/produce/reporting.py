@@ -618,9 +618,12 @@ def render_replay(report):
             candidates = [name or "未识别" for (page, _), name in reward_names.items() if page == detail.get("reward_page_id")]
             lines.append(table_row('奖励候选', '、'.join(candidates) or '未识别'))
         if "icon_matches" in detail:
-            names = Counter(hit.get("database_name") or "未知名称" for hit in detail["icon_matches"] or [])
+            from .console import icon_name
+            names = Counter(icon_name(hit) for hit in detail["icon_matches"] or [])
             text = '、'.join(f'{name} ×{count}' for name, count in names.items())
             lines.append(table_row('当前画面图标识别', text or '未命中缓存中的已知图标'))
+            if any(hit.get("variant_verified") is False for hit in detail["icon_matches"] or []):
+                lines.append(table_row('符号说明', '≈：卡名已确认，强化状态未确认'))
             lines.append(table_row('识别范围', '仅识别当前可见图标本体；强化、可选状态及实际获得情况未核验，不代表完整列表。'))
         elif kind == "route_before" and detail.get("visible_candidates"):
             lines.append(table_row('当前画面文字识别', '、'.join(name for name in detail['visible_candidates'] if name)))

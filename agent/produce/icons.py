@@ -97,7 +97,7 @@ class UpstreamIcons:
         self.hashes = hashes
         self._last_scan = None
 
-    def lookup(self, image, box, item_kind=None):
+    def lookup(self, image, box, item_kind=None, *, allow_unverified_variant=False):
         """全流派初筛，每个身份至多两图精匹配，分数和分差均通过才确认具体版本。"""
         image = bgr_image(image)
         x, y, width, height = map(int, box)
@@ -164,7 +164,12 @@ class UpstreamIcons:
                         entry = {**entries[ordered[0][1]], "variant_verified": True,
                                  "variant_similarity": round(ordered[0][0], 4)}
         if not entry["variant_verified"]:
-            return None
+            if not allow_unverified_variant:
+                return None
+            # 名称分数与分差已经通过；只保留卡名，不把初筛版本当成已确认的库条目。
+            entry = {"database_name": base, "base_name": base, "item_kind": kind,
+                     "catalog_id": None, "icon_path": None, "variant_verified": False,
+                     "status": "base_match_variant_unresolved", "upgrade_status": "unresolved", "upgraded": None}
         return {**entry, "similarity": round(score, 4), "catalog_hashes": self.hashes,
                 "query_icon_sha256": hashlib.sha256(crop.tobytes()).hexdigest(), "method": "upstream_icon_variant"}
 

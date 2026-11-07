@@ -131,6 +131,11 @@ class DecisionCapture:
         from .analysis import analyze_stream
 
         def notice(message, **extra):
+            if extra.get("scope") == "shop":
+                if self._console:
+                    from .console import format_shop
+                    self._console(format_shop(extra["shop"]))
+                return
             if extra.get("scope") == "icons":
                 if self._console:
                     from .console import format_icon_matches

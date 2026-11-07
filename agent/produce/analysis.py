@@ -43,7 +43,7 @@ def labeled_value(tokens, labels, pattern):
         label = re.search(labels, text, re.IGNORECASE)
         if not label:
             continue
-        tail = text[label.end() :].strip(" ：:")
+        tail = text[label.end():].strip(" ：:")
         value = re.fullmatch(pattern, tail)
         if value:
             values.append(value.group())
@@ -55,10 +55,10 @@ def labeled_value(tokens, labels, pattern):
             other
             for other in tokens
             if other is not token
-            and other.get("confidence", 0) >= 0.8
-            and x + w <= other["box"][0] <= x + w + 150
-            and abs(other["box"][1] - y) <= max(10, h // 2)
-            and re.fullmatch(pattern, clean(other["text"]))
+               and other.get("confidence", 0) >= 0.8
+               and x + w <= other["box"][0] <= x + w + 150
+               and abs(other["box"][1] - y) <= max(10, h // 2)
+               and re.fullmatch(pattern, clean(other["text"]))
         ]
         if len(nearby) == 1:
             values.append(clean(nearby[0]["text"]))
@@ -103,7 +103,7 @@ def route_observation(tokens, catalog, event):
                 price
                 for price in price_tokens
                 if abs(price["evidence"][0]["box"][1] - cy) <= max(price["evidence"][0]["box"][3], ch)
-                and 0 <= price["evidence"][0]["box"][0] - (cx + cw) <= 180
+                   and 0 <= price["evidence"][0]["box"][0] - (cx + cw) <= 180
             ]
             if len(owned_prices) == 1:
                 price = owned_prices[0]
@@ -111,7 +111,7 @@ def route_observation(tokens, catalog, event):
                     other
                     for other in candidates
                     if abs(other["name_box"][1] - price["evidence"][0]["box"][1]) <= max(ch, other["name_box"][3])
-                    and 0 <= price["evidence"][0]["box"][0] - (other["name_box"][0] + other["name_box"][2]) <= 180
+                       and 0 <= price["evidence"][0]["box"][0] - (other["name_box"][0] + other["name_box"][2]) <= 180
                 ]
                 if len(owners) == 1:
                     card["cost"] = {**price, "status": "explicit_same_row"}
@@ -166,6 +166,43 @@ def selection_evidence(observation, action):
         "framework_action_succeeded": action.get("framework_action_succeeded"),
         "game_action_confirmed": None,
     }
+
+
+def shop_observation(image, icons, read_text):
+    """读取入口可见商品及独立价格区域；不点击、不滚动，也不推断特别强化。"""
+    from produce.icons import GRAY_BRIGHTNESS, gray
+
+    def number(tokens):
+        evidence = [token for token in tokens if token.get("confidence", 0) >= .8
+                    and re.fullmatch(r"[0-9]+(?:,[0-9]{3})*(?:\s*(?:Pt|PT|点|ポイント))?", clean(token["text"]))]
+        values = {int(re.match(r"[0-9,]+", clean(token["text"]))[0].replace(",", "")) for token in evidence}
+        return {"value": next(iter(values)) if len(values) == 1 else None,
+                "status": "read" if len(values) == 1 else "unknown", "evidence": evidence}
+
+    points = number(read_text(image, [320, 100, 130, 54]))
+    # 商店固定四列两行；按格子匹配本体，避免卡面纹理和饮料内框产生重复候选。
+    boxes = [[x, y, 126, 126] for y in (481, 668) for x in (66, 220, 374, 529)]
+    candidates = []
+    for box in boxes:
+        x, y, width, height = box
+        badge_tokens = read_text(image, [x + 24, y + 112, 104, 23])
+        sale = any(re.search(r"SALE", token["text"], re.I) and token.get("confidence", 0) >= .8 for token in badge_tokens)
+        # P 图标不属于数字；折扣商品只读右侧现价，避免将划线原价与现价拼接成大整数。
+        tokens = read_text(image, [x + (68 if sale else 24), y + 132, 60 if sale else 104, 35])
+        identity = icons.lookup(image, box, allow_unverified_variant=True) if icons else None
+        price = number(tokens)
+        disabled = gray(image[y:y + height, x:x + width]).mean() < GRAY_BRIGHTNESS
+        sold = any(re.search(r"SOLD\s*OUT|売り切れ|售罄|已购买|購入済", token["text"], re.I)
+                   for token in tokens + badge_tokens)
+        available = (False if disabled or sold else
+                     points["value"] >= price["value"] if points["value"] is not None and price["value"] is not None else None)
+        if identity is None and available is True:
+            available = None
+        candidates.append({"box": box, "identity": identity, "price": price, "sale": sale, "available": available,
+                           "unavailable_reason": "sold_out" if sold else "disabled" if disabled else
+                           "insufficient_points" if available is False else None})
+    return {"points": points, "candidates": candidates, "scope": "visible_goods_excluding_special_strengthen",
+            "candidates_complete": False}
 
 
 class OfflineVision:
@@ -226,7 +263,7 @@ class OfflineVision:
         from maa.pipeline import JOCR, JRecognitionType
 
         left, top, width, height = roi
-        crop_hash = hashlib.sha256(array[top : top + height, left : left + width].tobytes()).hexdigest()
+        crop_hash = hashlib.sha256(array[top: top + height, left: left + width].tobytes()).hexdigest()
         if crop_hash not in self._ocr_cache:
             results = self.recognize(JRecognitionType.OCR, JOCR(roi=roi), array)
             self._ocr_cache[crop_hash] = [
@@ -431,7 +468,7 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                 if (reward_reader.icons and supplied_image is not None
                         and event.get("node") != "ProduceChooseStrengthenFlag"
                         and (event["kind"] == "route_before" or event["kind"] == "move_cards_screen")
-                        and event.get("operation") in {"shop", "strengthen", "delete_copy_exchange", "move_cards"}):
+                        and event.get("operation") in {"strengthen", "delete_copy_exchange", "move_cards"}):
                     try:
                         matches = reward_reader.icons.scan(normalized_image(supplied_image), event["operation"])
                         icon_matches = matches
@@ -490,13 +527,19 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                     }, ensure_ascii=False) + "\n")
                     status["event_links"] += 1
                     continue
-                if event["kind"] in ("route_before", "route_after", "preparation_observation", "settlement_observation", "exam_result_observation"):
+                if event["kind"] in ("route_before", "route_after", "shop_entry_observation", "preparation_observation",
+                                     "settlement_observation", "exam_result_observation"):
                     result = {"error": "missing_frame", "candidates": []}
                     try:
 
                         array = normalized_image(supplied_image)
                         tokens = vision._read_title(array, [0, 0, 720, 1280])
                         result = route_observation(tokens, catalog, event)
+                        if event["kind"] == "shop_entry_observation":
+                            result["shop"] = shop_observation(array, reward_reader.icons, vision._read_title)
+                            result["icon_matches"] = [{**item["identity"], "box": item["box"]}
+                                                      for item in result["shop"]["candidates"] if item["identity"]]
+                            notice("商店入口识别", scope="shop", event_id=event["event_id"], shop=result["shop"])
                         if icon_matches is not None:
                             result["icon_matches"] = icon_matches
                         if event["kind"] in ("settlement_observation", "exam_result_observation"):
@@ -530,11 +573,11 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                            console_operation_number=number, scope="battle")
                     continue
                 if "frame" not in event or event["kind"] not in (
-                    "decision_before",
-                    "decision_after",
-                    "screen_observation",
-                    "battle_entry",
-                    "battle_exit_observation",
+                        "decision_before",
+                        "decision_after",
+                        "screen_observation",
+                        "battle_entry",
+                        "battle_exit_observation",
                 ):
                     continue
                 if event["kind"] == "screen_observation" and event.get("battle_hint") is not True:

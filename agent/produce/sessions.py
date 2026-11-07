@@ -373,6 +373,22 @@ class ProduceContextSink(ContextEventSink):
             logger.exception("培育异常画面记录失败，继续原失败处理")
 
     def on_node_wait_freezes(self, context, noti_type, detail):
+        if detail.phase == "post" and detail.name == "ProduceShoppingFlag":
+            if noti_type != NotificationType.Succeeded or produce_fast_mode(context):
+                return
+            try:
+                session = SESSIONS.get(context)
+                if session and not session["capture"]._analyzing:
+                    # 入口识别时仍可能淡入；沿用流水线已有等待，完成后才读最新缓存。
+                    session["capture"].record(
+                        "shop_entry_observation", image=safe_image(context), node=detail.name, operation="shop",
+                        frame_source="controller_cached_after_post_wait_freezes",
+                        wait_freezes={"succeeded": True, "elapsed_ms": detail.elapsed, "roi": list(detail.roi), "parameters": detail.param},
+                        game_action_confirmed=None, context=context,
+                    )
+            except Exception:
+                logger.exception("商店入口记录失败，继续原购买流程")
+            return
         if detail.phase != "pre" or detail.name not in (SETTLEMENT_ENTRIES | SETTLEMENT_NAVIGATION):
             return
         if noti_type not in (NotificationType.Starting, NotificationType.Succeeded, NotificationType.Failed):

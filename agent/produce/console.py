@@ -375,17 +375,48 @@ class RewardConsole:
         return [self.finish(page_id) for page_id in list(self.pending)]
 
 
+def icon_name(match):
+    """卡名已确认而强化状态未知时沿用近似符号，不伪造加号。"""
+    name = match.get("database_name") or "未知商品"
+    return name.rstrip("+") + " ≈" if match.get("variant_verified") is False else name
+
+
 def format_icon_matches(operation, matches):
     """只列出识别名称，整块保持单行且默认折叠，不加载图片。"""
     from html import escape
 
     name = {"shop": "商店", "strengthen": "强化", "delete_copy_exchange": "删除／复制／变换",
             "move_cards": "移动", "copy_cards": "复制"}.get(operation, "页面")
-    rows = [escape(match["database_name"]) for match in matches]
+    rows = [escape(icon_name(match)) for match in matches]
     if not rows:
         rows = ["未命中上游图标；不代表没有可选项。"]
     return (f'<details><summary>{name}｜图标命中 {len(matches)} 项</summary><p>'
             + '<br/>'.join(rows) + '<br/>仅识别图标本体，强化、可选状态及实际获得情况未核验。</p></details>')
+
+
+def format_shop(observation):
+    """入口商品集中展示；未知、售罄和点数不足不混入可购买列表。"""
+    points = observation["points"]["value"]
+    rows = [f"当前点数：{points if points is not None else '未知'}", "可购买商品（点数）："]
+    candidates = observation["candidates"]
+
+    def label(item):
+        name = icon_name(item.get("identity") or {})
+        price = item["price"]["value"]
+        return f"{name}（{price if price is not None else '价格未知'}）"
+
+    available = [label(item) for item in candidates if item["available"] is True]
+    rows.extend(available or ["未确认到可购买商品"])
+    others = [item for item in candidates if item["available"] is not True]
+    if others:
+        rows.append("其他商品：")
+        reasons = {"sold_out": "售罄", "disabled": "不可购买", "insufficient_points": "点数不足"}
+        rows.extend(f"{label(item)}｜{reasons.get(item.get('unavailable_reason'), '购买状态未知')}" for item in others)
+    if not candidates:
+        rows.append("未识别到完整商品图标")
+    if any((item.get("identity") or {}).get("variant_verified") is False for item in candidates):
+        rows.append("≈：卡名已确认，强化状态未确认")
+    return format_operation("商店｜商品与点数", rows)
 
 
 def format_operation(title, rows):
