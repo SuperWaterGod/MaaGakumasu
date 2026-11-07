@@ -70,7 +70,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - `agent/custom/action/produce.py`：MaaFramework 培育动作入口，显式导入注册事件、出牌、选项动作，并处理奖励领取的框架适配；注册名称与流水线保持一致。
 - `agent/produce/`：培育业务模块。`events.py` 管理事件选择，`battle.py` 管理出牌/饮料/15 秒兜底，`options.py` 管理工作/属性/试镜/饮料保留等选项；`catalog.py` 统一技能卡、饮料与 P 道具查库；`rewards.py` 聚合奖励预览、详情缓存和名称读取；`icons.py` 直接读取上游本体图标并执行各页面只读匹配；`capture.py` 管理同步证据保存与内存识别，`sessions.py` 管理整轮生命周期及 sinks；`state.py` 读取战斗 HUD 与共享培育状态；`reporting.py` / `audit.py` 负责单轮回放、同步收尾和审计；`analysis.py` 执行同步识别与路线分析；`console.py` 统一出牌/奖励日志及库效果文案。
 - `agent/utils/`：仅放通用基础设施，当前为日志和 MaaFramework 图像接口；培育专用业务不得继续散放在此。
-- `agent/produce/settlement.py`：统一结算页的最终评价分数、评级及 Vo/Da/Vi 读取；按文字标签或核验后的属性图标定位及 OCR，不按评级各建模板；初 REGULAR/PRO/MASTER 与 NIA 的公式值、实测值分开保存并作一致性校验，控制台按段输出一条折叠结算日志；考前倒推暂不接入。翻页证据由 `sessions.py` 监听结束阶段的现有输入保存，同步识别及跨分段汇总分别接入 `analysis.py` 和 `research/produce/report_produce_session.py`。
+- `agent/produce/settlement.py`：统一结算页的最终评价分数、评级及 Vo/Da/Vi 读取；按文字标签或核验后的属性图标定位及 OCR，不按评级各建模板；初 REGULAR/PRO/MASTER 与 NIA 的公式值、实测值分开保存并作一致性校验，控制台按段输出一条折叠结算日志；考前倒推暂不接入。翻页证据由 `sessions.py` 监听结束阶段的现有输入保存，同步识别接入 `analysis.py`。
 - `assets/resource/base/pipeline/`：MaaFramework 任务流水线。自动培育通用核心逻辑在 `Produce.json`，NIA 相关流程在 `ProduceNIA.json`，共用节点在 `ProduceUtils.json`。
 - `assets/resource/base/image/` 或相邻资源目录：模板匹配、图像识别所需素材。
 - `assets/data/`：结构化数据，例如偶像卡片数据 `idols_cards.json`。
@@ -80,7 +80,6 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - `assets/resource/announcement/`：客户端资源公告与首次使用欢迎弹窗。文件按名称数字前缀排序展示（`01_更新公告.md`、`02_常见问题.md`、`03_免责声明与使用须知.md`、`04_欢迎使用.md`、`05_功能介绍.md`）；`04_欢迎使用.md` 被 `assets/interface.json` 的 `welcome` 字段引用；`05_功能介绍.md` 为功能说明.md 的简化版公告，冲突时以功能说明.md 与任务配置为准；`02_常见问题.md` / `03_免责声明与使用须知.md` 为长期静态公告。
 - `docs/zh_cn/`：中文用户与开发文档。
 - `tools/`：项目维护脚本，包括构建/CI、偶像素材与卡片数据更新、语言同步、统一数据库构建、正式技能卡与奖励库同步、资源检查。
-- `research/produce/`：培育训练与实验代码，包括独立 ADB 采样、离线报告、奖励重放、模板取样和可复用回归测试；不参与客户端运行，当前尚未实现策略模型训练。客户端不得反向依赖此目录。
 - `debug/`：运行日志和调试输出，包括历史截图、离线验证报告和训练素材；已被 Git 忽略，不应作为功能改动的一部分提交。
 - 实验文件归属：分支实验、离线研究、回归验证、临时脚本、测试素材与归档统一写入 `../MaaGakumasuLab/debug/`，不要再写入主仓库 `debug/`。主仓库只保留主线运行日志、错误截图及问题反馈附件；beta 客户端正常运行产生的原始记录保留在 beta 自身的 `debug/`。2026-10-20 已按用户授权将主仓库历史实验材料迁至 `D:/Projects/MaaGakumasuLab/debug/migrated-from-maagakumasu-20261020/`，迁移清单见该目录的 `MIGRATION.json`。
 - `deps/`、`install/`：依赖和打包相关内容，修改时需确认发布影响。
@@ -120,7 +119,7 @@ python tools/ci/check_resource.py ./assets/resource/base/
 
 ### 模块组织与拆分规范
 
-- 先找所属业务和现有模块，再决定是否新建文件。培育运行时业务统一归入 `agent/produce/`；`custom/` 保留框架入口及直接调用 Maa 的适配逻辑，`utils/` 只放可跨业务使用的基础设施。项目维护 CLI 放在 `tools/`，培育训练/实验 CLI 与可复用回归放在 `research/produce/`，运行证据和一次性脚本放在按任务归档的 `debug/` 子目录。`analysis.py` 由客户端采集器启动，仍是运行时模块；离线实验可复用其读取器，不复制一套识别实现。
+- 先找所属业务和现有模块，再决定是否新建文件。培育运行时业务统一归入 `agent/produce/`；`custom/` 保留框架入口及直接调用 Maa 的适配逻辑，`utils/` 只放可跨业务使用的基础设施。项目维护 CLI 放在 `tools/`；培育实验工具与回归维护在相邻 `MaaGakumasuLab`，实验产物放在其 `debug/` 中，客户端不得反向依赖 Lab。`analysis.py` 由客户端采集器启动，仍是运行时模块。
 - 按实际职责、调用关系和生命周期划分文件，保持同类功能的尺度一致。事件策略、实时输入控制、证据写盘、会话生命周期、离线识别与日志展示可独立；不按每个函数、数据类型、常量、单个条件或卡牌拆文件。奖励的预览、缓存和读取一起维护，所有奖励类型一起查库，出牌和奖励日志一起维护。
 - 单一调用方的短辅助逻辑优先放回所属模块。约 100 行以下且没有独立外部接口的辅助文件，新增前应先考虑合并；不得为了“区分职责”创建只有几个函数或几行代码的碎片文件。包声明、独立 CLI、框架入口或被多处调用的原生接口可保留短文件，但须有真实接口或复用需求。
 - 大文件出现互不相关的职责、跨生命周期状态或难以单独验证的逻辑时再拆；超过约 700 行时检查是否有清晰的拆分边界。行数是检查提示，不是硬指标，不为凑行数合并不相关代码或拆散同一流程。
@@ -179,7 +178,7 @@ python tools/ci/check_resource.py ./assets/resource/base/
 
 根目录 `tests/` 用于临时本地测试，已加入 `.gitignore`，不应提交。每次使用完毕后删除整个 `tests/` 目录（包括测试文件、缓存和生成产物）；删除前核对目标路径为当前仓库的 `tests/`。
 
-`research/` 下的测试文件仅供本地验证，不提交、不推送，CI 不依赖这些文件。已有本地副本保留；新增实验测试及产物优先放在 `../MaaGakumasuLab/debug/` 的独立任务目录。
+培育实验与回归测试已迁至相邻 `MaaGakumasuLab`，客户端 CI 不依赖这些文件；新增实验产物放在 Lab 的 `debug/` 独立任务目录。
 
 改动完成后，根据影响范围选择验证：
 
