@@ -617,7 +617,8 @@ class ProduceContextSink(ContextEventSink):
                     game_action_confirmed=None,
                     context=context,
                 )
-                session["actions"][detail.action_id] = event_id
+                if event_id:
+                    session["actions"][detail.action_id] = event_id
                 if name == "ProduceChooseConfirm":
                     session["reward_confirmation_id"] = event_id
             elif name in SETTLEMENT_NODES:

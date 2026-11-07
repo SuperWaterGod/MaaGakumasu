@@ -8,6 +8,8 @@ from functools import lru_cache
 import numpy as np
 from utils.image_io import bgr_image, read_image, resize_image
 
+from .resources import ICON_FOLDERS
+
 ICON_SIZE = 128
 ITEM_KINDS = {"skill_card", "drink", "p_item"}
 MATCH_THRESHOLD = .70
@@ -16,6 +18,17 @@ GRAY_BRIGHTNESS = 120
 # 上游 gakumas-data idols.json 的稳定 ID；未知偶像保留全部变体。
 IDOL_NAMES = ("花海咲季", "月村手毬", "藤田ことね", "有村麻央", "葛城リーリヤ", "倉本千奈",
               "紫雲清夏", "篠澤広", "姫崎莉波", "花海佑芽", "十王星南", "秦谷美鈴", "雨夜燕")
+
+
+def icon_operation_available(status, operation):
+    """图库不完整时，图标专用环节沿用快速模式操作；其他识别继续。"""
+    if status is None:
+        return True
+    if operation in {"shop", "shop_confirm", "shop_unavailable", "shop_exit"}:
+        return all(status.get(kind, {}).get("complete", False) for kind in ICON_FOLDERS)
+    if operation in {"strengthen", "strengthen_confirm", "delete_copy_exchange", "delete_copy_exchange_confirm", "move_cards"}:
+        return status.get("skill_card", {}).get("complete", False)
+    return True
 
 
 def gray(image):
@@ -91,14 +104,20 @@ def load_gallery(data_directory, idol_id):
 
 
 class UpstreamIcons:
-    def __init__(self, directory, idol_id=None, hashes=None):
+    def __init__(self, directory, idol_id=None, hashes=None, *, icon_resources=None):
         self.directory = Path(directory).resolve()
         self.idol_id = idol_id
         self.hashes = hashes
+        self.icon_resources = icon_resources
+        self.available_kinds = {kind for kind in ICON_FOLDERS
+                                if icon_resources is None or icon_resources.get(kind, {}).get("complete", False)}
         self._last_scan = None
 
     def lookup(self, image, box, item_kind=None, *, allow_unverified_variant=False):
         """全流派初筛，每个身份至多两图精匹配，分数和分差均通过才确认具体版本。"""
+        if (not self.available_kinds or item_kind and item_kind not in self.available_kinds
+                or item_kind is None and len(self.available_kinds) < len(ICON_FOLDERS)):
+            return None
         image = bgr_image(image)
         x, y, width, height = map(int, box)
         if image.shape != (1280, 720, 3) or min(x, y) < 2 or min(width, height) < 16 or x + width + 2 > 720 or y + height + 2 > 1280:
@@ -109,7 +128,7 @@ class UpstreamIcons:
         query = resize_image(image[y-2:y+height+2, x-2:x+width+2], 132, 132)
         candidates = []
         for kind, (entries, vectors, pixels, originals) in load_gallery(str(self.directory), self.idol_id).items():
-            if item_kind and kind != item_kind:
+            if kind not in self.available_kinds or item_kind and kind != item_kind:
                 continue
             rank = np.argsort(np.einsum("ij,j->i", vectors, feature(query[2:130, 2:130], kind)))[::-1]
             families = {}
@@ -177,7 +196,7 @@ class UpstreamIcons:
         """仅观察已显示的完整图标，不增加输入，也不用 OCR 补牌名。"""
         regions = {"strengthen": (65, 690, 600, 420), "delete_copy_exchange": (65, 390, 600, 720),
                    "move_cards": (65, 390, 600, 720), "shop": (50, 465, 620, 345)}
-        if operation not in regions:
+        if operation not in regions or not icon_operation_available(self.icon_resources, operation):
             return []
         image = bgr_image(image)
         if image.shape != (1280, 720, 3):
@@ -235,7 +254,7 @@ def locate_icons(image, region, sizes, operation=None):
     return sorted(boxes, key=lambda box: (round(box[1]/60), box[0]))
 
 
-def icons_for_capture(directory, hashes=None, recognize=None):
+def icons_for_capture(directory, hashes=None, recognize=None, *, icon_resources=None):
     """从当前安装目录读取原始图；不依赖已删除的 detail 或 debug/cache。"""
     root = Path(__file__).resolve().parents[2]
     data = root / "data" if (root / "data").is_dir() else root / "assets/data"
@@ -247,6 +266,6 @@ def icons_for_capture(directory, hashes=None, recognize=None):
         if hashes is None:
             hashes = {"skill_cards": hashlib.sha256((data / "produce_skill_cards.json").read_bytes()).hexdigest(),
                       "reward_items": hashlib.sha256((data / "produce_reward_items.json").read_bytes()).hexdigest()}
-        return UpstreamIcons(data, idol_id, hashes)
+        return UpstreamIcons(data, idol_id, hashes, icon_resources=icon_resources)
     except (OSError, ValueError, TypeError):
         return None

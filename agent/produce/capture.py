@@ -37,6 +37,7 @@ class DecisionCapture:
         reward_preview=True,
         save_screenshots=True,
         session_directory=None,
+        icon_resources=None,
     ):
         self.run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ_") + uuid.uuid4().hex[:8]
         self.directory = root / self.run_id
@@ -75,6 +76,7 @@ class DecisionCapture:
         self._console = console
         self._console_details = console_details
         self.reward_preview_enabled = reward_preview
+        self.icon_resources = icon_resources
         self._console_event = None
         self._analysis = None
         self._manifest = {
@@ -88,6 +90,7 @@ class DecisionCapture:
             "python_version": platform.python_version(),
             "limits": { "max_bytes": max_bytes, "min_free_bytes": min_free_bytes},
             "reward_preview_enabled": reward_preview,
+            "icon_resources": icon_resources,
             "state_fields": {"card_identity": None, "buffs": None, "turn": None, "score": None, "stamina": None},
             "unknown_reason": ("整次培育的分段证据；完整性见培育会话清单。未知牌组、成本和动作确认不推断。"
                                if metadata.get("session_id") else
@@ -146,7 +149,7 @@ class DecisionCapture:
 
         try:
             self._analysis = analyze_stream(self.directory, resource, database, aliases,
-                                            context=lambda: self.context, emit=notice)
+                                            context=lambda: self.context, emit=notice, icon_resources=self.icon_resources)
             next(self._analysis)
         except Exception:
             self._analysis = None
@@ -182,6 +185,8 @@ class DecisionCapture:
             package_data = ROOT / "data" if (ROOT / "data").is_dir() else ROOT / "assets/data"
             resource = ROOT / "resource/base" if (ROOT / "resource/base").is_dir() else ROOT / "assets/resource/base"
             database = package_data / "produce_skill_cards.json"
+            from .resources import icon_resources_status
+            icon_resources = icon_resources_status(ROOT) if context is not None and metadata.get("entry") != "IdolRoadAuto" else None
             analysis = None
             if config.get("match_cards", True) and database.exists():
                 analysis = {"resource": resource, "database": database, "aliases": package_data / "skill_card_aliases.json", "context": context}
@@ -201,6 +206,7 @@ class DecisionCapture:
                 console=console if config.get("console_summary", True) else None,
                 console_details=config.get("console_details", True),
                 reward_preview=config.get("reward_preview", True) is True,
+                icon_resources=icon_resources,
             )
         except Exception:
             LOGGER.exception("无法开启对局采集，继续原任务")
@@ -208,6 +214,10 @@ class DecisionCapture:
 
     def record(self, kind: str, *, image=None, context=None, **data):
         if self._closed or self._failed or self._analyzing:
+            return None
+        from .icons import icon_operation_available
+        operation = "move_cards" if kind.startswith("move_cards_") else data.get("operation")
+        if not icon_operation_available(self.icon_resources, operation):
             return None
         try:
             self._seq += 1

@@ -187,7 +187,7 @@ class RewardPreview:
         self.last_image = None
         self.last_wait_diagnostic = None
         self.preview_clicks = 0
-        self.icons = icons_for_capture(capture.directory, recognize=recognize)
+        self.icons = icons_for_capture(capture.directory, recognize=recognize, icon_resources=getattr(capture, "icon_resources", None))
 
     def record(self, kind, image=None, **data):
         return self.capture.record(kind, image=image, context=self.context, reward_page_id=self.group_id, reward_kind=self.item_kind, **data)
@@ -406,9 +406,9 @@ class RewardPreview:
 
 
 class RewardReader:
-    def __init__(self, skills, items_path, directory=None, recognize=None):
+    def __init__(self, skills, items_path, directory=None, recognize=None, *, icon_resources=None):
         self.catalog = RewardCatalog(skills, items_path)
-        self.icons = icons_for_capture(directory, self.catalog.hashes, recognize) if directory else None
+        self.icons = icons_for_capture(directory, self.catalog.hashes, recognize, icon_resources=icon_resources) if directory else None
         self.details = OrderedDict()
         self.counts = {"name_ocr": 0, "detail_cache": 0, "upstream_icon": 0}
 

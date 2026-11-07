@@ -11,6 +11,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from functools import lru_cache
 from contextlib import contextmanager
 
 PROTOCOL = 1
@@ -18,6 +19,7 @@ DEFAULT_URL = "https://mag.2j.hk"
 STATE_NAME = "produce_resources_manifest.json"
 PENDING_NAME = "produce_resources_pending.json"
 DATABASES = {"produce_skill_cards.json", "produce_reward_items.json", "GAKUMAS_DATA_LICENSE.txt", "produce_resources_source.json"}
+ICON_FOLDERS = {"skill_card": "skillCards", "drink": "pDrinks", "p_item": "pItems"}
 PNG_PATH = re.compile(r"images/(skillCards|pDrinks|pItems)/[1-9][0-9]*(?:_[1-9][0-9]*)?\.png\Z")
 SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 MAX_MANIFEST = 8 * 1024**2
@@ -101,6 +103,31 @@ def validate_manifest(value):
 def files_valid(directory, manifest):
     return all((path := managed_path(directory, entry["path"])).is_file() and path.stat().st_size == entry["size"]
                and file_hash(path) == entry["sha256"] for entry in manifest["files"])
+
+
+@lru_cache(maxsize=2)
+def icon_resources_status(root):
+    """按已安装清单核验各类图库；入口刷新缓存，单轮内复用结果。"""
+    directory = data_directory(root)
+    manifest = validate_manifest(json.loads((directory / STATE_NAME).read_text(encoding="utf-8")))
+    status = {kind: {"expected": 0, "missing": 0, "damaged": 0, "complete": False} for kind in ICON_FOLDERS}
+    kinds = {folder: kind for kind, folder in ICON_FOLDERS.items()}
+    for entry in manifest["files"]:
+        if not PNG_PATH.fullmatch(entry["path"]):
+            continue
+        row = status[kinds[entry["path"].split("/")[1]]]
+        row["expected"] += 1
+        path = managed_path(directory, entry["path"])
+        try:
+            if not path.is_file():
+                row["missing"] += 1
+            elif path.stat().st_size != entry["size"] or file_hash(path) != entry["sha256"]:
+                row["damaged"] += 1
+        except OSError:
+            row["damaged"] += 1
+    for row in status.values():
+        row["complete"] = row["expected"] > 0 and row["missing"] == 0 and row["damaged"] == 0
+    return status
 
 
 def validate_catalogs(directory):
@@ -516,7 +543,7 @@ def ensure_resources_ready(root):
     if not state.is_file():
         raise RecoveryError("尚未安装培育数据库和素材，请先执行“更新数据库和素材”")
     manifest = validate_manifest(json.loads(state.read_text(encoding="utf-8")))
-    # 完整模式入口仅检查数据库；完整图库由显式更新任务逐文件核验。
+    # 数据库必须有效；图库由培育入口另行核验并按缺失范围降级。
     core = {**manifest, "files": [row for row in manifest["files"] if row["path"] in DATABASES]}
     if not files_valid(updater.data, core):
         raise RecoveryError("培育数据库与上次安装清单不一致，请先执行资源更新")

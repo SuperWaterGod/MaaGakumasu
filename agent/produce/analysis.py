@@ -375,10 +375,13 @@ class OfflineVision:
         return result
 
 
-def analyze_stream(directory, resource, database, aliases=None, *, context=None, emit=None):
+def analyze_stream(directory, resource, database, aliases=None, *, context=None, emit=None, icon_resources=None):
     directory = directory.resolve()
+    capture_manifest = read_json(directory / "manifest.json")
+    if icon_resources is None:
+        icon_resources = capture_manifest.get("icon_resources")
     catalog = SkillCardCatalog(database, aliases)
-    reward_reader = RewardReader(catalog, database.with_name("produce_reward_items.json"), directory)
+    reward_reader = RewardReader(catalog, database.with_name("produce_reward_items.json"), directory, icon_resources=icon_resources)
     model_sha = hashlib.sha256((resource / "model/detect/cards.onnx").read_bytes()).hexdigest()
     state_templates = database.with_name("battle_buff_templates.json")
     signature = "current"
@@ -417,9 +420,9 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
         "reward_item_source": reward_reader.catalog.item_source,
         "reward_item_error": reward_reader.catalog.item_error,
         "reward_reading_counts": reward_reader.counts,
+        "icon_resources": icon_resources,
     }
     status_path = output / "status.json"
-    capture_manifest = read_json(directory / "manifest.json")
 
     def notice(message, **extra):
         if emit:

@@ -4,6 +4,7 @@ import time
 
 from utils import logger
 from maa.context import Context
+from produce.icons import load_gallery, icon_operation_available
 from produce.battle import ProduceCardsAuto
 from produce.events import ProduceChooseEventAuto, ProduceChooseEventBase, ProduceChooseNIAEventAuto
 from produce.capture import ROOT, produce_fast_mode
@@ -12,7 +13,7 @@ from produce.options import ProduceKeepDrinkAuto, ProduceChooseWorkAuto, Produce
 from produce.rewards import RewardPreview, verify_reward_layout
 from produce.sessions import SESSIONS
 from maa.custom_action import CustomAction
-from produce.resources import RecoveryError, UpdateCancelled, configured_updater, ensure_resources_ready
+from produce.resources import RecoveryError, UpdateCancelled, configured_updater, icon_resources_status, ensure_resources_ready
 from maa.agent.agent_server import AgentServer
 
 __all__ = [
@@ -31,6 +32,19 @@ class ProduceResourcesReady(CustomAction):
             return not context.tasker.stopping
         try:
             ensure_resources_ready(ROOT)
+            icon_resources_status.cache_clear()
+            load_gallery.cache_clear()
+            status = icon_resources_status(ROOT)
+            labels = {"skill_card": "技能卡", "drink": "饮料", "p_item": "P 道具"}
+            missing = [f"{labels[kind]}未安装" if not row["expected"] else
+                       f"{labels[kind]}缺失 {row['missing']} 张、校验失败 {row['damaged']} 张"
+                       for kind, row in status.items() if not row["complete"]]
+            if missing:
+                operations = {"shop": "商店", "strengthen": "强化", "delete_copy_exchange": "删除／复制／变换", "move_cards": "移动选牌"}
+                degraded = [name for operation, name in operations.items() if not icon_operation_available(status, operation)]
+                logger.warning("完整模式图库未就绪（{}）。{}的图标专用环节按快速模式执行，继续 OCR、记录和回放。"
+                               "可通过“一键培育”的“更新数据库和素材”任务补全图库。",
+                               "，".join(missing), "、".join(degraded))
             SESSIONS.prepare_reports()
             return not context.tasker.stopping
         except Exception as exc:
@@ -46,11 +60,9 @@ class ProduceUpdateResources(CustomAction):
             return True
         try:
             updater = configured_updater(ROOT, stopping=lambda: context.tasker.stopping, log=logger.info, debug=logger.debug)
-            result = updater.update()
-            if result["status"] == "updated":
-                from produce.icons import load_gallery
-
-                load_gallery.cache_clear()
+            updater.update()
+            load_gallery.cache_clear()
+            icon_resources_status.cache_clear()
             return True
         except UpdateCancelled:
             logger.info("资源更新已取消，下载断点保留在 temp/produce_update")
