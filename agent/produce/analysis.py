@@ -208,6 +208,8 @@ def shop_observation(image, icons, read_text):
 class OfflineVision:
     def __init__(self, resource_path, context=None):
         self.context = context
+        self._battle_id = None
+        self._battle_layout = None
         if context is not None:
             self._ocr_cache = {}
             return
@@ -290,6 +292,12 @@ class OfflineVision:
         )
         return [{"score": item.score, "box": list(item.box)} for item in items if math.isfinite(item.score)]
 
+    def set_battle(self, battle_id):
+        """布局只在有明确边界的单场战斗内复用，切换场次或退出时失效。"""
+        if self._battle_id != battle_id:
+            self._battle_id = battle_id
+            self._battle_layout = None
+
     def analyze(self, image, catalog, candidates=None):
         from maa.pipeline import JRecognitionType, JNeuralNetworkDetect
 
@@ -369,7 +377,11 @@ class OfflineVision:
         result = {"analysis_size": [720, 1280], "source_size": [image.shape[1], image.shape[0]], "cards": cards}
         if getattr(self, "state_reader", None):
             try:
-                result["battle_state"] = self.state_reader.read(array)
+                layout = self._battle_layout if self._battle_id is not None else None
+                state = self.state_reader.read(array, layout_hint=layout)
+                result["battle_state"] = state
+                if self._battle_id is not None and layout is None and state.get("hud_present"):
+                    self._battle_layout = state["layout"]
             except Exception as exc:
                 result["battle_state"] = {"hud_present": False, "error": str(exc), "fields": {}, "buffs": []}
         return result
@@ -465,6 +477,10 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                 if packet is None:
                     break
                 event, supplied_image = packet
+                if event["kind"] == "battle_invocation_start":
+                    vision.set_battle(event["event_id"])
+                elif event["kind"] == "battle_invocation_end":
+                    vision.set_battle(None)
                 icon_matches = None
                 # 强化入口与选牌节点连续观察同一页；入口提示在选牌节点识别成功时发出。
                 # 只在其动作开始前扫描，避免入口提示之前输出一次、随后又重复输出。

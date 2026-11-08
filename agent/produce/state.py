@@ -402,54 +402,57 @@ class BattleStateReader:
         }
         return result
 
-    def read(self, array):
+    def read(self, array, *, layout_hint=None):
         errors = []
         self.layout = "exam"
         rgb = array[..., ::-1]
         fields = {key: unknown_field() for key in STATE_FIELDS}
-        fields["turns_remaining"] = number_views(
-            [number_field(self._ocr(array, roi, errors), roi, maximum=99) for roi in ([14, 64, 88, 64], [32, 69, 60, 46])]
-        )
-        for key, roi, maximum in [
-            ("stamina", [563, 207, 86, 40], 999),
-        ]:
-            fields[key] = number_field(self._ocr(array, roi, errors), roi, maximum=maximum)
-        fields["genki"] = number_views(
-            [number_field(self._ocr(array, roi, errors), roi, maximum=99999) for roi in ([643, 170, 72, 43], [648, 172, 67, 40])]
-        )
-        roi = [106, 44, 115, 81]
-        raw = self._ocr(array, roi, errors)
-        fields["attribute_multiplier_percent"] = number_field(raw, roi, maximum=99999, percent=True)
-        attributes = []
-        for item in raw:
-            text = unicodedata.normalize("NFKC", item["text"]).casefold()
-            for value, tokens in {
-                "Vo": ("ボーカル", "声乐", "聲樂", "vocal"),
-                "Da": ("ダンス", "舞蹈", "dance"),
-                "Vi": ("ビジュアル", "形象", "visual"),
-            }.items():
-                if item["confidence"] >= 0.70 and any(token in text for token in tokens):
-                    attributes.append((value, item["confidence"]))
-        if len({value for value, _ in attributes}) == 1:
-            value, confidence = max(attributes, key=lambda item: item[1])
-            fields["attribute"] = {"value": value, "status": "observed", "roi": roi, "raw_ocr": raw, "confidence": confidence}
-        present = sum(fields[key]["value"] is not None for key in ("turns_remaining", "stamina", "genki", "attribute_multiplier_percent")) >= 3
-        if not present:
+        lesson = layout_hint == "lesson"
+        present = False
+        if not lesson:
+            fields["turns_remaining"] = number_views(
+                [number_field(self._ocr(array, roi, errors), roi, maximum=99) for roi in ([14, 64, 88, 64], [32, 69, 60, 46])]
+            )
+            for key, roi, maximum in [
+                ("stamina", [563, 207, 86, 40], 999),
+            ]:
+                fields[key] = number_field(self._ocr(array, roi, errors), roi, maximum=maximum)
+            fields["genki"] = number_views(
+                [number_field(self._ocr(array, roi, errors), roi, maximum=99999) for roi in ([643, 170, 72, 43], [648, 172, 67, 40])]
+            )
+            roi = [106, 44, 115, 81]
+            raw = self._ocr(array, roi, errors)
+            fields["attribute_multiplier_percent"] = number_field(raw, roi, maximum=99999, percent=True)
+            attributes = []
+            for item in raw:
+                text = unicodedata.normalize("NFKC", item["text"]).casefold()
+                for value, tokens in {
+                    "Vo": ("ボーカル", "声乐", "聲樂", "vocal"),
+                    "Da": ("ダンス", "舞蹈", "dance"),
+                    "Vi": ("ビジュアル", "形象", "visual"),
+                }.items():
+                    if item["confidence"] >= 0.70 and any(token in text for token in tokens):
+                        attributes.append((value, item["confidence"]))
+            if len({value for value, _ in attributes}) == 1:
+                value, confidence = max(attributes, key=lambda item: item[1])
+                fields["attribute"] = {"value": value, "status": "observed", "roi": roi, "raw_ocr": raw, "confidence": confidence}
+            present = sum(fields[key]["value"] is not None for key in ("turns_remaining", "stamina", "genki", "attribute_multiplier_percent")) >= 3
+        if not present and layout_hint is None:
             # 初/NIA 的普通课程共用课程 HUD；考试与试镜仍走原有排名布局。
             header = self._ocr(array, [15, 25, 170, 43], errors)
             lesson = any(item["confidence"] >= 0.8 and re.search(r"残りターン数|剩余回合|剩餘回合", item["text"]) for item in header)
-            if lesson:
-                self.layout = "lesson"
-                for key, roi, maximum in (
-                    ("turns_remaining", [65, 65, 98, 50], 99),
-                    ("stamina", [570, 169, 70, 40], 999),
-                    ("genki", [655, 129, 65, 45], 99999),
-                ):
-                    raw = self._ocr(array, roi, errors)
-                    fields[key] = lesson_turns(raw, roi) if key == "turns_remaining" else number_field(raw, roi, maximum=maximum)
-                fields["attribute"] = unknown_field("lesson_has_no_exam_attribute_label")
-                fields["attribute_multiplier_percent"] = unknown_field("lesson_has_no_exam_multiplier")
-                present = sum(fields[key]["value"] is not None for key in ("turns_remaining", "stamina", "genki")) >= 2
+        if lesson:
+            self.layout = "lesson"
+            for key, roi, maximum in (
+                ("turns_remaining", [65, 65, 98, 50], 99),
+                ("stamina", [570, 169, 70, 40], 999),
+                ("genki", [655, 129, 65, 45], 99999),
+            ):
+                raw = self._ocr(array, roi, errors)
+                fields[key] = lesson_turns(raw, roi) if key == "turns_remaining" else number_field(raw, roi, maximum=maximum)
+            fields["attribute"] = unknown_field("lesson_has_no_exam_attribute_label")
+            fields["attribute_multiplier_percent"] = unknown_field("lesson_has_no_exam_multiplier")
+            present = sum(fields[key]["value"] is not None for key in ("turns_remaining", "stamina", "genki")) >= 2
         state = {
             "schema_version": 1,
             "hud_present": present,
