@@ -115,8 +115,26 @@
     },
     "雨夜燕卡片-zh_CN": {
       "type": "select",
-      "default_case": "雨夜燕(互噬)",
+      "default_case": "雨夜燕(荆棘之路)",
       "cases": [
+        {
+          "name": "雨夜燕(荆棘之路)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "雨夜燕",
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·强气",
+                "first": "Da",
+                "second": "Vo"
+              }
+            }
+          }
+        },
         {
           "name": "雨夜燕(互噬)",
           "pipeline_override": {
@@ -2692,8 +2710,26 @@
     },
     "仓本千奈卡片-zh_CN": {
       "type": "select",
-      "default_case": "仓本千奈(标)",
+      "default_case": "仓本千奈(荆棘之路)",
       "cases": [
+        {
+          "name": "仓本千奈(荆棘之路)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "仓本千奈",
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·全力",
+                "first": "Da",
+                "second": "Vi"
+              }
+            }
+          }
+        },
         {
           "name": "仓本千奈(标)",
           "pipeline_override": {
@@ -2941,8 +2977,26 @@
     },
     "秦谷美铃卡片-zh_CN": {
       "type": "select",
-      "default_case": "秦谷美铃(喂，我要说了哦。)",
+      "default_case": "秦谷美铃(荆棘之路)",
       "cases": [
+        {
+          "name": "秦谷美铃(荆棘之路)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "秦谷美铃",
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "理性·好印象",
+                "first": "Vo",
+                "second": "Vi"
+              }
+            }
+          }
+        },
         {
           "name": "秦谷美铃(喂，我要说了哦。)",
           "pipeline_override": {
