@@ -50,7 +50,18 @@
       }
     },
     "pre_delay": 0,
-    "pre_wait_freezes": 200,
+    "pre_wait_freezes": {
+      "time": 500,
+      "target": [
+        0,
+        880,
+        720,
+        240
+      ],
+      "threshold": 0.99,
+      "rate_limit": 100,
+      "timeout": 20000
+    },
     "action": {
       "type": "Custom",
       "param": {
