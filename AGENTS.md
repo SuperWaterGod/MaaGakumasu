@@ -10,7 +10,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 
 ## 当前进度
 
-最近核对日期：`2026-10-09`，发版准备基于 HEAD `b924a86`。`assets/interface.json` 与更新公告已更新为 `v1.5.2`；当前处于发版准备阶段。功能状态以最近提交和当前任务配置为准。
+最近核对日期：`2026-11-13`，main 已提交至 `6db7f75`，当前工作区另有待提交的培育逻辑与流水线修复。`assets/interface.json` 与更新公告的资源版本为 `v1.5.2`。功能状态以最近提交、当前工作区和任务配置为准。
 
 已实现的主要功能包括：
 
@@ -33,6 +33,15 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - 剧本选择重构为模板匹配（替代 OCR），支持 Ranking/NIA/HIF 三种剧本；饮料识别升级为多模板匹配。
 - NIA 流程入口 `ProduceEntryNIA` 与 `ProduceGuideEntry` 新增 `[JumpBack]ProduceChooseStrengthenFlag` 回跳，识别到强化选择标志时回到对应处理节点，避免流程中断。
 - 培育界面资源图片在 `assets/resource/base/image/produce/` 有最近更新。
+
+2026-11-13 从 `decision-capture` 提取的独立修复与优化（包含当前待提交内容）：
+
+- 跳过回合增加无文字按钮模板；歌曲名完整包含于归一化 OCR 文本时忽略皮肤附加文案。
+- 路线候选改为逐项识别，并按实际按钮位置定位 SP；初流程裁切后的图标需配套 `EVENT_ICON_OFFSET = (30, 20)`，NIA 保持 `(0, 0)`。初/NIA 均等待选项区域连续静止 500 毫秒后识别。
+- 战斗中体力标志短暂消失时先复核，恢复识别后清零退出计数；保留原出牌策略与 15 秒兜底。
+- 移动／复制选牌统一由 `ProduceMoveCards` 匹配确认按钮，不提前区分页面类型，不依赖决策采集、报告或 Buff/HUD 识别模块。
+- 更新 NIA 交谈和无属性选项模板，删除已无引用的 `choose.onnx`。
+- 普通培育与一键培育默认关闭关注租借、老师建议，奖励选卡默认活动卡优先。预设中的选项键必须使用 `跟随老师的建议`。
 
 v1.5.2 改动（已写入 v1.5.2 公告，细节以提交为准）：
 
@@ -58,11 +67,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - HIF 培育适配：由于暂时借不到 HIF 高等级账号，开发暂缓。剧本模板识别不代表完整培育流程已适配。
 - 更多语言与更多自动培育样本覆盖。
 
-截至 `2026-10-08` 更新本文件前，工作区存在以下未提交内容：
-
-- `assets/data/idols_cards.json`：保存时间和卡片推荐效果字段有修改。
-
-这只是核对时的快照。每次开始工作都先执行 `git status --short`、检查相关 diff；不要覆盖或回退已有修改，也不要把未跟踪文件当成可删除的临时文件，除非用户明确要求。
+每次开始工作都先执行 `git status --short`、检查相关 diff，不依赖文档中的历史工作区快照；不要覆盖或回退已有修改，也不要把未跟踪文件当成可删除的临时文件，除非用户明确要求。
 
 ## 目录职责
 
@@ -86,7 +91,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - Python 版本：`>=3.12`。
 - Python 依赖：`maafw`、`loguru`、`Pillow`。
 - 可选开发依赖：`pytest>=7.0`、`ruff>=0.1.0`。
-- Node 侧仅用于工具链，当前 `package.json` 包含 `prettier-plugin-multiline-arrays`。
+- Node 侧仅用于工具链；当前 main 没有 `format:json` / `check:json` 脚本，不要直接套用其他分支的工具命令。
 - Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源版本与公告已更新为 `v1.5.2`，发版入口为 `assets/interface.json`。
 
 常用检查命令：
@@ -95,9 +100,8 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 python -m compileall -q agent
 python -m pytest
 python -m ruff check .
-npx prettier --check "**/*.{json,yml,yaml}"
-npx maa-tools check
 python tools/ci/check_resource.py ./assets/resource/base/
+git diff --check
 ```
 
 `py_compile` 接受文件路径，不能用来编译整个 `agent` 目录；目录检查使用 `compileall`。资源 CI（`.github/workflows/check.yml`）实际运行 `tools/ci/check_resource.py`，需要安装 `maafw`。
@@ -107,7 +111,7 @@ python tools/ci/check_resource.py ./assets/resource/base/
 ## 代码与格式约定
 
 - Python 代码遵循 `pyproject.toml` 中 Ruff 配置：目标版本 `py312`，行宽 `144`，启用 import 排序规则。
-- JSON/YAML 使用 Prettier 配置：默认缩进 4 空格，YAML 缩进 2 空格，JSON 覆盖配置使用 tab。
+- JSON/JSONC 沿用当前文件的缩进、字段顺序和注释风格；`.vscode/settings.json` 将 JSON 关联为 JSONC，使用 VS Code 内置 JSON 格式化能力。main 现有文件存在 2/4 空格缩进，不为局部修改统一重排整个文件。YAML 沿用现有缩进，通常为 2 空格。
 - Markdown 文档没有强制 lint 配置（`docs/.markdownlint.yaml` 已删除），保持与现有文档一致的简洁风格；根目录 `AGENTS.md` 主要服务代理协作，优先清晰准确。
 - 修改 JSON、JSONC 或流水线文件时保持原有排序、注释风格和缩进风格；不要做无关格式化。
 - 新增用户可见文案时优先使用中文；涉及游戏内名称时保留日文原名，并在已有数据结构支持时补充中文字段。
@@ -163,8 +167,8 @@ python tools/ci/check_resource.py ./assets/resource/base/
 改动完成后，根据影响范围选择验证：
 
 - Python 自定义逻辑：至少运行 `python -m compileall -q agent`；修改工具脚本时对对应文件执行 `python -m py_compile <脚本路径>`，有测试时运行 `python -m pytest`。
-- 流水线或资源：运行 `npx maa-tools check`，并在可能时进行实际 MaaFramework 调试。
-- JSON/YAML：运行 Prettier 检查或格式化。
+- 流水线或资源：运行 `python tools/ci/check_resource.py ./assets/resource/base/`，与资源 CI 保持一致，并在可能时进行实际 MaaFramework 调试。
+- JSON/JSONC/YAML：检查修改文件的语法与相关字段引用，保持现有排版并运行 `git diff --check`；流水线 JSON 同时运行上述资源检查。只使用当前分支已有的工具，不临时下载格式化工具或引入全仓库重排。
 - 自动培育：需要真实设备或模拟器长流程验证；如果无法运行，必须在交付说明中明确未做实机验证。
 
 调试时优先查看 `debug/maa.log`。自动培育一次通常约 30 分钟，会产生大量日志；不要提交日志文件。
