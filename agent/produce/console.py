@@ -123,7 +123,9 @@ def state_lines(state):
     for buff in state["buffs"]:
         suffix = {"percent": "%", "turns": "回合", "times": "次"}.get(buff["unit"], "")
         number = buff["value"] if buff["value"] is not None else "?"
-        descriptions.append(f"{buff['name']} {number}{suffix}")
+        duration = buff.get("duration")
+        remaining = f"（{duration}回合）" if duration is not None and buff["unit"] != "turns" else ""
+        descriptions.append(f"{buff['name']} {number}{suffix}{remaining}")
     for index in range(0, len(descriptions), 3):
         lines.append("Buff：" + "｜".join(descriptions[index: index + 3]))
     return lines

@@ -44,8 +44,8 @@ def number_field(raw, roi, *, maximum, percent=False, minimum_confidence=0.70):
 def buff_number(raw, roi, format_name):
     if format_name in ("integer", "percent"):
         return number_field(raw, roi, maximum=9999, percent=format_name == "percent")
-    # Maa 偶尔将开头的片假名「タ」误识为形近的「夕」。
-    suffix = {"turns": r"(?:ターン|夕ーン|回合)", "times": r"(?:回|次)", "turns_after": r"(?:ターン|夕ーン)後|回合后|回合後"}[format_name]
+    # Maa 偶尔将「タ」误识为「夕」，将「ン」误识为「ノ」。
+    suffix = {"turns": r"(?:ターン|ターノ|夕ーン|回合)", "times": r"(?:回|次)", "turns_after": r"(?:ターン|ターノ|夕ーン)後|回合后|回合後"}[format_name]
     accepted = []
     for item in raw:
         text = unicodedata.normalize("NFKC", item["text"]).strip()
@@ -101,8 +101,20 @@ def player_score_roi(rgb):
     pairs = [
         (int(left[0]), int(right[0])) for index, left in enumerate(groups) for right in groups[index + 1 :] if 116 <= right[0] - left[0] <= 126
     ]
+    merged_margin = False
+    if len(pairs) != 1:
+        # 部分赛场的白色背景与左边框连成宽列，使用靠近框内的一端。
+        pairs = [
+            (int(left[-1]), int(right[0]))
+            for index, left in enumerate(groups) for right in groups[index + 1 :]
+            if 116 <= right[0] - left[-1] <= 126
+        ]
+        merged_margin = True
     if len(pairs) == 1:
         left, right = pairs[0]
+        if merged_margin:
+            # 去掉框线，避免竖线与分数一起被 OCR 读成额外的 1。
+            return [left, 124, right - left, 46]
         left, right = max(216, left - 4), min(720, right + 8)
         return [left, 124, right - left, 49]
     return None
@@ -227,7 +239,9 @@ class BattleStateReader:
 
     def _buffs(self, array, rgb, errors):
         buffs, unknown = [], []
-        for group in self._matches(array, "buff", errors):
+        observed_keys = set()
+        # 同一状态在侧栏合并显示，优先读取匹配最强的图标，避免淡色相似图标重复归类。
+        for group in sorted(self._matches(array, "buff", errors), key=lambda group: -group[0]["score"]):
             original_group = group
             unit_evidence = None
             family = group[0]["definition"].get("value_family")
@@ -267,6 +281,9 @@ class BattleStateReader:
             if rival and best["score"] - rival["score"] < margin:
                 unknown.append({"box": box, "icon_evidence": evidence, "value": None, "status": "unknown", "reason": "ambiguous_templates"})
                 continue
+            if entry["key"] in observed_keys:
+                unknown.append({"box": box, "icon_evidence": evidence, "value": None, "status": "unknown", "reason": "duplicate_status_icon"})
+                continue
             reading = self._reading(array, box, entry["reading"], errors)
             views = [reading]
             second_offset = entry["reading"].get("second_roi_offset")
@@ -294,6 +311,7 @@ class BattleStateReader:
                     }
                 )
                 continue
+            observed_keys.add(entry["key"])
             conflict = len(observed_values) > 1
             if not conflict:
                 reading = next((view for view in views if view["value"] is not None), reading)
@@ -327,7 +345,7 @@ class BattleStateReader:
             box = [14, cy - 30, 60, 60]
             if not any(overlap_ratio(box, b["box"]) >= 0.45 for b in [*buffs, *unknown]):
                 unknown.append({"box": box, "status": "candidate_region", "reason": "no_registered_template", "value": None})
-        return buffs, unknown
+        return sorted(buffs, key=lambda buff: buff["box"][1]), sorted(unknown, key=lambda buff: buff["box"][1])
 
     def _single_icon(self, array, kind, errors):
         groups = self._matches(array, kind, errors)
