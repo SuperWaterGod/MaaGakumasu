@@ -367,6 +367,20 @@ __pycache__/
 
 # Temporary local tests (delete after each use)
 /tests/
+/temp/produce_update/
+/cloud/produce-resources/.wrangler/
+
+# 培育更新服务安装的数据库、原始图库及本地清单
+/assets/data/produce_skill_cards.json
+/assets/data/produce_reward_items.json
+/assets/data/GAKUMAS_DATA_LICENSE.txt
+/assets/data/produce_resources_source.json
+/assets/data/produce_resources_manifest.json
+/assets/data/produce_resources_pending.json
+/assets/data/bundled/
+/assets/data/images/skillCards/
+/assets/data/images/pDrinks/
+/assets/data/images/pItems/
 
 # Cake - Uncomment if you are using it
 # tools/**
