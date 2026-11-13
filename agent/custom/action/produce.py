@@ -30,6 +30,7 @@ class ProduceChooseEventBase(CustomAction):
     EVENT_CONFIG: dict = {}
     RUN_TASK_MAP: dict = {}
     SUGGESTION_ROI: list = [270, 160, 350, 80]
+    EVENT_ICON_OFFSET = (0, 0)
     REST_COUNT_ROI = [580, 755, 135, 75]
 
     # 阈值常量
@@ -78,6 +79,10 @@ class ProduceChooseEventBase(CustomAction):
                 logger.info("无可用事件")
                 return True
 
+        # 老师建议和保底分支也保留实际课程的 SP 标记，不改变选择优先级。
+        name = best_event["name"]
+        if name in ("Vo", "Da", "Vi") and any(event.get("SP") and event.get(name) == best_event["box"] for event in events):
+            best_event["name"] = name + "_SP"
         box = best_event["box"]
         logger.info(f"选择事件: {best_event['name']}, 坐标: ({box[0] + box[2] // 2}, {box[1] + box[3] // 2})")
 
@@ -365,9 +370,8 @@ class ProduceChooseEventBase(CustomAction):
             return None
 
     def _get_available_events(self, context: Context, image) -> List[Dict[str, Any]]:
-        """获取可用事件列表"""
+        """逐项识别可用事件，按课程图标的位置检查 SP，兼容不同按钮数量。"""
         available_events = []
-        available_events_name = ""
 
         for event_name, event_img in self.EVENT_CONFIG.items():
             reco_detail = context.run_recognition(
@@ -378,18 +382,16 @@ class ProduceChooseEventBase(CustomAction):
                 },
             )
             if reco_detail and reco_detail.hit:
+                box = list(reco_detail.best_result.box)
+                event = {event_name: box}
                 if event_name in ["Da", "Vi", "Vo"]:
-                    available_events_name = "Vo, Da, Vi"
-                    available_events = [
-                        {"Vo": [190, 1000, 1, 1], "SP": self._get_sp_course(context, image, [70, 900, 80, 80])},
-                        {"Da": [360, 1000, 1, 1], "SP": self._get_sp_course(context, image, [250, 900, 80, 80])},
-                        {"Vi": [530, 1000, 1, 1], "SP": self._get_sp_course(context, image, [430, 900, 80, 80])},
-                    ]
-                    break
-                available_events.append({event_name: reco_detail.best_result.box})
-                available_events_name += f"{event_name}, "
+                    # 从图标本体还原按钮锚点，徽标范围同时覆盖初/NIA。
+                    offset_x, offset_y = self.EVENT_ICON_OFFSET
+                    sp_roi = [max(0, box[0] - offset_x - 50), max(0, box[1] - offset_y - 100), 110, 140]
+                    event["SP"] = self._get_sp_course(context, image, sp_roi)
+                available_events.append(event)
 
-        logger.info(f"可用事件: {available_events_name.rstrip(', ')}")
+        logger.info("可用事件: " + ", ".join(name for event in available_events for name in event if name != "SP"))
         logger.debug(available_events)
         return available_events
 
@@ -433,6 +435,8 @@ class ProduceChooseEventAuto(ProduceChooseEventBase):
         "交谈": {"img": "produce/chat.png", "keyword": ["先生に相談して", "咨询"]},
     }
 
+    # 只匹配图标正文，排除渐变底色、边角及事件标签对相关系数的干扰。
+    EVENT_ICON_OFFSET = (30, 20)
     EVENT_CONFIG = {
         "Vo": "produce/Vo.png",
         "Da": "produce/Da.png",
@@ -587,6 +591,11 @@ class ProduceCardsAuto(CustomAction):
 
             # 通过检测体力槽判断是否处于出牌场景
             if not self._is_playing_card(context, image):
+                # 动画可能暂时遮住体力标志，复用等待逻辑复核，恢复后重新截图。
+                if self._wait_until_playable(context):
+                    continue
+                if context.tasker.stopping:
+                    return True
                 logger.info("未检测到体力")
                 logger.success("事件: 退出出牌")
                 break
@@ -727,7 +736,8 @@ class ProduceCardsAuto(CustomAction):
             image = context.tasker.controller.post_screencap().wait().get()
 
         reco_detail = context.run_recognition("ProduceRecognitionChooseMoveCards", image)
-        if reco_detail.hit:
+        if reco_detail and reco_detail.hit:
+            logger.info("战斗 - 移动／复制选牌")
             y = 450
             while y < 1100:
                 # for x in [140, 285, 440, 585]:
@@ -738,8 +748,12 @@ class ProduceCardsAuto(CustomAction):
                     time.sleep(0.2)
                 image = context.tasker.controller.post_screencap().wait().get()
                 reco_detail = context.run_recognition("ProduceRecognitionChooseMoveCards", image)
-                if not reco_detail.hit:
-                    context.run_task("ProduceMoveCards")
+                if reco_detail and not reco_detail.hit:
+                    result = context.run_task("ProduceMoveCards")
+                    if result and result.status.succeeded:
+                        logger.info("战斗 - 已点击移动／复制确认")
+                    else:
+                        logger.warning("战斗 - 移动／复制确认未完成")
                     return True
                 else:
                     y = y + 100
@@ -802,6 +816,8 @@ class ProduceCardsAuto(CustomAction):
                 count_exit += 1
                 if count_exit >= 2:
                     return False
+            else:
+                count_exit = 0
 
             # 解决莫名其妙的误触问题
             reco_detail = context.run_recognition("ProduceButton", image)
