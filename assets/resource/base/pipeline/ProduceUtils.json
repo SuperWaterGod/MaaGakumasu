@@ -438,7 +438,8 @@
         "template": [
           "produce/skip_round.png",
           "produce/skip_round_1.png",
-          "produce/skip_round_2.png"
+          "produce/skip_round_2.png",
+          "produce/skip_round_plain.png"
         ]
       }
     },
