@@ -79,6 +79,7 @@ class DecisionCapture:
         self.icon_resources = icon_resources
         self._console_event = None
         self._analysis = None
+        self._battle_reader = None
         self._manifest = {
             "writer_pid": os.getpid(),
             "save_screenshots": save_screenshots,
@@ -134,6 +135,10 @@ class DecisionCapture:
         from .analysis import analyze_stream
 
         def notice(message, **extra):
+            if extra.get("scope") == "battle_read_ahead":
+                from utils import logger
+                logger.debug(message)
+                return
             if extra.get("scope") == "shop":
                 if self._console:
                     from .console import format_shop
@@ -149,11 +154,31 @@ class DecisionCapture:
 
         try:
             self._analysis = analyze_stream(self.directory, resource, database, aliases,
-                                            context=lambda: self.context, emit=notice, icon_resources=self.icon_resources)
+                                            context=lambda: self.context, emit=notice, icon_resources=self.icon_resources,
+                                            battle_reader=lambda reader: setattr(self, "_battle_reader", reader))
             next(self._analysis)
         except Exception:
             self._analysis = None
             LOGGER.exception("记录识别初始化失败，继续培育")
+
+    def prepare_battle(self, image, candidates, *, context, battle_id, frame_observed_at_ns):
+        """等待阶段只在手牌与 Buff 连续稳定后执行一次完整读取。"""
+        if self._closed or self._failed or self._analyzing or self._analysis is None or self._battle_reader is None:
+            return False
+        self.context = context
+        self._analyzing = True
+        try:
+            prepared = self._battle_reader(image, candidates)
+        except Exception:
+            LOGGER.exception("出牌提前识别失败，继续当前图读取")
+            return False
+        finally:
+            self.context = None
+            self._analyzing = False
+        if prepared is None:
+            return False
+        return bool(self.record("battle_read_ahead", image=image, context=context, save_frame=True, battle_id=battle_id,
+                                candidates=candidates, frame_observed_at_ns=frame_observed_at_ns, **prepared))
 
     @classmethod
     def from_config(cls, metadata: dict, console=None, *, session_directory=None, save_screenshots=None, context=None):
@@ -284,6 +309,7 @@ class DecisionCapture:
             except Exception:
                 LOGGER.exception("记录识别收尾失败")
             self._analysis = None
+        self._battle_reader = None
         self._manifest.update(status="closed", stop_reason=reason, ended_at=datetime.now(timezone.utc).isoformat())
         self._save_manifest()
 

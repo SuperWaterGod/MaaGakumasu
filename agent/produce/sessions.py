@@ -54,7 +54,7 @@ SETTLEMENT_SCREENSHOT_NODES = SETTLEMENT_NODES | {
 SETTLEMENT_NAVIGATION = {
     "ProduceNext", "ProduceEndNext", "ProduceButton", "ProduceNIAButton", "ProduceDecide", "DecideButton",
     "CloseRoundButton", "ProduceEventResultButton", "ProduceSkip", "ProduceSkipED",
-    "ProduceSkipChatFlag", "ProduceYes", "ProduceSkipShowConfirm", "ProduceFollow", "Click_1",
+    "ProduceSkipChatFlag", "ProduceYes", "ProduceFollow", "Click_1",
 }
 PROCESS_NODES = {'ProduceShoppingFlag', 'ProduceGeneration', 'ProduceRecognitionWorkOptions', 'ProduceLackAPDecide', 'ProduceChooseIdolFirstDecide', 'ProduceNIAFailedRetryLastChallenge', 'ProduceExit', 'ProduceFailedStop', 'ProduceChooseDeleteFlag', 'ProduceChooseEventRecommend', 'ProduceWorkFlag', 'ProduceChooseGetFlag', 'ProduceFailedFlag', 'ProduceFailedRetryConfirm', 'ProduceNIAFailedFlag', 'ProduceLackAPCancel', 'ProduceChooseFirst', 'ProduceChooseStrengthenClick', 'ProduceSkipED', 'ProduceKeepDrinkFlag', 'ProduceNIAFailedRetryConfirm', 'ProduceHomeFlag', 'ProduceMirrorFlag', 'ProduceGuideFlag', 'ProduceLackAP', 'ProduceEnd', 'ProduceBackHome', 'ProduceChooseRecommend'}
 ENTRY_NODES = {"ProduceStart", "ProduceContinue", "ProduceSkipPreparation", "ProduceEntryFlag"}

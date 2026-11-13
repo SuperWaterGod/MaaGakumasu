@@ -205,11 +205,125 @@ def shop_observation(image, icons, read_text):
             "candidates_complete": False}
 
 
+class BattleReadAhead:
+    """手牌与 Buff 稳定后读取一次，推荐出现时直接交付整份结果。"""
+
+    def __init__(self, vision):
+        self.vision = vision
+        self.clear()
+
+    def clear(self):
+        self.previous = None
+        self.result = None
+        self.event_id = None
+        self.attempted = False
+        self.regions = None
+
+    @staticmethod
+    def unchanged(before, after, roi):
+        import numpy as np
+
+        x, y, w, h = map(int, roi)
+        if w < 2 or h < 2 or x < 0 or y < 0 or x + w > after.shape[1] or y + h > after.shape[0]:
+            return False
+        old = before[y:y + h, x:x + w].astype(np.float32).mean(axis=2)
+        current = after[y:y + h, x:x + w].astype(np.float32).mean(axis=2)
+        left, right = old - old.mean(), current - current.mean()
+        norm = math.sqrt(float(np.sum(left * left)) * float(np.sum(right * right)))
+        if norm == 0:
+            return bool(np.max(np.abs(old - current)) <= 8)
+        # 开始识别前按字形结构判断稳定，允许透明底色随人物动画变化。
+        return bool(float(np.sum(left * right)) / norm >= .99)
+
+    @staticmethod
+    def hand(candidates):
+        return sorted((item for item in candidates if item.get("in_hand_region")), key=lambda item: item["box"][0])
+
+    @classmethod
+    def same_slots(cls, before, after):
+        old, current = cls.hand(before), cls.hand(after)
+        return bool(old and len(old) == len(current) and all(
+            abs(a["box"][axis] + a["box"][axis + 2] / 2 - b["box"][axis] - b["box"][axis + 2] / 2) <= 6
+            for a, b in zip(old, current) for axis in (0, 1)
+        ))
+
+    def take(self, candidates):
+        """沿卡槽顺序更新推荐标记和点击框，直接使用已读取的牌名与状态。"""
+        started = time.perf_counter()
+        result = self.result
+        self.result = None
+        prepared_cards = sorted(result["cards"], key=lambda item: item["box"][0])
+        result["cards"] = [{**card, **current} for card, current in zip(prepared_cards, self.hand(candidates))]
+        result["read_ahead"] = {"event_id": self.event_id, "source_frame_sha256": result.get("source_frame_sha256"),
+                                "handoff_seconds": time.perf_counter() - started}
+        return result
+
+    def prepare(self, image, catalog, candidates):
+        if self.attempted:
+            return None
+        if list(image.shape[:2]) != [1280, 720]:
+            return None
+        array = normalized_image(image)
+        reader = getattr(self.vision, "state_reader", None)
+        if reader is None:
+            return None
+        if not self.hand(candidates):
+            self.previous = None
+            self.regions = None
+            return None
+        regions = []
+        for item in self.hand(candidates):
+            x, y, w, h = map(int, item["box"])
+            # 牌名在底部；卡面上方的预测分数属于游戏计算动画。
+            top = y + int(h * .86)
+            regions.append([x + 4, top, w - 8, y + h - top - 4])
+        previous = self.previous
+        now = time.monotonic()
+        stable_hand = (previous is not None and self.same_slots(previous[1], candidates)
+                       and all(self.unchanged(previous[0], array, roi) for roi in regions))
+        if not stable_hand:
+            self.previous = (array.copy(), candidates, now)
+            self.regions = None
+            return None
+        if now - previous[2] < .3:
+            return None
+        # 每个输入窗口只定位一次观察区域，后续轮询只比较内存像素。
+        if self.regions is None:
+            self.regions = []
+            reader.layout = self.vision._battle_layout or "lesson"
+            for kind in ("buff", "stance", "stance_preview"):
+                for group in reader._matches(array, kind, []):
+                    hit = group[0]
+                    entry, box = hit["definition"], hit["box"]
+                    if hit["score"] < entry["threshold"]:
+                        continue
+                    for name in ("reading", "charge_reading", "duration_reading"):
+                        spec = entry.get(name)
+                        if spec:
+                            dx, dy, w, h = spec["roi_offset"]
+                            self.regions.append([box[0] + dx, box[1] + dy, w, h])
+        if not all(self.unchanged(previous[0], array, roi) for roi in self.regions):
+            self.previous = (array.copy(), candidates, now)
+            return None
+        self.attempted = True
+        started = time.monotonic()
+        started_at_ns = time.time_ns()
+        before_ocr = self.vision.ocr_requests
+        self.result = self.vision.analyze(image, catalog, candidates)
+        self.previous = None
+        return {"seconds": time.monotonic() - started, "ocr_requests": self.vision.ocr_requests - before_ocr,
+                "read_started_at_ns": started_at_ns, "read_finished_at_ns": time.time_ns()}
+
+
 class OfflineVision:
     def __init__(self, resource_path, context=None):
         self.context = context
         self._battle_id = None
         self._battle_layout = None
+        self.read_ahead = BattleReadAhead(self)
+        self.ocr_requests = 0
+        self._template_frame = None
+        self._template_results = {}
         if context is not None:
             self._ocr_cache = {}
             return
@@ -265,20 +379,29 @@ class OfflineVision:
         from maa.pipeline import JOCR, JRecognitionType
 
         left, top, width, height = roi
-        crop_hash = hashlib.sha256(array[top: top + height, left: left + width].tobytes()).hexdigest()
+        crop_hash = (width, height, hashlib.sha256(array[top: top + height, left: left + width].tobytes()).hexdigest())
         if crop_hash not in self._ocr_cache:
             results = self.recognize(JRecognitionType.OCR, JOCR(roi=roi), array)
+            self.ocr_requests += 1
             self._ocr_cache[crop_hash] = [
                 {"text": item.text, "confidence": item.score, "box": [item.box[0] - left, item.box[1] - top, item.box[2], item.box[3]]}
                 for item in results
             ]
             if len(self._ocr_cache) > 2048:
                 self._ocr_cache.pop(next(iter(self._ocr_cache)))
-        return [{**item, "box": [item["box"][0] + left, item["box"][1] + top, *item["box"][2:]]} for item in self._ocr_cache[crop_hash]]
+        raw = [{**item, "box": [item["box"][0] + left, item["box"][1] + top, *item["box"][2:]]} for item in self._ocr_cache[crop_hash]]
+        return raw
 
     def match_buff_templates(self, array, definition):
         from maa.pipeline import JTemplateMatch, JRecognitionType
 
+        # 稳定区域定位与正式读取使用同一帧时，直接复用完全相同的模板查询。
+        if array is not self._template_frame:
+            self._template_frame = array
+            self._template_results.clear()
+        key = (definition["template"], tuple(definition["roi"]), definition["threshold"], definition["method"])
+        if key in self._template_results:
+            return self._template_results[key]
         items = self.recognize(
             JRecognitionType.TemplateMatch,
             JTemplateMatch(
@@ -290,13 +413,16 @@ class OfflineVision:
             ),
             array,
         )
-        return [{"score": item.score, "box": list(item.box)} for item in items if math.isfinite(item.score)]
+        result = [{"score": item.score, "box": list(item.box)} for item in items if math.isfinite(item.score)]
+        self._template_results[key] = result
+        return result
 
     def set_battle(self, battle_id):
         """布局只在有明确边界的单场战斗内复用，切换场次或退出时失效。"""
         if self._battle_id != battle_id:
             self._battle_id = battle_id
             self._battle_layout = None
+            self.read_ahead.clear()
 
     def analyze(self, image, catalog, candidates=None):
         from maa.pipeline import JRecognitionType, JNeuralNetworkDetect
@@ -387,7 +513,8 @@ class OfflineVision:
         return result
 
 
-def analyze_stream(directory, resource, database, aliases=None, *, context=None, emit=None, icon_resources=None):
+def analyze_stream(directory, resource, database, aliases=None, *, context=None, emit=None, icon_resources=None,
+                   battle_reader=None):
     directory = directory.resolve()
     capture_manifest = read_json(directory / "manifest.json")
     if icon_resources is None:
@@ -456,6 +583,8 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
         if reward_reader.icons:
             reward_reader.icons.recognize = vision.recognize
         vision.state_reader = BattleStateReader(state_templates, vision._read_title, vision.match_buff_templates, resource / "image")
+        if battle_reader:
+            battle_reader(lambda image, candidates: vision.read_ahead.prepare(image, catalog, candidates))
         status["buff_backend"] = "MaaFramework.TemplateMatch"
         status["buff_templates"] = [entry["id"] for entry in vision.state_reader.templates if entry["kind"] == "buff"]
         status["stance_templates"] = [entry["id"] for entry in vision.state_reader.templates if entry["kind"] == "stance"]
@@ -481,6 +610,17 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                     vision.set_battle(event["event_id"])
                 elif event["kind"] == "battle_invocation_end":
                     vision.set_battle(None)
+                if event["kind"] == "battle_read_ahead":
+                    vision.read_ahead.event_id = event["event_id"]
+                    vision.read_ahead.result.update(source_frame_sha256=event["frame"]["sha256"],
+                                                   catalog_sha256=catalog.sha256)
+                    index.write(json.dumps({"event_id": event["event_id"], "battle_id": event.get("battle_id"),
+                                            "frame_sha256": event["frame"]["sha256"],
+                                            "observation": vision.read_ahead.result}, ensure_ascii=False) + "\n")
+                    notice(f"出牌提前识别完成：{event['seconds']:.3f}秒｜OCR {event['ocr_requests']}次", scope="battle_read_ahead")
+                    continue
+                if event["kind"] in ("input_issued", "confirmation_task", "move_cards_screen", "move_cards_input"):
+                    vision.read_ahead.clear()
                 icon_matches = None
                 # 强化入口与选牌节点连续观察同一页；入口提示在选牌节点识别成功时发出。
                 # 只在其动作开始前扫描，避免入口提示之前输出一次、随后又重复输出。
@@ -610,7 +750,11 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                         image = supplied_image
                         source_size = event["frame"].get("source_size", [image.shape[1], image.shape[0]])
                         candidates = event.get("candidates") if source_size == [720, 1280] else None
-                        result = vision.analyze(image, catalog, candidates)
+                        if (event["kind"] == "decision_before" and event.get("operation") == "play_card"
+                                and vision.read_ahead.result is not None):
+                            result = vision.read_ahead.take(candidates)
+                        else:
+                            result = vision.analyze(image, catalog, candidates)
                         result["capture_source_size"] = source_size
                         result.update(schema_version=1, source_frame_sha256=sha, catalog_sha256=catalog.sha256)
                         for card in result["cards"]:
@@ -639,6 +783,10 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                 changes = None
                 console_operation_number = None
                 if event["kind"] == "decision_before":
+                    if result.get("read_ahead"):
+                        reading = result["read_ahead"]
+                        notice(f"出牌直接使用提前识别结果｜交付 {reading['handoff_seconds']:.3f}秒", scope="battle_read_ahead")
+                    vision.read_ahead.clear()
                     action_console.start(event, result)
                     console_operation_number = action_console.count
                 elif event["kind"] == "decision_after":

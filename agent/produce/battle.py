@@ -55,6 +55,7 @@ class ProduceCardsAuto(CustomAction):
         self._battle_id = None
         self._last_wait_image = None
         self._frame_observed_at_ns = None
+        self._read_ahead_enabled = False
 
     def run(
         self,
@@ -64,6 +65,7 @@ class ProduceCardsAuto(CustomAction):
         self._context = context
         entry = getattr(argv, "node_name", None)
         fast = entry != "IdolRoadAuto" and produce_fast_mode(context)
+        self._read_ahead_enabled = not fast and entry != "IdolRoadAuto"
         session = None if fast else SESSIONS.get(context)
         self._capture = None
         if not fast:
@@ -87,11 +89,25 @@ class ProduceCardsAuto(CustomAction):
             self._context = None
             self._active_decision = None
             self._battle_id = None
+            self._read_ahead_enabled = False
 
     def _record(self, kind, image=None, **data):
         if self._capture:
             return self._capture.record(kind, image=image, context=self._context, battle_id=self._battle_id, **data)
         return None
+
+    def _prepare_battle(self, image, results):
+        """推荐出现前读取稳定手牌与 Buff，完成后必须重新截图判断点击。"""
+        if not self._read_ahead_enabled or not self._capture:
+            return False
+        suggestions, _, cards, _, _ = self._get_card_info(results)
+        if suggestions:
+            return False
+        candidates = card_candidates(results) if cards > 1 else []
+        return self._capture.prepare_battle(
+            image, candidates, context=self._context, battle_id=self._battle_id,
+            frame_observed_at_ns=self._frame_observed_at_ns,
+        )
 
     def _begin_decision(self, kind, image, results=(), **data):
         if not self._capture:
@@ -174,6 +190,9 @@ class ProduceCardsAuto(CustomAction):
                 suggestions, useless, cards, suggestions_box, best_box = self._get_card_info(results)
                 # print(f"卡片数量:{suggestions}/{cards}/{useless}")
 
+                if self._prepare_battle(image, results):
+                    continue
+
                 # 有推荐牌时，打出推荐牌
                 if suggestions > 0:
                     if suggestions_box[1] < self.CARD_Y_MIN or suggestions_box[1] > self.CARD_Y_MAX:
@@ -207,6 +226,7 @@ class ProduceCardsAuto(CustomAction):
                     self._play_a_card(context, best_box, image, results, "timeout_detector_confidence")
 
             else:
+                self._prepare_battle(image, ())
                 reco_detail = context.run_recognition("ProduceRecognitionNoCards", image)
                 if reco_detail and reco_detail.hit:
                     self._begin_decision("skip_round", image, reason="no_cards_ocr")
@@ -419,14 +439,24 @@ class ProduceCardsAuto(CustomAction):
 
             # 解决莫名其妙的误触问题
             reco_detail = context.run_recognition("ProduceButton", image)
+            handled = False
             if reco_detail and reco_detail.hit:
                 self._record("confirmation_task", decision_id=self._active_decision, task="ProduceButton")
                 context.run_task("ProduceButton")
+                handled = True
 
             # 处理移动卡片界面
             if self._handle_move_cards(context, image):
                 count_playable = 0
                 count_exit = 0
+                handled = True
+
+            if not handled and count_exit == 0 and self._read_ahead_enabled and self._capture:
+                detail = context.run_recognition("ProduceRecognitionCards", image)
+                if detail and detail.hit:
+                    self._prepare_battle(image, detail.all_results)
+                else:
+                    self._prepare_battle(image, ())
 
             # 检测任务中止的情况，防止卡死，检测成功时返回False
             if context.tasker.stopping:
