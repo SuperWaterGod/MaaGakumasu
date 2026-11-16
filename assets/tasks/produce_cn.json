@@ -109,6 +109,13 @@
           "option": [
             "雨夜燕卡片-zh_CN"
           ]
+        },
+        {
+          "name": "冰渡香名江",
+          "label": "$冰渡香名江",
+          "option": [
+            "冰渡香名江卡片-zh_CN"
+          ]
         }
       ],
       "label": "$培育偶像"
@@ -3188,6 +3195,75 @@
       ],
       "label": "$秦谷美鈴卡片"
     },
+    "冰渡香名江卡片-zh_CN": {
+      "type": "select",
+      "default_case": "冰渡香名江(蜕变)",
+      "cases": [
+        {
+          "name": "冰渡香名江(蜕变)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "冰渡香名江",
+                "song_name": "蜕变"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·集中",
+                "first": "Vi",
+                "second": "Vo"
+              }
+            }
+          }
+        },
+        {
+          "name": "冰渡香名江(怀抱憧憬，一步一步)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "冰渡香名江",
+                "song_name": "怀抱憧憬，一步一步"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·好调",
+                "first": "Vi",
+                "second": "Vo"
+              }
+            }
+          }
+        },
+        {
+          "name": "冰渡香名江(学园生活)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "冰渡香名江",
+                "song_name": "学园生活"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·集中",
+                "first": "Vi",
+                "second": "Vo"
+              }
+            }
+          }
+        },
+        {
+          "name": "自定义歌曲",
+          "label": "$自定义歌曲",
+          "option": [
+            "冰渡香名江卡片-zh_CN自定义歌曲名称",
+            "自定义歌曲第一属性-Vi-Vo-zh_CN"
+          ]
+        }
+      ],
+      "label": "$氷渡香名江卡片"
+    },
     "雨夜燕卡片-zh_CN自定义歌曲名称": {
       "type": "input",
       "label": "$自定义歌曲名称",
@@ -3482,6 +3558,29 @@
         "ProduceChooseIdol": {
           "custom_recognition_param": {
             "idol_name": "秦谷美铃",
+            "song_name": "{song_name}"
+          }
+        }
+      }
+    },
+    "冰渡香名江卡片-zh_CN自定义歌曲名称": {
+      "type": "input",
+      "label": "$自定义歌曲名称",
+      "description": "$自定义歌曲名称说明",
+      "inputs": [
+        {
+          "name": "song_name",
+          "label": "$自定义歌曲名称",
+          "default": "",
+          "pipeline_type": "string",
+          "verify": "^[^\\r\\n]*\\S[^\\r\\n]*$(?![\\r\\n])",
+          "pattern_msg": "$自定义歌曲名称输入框说明"
+        }
+      ],
+      "pipeline_override": {
+        "ProduceChooseIdol": {
+          "custom_recognition_param": {
+            "idol_name": "冰渡香名江",
             "song_name": "{song_name}"
           }
         }

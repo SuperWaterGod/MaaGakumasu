@@ -4,6 +4,7 @@ from datetime import datetime
 from collections import defaultdict
 
 preference = {
+    "冰渡香名江": {"first": "Vi", "second": "Vo"},
     "雨夜燕": {"first": "Da", "second": "Vo"},
     "藤田琴音": {"first": "Da", "second": "Vi"},
     "葛城莉莉娅": {"first": "Vi", "second": "Da"},
@@ -154,7 +155,8 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
             for card in idols_cards_data[card_type]:
                 if cn_mode:
                     idol_name = card["偶像中文"]
-                    song_name = card["歌曲中文"]
+                    # 尚未核实汉化卡名时保留日文原名，避免生成空名称的 OCR 条件。
+                    song_name = card["歌曲中文"] or card["歌曲名称"]
                     card_name = f"{idol_name}({song_name})"
                 else:
                     idol_name = card["偶像名称"]
@@ -172,6 +174,7 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
                     {
                         "card_name": card_name,
                         "idol_name": idol_name,
+                        "idol_jp": card["偶像名称"],
                         "idol_cn": card["偶像中文"],
                         "song_name": song_name,
                         "effect": card.get("推荐效果", ""),
@@ -248,7 +251,12 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
             # 不存在，新建配置
             default_case = unique_cards[0]["card_name"] if unique_cards else ""
 
-            interface_data["option"][key_name] = {"type": "select", "default_case": default_case, "cases": new_cases, "label": f"${key_name}"}
+            interface_data["option"][key_name] = {
+                "type": "select",
+                "default_case": default_case,
+                "cases": new_cases,
+                "label": f"${unique_cards[0]['idol_jp']}卡片",
+            }
 
             # 记录所有卡片为新增
             new_cards_log[idol_name] = [card["card_name"] for card in unique_cards]
@@ -256,6 +264,12 @@ def format_cards_data(idols_cards_path, interface_path, output_path, card_types=
 
         # 普通卡片同步与统计完成后再添加，避免自定义入口参与排序和默认选择。
         add_custom_song_option(interface_data["option"], key_name, idol_name, unique_cards[0]["idol_cn"], cn_mode)
+
+        # 新偶像还需要挂到父选项，否则生成的卡片列表无法在客户端选择。
+        parent_key = "培育偶像-zh_CN" if cn_mode else "培育偶像"
+        parent = interface_data["option"].get(parent_key)
+        if parent is not None and not any(key_name in case.get("option", []) for case in parent["cases"]):
+            parent["cases"].append({"name": idol_name, "label": f"${unique_cards[0]['idol_cn']}", "option": [key_name]})
 
     # 保存到输出文件
     with open(output_path, "w", encoding="utf-8") as f:

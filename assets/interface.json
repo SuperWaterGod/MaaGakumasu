@@ -590,6 +590,18 @@
               }
             }
           }
+        },
+        {
+          "name": "冰渡香名江",
+          "label": "$冰渡香名江",
+          "pipeline_override": {
+            "WorkChooseShow": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/hiwatari_kanae.png"
+              }
+            }
+          }
         }
       ],
       "label": "$迷你演唱会Idol"
@@ -758,6 +770,18 @@
               "custom_recognition": "WorkChooseIdol",
               "custom_recognition_param": {
                 "idol": "idols/tsubame_amaya.png"
+              }
+            }
+          }
+        },
+        {
+          "name": "冰渡香名江",
+          "label": "$冰渡香名江",
+          "pipeline_override": {
+            "WorkChooseLive": {
+              "custom_recognition": "WorkChooseIdol",
+              "custom_recognition_param": {
+                "idol": "idols/hiwatari_kanae.png"
               }
             }
           }
