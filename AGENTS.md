@@ -10,7 +10,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 
 ## 当前进度
 
-最近核对日期：`2026-10-09`，发版准备基于 HEAD `b924a86`。`assets/interface.json` 与更新公告已更新为 `v1.5.2`；当前处于发版准备阶段。功能状态以最近提交和当前任务配置为准。
+最近核对日期：`2026-11-19`，`decision-capture` 同步主线至 `cc50a53`。主线更新公告记录到 `v1.5.4`，仓库 `assets/interface.json` 中仍为 `v1.5.2`。功能状态以最近提交、当前工作区和任务配置为准。
 
 已实现的主要功能包括：
 
@@ -33,6 +33,15 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - 剧本选择重构为模板匹配（替代 OCR），支持 Ranking/NIA/HIF 三种剧本；饮料识别升级为多模板匹配。
 - NIA 流程入口 `ProduceEntryNIA` 与 `ProduceGuideEntry` 新增 `[JumpBack]ProduceChooseStrengthenFlag` 回跳，识别到强化选择标志时回到对应处理节点，避免流程中断。
 - 培育界面资源图片在 `assets/resource/base/image/produce/` 有最近更新。
+
+2026-11-13 从 `decision-capture` 提取至主线的独立修复与优化：
+
+- 跳过回合增加无文字按钮模板；歌曲名完整包含于归一化 OCR 文本时忽略皮肤附加文案。
+- 路线候选改为逐项识别，并按实际按钮位置定位 SP；初流程裁切后的图标需配套 `EVENT_ICON_OFFSET = (30, 20)`，NIA 保持 `(0, 0)`。初/NIA 均等待选项区域连续静止 500 毫秒后识别。
+- 战斗中体力标志短暂消失时先复核，恢复识别后清零退出计数；保留原出牌策略与 15 秒兜底。
+- 移动／复制选牌统一由 `ProduceMoveCards` 匹配确认按钮，完整模式仅为采集记录识别操作类型。
+- 更新 NIA 交谈和无属性选项模板，删除已无引用的 `choose.onnx`。
+- 普通培育与一键培育默认关闭关注租借、老师建议，奖励选卡默认活动卡优先。预设中的选项键必须使用 `跟随老师的建议`。
 
 v1.5.2 改动（已写入 v1.5.2 公告，细节以提交为准）：
 
@@ -58,11 +67,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - HIF 培育适配：由于暂时借不到 HIF 高等级账号，开发暂缓。剧本模板识别不代表完整培育流程已适配。
 - 更多语言与更多自动培育样本覆盖。
 
-截至 `2026-10-08` 更新本文件前，工作区存在以下未提交内容：
-
-- `assets/data/idols_cards.json`：保存时间和卡片推荐效果字段有修改。
-
-这只是核对时的快照。每次开始工作都先执行 `git status --short`、检查相关 diff；不要覆盖或回退已有修改，也不要把未跟踪文件当成可删除的临时文件，除非用户明确要求。
+每次开始工作都先执行 `git status --short`、检查相关 diff，不依赖文档中的历史工作区快照；不要覆盖或回退已有修改，也不要把未跟踪文件当成可删除的临时文件，除非用户明确要求。
 
 ## 目录职责
 
@@ -76,7 +81,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - `assets/data/`：结构化数据，例如偶像卡片数据 `idols_cards.json`。
 - `assets/tasks/`：MFA/MaaFramework 任务入口与选项定义。培育任务入口在 `assets/tasks/produce.json`，中文任务配置在 `produce_cn.json`。
 - `assets/lang/`：界面与任务选项翻译。新增任务选项时同步 `zh-CN` 和 `zh-Hant` 等已有语言。
-- `assets/resource/announcement/01_更新公告.md`：发布给用户看的版本更新公告；当前内容已进入 v1.5.2 说明。
+- `assets/resource/announcement/01_更新公告.md`：发布给用户看的版本更新公告；当前记录至 v1.5.4。
 - `assets/resource/announcement/`：客户端资源公告与首次使用欢迎弹窗。文件按名称数字前缀排序展示（`01_更新公告.md`、`02_常见问题.md`、`03_免责声明与使用须知.md`、`04_欢迎使用.md`、`05_功能介绍.md`）；`04_欢迎使用.md` 被 `assets/interface.json` 的 `welcome` 字段引用；`05_功能介绍.md` 为功能说明.md 的简化版公告，冲突时以功能说明.md 与任务配置为准；`02_常见问题.md` / `03_免责声明与使用须知.md` 为长期静态公告。
 - `docs/zh_cn/`：中文用户与开发文档。
 - `tools/`：项目维护脚本，包括构建/CI、偶像素材与卡片数据更新、语言同步、统一数据库构建、正式技能卡与奖励库同步、资源检查。
@@ -90,7 +95,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - Python 运行依赖：`maafw`、`loguru`（NumPy 随 maafw 提供）；图像编解码与缩放使用 MaaFramework。维护工具可按需使用 Pillow。
 - 可选开发依赖：`pytest>=7.0`、`ruff>=0.1.0`。
 - Node 侧仅用于工具链；JSON 排版使用 `jsonc-parser`，首次运行前执行 `npm ci`。
-- Python 包版本信息在 `pyproject.toml`，当前仍为 `1.3.8`；用户可见资源版本与公告已更新为 `v1.5.2`，发版入口为 `assets/interface.json`。
+- Python 包版本信息在 `pyproject.toml`，当前为 `1.3.8`；发版入口为 `assets/interface.json`。
 
 常用检查命令：
 
@@ -101,6 +106,7 @@ python -m ruff check .
 npm run format:json
 npm run check:json
 python tools/ci/check_resource.py ./assets/resource/base/
+git diff --check
 ```
 
 `py_compile` 接受文件路径，不能用来编译整个 `agent` 目录；目录检查使用 `compileall`。资源 CI（`.github/workflows/check.yml`）实际运行 `tools/ci/check_resource.py`，需要安装 `maafw`。
@@ -194,7 +200,7 @@ python tools/ci/check_resource.py ./assets/resource/base/
 - 不要回退用户已有修改。当前工作区若有不相关改动，保持原样。
 - 不要在未确认的情况下调整发布、安装、依赖打包或 Mirror 酱相关配置。
 - 不要把 README 中标注为测试阶段的自动培育描述成稳定功能。
-- README、功能说明与更新公告若存在冲突，先检查最近提交、当前实现与任务配置；v1.5.2 公告记录本次发版内容，后续新增功能可能尚未同步到公告或 README。
+- README、功能说明与更新公告若存在冲突，先检查最近提交、当前实现与任务配置；后续新增功能可能尚未同步到公告或 README。
 - 不要改变项目许可证、免责声明或商业用途限制。
 - 需要联网查询 MaaFramework、MFAAvalonia、Mirror 酱或 OpenAI 等外部信息时，优先使用官方文档，并在回复中说明来源。
 - 对用户报告的运行问题，优先索要或检查 `debug/maa.log`、模拟器类型、分辨率、系统平台、游戏版本、是否 DMM/插件版汉化。

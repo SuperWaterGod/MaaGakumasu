@@ -338,13 +338,14 @@ class ProduceCardsAuto(CustomAction):
         reco_detail = context.run_recognition("ProduceRecognitionChooseMoveCards", image)
         if reco_detail and reco_detail.hit:
             operation = None
-            for kind, template in (("copy", "produce/copy_icon.png"), ("move", "produce/move_icon.png")):
-                detail = context.run_recognition("ProduceRecognitionMoveCards", image, pipeline_override={
-                    "ProduceRecognitionMoveCards": {"recognition": {"param": {"template": [template]}}},
-                })
-                if detail and detail.hit:
-                    operation = kind
-                    break
+            if self._capture:
+                for kind, template in (("copy", "produce/copy_icon.png"), ("move", "produce/move_icon.png")):
+                    detail = context.run_recognition("ProduceRecognitionMoveCards", image, pipeline_override={
+                        "ProduceRecognitionMoveCards": {"recognition": {"param": {"template": [template]}}},
+                    })
+                    if detail and detail.hit:
+                        operation = kind
+                        break
             label = {"copy": "复制", "move": "移动"}.get(operation, "移动／复制")
             logger.info(f"战斗 - {label}选牌")
             self._record("move_cards_screen", image=image, save_frame=True, decision_id=self._active_decision,
@@ -363,9 +364,7 @@ class ProduceCardsAuto(CustomAction):
                 reco_detail = context.run_recognition("ProduceRecognitionChooseMoveCards", image)
                 if reco_detail and not reco_detail.hit:
                     self._record("move_cards_selection_observation", decision_id=self._active_decision)
-                    templates = ["produce/copy.png"] if operation == "copy" else ["produce/move_1.png", "produce/move_2.png"]
-                    override = {"ProduceMoveCards": {"recognition": {"param": {"template": templates}}}}
-                    result = context.run_task("ProduceMoveCards", pipeline_override=override)
+                    result = context.run_task("ProduceMoveCards")
                     if result and result.status.succeeded:
                         logger.info(f"战斗 - 已点击{label}确认")
                     else:

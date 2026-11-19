@@ -110,14 +110,39 @@
           "option": [
             "雨夜燕卡片-zh_CN"
           ]
+        },
+        {
+          "name": "冰渡香名江",
+          "label": "$冰渡香名江",
+          "option": [
+            "冰渡香名江卡片-zh_CN"
+          ]
         }
       ],
       "label": "$培育偶像"
     },
     "雨夜燕卡片-zh_CN": {
       "type": "select",
-      "default_case": "雨夜燕(互噬)",
+      "default_case": "雨夜燕(荆棘之路)",
       "cases": [
+        {
+          "name": "雨夜燕(荆棘之路)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "雨夜燕",
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·强气",
+                "first": "Da",
+                "second": "Vo"
+              }
+            }
+          }
+        },
         {
           "name": "雨夜燕(互噬)",
           "pipeline_override": {
@@ -491,12 +516,12 @@
           }
         },
         {
-          "name": "葛城莉莉娅(ときめきエモーション)",
+          "name": "葛城莉莉娅(怦然心动)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
                 "idol_name": "葛城莉莉娅",
-                "song_name": "ときめきエモーション"
+                "song_name": "怦然心动"
               }
             },
             "ProduceChooseNIAEventFlag": {
@@ -1017,7 +1042,7 @@
             },
             "ProduceChooseNIAEventFlag": {
               "custom_action_param": {
-                "effect": "ｶアノマリー全力",
+                "effect": "非凡·全力",
                 "first": "Da",
                 "second": "Vo"
               }
@@ -1256,12 +1281,12 @@
           }
         },
         {
-          "name": "紫云清夏(ときめきエモーション)",
+          "name": "紫云清夏(怦然心动)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
                 "idol_name": "紫云清夏",
-                "song_name": "ときめきエモーション"
+                "song_name": "怦然心动"
               }
             },
             "ProduceChooseNIAEventFlag": {
@@ -1466,15 +1491,15 @@
     },
     "筱泽广卡片-zh_CN": {
       "type": "select",
-      "default_case": "筱泽广(Me)",
+      "default_case": "筱泽广(眼)",
       "cases": [
         {
-          "name": "筱泽广(Me)",
+          "name": "筱泽广(眼)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
                 "idol_name": "筱泽广",
-                "song_name": "Me"
+                "song_name": "眼"
               }
             },
             "ProduceChooseNIAEventFlag": {
@@ -1898,12 +1923,12 @@
           }
         },
         {
-          "name": "有村麻央(慢慢地，一步一步来)",
+          "name": "有村麻央(始于帅气)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
                 "idol_name": "有村麻央",
-                "song_name": "慢慢地，一步一步来"
+                "song_name": "始于帅气"
               }
             },
             "ProduceChooseNIAEventFlag": {
@@ -1946,15 +1971,15 @@
     },
     "月村手毬卡片-zh_CN": {
       "type": "select",
-      "default_case": "月村手毬(喂，我要说了哦。)",
+      "default_case": "月村手毬(「我要说了哦。」)",
       "cases": [
         {
-          "name": "月村手毬(喂，我要说了哦。)",
+          "name": "月村手毬(「我要说了哦。」)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
                 "idol_name": "月村手毬",
-                "song_name": "喂，我要说了哦。"
+                "song_name": "「我要说了哦。」"
               }
             },
             "ProduceChooseNIAEventFlag": {
@@ -2483,12 +2508,12 @@
           }
         },
         {
-          "name": "十王星南(喂，我要说了哦。)",
+          "name": "十王星南(「我要说了哦。」)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
                 "idol_name": "十王星南",
-                "song_name": "喂，我要说了哦。"
+                "song_name": "「我要说了哦。」"
               }
             },
             "ProduceChooseNIAEventFlag": {
@@ -2693,8 +2718,26 @@
     },
     "仓本千奈卡片-zh_CN": {
       "type": "select",
-      "default_case": "仓本千奈(标)",
+      "default_case": "仓本千奈(荆棘之路)",
       "cases": [
+        {
+          "name": "仓本千奈(荆棘之路)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "仓本千奈",
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "非凡·全力",
+                "first": "Da",
+                "second": "Vi"
+              }
+            }
+          }
+        },
         {
           "name": "仓本千奈(标)",
           "pipeline_override": {
@@ -2942,15 +2985,33 @@
     },
     "秦谷美铃卡片-zh_CN": {
       "type": "select",
-      "default_case": "秦谷美铃(喂，我要说了哦。)",
+      "default_case": "秦谷美铃(荆棘之路)",
       "cases": [
         {
-          "name": "秦谷美铃(喂，我要说了哦。)",
+          "name": "秦谷美铃(荆棘之路)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
                 "idol_name": "秦谷美铃",
-                "song_name": "喂，我要说了哦。"
+                "song_name": "荆棘之路"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "理性·好印象",
+                "first": "Vo",
+                "second": "Vi"
+              }
+            }
+          }
+        },
+        {
+          "name": "秦谷美铃(「我要说了哦。」)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "秦谷美铃",
+                "song_name": "「我要说了哦。」"
               }
             },
             "ProduceChooseNIAEventFlag": {
@@ -3089,12 +3150,12 @@
           }
         },
         {
-          "name": "秦谷美铃(慢慢来，一步一个脚印)",
+          "name": "秦谷美铃(慢慢地，一步一步来)",
           "pipeline_override": {
             "ProduceChooseIdol": {
               "custom_recognition_param": {
                 "idol_name": "秦谷美铃",
-                "song_name": "慢慢来，一步一个脚印"
+                "song_name": "慢慢地，一步一步来"
               }
             },
             "ProduceChooseNIAEventFlag": {
@@ -3134,6 +3195,75 @@
         }
       ],
       "label": "$秦谷美鈴卡片"
+    },
+    "冰渡香名江卡片-zh_CN": {
+      "type": "select",
+      "default_case": "冰渡香名江(蜕变)",
+      "cases": [
+        {
+          "name": "冰渡香名江(蜕变)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "冰渡香名江",
+                "song_name": "蜕变"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·集中",
+                "first": "Vi",
+                "second": "Vo"
+              }
+            }
+          }
+        },
+        {
+          "name": "冰渡香名江(怀揣憧憬一步步向前)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "冰渡香名江",
+                "song_name": "怀揣憧憬一步步向前"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·好调",
+                "first": "Vi",
+                "second": "Vo"
+              }
+            }
+          }
+        },
+        {
+          "name": "冰渡香名江(学园生活)",
+          "pipeline_override": {
+            "ProduceChooseIdol": {
+              "custom_recognition_param": {
+                "idol_name": "冰渡香名江",
+                "song_name": "学园生活"
+              }
+            },
+            "ProduceChooseNIAEventFlag": {
+              "custom_action_param": {
+                "effect": "感性·集中",
+                "first": "Vi",
+                "second": "Vo"
+              }
+            }
+          }
+        },
+        {
+          "name": "自定义歌曲",
+          "label": "$自定义歌曲",
+          "option": [
+            "冰渡香名江卡片-zh_CN自定义歌曲名称",
+            "自定义歌曲第一属性-Vi-Vo-zh_CN"
+          ]
+        }
+      ],
+      "label": "$氷渡香名江卡片"
     },
     "雨夜燕卡片-zh_CN自定义歌曲名称": {
       "type": "input",
@@ -3429,6 +3559,29 @@
         "ProduceChooseIdol": {
           "custom_recognition_param": {
             "idol_name": "秦谷美铃",
+            "song_name": "{song_name}"
+          }
+        }
+      }
+    },
+    "冰渡香名江卡片-zh_CN自定义歌曲名称": {
+      "type": "input",
+      "label": "$自定义歌曲名称",
+      "description": "$自定义歌曲名称说明",
+      "inputs": [
+        {
+          "name": "song_name",
+          "label": "$自定义歌曲名称",
+          "default": "",
+          "pipeline_type": "string",
+          "verify": "^[^\\r\\n]*\\S[^\\r\\n]*$(?![\\r\\n])",
+          "pattern_msg": "$自定义歌曲名称输入框说明"
+        }
+      ],
+      "pipeline_override": {
+        "ProduceChooseIdol": {
+          "custom_recognition_param": {
+            "idol_name": "冰渡香名江",
             "song_name": "{song_name}"
           }
         }

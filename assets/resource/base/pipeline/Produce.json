@@ -1390,6 +1390,7 @@
     "next": [
       "ProduceFinished",
       "ProduceBackHome",
+      "ProduceGeneration",
       "[JumpBack]ProduceSkipED",
       "[JumpBack]ProduceSkipChatFlag",
       "[JumpBack]ProduceEndNext",
