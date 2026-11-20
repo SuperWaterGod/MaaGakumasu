@@ -183,17 +183,20 @@ def shop_observation(image, icons, read_text):
     # 商店固定四列两行；按格子匹配本体，避免卡面纹理和饮料内框产生重复候选。
     boxes = [[x, y, 126, 126] for y in (481, 668) for x in (66, 220, 374, 529)]
     candidates = []
-    for box in boxes:
+    for index, box in enumerate(boxes):
         x, y, width, height = box
         badge_tokens = read_text(image, [x + 24, y + 112, 104, 23])
         sale = any(re.search(r"SALE", token["text"], re.I) and token.get("confidence", 0) >= .8 for token in badge_tokens)
         # P 图标不属于数字；折扣商品只读右侧现价，避免将划线原价与现价拼接成大整数。
         tokens = read_text(image, [x + (68 if sale else 24), y + 132, 60 if sale else 104, 35])
-        identity = icons.lookup(image, box, allow_unverified_variant=True) if icons else None
+        kind = "skill_card" if index < 4 else "drink"
+        identity = icons.lookup(image, box, kind, allow_unverified_variant=True) if icons else None
         price = number(tokens)
         disabled = gray(image[y:y + height, x:x + width]).mean() < GRAY_BRIGHTNESS
-        sold = any(re.search(r"SOLD\s*OUT|売り切れ|售罄|已购买|購入済", token["text"], re.I)
-                   for token in tokens + badge_tokens)
+        # 「交換済」出现在商品图标中间，价格和折扣区读不到它。
+        sold_tokens = read_text(image, [x + 6, y + 48, width - 12, 62]) if not (identity or {}).get("catalog_id") else []
+        sold = any(re.search(r"SOLD\s*OUT|売り切れ|售罄|已购买|已兑换|購入済|交換済", token["text"], re.I)
+                   for token in tokens + badge_tokens + sold_tokens)
         available = (False if disabled or sold else
                      points["value"] >= price["value"] if points["value"] is not None and price["value"] is not None else None)
         if identity is None and available is True:
@@ -201,7 +204,17 @@ def shop_observation(image, icons, read_text):
         candidates.append({"box": box, "identity": identity, "price": price, "sale": sale, "available": available,
                            "unavailable_reason": "sold_out" if sold else "disabled" if disabled else
                            "insufficient_points" if available is False else None})
-    return {"points": points, "candidates": candidates, "scope": "visible_goods_excluding_special_strengthen",
+    services = []
+    for kind, x, words in (("strengthen", 48, ("強化", "强化")), ("delete", 365, ("削除", "删除", "刪除"))):
+        # 只读普通服务按钮。灰色按钮即使保留文字和价格也不能使用。
+        area = image[930:998, x:x + 304]
+        if not (area.max(axis=2).astype(int) - area.min(axis=2) > 50).mean() > .2:
+            continue
+        label = read_text(image, [x + 28, 927, 134, 65])
+        price = number(read_text(image, [x + 186, 937, 98, 51]))
+        if any(any(word in token["text"] for word in words) for token in label) and price["value"] is not None:
+            services.append({"operation": kind, "price": price["value"], "box": [x + 45, 949, 110, 32]})
+    return {"points": points, "candidates": candidates, "services": services, "scope": "visible_goods_excluding_special_strengthen",
             "candidates_complete": False}
 
 
@@ -514,13 +527,16 @@ class OfflineVision:
 
 
 def analyze_stream(directory, resource, database, aliases=None, *, context=None, emit=None, icon_resources=None,
-                   battle_reader=None):
+                   battle_reader=None, on_reward_reader=None, selection_factory=None):
     directory = directory.resolve()
     capture_manifest = read_json(directory / "manifest.json")
     if icon_resources is None:
         icon_resources = capture_manifest.get("icon_resources")
     catalog = SkillCardCatalog(database, aliases)
     reward_reader = RewardReader(catalog, database.with_name("produce_reward_items.json"), directory, icon_resources=icon_resources)
+    if on_reward_reader:
+        on_reward_reader(reward_reader)
+    policy = selection_factory(reward_reader) if selection_factory else None
     model_sha = hashlib.sha256((resource / "model/detect/cards.onnx").read_bytes()).hexdigest()
     state_templates = database.with_name("battle_buff_templates.json")
     signature = "current"
@@ -629,7 +645,9 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                         and (event["kind"] == "route_before" or event["kind"] == "move_cards_screen")
                         and event.get("operation") in {"strengthen", "delete_copy_exchange", "move_cards"}):
                     try:
-                        matches = reward_reader.icons.scan(normalized_image(supplied_image), event["operation"])
+                        matches = reward_reader.icons.scan(
+                            normalized_image(supplied_image), event["operation"], allow_unverified_variant=True,
+                        )
                         icon_matches = matches
                         if event["kind"] == "move_cards_screen":
                             index.write(json.dumps({"event_id": event["event_id"], "icon_matches": matches,
@@ -655,7 +673,7 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                 if event["kind"] == "reward_candidate_preview":
                     result = {"error": "missing_frame", "detail_verified": False}
                     try:
-                        array = normalized_image(supplied_image)
+                        array = None if event.get("observation_method") == "detail_ocr" else normalized_image(supplied_image)
                         result = reward_reader.read(array, event, vision._read_title)
                         result.update(source_frame_sha256=event["frame"]["sha256"], catalog_sha256=catalog.sha256)
                         semantic_status = result["effects"]["semantic_status"]
@@ -761,6 +779,9 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                             value = card["identity"]["status"]
                             status[{"matched": "matched", "base_match_variant_unresolved": "variant_unresolved"}.get(value, "unknown")] += 1
                         state = result.get("battle_state", {})
+                        if policy and event["kind"] == "decision_before":
+                            policy.observe(card["identity"].get("card_id") for card in result["cards"] if card["identity"]["status"] == "matched")
+                            policy.full_power_seen |= state.get("stance") == "fullPower"
                         status["state_errors"] += bool(state.get("error") or state.get("errors"))
                         if state.get("hud_present"):
                             status["state_frames"] += 1

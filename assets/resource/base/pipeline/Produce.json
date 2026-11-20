@@ -979,14 +979,28 @@
       }
     },
     "post_wait_freezes": 200,
-    "focus": {
-      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]奖励选择－进入选择页面[/color]"
-    },
     "next": [
+      "ProduceChooseByRule",
       "ProduceChooseSkip",
       "ProduceChooseRecommend",
       "ProduceChooseEventRecommend",
       "ProduceChooseFirst"
+    ]
+  },
+  "ProduceChooseByRule": {
+    "enabled": false,
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "ProduceRuleChoice"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "ProduceChooseConfirm"
     ]
   },
   "ProduceChooseFirst": {
@@ -1284,6 +1298,35 @@
     },
     "post_wait_freezes": 500
   },
+  "ProduceShoppingDeleteConfirm": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "roi": [
+          38,
+          726,
+          646,
+          68
+        ],
+        "expected": [
+          "[PＰ]\\s*ポイント.*スキルカード.*削除",
+          "(?=.*[PＰ])(?=.*(?:删除|刪除))(?=.*技能卡).+"
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {
+        "target": [
+          480,
+          1130,
+          84,
+          65
+        ]
+      }
+    },
+    "post_wait_freezes": 500
+  },
   "ProduceEnd": {
     "recognition": {
       "type": "Custom",
@@ -1302,8 +1345,8 @@
       "ProduceGeneration",
       "ProduceFinished",
       "ProduceBackHome",
-      "[JumpBack]ProduceSkipED",
       "[JumpBack]ProduceSkipShowConfirm",
+      "[JumpBack]ProduceSkipED",
       "[JumpBack]ProduceEndNext",
       "[JumpBack]ProduceSkip",
       "[JumpBack]ProduceDecide",
@@ -1316,24 +1359,22 @@
     "recognition": {
       "type": "TemplateMatch",
       "param": {
-        "template": "next.png"
+        "template": "next.png",
+        "threshold": 0.85
       }
     },
     "pre_wait_freezes": {
       "time": 400,
-      "target": [
-        100,
-        300,
-        540,
-        650
-      ],
+      "target": true,
       "threshold": 0.98,
       "rate_limit": 100,
       "timeout": 2500
     },
     "action": {
-      "type": "Click",
-      "param": {}
+      "type": "Custom",
+      "param": {
+        "custom_action": "ProduceSettlementClick"
+      }
     }
   },
   "ProduceSkipED": {
@@ -1369,28 +1410,23 @@
     "pre_delay": 0,
     "pre_wait_freezes": {
       "time": 400,
-      "target": [
-        100,
-        300,
-        540,
-        650
-      ],
+      "target": true,
       "threshold": 0.98,
       "rate_limit": 100,
       "timeout": 2500
     },
     "action": {
-      "type": "Click",
-      "param": {}
+      "type": "Custom",
+      "param": {
+        "custom_action": "ProduceSettlementClick"
+      }
     },
     "post_delay": 0,
-    "focus": {
-      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]结算－识别到生成按钮[/color]"
-    },
     "next": [
       "ProduceFinished",
       "ProduceBackHome",
       "ProduceGeneration",
+      "[JumpBack]ProduceSkipShowConfirm",
       "[JumpBack]ProduceSkipED",
       "[JumpBack]ProduceSkipChatFlag",
       "[JumpBack]ProduceEndNext",
@@ -1551,15 +1587,57 @@
       "param": {}
     },
     "post_wait_freezes": 200,
-    "focus": {
-      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]商店－进入购买页面[/color]"
-    },
     "next": [
+      "ProduceRuleShopBlocked",
+      "ProduceShopByRule",
+      "ProduceRuleShopDone",
       "ProduceShoppingBuySale",
       "ProduceShoppingExit"
     ]
   },
+  "ProduceShopByRule": {
+    "enabled": false,
+    "post_wait_freezes": 100,
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "ProduceRuleChoice"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "next": [
+      "[JumpBack]ProduceChooseStrengthenFlag",
+      "[JumpBack]ProduceShoppingDeleteConfirm",
+      "[JumpBack]ProduceChooseDeleteFlag",
+      "ProduceShoppingDrinkFull",
+      "ProduceShoppingBuy",
+      "ProduceRuleShopWait",
+      "ProduceShoppingExit"
+    ]
+  },
+  "ProduceRuleShopDone": {
+    "enabled": false,
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "ProduceRuleChoice"
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ProduceShoppingExit"
+    ]
+  },
   "ProduceShoppingBuySale": {
+    "focus": {
+      "Node.Action.Succeeded": "商店－默认 · 选择折扣商品"
+    },
     "recognition": {
       "type": "TemplateMatch",
       "param": {
@@ -1637,9 +1715,78 @@
     },
     "post_wait_freezes": 200,
     "next": [
+      "ProduceRuleShopWait",
       "ProduceShoppingExit",
       "[JumpBack]Click_1"
     ]
+  },
+  "ProduceRuleShopWait": {
+    "enabled": false,
+    "timeout": 6000,
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "ProduceRuleChoice"
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "[JumpBack]ProduceChooseStrengthenFlag",
+      "[JumpBack]ProduceShoppingDeleteConfirm",
+      "[JumpBack]ProduceChooseDeleteFlag",
+      "ProduceRuleShopAgain",
+      "[JumpBack]ProduceRuleShopDismiss"
+    ],
+    "on_error": [
+      "ProduceShoppingExit"
+    ]
+  },
+  "ProduceRuleShopBlocked": {
+    "enabled": false,
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "ProduceRuleChoice"
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ProduceRuleShopWait"
+    ]
+  },
+  "ProduceRuleShopAgain": {
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "ProduceRuleChoice"
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ProduceShoppingFlag"
+    ]
+  },
+  "ProduceRuleShopDismiss": {
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "ProduceRuleChoice"
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_delay": 400
   },
   "ProduceShoppingDrinkFull": {
     "recognition": {
@@ -1660,6 +1807,7 @@
     },
     "post_delay": 1000,
     "next": [
+      "ProduceRuleShopWait",
       "ProduceShoppingExit"
     ]
   },

@@ -132,7 +132,7 @@ git diff --check
 - 同一业务使用统一的包导入。只有脚本入口为内置 Python 设置一次 `agent/` 搜索路径；内部模块不各自修改 `sys.path`，不保留“相对导入失败就换裸模块名”的双重导入。包 `__init__.py` 保持轻量，离线导入分析模块不得自动注册输入动作或安装 sinks。
 - 移动/合并模块时一并更新导入、框架注册入口、离线脚本启动路径、源码版本指纹、维护 CLI 和文档。迁移完成后清除旧源码及对应旧字节码，不用一串空转发文件保留内部旧布局；确有外部兼容契约时才保留适配入口并说明原因。
 - 结构整理优先保留既有行为、流水线注册名称、参数、事件和派生数据 schema。验证普通包导入、脚本直接启动、内置 Python/AgentServer 和历史数据读取；同步 beta 时做目标路径检查、备份与 SHA 核对，禁止通过启动客户端完成复制。
-- 客户端打包和 beta 同步的 `data/` 直接复制 `idols_cards.json`、`battle_buff_templates.json`；内置初始数据库通过 `tools/build_produce_resources.py --databases-only` 生成，连同来源、许可证及校验清单存入 `data/bundled/`。首次启动按事务安装到 `data/`，已有资源安装清单时保留当前数据库。技能卡、饮料、P 道具与支援卡数据库及图标都可通过“一键培育”的“更新数据库和素材”任务更新，无需客户端发版；原始图库通过任务下载。源码运行中的云端资源副本与 `data/` 整目录不得直接覆盖到 beta。支援卡写在 `produce_reward_items.json` 的 `support_cards` 中，由 `SupportCards.py` 直接读取中日文名称与别名。
+- 客户端打包和 beta 同步的 `data/` 直接复制 `idols_cards.json`、`battle_buff_templates.json` 和 `produce_reward_rules.json`；内置初始数据库通过 `tools/build_produce_resources.py --databases-only` 生成，连同来源、许可证及校验清单存入 `data/bundled/`。首次启动按事务安装到 `data/`，已有资源安装清单时保留当前数据库。技能卡、饮料、P 道具与支援卡数据库及图标都可通过“一键培育”的“更新数据库和素材”任务更新，无需客户端发版；原始图库通过任务下载。源码运行中的云端资源副本与 `data/` 整目录不得直接覆盖到 beta。支援卡写在 `produce_reward_items.json` 的 `support_cards` 中，由 `SupportCards.py` 直接读取中日文名称与别名。
 
 ## MaaFramework 流水线规则
 

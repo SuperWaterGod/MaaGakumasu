@@ -103,6 +103,9 @@ class ProduceChooseEventBase(CustomAction):
         session = SESSIONS.get(context)
         choice_id = None
         if session:
+            policy = session["capture"].selection
+            if policy:
+                policy.attributes = {k: obs["value"]["current"] for k, obs in self.attribute_observations.items() if obs.get("value")}
             choice_id = session["capture"].record(
                 "produce_event_choice", image=image, context=context, save_frame=True, candidates=events, selected=best_event,
                 teacher_suggestion=suggestion, preference={"first": self.first, "second": self.second},
@@ -363,7 +366,7 @@ class ProduceChooseEventBase(CustomAction):
     def _get_current_score(self, context: Context, image) -> Optional[dict]:
         rois = [[150 + i * 150, 668, 136, 80] for i in range(3)]
         value, self.attribute_observations = read_produce_attributes(context, image, rois,
-                                                                  current_rois=[[x, 678, 95, 38] for x in (187, 335, 475)])
+                                                                  current_rois=[[x, 681, 84, 36] for x in (190, 338, 478)])
         return value
 
 

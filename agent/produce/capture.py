@@ -80,6 +80,9 @@ class DecisionCapture:
         self._console_event = None
         self._analysis = None
         self._battle_reader = None
+        self.reward_reader = None
+        self.selection = None
+        self.shop = None
         self._manifest = {
             "writer_pid": os.getpid(),
             "save_screenshots": save_screenshots,
@@ -140,6 +143,7 @@ class DecisionCapture:
                 logger.debug(message)
                 return
             if extra.get("scope") == "shop":
+                self.shop = extra["shop"]
                 if self._console:
                     from .console import format_shop
                     self._console(format_shop(extra["shop"]))
@@ -152,10 +156,24 @@ class DecisionCapture:
             if self._emit_console(message) and extra.get("event_id"):
                 self._console_event = extra["event_id"]
 
+        def start_selection(reader):
+            from .selection import SelectionPolicy, song_id
+
+            bindings = self._manifest["metadata"].get("bindings", {})
+            idol = bindings.get("configured_idol", {})
+            settings = bindings.get("node_settings", {}).get("ProduceChooseNIAEventFlag", {})
+            params = settings.get("action", {}).get("param", {}).get("custom_action_param", {})
+            idols_path = database.with_name("idols_cards.json")
+            pid = song_id(json.loads(idols_path.read_bytes()), idol.get("idol_name", ""), idol.get("song_name", "")) if idols_path.is_file() else None
+            self.selection = SelectionPolicy(reader.catalog, params.get("effect", ""), pid, bindings.get("scenario"))
+            return self.selection
+
         try:
             self._analysis = analyze_stream(self.directory, resource, database, aliases,
                                             context=lambda: self.context, emit=notice, icon_resources=self.icon_resources,
-                                            battle_reader=lambda reader: setattr(self, "_battle_reader", reader))
+                                            battle_reader=lambda reader: setattr(self, "_battle_reader", reader),
+                                            on_reward_reader=lambda reader: setattr(self, "reward_reader", reader),
+                                            selection_factory=start_selection if self.event_context else None)
             next(self._analysis)
         except Exception:
             self._analysis = None
@@ -213,7 +231,7 @@ class DecisionCapture:
             from .resources import icon_resources_status
             icon_resources = icon_resources_status(ROOT) if context is not None and metadata.get("entry") != "IdolRoadAuto" else None
             analysis = None
-            if config.get("match_cards", True) and database.exists():
+            if (session_directory is not None or config.get("match_cards", True)) and database.exists():
                 analysis = {"resource": resource, "database": database, "aliases": package_data / "skill_card_aliases.json", "context": context}
             def limit(name, default, minimum):
                 try:

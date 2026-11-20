@@ -614,7 +614,10 @@ def render_replay(report):
         elif kind == "reward_receive_input":
             event = "奖励选择"
             name = reward_names.get((detail.get("reward_page_id"), detail.get("selected_candidate_id")))
-            operation = "点击领取：" + (name or "奖励名称未识别")
+            if (detail.get("policy_choice") or {}).get("policy_node") == "ProduceChooseSkip":
+                operation = "点击跳过奖励确认"
+            else:
+                operation = "点击领取：" + (name or "奖励名称未识别")
             if detail.get("framework_action_succeeded") is False:
                 operation += "（点击失败）"
         elif kind == "route_before" and (detail.get("node") in node_names or "icon_matches" in detail) and detail.get("node") != "ProduceChooseConfirm":

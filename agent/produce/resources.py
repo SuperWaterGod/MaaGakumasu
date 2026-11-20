@@ -18,6 +18,7 @@ PROTOCOL = 1
 DEFAULT_URL = "https://mag.2j.hk"
 STATE_NAME = "produce_resources_manifest.json"
 PENDING_NAME = "produce_resources_pending.json"
+REWARD_RULES_NAME = "produce_reward_rules.json"
 DATABASES = {"produce_skill_cards.json", "produce_reward_items.json", "GAKUMAS_DATA_LICENSE.txt", "produce_resources_source.json"}
 ICON_FOLDERS = {"skill_card": "skillCards", "drink": "pDrinks", "p_item": "pItems"}
 PNG_PATH = re.compile(r"images/(skillCards|pDrinks|pItems)/[1-9][0-9]*(?:_[1-9][0-9]*)?\.png\Z")

@@ -31,6 +31,22 @@ def icon_operation_available(status, operation):
     return True
 
 
+def drink_scroll(image):
+    """从右边轨道和滑块读出列表可视区和已滚过的像素数。"""
+    rail = image[235:1090, 675:680].mean(axis=2).min(axis=1)
+    edges = np.flatnonzero(np.diff(rail < 238, prepend=False, append=False))
+    for start, end in edges.reshape(-1, 2):
+        if end - start < 300:
+            continue
+        thumb = np.flatnonzero(rail[start:end] < 178)
+        if len(thumb) < 40:
+            continue
+        travel = end - start - (thumb[-1] - thumb[0] + 1)
+        offset = int(round(thumb[0] * (end - start) / (thumb[-1] - thumb[0] + 1)))
+        return int(235 + start), int(235 + end), offset, thumb[0] <= 4, travel - thumb[0] <= 4
+    return 235, 1090, 0, True, True
+
+
 def gray(image):
     return np.rint(image[:, :, 0] * .114 + image[:, :, 1] * .587 + image[:, :, 2] * .299).astype(np.float32)
 
@@ -192,7 +208,28 @@ class UpstreamIcons:
         return {**entry, "similarity": round(score, 4), "catalog_hashes": self.hashes,
                 "query_icon_sha256": hashlib.sha256(crop.tobytes()).hexdigest(), "method": "upstream_icon_variant"}
 
-    def scan(self, image, operation):
+    def drink_rows(self, image, top, bottom):
+        """按右侧勾选框定位完整行；同名瓶保留各自的位置。"""
+        band = image[top:bottom, 615:640].astype(np.int16)
+        blue, green, red = band.transpose(2, 0, 1)
+        orange = (red - blue > 100) & (red - green > 45)
+        grey = (abs(red - blue) < 18) & (green > 150) & (green < 228)
+        mask = (orange | grey).sum(axis=1) >= 10
+        edges = np.flatnonzero(np.diff(mask, prepend=False, append=False))
+        rows = []
+        for start, end in edges.reshape(-1, 2):
+            y = int(top + (start + end) // 2)
+            if y - 42 < top or y + 42 > bottom:
+                continue
+            if not 18 <= end - start <= 32:
+                return []
+            match = self.lookup(image, [65, y - 36, 72, 72], "drink")
+            if not match:
+                return []
+            rows.append((y, match["catalog_id"], bool(orange[start:end].mean() > .35)))
+        return rows
+
+    def scan(self, image, operation, *, allow_unverified_variant=False):
         """仅观察已显示的完整图标，不增加输入，也不用 OCR 补牌名。"""
         regions = {"strengthen": (65, 690, 600, 420), "delete_copy_exchange": (65, 390, 600, 720),
                    "move_cards": (65, 390, 600, 720), "shop": (50, 465, 620, 345)}
@@ -202,15 +239,14 @@ class UpstreamIcons:
         if image.shape != (1280, 720, 3):
             return []
         key = (operation, hashlib.sha256(image.tobytes()).digest())
-        if self._last_scan and self._last_scan[0] == key:
-            return [dict(hit) for hit in self._last_scan[1]]
-        hits = []
-        for box in locate_icons(image, regions[operation], (128,) if operation == "shop" else (120, 128), operation):
-            match = self.lookup(image, box, None if operation == "shop" else "skill_card")
-            if match:
-                hits.append({**match, "box": box})
-        self._last_scan = (key, hits)
-        return [dict(hit) for hit in hits]
+        if not self._last_scan or self._last_scan[0] != key:
+            hits = []
+            for box in locate_icons(image, regions[operation], (128,) if operation == "shop" else (120, 128), operation):
+                match = self.lookup(image, box, None if operation == "shop" else "skill_card", allow_unverified_variant=True)
+                if match:
+                    hits.append({**match, "box": box})
+            self._last_scan = (key, hits)
+        return [dict(hit) for hit in self._last_scan[1] if allow_unverified_variant or hit["variant_verified"]]
 
 
 def locate_icons(image, region, sizes, operation=None):

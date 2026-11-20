@@ -18,6 +18,7 @@
       "[JumpBack]ProduceChooseGetFlag",
       "[JumpBack]ProduceChooseStrengthenFlag",
       "[JumpBack]ProduceChooseDeleteFlag",
+      "[JumpBack]ProduceShoppingFlag",
       "[JumpBack]ProduceWorkFlag",
       "[JumpBack]ProduceKeepDrinkFlag",
       "[JumpBack]ProduceSkipChatFlag",

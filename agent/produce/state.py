@@ -554,15 +554,12 @@ def read_produce_attributes(context, image, rois, current_rois=None):
             try:
                 current = int("".join(filter(str.isdigit, detail.filtered_results[0].text)))
                 maximum = int("".join(filter(str.isdigit, detail.filtered_results[1].text.replace("/", ""))))
-                value = {"current": current, "max": maximum}
-                legacy[name] = current
-                # 保留旧策略最大值规则，本次不改变选择阈值。
-                legacy["max"] = maximum if legacy["max"] < maximum < 9999 else legacy["max"]
+                if 0 <= current <= maximum and maximum > 0:
+                    value = {"current": current, "max": maximum}
             except (ValueError, TypeError):
                 pass
         if value is None and current_rois and detail and detail.hit:
             # 图标或描边会让检测器拆散当前数值；已读到上限时只补读数值行。
-            import re
             limits = [re.fullmatch(r"/\s*(\d{1,4})", item.text.strip()) for item in detail.filtered_results]
             limits = [int(match[1]) for match in limits if match]
             if len(limits) == 1 and limits[0] > 0:
@@ -575,8 +572,11 @@ def read_produce_attributes(context, image, rois, current_rois=None):
                     current, maximum = int(items[0].text.strip()), limits[0]
                     if 0 <= current <= maximum:
                         value = {"current": current, "max": maximum}
-                        legacy[name] = current
-                        legacy["max"] = maximum if legacy["max"] < maximum < 9999 else legacy["max"]
+        if value is not None:
+            legacy[name] = value["current"]
+            # 保留旧策略最大值规则，本次不改变选择阈值。
+            if legacy["max"] < value["max"] < 9999:
+                legacy["max"] = value["max"]
         observed[name] = produce_observation(value, "ProduceRecognitionScore", roi)
     return legacy, observed
 

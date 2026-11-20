@@ -10,7 +10,7 @@ sys.path.append(script_dir)
 working_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(working_dir / "agent"))
 
-from produce.resources import DATABASES, STATE_NAME, files_valid, validate_catalogs, validate_manifest
+from produce.resources import DATABASES, STATE_NAME, REWARD_RULES_NAME, files_valid, validate_catalogs, validate_manifest
 
 install_path = working_dir / Path("install")
 version = len(sys.argv) > 1 and sys.argv[1] or "v0.0.1"
@@ -83,7 +83,7 @@ def install_resource():
     data_src = working_dir / "assets" / "data"
     data_dst = install_path / "data"
     data_dst.mkdir(parents=True, exist_ok=True)
-    for name in ("idols_cards.json", "battle_buff_templates.json"):
+    for name in ("idols_cards.json", "battle_buff_templates.json", REWARD_RULES_NAME):
         shutil.copy2(data_src / name, data_dst / name)
     bundled = data_src / "bundled"
     manifest = validate_manifest(json.loads((bundled / STATE_NAME).read_text(encoding="utf-8")))

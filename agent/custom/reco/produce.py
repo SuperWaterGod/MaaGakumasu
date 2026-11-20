@@ -8,8 +8,146 @@ from difflib import SequenceMatcher
 from utils import logger
 from maa.define import RectType
 from maa.context import Context
+from produce.state import read_produce_health
+from produce.rewards import shop_exit_visible
+from produce.sessions import SESSIONS
+from produce.selection import debug_choice
 from maa.agent.agent_server import AgentServer
 from maa.custom_recognition import CustomRecognition
+
+
+@AgentServer.custom_recognition("ProduceRuleChoice")
+class ProduceRuleChoice(CustomRecognition):
+    """命中时返回当前页的点击框；未命中交给原 next 优先级。"""
+
+    def analyze(self, context, argv):
+        session = SESSIONS.get(context)
+        if not session:
+            return None
+        capture = session["capture"]
+        policy = capture.selection
+        if not policy:
+            return None
+        if argv.node_name == "ProduceRuleShopDone":
+            if session.get("shop_rule_active"):
+                points = session.get("shop_balance")
+                reason = session.get("shop_stop_reason") or (
+                    f"规划完成，剩余 {points} P" if points is not None else "余额未读到，结束购买"
+                )
+                logger.info(f"商店 · {reason}")
+                return [0, 0, 1, 1]
+            shop = capture.shop
+            if not shop or shop["points"]["value"] is None or not shop["candidates"]:
+                return None
+            points = shop["points"]["value"]
+            if all(c["unavailable_reason"] == "sold_out" or (
+                c["price"]["value"] is not None and c["price"]["value"] > points
+            ) for c in shop["candidates"]):
+                return [0, 0, 1, 1]
+            return None
+        if argv.node_name == "ProduceRuleShopWait":
+            if not session.get("shop_rule_active"):
+                return None
+            return [0, 0, 1, 1]
+        if argv.node_name == "ProduceRuleShopBlocked":
+            if session.get("shop_rule_active") and (
+                session.get("shop_shelf_blocked") or not shop_exit_visible(context, argv.image)
+            ):
+                return [0, 0, 1, 1]
+            return None
+        if argv.node_name in {"ProduceRuleShopAgain", "ProduceRuleShopDismiss"}:
+            # 购买结果会遮住提示，强化结果会遮住退出按钮。
+            # 两处都恢复才读货架；过渡过程中只点商店的空白处。
+            title = context.run_recognition("ProduceShoppingFlag", argv.image)
+            title_visible = bool(title and title.hit)
+            exit_visible = shop_exit_visible(context, argv.image)
+            if argv.node_name == "ProduceRuleShopAgain" and title_visible and exit_visible:
+                return [0, 0, 1, 1]
+            if argv.node_name == "ProduceRuleShopDismiss" and title_visible != exit_visible:
+                return [480, 150, 1, 1]
+            return None
+        if argv.node_name == "ProduceShopByRule":
+            self.confirm_shop_step(context, argv.image, session)
+            if "shop_balance" not in session and capture.shop:
+                session["shop_balance"] = capture.shop["points"]["value"]
+                policy.health = read_produce_health(context, argv.image)
+            choice = None if session.get("shop_stop_reason") else self.shop(session)
+            if choice:
+                session["shop_choice"] = choice
+            elif not session.get("shop_rule_active"):
+                reason = "货架或余额未读到" if session.get("shop_balance") is None else "没有命中规则的可购商品或服务"
+                logger.info(f"商店－默认 · {reason}")
+            debug_choice(capture, context, argv.image, argv.node_name, choice)
+        else:
+            policy.health = read_produce_health(context, argv.image)
+            page = session.get("reward_page")
+            if not page:
+                return None
+            choice = policy.choose(page["candidates"], "receive")
+            if choice:
+                name = choice.get("base_name") or policy.rows[choice["catalog_id"]]["name"]
+                session["rule_reward"] = {"reason": choice["reason"], "item_name": name}
+            debug_choice(capture, context, argv.image, "receive", choice)
+        if choice:
+            x, y, w, h = choice["box"]
+            return CustomRecognition.AnalyzeResult(box=[x + w // 2, y + h // 2, 1, 1], detail={"reason": choice["reason"]})
+        return None
+
+    @staticmethod
+    def confirm_shop_step(context, image, session):
+        pending = session.pop("shop_pending", None)
+        if not pending:
+            return
+        node = "ProduceRecognitionPoint"
+        detail = context.run_recognition(node, image, pipeline_override={node: {"expected": r"^[0-9]+(?:,[0-9]{3})*$"}})
+        result = detail.best_result if detail and detail.hit else None
+        actual = int(result.text.replace(",", "")) if result and result.score >= .8 else None
+        expected = pending["balance"] - pending["price"]
+        if actual == expected:
+            session["shop_balance"] = actual
+            if pending["operation"] == "buy":
+                session["capture"].selection.acquired(pending["catalog_id"])
+            elif pending.get("upgraded_id"):
+                session["capture"].selection.observe([pending["upgraded_id"]])
+        elif (actual == pending["balance"] and session.get("shop_drinks_full")
+              and pending["operation"] == "buy" and pending["attempt"][1] >= 4):
+            session["shop_balance"] = actual
+        else:
+            session["shop_stop_reason"] = "成交余额未核实，结束购买"
+
+    @staticmethod
+    def shop(session):
+        capture = session["capture"]
+        shop = capture.shop
+        points = session.get("shop_balance")
+        if not shop or points is None:
+            return None
+        used = session.get("shop_used", set())
+        policy = capture.selection
+        choices = []
+        for index, item in enumerate(shop["candidates"]):
+            price = item["price"]["value"]
+            if item["available"] is not True or price > points or ("buy", index) in used:
+                continue
+            identity = item["identity"] or {}
+            if session.get("shop_drinks_full") and index >= 4:
+                continue
+            grade, reason = policy.evaluate_candidate(identity, "receive")
+            if grade:
+                name = identity["database_name"]
+                choices.append({"operation": "buy", "attempt": ("buy", index), "catalog_id": identity["catalog_id"],
+                                "balance": points, "grade": grade, "price": price,
+                                "reason": "购买" + name + "，" + reason, "box": item["box"]})
+        for service in shop["services"]:
+            kind = service["operation"]
+            if kind in used or service["price"] > points:
+                continue
+            best = policy.choose([{"catalog_id": k} for k in sorted(policy.owned)], kind)
+            if best:
+                action = "强化" if kind == "strengthen" else "删除"
+                choices.append({**service, "attempt": kind, "balance": points, "grade": best["grade"],
+                                "reason": f"拟{action}，预估收益：{best['reason']}"})
+        return max(choices, key=lambda c: (c["grade"], -c["price"]), default=None)
 
 
 @AgentServer.custom_recognition("ProduceChooseIdolAuto")

@@ -10,9 +10,11 @@ from maa.context import Context
 from maa.custom_action import CustomAction
 from maa.agent.agent_server import AgentServer
 
+from .icons import drink_scroll
 from .state import produce_observation, read_produce_health, read_produce_attributes
 from .console import log_operation
 from .sessions import SESSIONS
+from .selection import debug_choice
 
 
 @AgentServer.custom_action("ProduceChooseWorkAuto")
@@ -435,6 +437,15 @@ class ProduceKeepDrinkAuto(CustomAction):
         argv: CustomAction.RunArg,
     ) -> bool:
         image = context.tasker.controller.post_screencap().wait().get()
+        session = SESSIONS.get(context)
+        capture = session["capture"] if session else None
+        icons = capture.reward_reader.icons if capture and capture.reward_reader else None
+        if capture and capture.selection and icons and "drink" in icons.available_kinds:
+            handled = self.keep_by_rule(context, capture, image)
+            if handled is not None:
+                return handled
+            image = context.tasker.controller.post_screencap().wait().get()
+        logger.info("饮料保留－默认 · 沿用勾选并补足空位")
         reco_detail = context.run_recognition("ProduceRecognitionUncheckedMark", image)
         if reco_detail.hit:
             for result in reco_detail.filtered_results:
@@ -443,6 +454,79 @@ class ProduceKeepDrinkAuto(CustomAction):
                 time.sleep(0.1)
             context.run_task("ProduceDrinkNoButton")
         return True
+
+    @staticmethod
+    def keep_by_rule(context, capture, image):
+        """先读全候选再改勾选。同名饮料按滚动列表中的位置区分。"""
+        if image.shape[:2] != (1280, 720):
+            return None
+        controller = context.tasker.controller
+
+        def scroll(to_bottom):
+            start, end = (975, 365) if to_bottom else (365, 975)
+            controller.post_swipe(430, start, 430, end, duration=350).wait()
+            time.sleep(.25)
+            return controller.post_screencap().wait().get()
+
+        def read(frame):
+            top, bottom, offset, first, last = drink_scroll(frame)
+            rows = capture.reward_reader.icons.drink_rows(frame, top, bottom)
+            return [(y + offset, key, checked, y) for y, key, checked in rows], first, last
+
+        if not drink_scroll(image)[3]:
+            image = scroll(False)
+        rows, first, last = read(image)
+        debug_choice(capture, context, image, "keep_drink", None)
+        if not rows or not first:
+            return None
+        bottles = list(rows)
+        at_bottom = False
+        if not last:
+            image = scroll(True)
+            rows, _, last = read(image)
+            at_bottom = True
+            # 核验两页重叠的实体行，避免滚动动画或缺页造成错位。
+            overlap = [(a, b) for a in bottles for b in rows if abs(a[0] - b[0]) <= 12]
+            if not last or not overlap or any(a[1:3] != b[1:3] for a, b in overlap):
+                scroll(False)
+                return None
+            bottles.extend(b for b in rows if all(abs(b[0] - a[0]) > 12 for a, _ in overlap))
+        policy = capture.selection
+        keep, reason = policy.keep_drinks(bottles)
+        if not keep:
+            if at_bottom:
+                scroll(False)
+            return None
+        debug_choice(capture, context, image, "keep_drink", [b[1] for b in keep])
+        def visible(frame, bottle):
+            rows, _, _ = read(frame)
+            return next((b for b in rows if abs(b[0] - bottle[0]) <= 12 and b[1] == bottle[1]), None)
+
+        # 先腾出栏位，再补勾。每次点击前复读行身份和勾选状态。
+        for desired in (False, True):
+            for bottle in bottles:
+                if bottle[2] == desired or (bottle in keep) != desired:
+                    continue
+                match = visible(image, bottle)
+                if match is None:
+                    at_bottom = not at_bottom
+                    image = scroll(at_bottom)
+                    match = visible(image, bottle)
+                if match is None:
+                    return None
+                if match[2] != desired:
+                    controller.post_click(627, match[3]).wait()
+                    time.sleep(.12)
+                    image = controller.post_screencap().wait().get()
+                    updated = visible(image, bottle)
+                    if not updated or updated[2] != desired:
+                        return None
+        button = context.run_recognition("ProduceDrinkNoButton", image)
+        if not button or not button.hit:
+            return None
+        names = "、".join(policy.rows[b[1]]["name"] for b in keep)
+        logger.info(f"饮料保留－自动 · {names}（{reason}）")
+        return context.run_action("ProduceDrinkNoButton", box=button.box).success
 
 
 

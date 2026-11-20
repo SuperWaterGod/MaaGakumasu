@@ -1,0 +1,2675 @@
+{
+  "profiles": {
+    "感性·好调": [
+      {
+        "role": "good",
+        "grade": 70,
+        "requires_owned": []
+      },
+      {
+        "role": "perfect",
+        "grade": 72,
+        "requires_owned": [
+          "good"
+        ]
+      },
+      {
+        "role": "score",
+        "grade": 65,
+        "requires_owned": [
+          "good"
+        ]
+      },
+      {
+        "role": "focus",
+        "grade": 58,
+        "requires_owned": []
+      },
+      {
+        "role": "draw",
+        "grade": 40,
+        "requires_owned": [
+          "good"
+        ]
+      }
+    ],
+    "感性·集中": [
+      {
+        "role": "focus",
+        "grade": 70,
+        "requires_owned": []
+      },
+      {
+        "role": "focus_score",
+        "grade": 76,
+        "requires_owned": [
+          "focus"
+        ]
+      },
+      {
+        "role": "good",
+        "grade": 66,
+        "requires_owned": [
+          "focus"
+        ]
+      },
+      {
+        "role": "perfect",
+        "grade": 55,
+        "requires_owned": [
+          "good"
+        ]
+      }
+    ],
+    "理性·干劲": [
+      {
+        "role": "drive",
+        "grade": 70,
+        "requires_owned": []
+      },
+      {
+        "role": "guard",
+        "grade": 72,
+        "requires_owned": [
+          "drive"
+        ]
+      },
+      {
+        "role": "guard_score",
+        "grade": 78,
+        "requires_owned": [
+          "guard"
+        ]
+      },
+      {
+        "role": "extra",
+        "grade": 45,
+        "requires_owned": [
+          "guard_score"
+        ]
+      }
+    ],
+    "理性·好印象": [
+      {
+        "role": "impression",
+        "grade": 70,
+        "requires_owned": []
+      },
+      {
+        "role": "impression_score",
+        "grade": 75,
+        "requires_owned": [
+          "impression"
+        ]
+      },
+      {
+        "role": "drive",
+        "grade": 58,
+        "requires_owned": [
+          "impression"
+        ]
+      },
+      {
+        "role": "extend",
+        "grade": 60,
+        "requires_owned": [
+          "impression"
+        ]
+      }
+    ],
+    "非凡·强气": [
+      {
+        "role": "fire",
+        "grade": 72,
+        "requires_owned": []
+      },
+      {
+        "role": "ice",
+        "grade": 75,
+        "requires_owned": [
+          "fire"
+        ]
+      },
+      {
+        "role": "switch_score",
+        "grade": 78,
+        "requires_owned": [
+          "fire",
+          "ice"
+        ]
+      },
+      {
+        "role": "score",
+        "grade": 65,
+        "requires_owned": [
+          "fire"
+        ]
+      },
+      {
+        "role": "delayed_ice",
+        "grade": 50,
+        "requires_owned": [
+          "fire"
+        ]
+      }
+    ],
+    "非凡·全力": [
+      {
+        "role": "charge",
+        "grade": 72,
+        "requires_owned": []
+      },
+      {
+        "role": "full_score",
+        "grade": 78,
+        "requires_owned": [
+          "can_enter_full"
+        ]
+      },
+      {
+        "role": "charge_score",
+        "grade": 70,
+        "requires_owned": [
+          "charge"
+        ]
+      },
+      {
+        "role": "ice",
+        "grade": 58,
+        "requires_owned": [
+          "can_enter_full"
+        ]
+      },
+      {
+        "role": "hold",
+        "grade": 50,
+        "requires_owned": [
+          "full_score"
+        ]
+      }
+    ],
+    "非凡·温存": [
+      {
+        "role": "ice",
+        "grade": 74,
+        "requires_owned": []
+      },
+      {
+        "role": "charge",
+        "grade": 62,
+        "requires_owned": [
+          "ice"
+        ]
+      },
+      {
+        "role": "guard",
+        "grade": 55,
+        "requires_owned": []
+      },
+      {
+        "role": "delayed_ice",
+        "grade": 50,
+        "requires_owned": [
+          "ice"
+        ]
+      },
+      {
+        "role": "score",
+        "grade": 65,
+        "requires_owned": [
+          "ice"
+        ]
+      }
+    ],
+    "冰火": [
+      {
+        "role": "fire",
+        "grade": 78,
+        "requires_owned": []
+      },
+      {
+        "role": "ice",
+        "grade": 78,
+        "requires_owned": []
+      },
+      {
+        "role": "switch_score",
+        "grade": 80,
+        "requires_owned": [
+          "ice",
+          "fire"
+        ]
+      },
+      {
+        "role": "score",
+        "grade": 65,
+        "requires_owned": [
+          "fire"
+        ]
+      },
+      {
+        "role": "delayed_ice",
+        "grade": 48,
+        "requires_owned": [
+          "fire"
+        ]
+      }
+    ]
+  },
+  "song_index": {
+    "SSR": {
+      "雨夜燕": {
+        "ガラクタロード": 161,
+        "クライアイ": 147,
+        "Campusmode!!": 121,
+        "理論武装して": 118
+      },
+      "藤田ことね": {
+        "GOMYWAY!!": 144,
+        "がむしゃらに行こう!": 111,
+        "自己肯定感爆上げ↑↑しゅきしゅきソング": 106,
+        "雨上がりのアイリス": 90,
+        "Campusmode!!": 68,
+        "WhiteNight!WhiteWish!": 62,
+        "冠菊": 40,
+        "YellowBigBang!": 32,
+        "世界一可愛い私": 21
+      },
+      "葛城リーリヤ": {
+        "Agitato": 158,
+        "ガラクタロード": 141,
+        "ときめきエモーション": 134,
+        "Atmosphere": 120,
+        "HowlingovertheWorld": 96,
+        "桜フォトグラフ": 84,
+        "極光": 83,
+        "Campusmode!!": 75,
+        "WhiteNight!WhiteWish!": 64,
+        "冠菊": 39,
+        "白線": 23
+      },
+      "花海咲季": {
+        "Agitato": 159,
+        "ガラクタロード": 148,
+        "GOMYWAY!!": 145,
+        "WildestFlower": 130,
+        "がむしゃらに行こう!": 112,
+        "雨上がりのアイリス": 88,
+        "桜フォトグラフ": 86,
+        "Campusmode!!": 66,
+        "古今東西ちょちょいのちょい": 58,
+        "冠菊": 38,
+        "BoomBoomPow": 33,
+        "FightingMyWay": 19
+      },
+      "花海佑芽": {
+        "Agitato": 157,
+        "GOMYWAY!!": 146,
+        "真っ白いページと水彩の主人公": 136,
+        "ENDLESSDANCE": 127,
+        "グースーピー": 119,
+        "Star-mine": 103,
+        "Campusmode!!": 74,
+        "WhiteNight!WhiteWish!": 63,
+        "TheRollingRiceball": 31
+      },
+      "紫雲清夏": {
+        "標": 154,
+        "ときめきエモーション": 135,
+        "ミラクルナナウ(゚∀゚)!": 108,
+        "Love&Joy": 97,
+        "桜フォトグラフ": 85,
+        "Campusmode!!": 76,
+        "カクシタワタシ": 65,
+        "キミとセミブルー": 35,
+        "Tame-Lie-One-Step": 25
+      },
+      "篠澤広": {
+        "め": 156,
+        "ガラクタロード": 140,
+        "みちなるひろがる": 125,
+        "ミラクルナナウ(゚∀゚)!": 109,
+        "サンフェーデッド": 102,
+        "ハッピーミルフィーユ": 77,
+        "Campusmode!!": 73,
+        "仮装狂騒曲": 53,
+        "コントラスト": 37,
+        "光景": 26
+      },
+      "秦谷美鈴": {
+        "ガラクタロード": 163,
+        "「ねえ、言っちゃうよ。」": 151,
+        "VEIL": 137,
+        "ENDLESSDANCE": 128,
+        "Superlative": 122,
+        "Star-mine": 104,
+        "Campusmode!!": 98,
+        "ツキノカメ": 93
+      },
+      "氷渡香名江": {
+        "メタモルフォーゼ": null
+      },
+      "有村麻央": {
+        "標": 152,
+        "SUGARFLAVOR": 142,
+        "見て": 115,
+        "ミラクルナナウ(゚∀゚)!": 107,
+        "雪解けに": 82,
+        "Campusmode!!": 69,
+        "FeelJewelDream": 50,
+        "キミとセミブルー": 34,
+        "Fluorite": 22
+      },
+      "月村手毬": {
+        "「ねえ、言っちゃうよ。」": 149,
+        "ガラクタロード": 138,
+        "一体いつから": 123,
+        "がむしゃらに行こう!": 113,
+        "雨上がりのアイリス": 89,
+        "雪解けに": 80,
+        "Campusmode!!": 67,
+        "仮装狂騒曲": 52,
+        "アイヴイ": 28,
+        "Lunasaymaybe": 20
+      },
+      "姫崎莉波": {
+        "SUGARFLAVOR": 143,
+        "ガラクタロード": 139,
+        "36°CU・B・U": 110,
+        "HowlingovertheWorld": 95,
+        "ハッピーミルフィーユ": 78,
+        "Campusmode!!": 71,
+        "L.U.V": 57,
+        "ようこそ初星温泉": 48,
+        "キミとセミブルー": 36,
+        "clumsytrick": 27
+      },
+      "十王星南": {
+        "Roar": 160,
+        "ガラクタロード": 155,
+        "「ねえ、言っちゃうよ。」": 150,
+        "ENDLESSDANCE": 129,
+        "赤裸々": 126,
+        "Star-mine": 105,
+        "OurChant": 87,
+        "ハッピーミルフィーユ": 79,
+        "Campusmode!!": 70,
+        "小さな野望": 61
+      },
+      "倉本千奈": {
+        "ガラクタロード": 162,
+        "標": 153,
+        "みちなるひろがる": 124,
+        "空と約束": 114,
+        "HowlingovertheWorld": 94,
+        "雪解けに": 81,
+        "Campusmode!!": 72,
+        "仮装狂騒曲": 51,
+        "ようこそ初星温泉": 49,
+        "日々、発見的ステップ!": 44,
+        "WonderScale": 24
+      }
+    },
+    "SR": {
+      "雨夜燕": {
+        "初志貫徹": 117
+      },
+      "藤田ことね": {
+        "カワイイ♡はじめました": 12
+      },
+      "葛城リーリヤ": {
+        "一つ踏み出した先に": 14
+      },
+      "花海咲季": {
+        "わたしが一番!": 10
+      },
+      "花海佑芽": {
+        "アイドル、はじめっ!": 30
+      },
+      "紫雲清夏": {
+        "夢へのリスタート": 16
+      },
+      "篠澤広": {
+        "一番向いてないこと": 17
+      },
+      "秦谷美鈴": {
+        "ゆっくり、一歩ずつ": 92
+      },
+      "氷渡香名江": {
+        "憧れを抱いて一歩ずつ": null
+      },
+      "有村麻央": {
+        "はじまりはカッコよく": 13
+      },
+      "月村手毬": {
+        "一匹狼": 11
+      },
+      "姫崎莉波": {
+        "『私らしさ』のはじまり": 18
+      },
+      "十王星南": {
+        "一番星": 60
+      },
+      "倉本千奈": {
+        "胸を張って一歩ずつ": 15
+      }
+    },
+    "R": {
+      "雨夜燕": {
+        "学園生活": 116
+      },
+      "藤田ことね": {
+        "初声": 43,
+        "学園生活": 3
+      },
+      "葛城リーリヤ": {
+        "初心": 45,
+        "学園生活": 5
+      },
+      "花海咲季": {
+        "初声": 41,
+        "学園生活": 1
+      },
+      "花海佑芽": {
+        "初陣": 101,
+        "学園生活": 29
+      },
+      "紫雲清夏": {
+        "初恋": 55,
+        "学園生活": 7
+      },
+      "篠澤広": {
+        "初恋": 56,
+        "学園生活": 8
+      },
+      "秦谷美鈴": {
+        "初陣": 100,
+        "学園生活": 91
+      },
+      "氷渡香名江": {
+        "学園生活": null
+      },
+      "有村麻央": {
+        "初恋": 54,
+        "学園生活": 4
+      },
+      "月村手毬": {
+        "初声": 42,
+        "学園生活": 2
+      },
+      "姫崎莉波": {
+        "初心": 47,
+        "学園生活": 9
+      },
+      "十王星南": {
+        "初陣": 99,
+        "学園生活": 59
+      },
+      "倉本千奈": {
+        "初心": 46,
+        "学園生活": 6
+      }
+    }
+  },
+  "song_rules": [
+    {
+      "pIdolId": 69,
+      "held_any": [
+        "p_item_0202",
+        "p_item_0203"
+      ],
+      "role": "named_target",
+      "requires_all": [
+        "ice_window",
+        "missing_target"
+      ],
+      "grade": 94,
+      "candidate_ids": [
+        "skill_card_0382",
+        "skill_card_0383"
+      ]
+    },
+    {
+      "pIdolId": 69,
+      "held_any": [
+        "skill_card_0476",
+        "skill_card_0477"
+      ],
+      "role": "named_target",
+      "requires_all": [
+        "missing_target",
+        "can_retrieve_from_deck_or_discard"
+      ],
+      "grade": 94,
+      "candidate_ids": [
+        "skill_card_0383"
+      ]
+    },
+    {
+      "pIdolId": 93,
+      "held_any": [
+        "p_item_0265",
+        "p_item_0266"
+      ],
+      "role": "preservation_card",
+      "requires_all": [
+        "can_enter_full",
+        "play_in_full",
+        "cumulative_charge_positive"
+      ],
+      "grade": 92
+    },
+    {
+      "pIdolId": 93,
+      "held_any": [
+        "skill_card_0544",
+        "skill_card_0545"
+      ],
+      "role": "charge_card",
+      "requires_all": [
+        "target_can_score",
+        "missing_target"
+      ],
+      "grade": 85
+    },
+    {
+      "pIdolId": 117,
+      "held_any": [
+        "skill_card_0630",
+        "skill_card_0631"
+      ],
+      "role": "drive",
+      "requires_all": [
+        "drive_below_6",
+        "impression_positive"
+      ],
+      "grade": 93
+    },
+    {
+      "pIdolId": 117,
+      "held_any": [
+        "p_item_0354",
+        "p_item_0355"
+      ],
+      "role": "impression",
+      "requires_all": [
+        "impression_below_6",
+        "direct_drive_available"
+      ],
+      "grade": 93
+    },
+    {
+      "pIdolId": 161,
+      "held_any": [
+        "skill_card_0911",
+        "skill_card_0912",
+        "p_item_0504",
+        "p_item_0505"
+      ],
+      "role": "charge",
+      "requires_all": [
+        "cumulative_charge_below_10",
+        "threshold_reachable"
+      ],
+      "grade": 92
+    },
+    {
+      "pIdolId": 161,
+      "held_any": [
+        "skill_card_0913",
+        "skill_card_0914"
+      ],
+      "role": "fire",
+      "requires_all": [
+        "ice_window",
+        "missing_switch_source"
+      ],
+      "grade": 92
+    },
+    {
+      "pIdolId": 162,
+      "held_any": [
+        "skill_card_0915",
+        "skill_card_0916"
+      ],
+      "role": "extra",
+      "requires_all": [
+        "can_enter_full",
+        "two_plays_in_full_reachable"
+      ],
+      "grade": 88
+    },
+    {
+      "pIdolId": 162,
+      "held_any": [
+        "skill_card_0917",
+        "skill_card_0918"
+      ],
+      "role": "hold",
+      "requires_all": [
+        "held_target_usable",
+        "missing_target"
+      ],
+      "grade": 86
+    },
+    {
+      "pIdolId": 163,
+      "held_any": [
+        "p_item_0508",
+        "p_item_0509",
+        "skill_card_0919",
+        "skill_card_0920"
+      ],
+      "role": "impression",
+      "requires_all": [
+        "direct_impression_increase",
+        "has_future_triggers"
+      ],
+      "grade": 90
+    },
+    {
+      "pIdolId": 157,
+      "held_any": [
+        "skill_card_0881",
+        "skill_card_0882"
+      ],
+      "role": "charge_card",
+      "requires_all": [
+        "can_play_charge_card",
+        "has_future_triggers"
+      ],
+      "grade": 87
+    }
+  ],
+  "catalog_sha256": {
+    "skill_cards": "8daa60eaea949356d3a565be915d37283f0d0532af8d63279859954bcadf9c4b",
+    "reward_items": "577e1cdabe185b7debc75350ac60bd0a1d0861c367f80cdf06fad12ee6afa22a"
+  },
+  "p_item_events": {
+    "p_item_0001": {
+      "event": "lesson_reward",
+      "game_effect_tags_any": [],
+      "requires": {},
+      "gain": {
+        "additional_skill_choice": 1
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0002": {
+      "event": "sp_lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "pay_stamina": 3
+      },
+      "gain": {
+        "select_upgrade": 1,
+        "stamina": -3
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0069": {
+      "event": "skill_upgraded",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vo_min": 400
+      },
+      "gain": {
+        "points": 15
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0195": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "good"
+      ],
+      "requires": {
+        "scenario": "NIA"
+      },
+      "gain": {
+        "votes": 2000
+      },
+      "fire_limit": 5,
+      "fire_interval": 0
+    },
+    "p_item_0196": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "focus"
+      ],
+      "requires": {
+        "scenario": "NIA"
+      },
+      "gain": {
+        "votes": 2000
+      },
+      "fire_limit": 5,
+      "fire_interval": 0
+    },
+    "p_item_0197": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "impression"
+      ],
+      "requires": {
+        "scenario": "NIA"
+      },
+      "gain": {
+        "votes": 2000
+      },
+      "fire_limit": 5,
+      "fire_interval": 0
+    },
+    "p_item_0198": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "drive"
+      ],
+      "requires": {
+        "scenario": "NIA"
+      },
+      "gain": {
+        "votes": 2000
+      },
+      "fire_limit": 5,
+      "fire_interval": 0
+    },
+    "p_item_0199": {
+      "event": "skill_acquired",
+      "requires": {
+        "scenario": "NIA",
+        "exact_game_filter_match": true
+      },
+      "gain": {
+        "votes": 2000
+      },
+      "fire_limit": 5,
+      "fire_interval": 0,
+      "game_effect_tags": [
+        "full_power",
+        "ice"
+      ]
+    },
+    "p_item_0200": {
+      "event": "skill_acquired",
+      "requires": {
+        "scenario": "NIA",
+        "exact_game_filter_match": true
+      },
+      "gain": {
+        "votes": 2000
+      },
+      "fire_limit": 5,
+      "fire_interval": 0,
+      "game_effect_tags": [
+        "fire",
+        "ice"
+      ]
+    },
+    "p_item_0270": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [],
+      "requires": {
+        "scenario": "NIA",
+        "interval_known": true
+      },
+      "gain": {
+        "votes": 3000
+      },
+      "fire_limit": 0,
+      "fire_interval": 2
+    },
+    "p_item_0271": {
+      "event": "business_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "venue": "commercial_facility"
+      },
+      "gain": {
+        "random_upgrade": 1
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0272": {
+      "event": "business_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "venue": "corporate_event"
+      },
+      "gain": {
+        "random_drink_SR_or_above": 2
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0273": {
+      "event": "business_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "venue": "municipal_event"
+      },
+      "gain": {
+        "points": 40
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0125": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "good"
+      ],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "select_delete": 1,
+        "points": 40
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0142": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "impression"
+      ],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "select_copy": 1,
+        "points": 40
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0161": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "impression"
+      ],
+      "requires": {
+        "Vi_min": 700
+      },
+      "gain": {
+        "select_delete": 1,
+        "points": 40
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0134": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "drive"
+      ],
+      "requires": {
+        "Vi_min": 400
+      },
+      "gain": {
+        "select_upgrade": 1,
+        "stamina": 2
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0490": {
+      "event": "skill_upgraded",
+      "game_effect_tags_any": [
+        "ice"
+      ],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "Da": 20,
+        "points": 10
+      },
+      "fire_limit": 3,
+      "fire_interval": 0
+    },
+    "p_item_0495": {
+      "event": "skill_upgraded",
+      "game_effect_tags_any": [
+        "good"
+      ],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "Da": 20,
+        "points": 10
+      },
+      "fire_limit": 3,
+      "fire_interval": 0
+    },
+    "p_item_0498": {
+      "event": "skill_upgraded",
+      "game_effect_tags_any": [
+        "drive"
+      ],
+      "requires": {
+        "Vi_min": 900
+      },
+      "gain": {
+        "Vi": 30,
+        "points": 40
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0499": {
+      "event": "skill_upgraded",
+      "game_effect_tags_any": [
+        "drive"
+      ],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "Da": 20,
+        "points": 10
+      },
+      "fire_limit": 3,
+      "fire_interval": 0
+    },
+    "p_item_0061": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "vocal_sp",
+        "Vo_min": 400
+      },
+      "gain": {
+        "upgrade": {
+          "choice": "random",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0062": {
+      "event": "exam_or_audition_start",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vo_min": 400
+      },
+      "gain": {
+        "Vo": 26
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0063": {
+      "event": "exam_or_audition_start",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vi_min": 400
+      },
+      "gain": {
+        "Vi": 26
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0064": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "dance_sp"
+      },
+      "gain": {
+        "reward_pool": {
+          "game_key": "p_rd-drink_set-all-random-02_02",
+          "count": 2,
+          "selection": "random"
+        }
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0065": {
+      "event": "exam_or_audition_start",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Da_min": 400
+      },
+      "gain": {
+        "Da": 26
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0066": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "dance",
+        "hp_permille_min": 500
+      },
+      "gain": {
+        "Da": 13
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0067": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "vocal",
+        "hp_permille_min": 500
+      },
+      "gain": {
+        "Vo": 13
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0068": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "visual",
+        "hp_permille_min": 500
+      },
+      "gain": {
+        "Vi": 13
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0070": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "visual_sp",
+        "Vi_min": 400
+      },
+      "gain": {
+        "upgrade": {
+          "choice": "random",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0076": {
+      "event": "outing_end",
+      "game_effect_tags_any": [],
+      "requires": {},
+      "gain": {
+        "stamina": 9
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0091": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "good"
+      ],
+      "requires": {},
+      "gain": {
+        "Da": 6
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0095": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "impression"
+      ],
+      "requires": {},
+      "gain": {
+        "Vi": 6
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0103": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "drive"
+      ],
+      "requires": {},
+      "gain": {
+        "Vo": 6
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0107": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "focus"
+      ],
+      "requires": {},
+      "gain": {
+        "Vo": 6
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0115": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "dance_sp",
+        "Da_min": 400
+      },
+      "gain": {
+        "points": 60
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0124": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "good"
+      ],
+      "requires": {
+        "Da_min": 200
+      },
+      "gain": {
+        "reward_pool": {
+          "game_key": "p_rd-produce-event_activity-drink-random-01_01",
+          "count": 1,
+          "selection": "random"
+        }
+      },
+      "fire_limit": 4,
+      "fire_interval": 0
+    },
+    "p_item_0137": {
+      "event": "class_or_business_end",
+      "game_effect_tags_any": [],
+      "requires": {},
+      "gain": {
+        "Vi": 15,
+        "stamina": 2
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0151": {
+      "event": "activity_supply_or_gift_selected",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "upgrade": {
+          "choice": "select",
+          "target": "deck",
+          "min": 0,
+          "max": 2
+        }
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0160": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "guard"
+      ],
+      "requires": {
+        "Vi_min": 200
+      },
+      "gain": {
+        "reward_pool": {
+          "game_key": "p_rd-produce-event_activity-drink-random-01_01",
+          "count": 1,
+          "selection": "random"
+        }
+      },
+      "fire_limit": 4,
+      "fire_interval": 0
+    },
+    "p_item_0164": {
+      "event": "shop_selected",
+      "game_effect_tags_any": [],
+      "requires": {},
+      "gain": {
+        "shop_discount_percent": 20
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0183": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "drive"
+      ],
+      "requires": {},
+      "gain": {
+        "Da": 6
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0187": {
+      "event": "shop_selected",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "upgrade": {
+          "choice": "random",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        },
+        "points": 50
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0194": {
+      "event": "special_instruction_start",
+      "game_effect_tags_any": [],
+      "requires": {},
+      "gain": {
+        "stamina": 6,
+        "votes": 3500
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0201": {
+      "event": "class_or_business_end",
+      "game_effect_tags_any": [],
+      "requires": {},
+      "gain": {
+        "points": 20,
+        "stamina": 2
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0214": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "ice"
+      ],
+      "requires": {
+        "Vo_min": 400
+      },
+      "gain": {
+        "upgrade": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0219": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "visual_sp"
+      },
+      "gain": {
+        "reward_pool": {
+          "game_key": "p_rd-produce-event_activity-drink-random-01_01",
+          "count": 1,
+          "selection": "random"
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0220": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "vocal_sp"
+      },
+      "gain": {
+        "reward_pool": {
+          "game_key": "p_rd-produce-event_activity-drink-random-01_01",
+          "count": 1,
+          "selection": "random"
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0221": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "dance_sp"
+      },
+      "gain": {
+        "reward_pool": {
+          "game_key": "p_rd-produce-event_activity-drink-random-01_01",
+          "count": 1,
+          "selection": "random"
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0233": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "impression"
+      ],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "upgrade": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0236": {
+      "event": "outing_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vi_min": 400
+      },
+      "gain": {
+        "Vi": 15,
+        "exchange": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0245": {
+      "event": "skill_upgraded",
+      "game_effect_tags_any": [
+        "good"
+      ],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "upgrade": {
+          "choice": "random",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0248": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "full_power"
+      ],
+      "requires": {},
+      "gain": {
+        "Vi": 6
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0251": {
+      "event": "special_instruction_start",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vo_min": 200
+      },
+      "gain": {
+        "points": 100
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0252": {
+      "event": "skill_upgraded",
+      "game_effect_tags_any": [
+        "impression"
+      ],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "upgrade": {
+          "choice": "random",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0259": {
+      "event": "class_or_business_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Da_min": 400
+      },
+      "gain": {
+        "Da": 10,
+        "exchange": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0260": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "guard"
+      ],
+      "requires": {},
+      "gain": {
+        "Vo": 6
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0267": {
+      "event": "class_or_business_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vi_min": 700
+      },
+      "gain": {
+        "delete": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        },
+        "specific_reward_game_key": {
+          "kind": "skill_card",
+          "id": "p_card-03-men-1_039",
+          "upgradeCount": 0,
+          "catalog_id": "skill_card_0392"
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0268": {
+      "event": "skill_upgraded",
+      "game_effect_tags_any": [
+        "ice"
+      ],
+      "requires": {
+        "Vi_min": 700
+      },
+      "gain": {
+        "upgrade": {
+          "choice": "random",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0274": {
+      "event": "after_turn_start",
+      "requires": {
+        "draw_plus_discard_count_min": 12
+      },
+      "per_lesson_limit": 5,
+      "gain": {
+        "draw": 1,
+        "param_gain_percent": 5,
+        "good": 1
+      }
+    },
+    "p_item_0275": {
+      "event": "after_turn_start",
+      "requires": {
+        "draw_plus_discard_count_min": 12
+      },
+      "per_lesson_limit": 5,
+      "gain": {
+        "draw": 1,
+        "param_gain_percent": 5,
+        "focus": 1
+      }
+    },
+    "p_item_0276": {
+      "event": "after_turn_start",
+      "requires": {
+        "draw_plus_discard_count_min": 12
+      },
+      "per_lesson_limit": 5,
+      "gain": {
+        "draw": 1,
+        "param_gain_percent": 5,
+        "impression": 1
+      }
+    },
+    "p_item_0277": {
+      "event": "after_turn_start",
+      "requires": {
+        "draw_plus_discard_count_min": 12
+      },
+      "per_lesson_limit": 5,
+      "gain": {
+        "draw": 1,
+        "param_gain_percent": 5,
+        "drive": 1
+      }
+    },
+    "p_item_0278": {
+      "event": "after_turn_start",
+      "requires": {
+        "draw_plus_discard_count_min": 18
+      },
+      "per_lesson_limit": 1,
+      "gain": {
+        "param_gain_percent": 25,
+        "skill_effect_tag": "full_power",
+        "matching_skills_score_growth": 10
+      }
+    },
+    "p_item_0279": {
+      "event": "after_turn_start",
+      "requires": {
+        "draw_plus_discard_count_min": 18
+      },
+      "per_lesson_limit": 1,
+      "gain": {
+        "param_gain_percent": 25,
+        "skill_effect_tag": "fire",
+        "matching_skills_score_growth": 10
+      }
+    },
+    "p_item_0283": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "fire"
+      ],
+      "requires": {},
+      "gain": {
+        "Da": 6
+      },
+      "fire_limit": 0,
+      "fire_interval": 0
+    },
+    "p_item_0291": {
+      "event": "activity_supply_or_gift_selected",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vi_min": 700
+      },
+      "gain": {
+        "upgrade": {
+          "choice": "random",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        },
+        "stamina": 4
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0292": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "impression"
+      ],
+      "requires": {
+        "Vi_min": 200
+      },
+      "gain": {
+        "upgrade": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0296": {
+      "event": "activity_supply_or_gift_selected",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "stamina": 5,
+        "points": 30
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0309": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "ice"
+      ],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "points": 50,
+        "stamina": 5
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0310": {
+      "event": "special_instruction_start",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "delete": {
+          "choice": "random",
+          "target": "trouble",
+          "min": 1,
+          "max": 1
+        },
+        "points": 40
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0318": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "dance",
+        "Da_min": 400
+      },
+      "gain": {
+        "stamina": 6
+      },
+      "fire_limit": 3,
+      "fire_interval": 0
+    },
+    "p_item_0321": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "focus"
+      ],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "Da": 20,
+        "stamina": 5
+      },
+      "fire_limit": 3,
+      "fire_interval": 0
+    },
+    "p_item_0322": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "focus"
+      ],
+      "requires": {
+        "Vi_min": 700
+      },
+      "gain": {
+        "delete": {
+          "choice": "random",
+          "target": "trouble",
+          "min": 1,
+          "max": 1
+        },
+        "Vi": 30
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0325": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "drive"
+      ],
+      "requires": {
+        "Vo_min": 400
+      },
+      "gain": {
+        "Vo": 30,
+        "stamina": 5
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0326": {
+      "event": "special_instruction_start",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vi_min": 400
+      },
+      "gain": {
+        "Vi": 30
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0332": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "ice"
+      ],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "delete": {
+          "choice": "random",
+          "target": "trouble",
+          "min": 1,
+          "max": 1
+        },
+        "Vo": 30
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0336": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "impression"
+      ],
+      "requires": {
+        "Vi_min": 700
+      },
+      "gain": {
+        "delete": {
+          "choice": "random",
+          "target": "trouble",
+          "min": 1,
+          "max": 1
+        },
+        "Vi": 30
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0339": {
+      "event": "special_instruction_start",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vo_min": 400
+      },
+      "gain": {
+        "Vo": 30,
+        "points": 20,
+        "stamina": 10
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0340": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "good"
+      ],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "Da": 20,
+        "reward_pool": {
+          "game_key": "p_rd-drink_set-all-random-01_01",
+          "count": 1,
+          "selection": "random"
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0345": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "impression"
+      ],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "delete": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        },
+        "points": 40
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0348": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "good"
+      ],
+      "requires": {
+        "Vi_min": 400
+      },
+      "gain": {
+        "stamina": 4
+      },
+      "fire_limit": 5,
+      "fire_interval": 0
+    },
+    "p_item_0351": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "focus"
+      ],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "stamina": 5,
+        "points": 20
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0359": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "drive"
+      ],
+      "requires": {
+        "Vo_min": 400
+      },
+      "gain": {
+        "stamina": 4
+      },
+      "fire_limit": 5,
+      "fire_interval": 0
+    },
+    "p_item_0366": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "full_power"
+      ],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "Da": 30,
+        "reward_pool": {
+          "game_key": "p_rd-produce-event_activity-drink-random-01_01",
+          "count": 1,
+          "selection": "random"
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0367": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "full_power"
+      ],
+      "requires": {
+        "Vi_min": 400
+      },
+      "gain": {
+        "Vi": 15,
+        "copy": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0370": {
+      "event": "class_or_business_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "specific_reward_game_key": {
+          "kind": "drink",
+          "id": "pdrink_00-3-001",
+          "catalog_id": "drink_0018"
+        },
+        "points": 40
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0383": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "ice"
+      ],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "Da": 20,
+        "reward_pool": {
+          "game_key": "p_rd-drink_set-all-random-01_01",
+          "count": 1,
+          "selection": "random"
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0388": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "focus"
+      ],
+      "requires": {
+        "Vi_min": 400
+      },
+      "gain": {
+        "Vi": 15,
+        "points": 20
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0392": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "vocal_sp",
+        "Vo_min": 700
+      },
+      "gain": {
+        "Vo": 20,
+        "points": 20
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0397": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "focus"
+      ],
+      "requires": {
+        "Da_min": 700
+      },
+      "gain": {
+        "Da": 35,
+        "points": 30
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0398": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "good"
+      ],
+      "requires": {
+        "Da_min": 400
+      },
+      "gain": {
+        "delete": {
+          "choice": "random",
+          "target": "trouble",
+          "min": 1,
+          "max": 1
+        },
+        "stamina": 5
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0401": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "ice"
+      ],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "Vo": 20,
+        "upgrade": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0414": {
+      "event": "shop_selected",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vo_min": 400
+      },
+      "gain": {
+        "Vo": 30,
+        "points": 30
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0418": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "drive"
+      ],
+      "requires": {
+        "Vi_min": 400
+      },
+      "gain": {
+        "exchange": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0431": {
+      "event": "lesson_end",
+      "requires": {
+        "exact_base_version": true
+      },
+      "fire_limit": 2,
+      "gain": {
+        "stamina": 6,
+        "next_exam_start": {
+          "focus": 2,
+          "good": 2
+        }
+      }
+    },
+    "p_item_0432": {
+      "event": "lesson_end",
+      "requires": {
+        "exact_base_version": true
+      },
+      "fire_limit": 2,
+      "gain": {
+        "points": 30,
+        "next_exam_start": {
+          "focus": 2,
+          "good": 2
+        }
+      }
+    },
+    "p_item_0433": {
+      "event": "lesson_end",
+      "requires": {
+        "exact_base_version": true
+      },
+      "fire_limit": 2,
+      "gain": {
+        "random_specific_drink": 1,
+        "next_exam_start": {
+          "focus": 2,
+          "good": 2
+        }
+      }
+    },
+    "p_item_0434": {
+      "event": "lesson_end",
+      "requires": {
+        "exact_base_version": true
+      },
+      "fire_limit": 2,
+      "gain": {
+        "stamina": 6,
+        "next_exam_start": {
+          "impression": 2,
+          "drive": 2
+        }
+      }
+    },
+    "p_item_0435": {
+      "event": "lesson_end",
+      "requires": {
+        "exact_base_version": true
+      },
+      "fire_limit": 2,
+      "gain": {
+        "points": 30,
+        "next_exam_start": {
+          "impression": 2,
+          "drive": 2
+        }
+      }
+    },
+    "p_item_0436": {
+      "event": "lesson_end",
+      "requires": {
+        "exact_base_version": true
+      },
+      "fire_limit": 2,
+      "gain": {
+        "random_specific_drink": 1,
+        "next_exam_start": {
+          "impression": 2,
+          "drive": 2
+        }
+      }
+    },
+    "p_item_0437": {
+      "event": "lesson_end",
+      "requires": {
+        "exact_base_version": true
+      },
+      "fire_limit": 2,
+      "gain": {
+        "stamina": 6,
+        "next_exam_start": {
+          "all_skills_score_growth": 4
+        }
+      }
+    },
+    "p_item_0438": {
+      "event": "lesson_end",
+      "requires": {
+        "exact_base_version": true
+      },
+      "fire_limit": 2,
+      "gain": {
+        "points": 30,
+        "next_exam_start": {
+          "all_skills_score_growth": 4
+        }
+      }
+    },
+    "p_item_0439": {
+      "event": "lesson_end",
+      "requires": {
+        "exact_base_version": true
+      },
+      "fire_limit": 2,
+      "gain": {
+        "random_specific_drink": 1,
+        "next_exam_start": {
+          "all_skills_score_growth": 4
+        }
+      }
+    },
+    "p_item_0444": {
+      "event": "special_instruction_start",
+      "game_effect_tags_any": [],
+      "requires": {
+        "points_min": 200
+      },
+      "gain": {
+        "points": 70
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0447": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [],
+      "requires": {
+        "scenario": "HIF"
+      },
+      "gain": {
+        "stars": 10
+      },
+      "fire_limit": 20,
+      "fire_interval": 0
+    },
+    "p_item_0453": {
+      "event": "activity_supply_or_gift_selected",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "Vo": 20,
+        "copy": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0456": {
+      "event": "shop_selected",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vi_min": 400
+      },
+      "gain": {
+        "Vi": 10,
+        "reward_pool": {
+          "game_key": "p_rd-card_set-r-upgrade_0-random-01_01",
+          "count": 1,
+          "selection": "random"
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0462": {
+      "event": "lesson_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "lesson_kind": "sp",
+        "Da_min": 700
+      },
+      "gain": {
+        "Da": 20,
+        "stamina": 2
+      },
+      "fire_limit": 3,
+      "fire_interval": 0
+    },
+    "p_item_0468": {
+      "event": "outing_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vi_min": 700
+      },
+      "gain": {
+        "exchange": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        },
+        "Vi": 40
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0471": {
+      "event": "special_instruction_start",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Da_max": 900
+      },
+      "gain": {
+        "Vo": 25,
+        "upgrade": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        },
+        "next_customize_discount_percent": 20
+      },
+      "fire_limit": 1,
+      "fire_interval": 0
+    },
+    "p_item_0472": {
+      "event": "exam_or_audition_end",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "Vo": 20,
+        "stamina": 5
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0477": {
+      "event": "skill_acquired",
+      "game_effect_tags_any": [
+        "focus"
+      ],
+      "requires": {
+        "Vo_min": 900
+      },
+      "gain": {
+        "Vo": 10,
+        "delete": {
+          "choice": "select",
+          "target": "deck",
+          "min": 1,
+          "max": 1
+        },
+        "reward_pool": {
+          "game_key": "p_rd-card_set-r-upgrade_0-select-01_01",
+          "count": 1,
+          "selection": "select"
+        }
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    },
+    "p_item_0484": {
+      "event": "exam_or_audition_start",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vi_min": 700
+      },
+      "gain": {
+        "stamina": 6
+      },
+      "fire_limit": 4,
+      "fire_interval": 0
+    },
+    "p_item_0487": {
+      "event": "skill_exchanged",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vi_min": 400
+      },
+      "gain": {
+        "Vi": 25,
+        "stamina": 2
+      },
+      "fire_limit": 3,
+      "fire_interval": 0
+    },
+    "p_item_0502": {
+      "event": "activity_supply_or_gift_selected",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vo_min": 700
+      },
+      "gain": {
+        "stamina": 4,
+        "Vo": 10
+      },
+      "fire_limit": 4,
+      "fire_interval": 0
+    },
+    "p_item_0503": {
+      "event": "activity_supply_or_gift_selected",
+      "game_effect_tags_any": [],
+      "requires": {
+        "Vi_min": 700
+      },
+      "gain": {
+        "points": 25,
+        "Vi": 10
+      },
+      "fire_limit": 2,
+      "fire_interval": 0
+    }
+  },
+  "p_item_thresholds": [
+    {
+      "id": "p_item_0003",
+      "when": {
+        "resource": "focus",
+        "min": 5
+      },
+      "outcome": {
+        "extra_actions": 1,
+        "focus": 2
+      }
+    },
+    {
+      "id": "p_item_0004",
+      "when": {
+        "resource": "good",
+        "min": 1
+      },
+      "outcome": {
+        "extra_actions": 1,
+        "good": 2
+      }
+    },
+    {
+      "id": "p_item_0005",
+      "when": {
+        "resource": "impression",
+        "min": 3
+      },
+      "outcome": {
+        "extra_actions": 1,
+        "impression": 3
+      }
+    },
+    {
+      "id": "p_item_0006",
+      "when": {
+        "resource": "drive",
+        "min": 5
+      },
+      "outcome": {
+        "extra_actions": 1,
+        "drive": 3
+      }
+    },
+    {
+      "id": "p_item_0166",
+      "when": {
+        "resource": "charge",
+        "min": 3
+      },
+      "outcome": {
+        "extra_actions": 1,
+        "charge": 3
+      }
+    }
+  ],
+  "drink_cases": {
+    "drink_0001": {
+      "roles": [
+        "score"
+      ],
+      "requires": "small_score_gap"
+    },
+    "drink_0002": {
+      "roles": [
+        "guard"
+      ],
+      "requires": "guard_needed"
+    },
+    "drink_0003": {
+      "roles": [
+        "good"
+      ],
+      "requires": "good_needed"
+    },
+    "drink_0004": {
+      "roles": [
+        "focus"
+      ],
+      "requires": "focus_needed"
+    },
+    "drink_0005": {
+      "roles": [
+        "impression"
+      ],
+      "requires": "impression_needed"
+    },
+    "drink_0006": {
+      "roles": [
+        "drive"
+      ],
+      "requires": "drive_needed"
+    },
+    "drink_0007": {
+      "roles": [
+        "fire",
+        "charge"
+      ],
+      "requires": "direct_fire_or_charge_needed"
+    },
+    "drink_0008": {
+      "roles": [
+        "ice",
+        "charge"
+      ],
+      "requires": "direct_ice_or_charge_needed"
+    },
+    "drink_0009": {
+      "roles": [
+        "exchange_hand",
+        "heal"
+      ],
+      "requires": "usable_redraw_or_heal"
+    },
+    "drink_0010": {
+      "roles": [
+        "heal"
+      ],
+      "requires": "recoverable_hp_missing"
+    },
+    "drink_0011": {
+      "roles": [
+        "upgrade_hand",
+        "heal"
+      ],
+      "requires": "usable_hand_target_or_heal"
+    },
+    "drink_0012": {
+      "roles": [
+        "score_buff",
+        "half_cost"
+      ],
+      "requires": "pay_2_hp_and_have_output_window"
+    },
+    "drink_0013": {
+      "roles": [
+        "retrieve_intrinsic",
+        "half_cost"
+      ],
+      "requires": "intrinsic_in_draw_or_discard_or_cost_window"
+    },
+    "drink_0014": {
+      "roles": [
+        "draw",
+        "score_buff"
+      ],
+      "requires": "pay_2_hp_and_have_future_plays"
+    },
+    "drink_0015": {
+      "roles": [
+        "perfect",
+        "guard"
+      ],
+      "requires": "good_available_or_guard_needed"
+    },
+    "drink_0016": {
+      "roles": [
+        "impression_score",
+        "guard"
+      ],
+      "requires": "impression_positive_or_guard_needed"
+    },
+    "drink_0017": {
+      "roles": [
+        "ice",
+        "hold"
+      ],
+      "requires": "usable_ice_or_hold_target"
+    },
+    "drink_0018": {
+      "roles": [
+        "extra"
+      ],
+      "requires": "effective_followup_card"
+    },
+    "drink_0019": {
+      "roles": [
+        "random_ssr"
+      ],
+      "requires": "one_turn_random_card_useful"
+    },
+    "drink_0020": {
+      "roles": [
+        "focus"
+      ],
+      "requires": "future_end_turns"
+    },
+    "drink_0021": {
+      "roles": [
+        "perfect",
+        "upgrade_hand"
+      ],
+      "requires": "good_available_or_usable_hand_target"
+    },
+    "drink_0022": {
+      "roles": [
+        "retrieve",
+        "nullify_cost"
+      ],
+      "requires": "pay_2_hp_and_handle_double_cost"
+    },
+    "drink_0023": {
+      "roles": [
+        "impression"
+      ],
+      "requires": "future_end_turns"
+    },
+    "drink_0024": {
+      "roles": [
+        "drive"
+      ],
+      "requires": "future_end_turns"
+    },
+    "drink_0025": {
+      "roles": [
+        "double_effect"
+      ],
+      "requires": "pay_2_hp_and_handle_double_cost_and_eligible_active"
+    },
+    "drink_0026": {
+      "roles": [
+        "fire",
+        "half_cost"
+      ],
+      "requires": "direct_fire_or_cost_window"
+    },
+    "drink_0027": {
+      "roles": [
+        "charge"
+      ],
+      "requires": "future_start_turns"
+    },
+    "drink_0028": {
+      "roles": [
+        "extend"
+      ],
+      "requires": "extra_turn_useful_and_pay_2_hp_and_handle_double_cost"
+    }
+  }
+}

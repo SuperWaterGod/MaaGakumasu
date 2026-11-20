@@ -14,19 +14,22 @@ from maa.context import ContextEventSink
 from maa.event_sink import NotificationType
 
 from .capture import ROOT, DecisionCapture, produce_fast_mode
+from .resources import REWARD_RULES_NAME, data_directory
 
-# 只观察流水线已有动作，不新增输入或识别。
+# 记录流水线的动作和对应画面。
 ROUTE_NODES = {
     "ProduceChooseGetFlag": "reward",
     "ProduceChooseSkip": "reward_skip",
     "ProduceChooseRecommend": "reward",
     "ProduceChooseEventRecommend": "reward",
     "ProduceChooseFirst": "reward",
+    "ProduceChooseByRule": "reward",
     "ProduceChooseConfirm": "reward_confirm",
     "ProduceShoppingFlag": "shop",
     "ProduceShoppingBuySale": "shop",
     "ProduceShoppingBuy": "shop_confirm",
     "ProduceShoppingDecide": "shop_confirm",
+    "ProduceShoppingDeleteConfirm": "shop_confirm",
     "ProduceShoppingDrinkFull": "shop_unavailable",
     "ProduceShoppingExit": "shop_exit",
     "ProduceChooseStrengthenFlag": "strengthen",
@@ -38,6 +41,7 @@ ROUTE_NODES = {
 # 截图只在实际选牌／确认位置保存；奖励和商店使用各自的稳定页面入口。
 ROUTE_SCREENSHOT_NODES = {
     "ProduceChooseStrengthenClick", "ProduceChooseStrengthen", "ProduceChooseDeleteFlag", "ProduceChooseDeleteClick",
+    "ProduceShoppingDeleteConfirm",
 }
 PREPARATION_NODES = {
     "ProduceChooseDifficulty",
@@ -183,7 +187,7 @@ class ProduceSessions:
             return None
         task_id = context.get_task_job().job_id
         bindings = configured_bindings(context)
-        package_data = ROOT / "data" if (ROOT / "data").is_dir() else ROOT / "assets/data"
+        package_data = data_directory(ROOT)
         resource = ROOT / "resource/base" if (ROOT / "resource/base").is_dir() else ROOT / "assets/resource/base"
         version_files = [
             package_data / "produce_skill_cards.json",
@@ -191,8 +195,10 @@ class ProduceSessions:
             package_data / "produce_resources_source.json",
             package_data / "produce_resources_manifest.json",
             package_data / "idols_cards.json",
+            package_data / REWARD_RULES_NAME,
             resource / "model/detect/cards.onnx",
             *sorted(Path(__file__).parent.glob("*.py")),
+            ROOT / "agent/custom/reco/produce.py",
             ROOT / "agent/utils/image_io.py",
             ROOT / "agent/custom/action/produce.py",
             *sorted((resource / "pipeline").glob("Produce*.json")),
@@ -291,6 +297,12 @@ class ProduceSessions:
             "start_observed": fresh_start,
             "settlement_observed": False,
         }
+        policy = capture.selection
+        saved = state.get("reward_selection", {})
+        if policy and saved.get("catalog") == policy.catalog.hashes:
+            policy.observe(saved["owned"])
+            policy.item_triggers.update(saved["item_triggers"])
+            policy.full_power_seen = saved["full_power_seen"]
         state["timing_basis"] = "gameplay_loop"
         state.setdefault("start_source", entry)
         state.update(status="recording", root_task_id=task_id, directory_name=directory_name)
@@ -326,6 +338,12 @@ class ProduceSessions:
         return session
 
     def persist(self, session):
+        policy = session["capture"].selection
+        if policy:
+            session["state"]["reward_selection"] = {
+                "catalog": policy.catalog.hashes, "owned": sorted(policy.owned),
+                "item_triggers": policy.item_triggers, "full_power_seen": policy.full_power_seen,
+            }
         save_json(session["path"], session["state"])
         save_json(session["pointer"], session["state"])
 
@@ -386,9 +404,17 @@ class ProduceContextSink(ContextEventSink):
             try:
                 session = SESSIONS.get(context)
                 if session and not session["capture"]._analyzing:
+                    if session["capture"].shop is not None:
+                        return
+                    from .rewards import shop_exit_visible
+
+                    image = safe_image(context)
+                    session["shop_shelf_blocked"] = image is None or not shop_exit_visible(context, image)
+                    if session["shop_shelf_blocked"]:
+                        return
                     # 入口识别时仍可能淡入；沿用流水线已有等待，完成后才读最新缓存。
                     session["capture"].record(
-                        "shop_entry_observation", image=safe_image(context), save_frame=True, node=detail.name, operation="shop",
+                        "shop_entry_observation", image=image, save_frame=True, node=detail.name, operation="shop",
                         frame_source="controller_cached_after_post_wait_freezes",
                         wait_freezes={"succeeded": True, "elapsed_ms": detail.elapsed, "roi": list(detail.roi), "parameters": detail.param},
                         game_action_confirmed=None, context=context,
@@ -438,6 +464,13 @@ class ProduceContextSink(ContextEventSink):
                 if origin and detail.name in PREPARATION_NODES:
                     origin["recognitions"][detail.name] = context.tasker.get_recognition_detail(detail.reco_id)
                 return
+            receipt = session.get("await_reward_transition")
+            if receipt and detail.name in {"ProduceKeepDrinkFlag", "ProduceChooseStrengthenFlag",
+                                           "ProduceChooseDeleteFlag", "ProduceChooseEventFlag", "ProduceChooseNIAEventFlag",
+                                           "ProduceShoppingFlag", "ProduceCardsFlag"}:
+                if session["capture"].selection:
+                    session["capture"].selection.acquired(receipt["selected"])
+                session.pop("await_reward_transition")
             if session and (detail.name in (set(ROUTE_NODES) | PREPARATION_NODES | SETTLEMENT_ENTRIES)
                             or (capture_window(session) and detail.name in SETTLEMENT_NAVIGATION)):
                 reco = context.tasker.get_recognition_detail(detail.reco_id)
@@ -479,6 +512,7 @@ class ProduceContextSink(ContextEventSink):
             | SETTLEMENT_ENTRIES
             | SETTLEMENT_NAVIGATION
             | {
+                "ProduceShopByRule",
                 "Produce",
                 "ProduceLoop",
                 "ProduceHomeFlag",
@@ -604,6 +638,14 @@ class ProduceContextSink(ContextEventSink):
                     self.capture_settlement(session, name, context, kind)
                 return
             if name in ROUTE_NODES:
+                if name == "ProduceShoppingFlag":
+                    session.pop("shop_shelf_blocked", None)
+                    if capture.shop is not None:
+                        return
+                elif name == "ProduceShoppingDrinkFull":
+                    session["shop_drinks_full"] = True
+                elif name == "ProduceShoppingBuySale":
+                    session.pop("shop_rule_active", None)
                 node = context.get_node_data(name)
                 reco = session["recognitions"].pop(name, None)
                 if name == "ProduceChooseGetFlag":
@@ -643,12 +685,24 @@ class ProduceContextSink(ContextEventSink):
         session = SESSIONS.get(context)
         if not session:
             return
+        if name == "ProduceShopByRule" and noti_type == NotificationType.Succeeded:
+            choice = session.pop("shop_choice")
+            session["shop_rule_active"] = True
+            session.setdefault("shop_used", set()).add(choice["attempt"])
+            session["shop_pending"] = choice
+            if choice["operation"] == "buy":
+                logger.info(f"商店 · 自动 · {choice['reason']}（{choice['price']} P）")
         if name == "ProduceCardsFlag" and noti_type == NotificationType.Succeeded:
             # 初/NIA 成功或失败都可能先显示结果，再直接进入回忆生成。
             # 旁路观察原有翻页，直到下一场战斗、路线或奖励。
             # 动画中的兜底点击次数不固定，不能据此截断最终评价页。
             session["post_battle_window"] = True
             return
+        if name == "ProduceShoppingExit" and noti_type == NotificationType.Succeeded:
+            session["capture"].shop = None
+            for field in ("shop_used", "shop_rule_active", "shop_drinks_full", "shop_choice", "shop_pending",
+                          "shop_balance", "shop_stop_reason", "shop_shelf_blocked"):
+                session.pop(field, None)
         if detail.action_id in session["actions"]:
             decision = session["actions"].pop(detail.action_id)
             action = context.tasker.get_action_detail(detail.action_id)
@@ -667,12 +721,14 @@ class ProduceContextSink(ContextEventSink):
                 context=context,
             )
             if noti_type == NotificationType.Succeeded and name in {
-                "ProduceChooseFirst", "ProduceChooseRecommend", "ProduceChooseEventRecommend", "ProduceChooseSkip",
+                "ProduceChooseFirst", "ProduceChooseRecommend", "ProduceChooseEventRecommend", "ProduceChooseSkip", "ProduceChooseByRule",
             }:
                 session["reward_choice"] = {
                     "decision_id": decision, "input_event_id": input_id, "policy_node": name,
                     "actual_point": list(action.result.point) if action and getattr(action.result, "point", None) else None,
                 }
+                if name == "ProduceChooseByRule":
+                    session["reward_choice"].update(session.pop("rule_reward", {}))
             if decision:
                 session["pending"].append(decision)
         if noti_type == NotificationType.Succeeded:

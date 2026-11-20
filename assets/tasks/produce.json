@@ -49,6 +49,81 @@
             "开启截图记录"
           ],
           "pipeline_override": {
+            "ProduceChooseByRule": {
+              "enabled": true
+            },
+            "ProduceShopByRule": {
+              "enabled": true
+            },
+            "ProduceRuleShopWait": {
+              "enabled": true
+            },
+            "ProduceRuleShopBlocked": {
+              "enabled": true
+            },
+            "ProduceRuleShopDone": {
+              "enabled": true
+            },
+            "ProduceShoppingFlag": {
+              "post_wait_freezes": {
+                "time": 200,
+                "target": [
+                  45,
+                  460,
+                  635,
+                  670
+                ]
+              }
+            },
+            "ProduceKeepDrinkFlag": {
+              "recognition": {
+                "param": {
+                  "threshold": 0.88
+                }
+              }
+            },
+            "ProduceChooseStrengthenFlag": {
+              "action": {
+                "type": "Custom",
+                "param": {
+                  "custom_action": "ProduceEditChoice",
+                  "custom_action_param": {
+                    "operation": "strengthen"
+                  }
+                }
+              }
+            },
+            "ProduceChooseStrengthenClick": {
+              "post_wait_freezes": {
+                "time": 200,
+                "target": [
+                  55,
+                  680,
+                  610,
+                  550
+                ]
+              },
+              "action": {
+                "type": "Custom",
+                "param": {
+                  "custom_action": "ProduceEditChoice",
+                  "custom_action_param": {
+                    "operation": "strengthen_repeat"
+                  }
+                }
+              }
+            },
+            "ProduceChooseDeleteFlag": {
+              "action": {
+                "type": "Custom",
+                "param": {
+                  "custom_action": "ProduceEditChoice",
+                  "custom_action_param": {
+                    "operation": "delete_copy_exchange"
+                  }
+                }
+              }
+            },
             "Produce": {
               "attach": {
                 "fast_mode": false
@@ -482,6 +557,7 @@
           "pipeline_override": {
             "ProduceChooseGetFlag": {
               "next": [
+                "ProduceChooseByRule",
                 "ProduceChooseSkip",
                 "ProduceChooseRecommend",
                 "ProduceChooseEventRecommend",
@@ -496,6 +572,7 @@
           "pipeline_override": {
             "ProduceChooseGetFlag": {
               "next": [
+                "ProduceChooseByRule",
                 "ProduceChooseSkip",
                 "ProduceChooseEventRecommend",
                 "ProduceChooseRecommend",
@@ -510,6 +587,7 @@
           "pipeline_override": {
             "ProduceChooseGetFlag": {
               "next": [
+                "ProduceChooseByRule",
                 "ProduceChooseSkip",
                 "ProduceChooseFirst"
               ]

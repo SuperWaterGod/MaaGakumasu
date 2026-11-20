@@ -288,8 +288,10 @@ def enrich_report(report, records, directory, capture_root):
         received = (page.get("receive") or {}).get("event") or {}
         expected_selection = (restored.get("selected_candidate_id") if start.get("selection_order") == "observe_then_choose"
                               else start.get("selected_candidate_id"))
-        if not restored.get("verified") or expected_selection not in expected or any(e.get("selected_candidate_id") != expected_selection
-                                               for e in (restored, received) if e):
+        if start.get("candidate_source") != "page_icons" and (
+            not restored.get("verified") or expected_selection not in expected
+            or any(e.get("selected_candidate_id") != expected_selection for e in (restored, received) if e)
+        ):
             issue("reward_selection_unverified", "奖励实际领取选择与已核验的策略选择不一致或未核对。",
                   [e for e in (page["start"], page["restore"], page["receive"]) if e])
         # 预览重试不是新候选，同画面也不能独立证明重复获得。

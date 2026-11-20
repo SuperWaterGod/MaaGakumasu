@@ -11,8 +11,23 @@ POLICY_NAMES = {
 }
 
 
-def policy_name(choice):
-    return POLICY_NAMES.get((choice or {}).get("policy_node"), "选择依据未确认")
+def reward_title(success, choice, selected_name=None):
+    choice = choice or {}
+    node = choice.get("policy_node")
+    if node == "ProduceChooseSkip":
+        return "奖励 · 已跳过" if success else "奖励 · 跳过未确认"
+    if success is not True:
+        return "奖励 · 领取失败" if success is False else "奖励 · 领取未确认"
+    name = choice.get("item_name") or selected_name
+    line = f"奖励 · {name or '已点领取'}"
+    if node == "ProduceChooseByRule":
+        reason = choice.get("reason", "")
+        if name:
+            reason = reason.removeprefix(name + "，")
+        return f"{line}｜自动 · {reason}" if reason else f"{line}｜自动"
+    if node in POLICY_NAMES:
+        return f"{line}｜默认 · {POLICY_NAMES[node]}"
+    return line
 
 
 class SettlementConsole:
@@ -354,10 +369,9 @@ class RewardConsole:
         start, receive = page["start"], page["receive"] or {}
         selected = receive.get("selected_candidate_id") or start.get("selected_candidate_id")
         selected_name = preview_name(page["previews"].get(selected))
-        success = receive.get("framework_action_succeeded")
-        status = "已点击领取" if success is True else "领取失败" if success is False else "领取未确认"
         candidates = sorted(start.get("layout", {}).get("candidates", []), key=lambda item: item["box"][0])
-        lines = [f"奖励选择 - {status}：{selected_name}"]
+        choice = receive.get("policy_choice") or (page["restore"] or {}).get("policy_choice")
+        lines = [reward_title(receive.get("framework_action_succeeded"), choice, selected_name)]
         for number, candidate in enumerate(candidates, 1):
             candidate_id = candidate["candidate_id"]
             result = page["previews"].get(candidate_id) or {}
