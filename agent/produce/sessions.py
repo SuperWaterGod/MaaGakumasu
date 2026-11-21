@@ -198,6 +198,7 @@ class ProduceSessions:
             package_data / REWARD_RULES_NAME,
             resource / "model/detect/cards.onnx",
             *sorted(Path(__file__).parent.glob("*.py")),
+            Path(__file__).with_name("replay.html"),
             ROOT / "agent/custom/reco/produce.py",
             ROOT / "agent/utils/image_io.py",
             ROOT / "agent/custom/action/produce.py",
@@ -652,6 +653,10 @@ class ProduceContextSink(ContextEventSink):
                     from .rewards import reward_kind
                     session["reward_kind"] = reward_kind(getattr(getattr(reco, "best_result", None), "text", ""))
                 raw_image = getattr(reco, "raw_image", None)
+                purchase = session.get("shop_pending") or {}
+                purchase_info = {}
+                if name == "ProduceShoppingBuy" and session.get("shop_rule_active") and purchase.get("operation") == "buy":
+                    purchase_info["shop_purchase"] = {"name": purchase.get("name"), "price": purchase.get("price")}
                 event_id = capture.record(
                     "route_before",
                     save_frame=name in ROUTE_SCREENSHOT_NODES,
@@ -666,6 +671,7 @@ class ProduceContextSink(ContextEventSink):
                     actual_cost=None,
                     game_action_confirmed=None,
                     context=context,
+                    **purchase_info,
                 )
                 if event_id:
                     session["actions"][detail.action_id] = event_id

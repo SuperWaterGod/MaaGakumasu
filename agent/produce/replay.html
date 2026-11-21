@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>培育回放 · MaaGakumasu</title>
+<style>
+:root {
+  color-scheme: light;
+  --paper: #fbf9f6;
+  --ink: #171b24;
+  --muted: #5d626e;
+  --line: #ddd9d3;
+  --orange: #f56600;
+  --orange-text: #a94100;
+  --tint: #fdf0e2;
+  font: 16px/1.55 "Microsoft YaHei", "Segoe UI", sans-serif;
+  scroll-behavior: smooth;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; color: var(--ink); background: var(--paper); }
+main { max-width: 1480px; margin: auto; padding: 0 clamp(16px, 4vw, 54px) 64px; }
+button, summary { cursor: pointer; }
+button { color: inherit; font: inherit; }
+a { color: inherit; }
+:is(a, button, summary):focus-visible { outline: 2px solid var(--orange-text); outline-offset: 4px; }
+h1, h2, h3, p, dl, figure { margin: 0; }
+ol, ul { margin: 0; padding: 0; list-style: none; }
+.brand { padding: 12px 0; border-bottom: 1px solid var(--ink); font-weight: 800; font-style: italic; letter-spacing: -.04em; }
+.brand::after { content: " //"; color: var(--orange); margin-left: .5em; }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 43%); min-height: 190px; border-bottom: 1px solid var(--ink); }
+.hero-copy { position: relative; align-self: center; padding: 24px 18px 26px 28px; overflow-wrap: anywhere; }
+.hero-copy::before { content: ""; position: absolute; top: 26px; bottom: 26px; left: 6px; width: 7px; background: var(--orange); transform: skewX(-14deg); }
+h1 { font-size: clamp(2.35rem, 5.5vw, 5.35rem); line-height: 1.12; font-weight: 900; letter-spacing: -.06em; }
+.identity { margin-top: .75em; font-weight: 700; }
+.identity:empty { display: none; }
+.session, .audition { color: var(--muted); font-size: .875rem; }
+.hero-art {
+  position: relative; display: flex; align-items: center; justify-content: flex-end;
+  isolation: isolate; overflow: hidden; min-width: 0; padding: 22px 24px 22px 58px;
+}
+.hero-art::before {
+  content: ""; position: absolute; z-index: -2; inset: 0; background: var(--orange);
+  clip-path: polygon(19% 0, 100% 0, 100% 100%, 0 100%);
+}
+.hero-art::after {
+  content: ""; position: absolute; z-index: -1; width: 94%; aspect-ratio: 1; left: 49%; top: 15%;
+  border: 2px solid #ffffff69; border-radius: 50%; box-shadow: 0 0 0 20px #ffffff3a, 0 0 0 43px #ffffff22;
+  pointer-events: none;
+}
+.evaluation { display: flex; align-items: flex-end; gap: clamp(.75rem, 2vw, 1.8rem); min-width: 0; }
+.rank, .score strong { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.rank { font-size: clamp(2rem, 6vw, 5.6rem); letter-spacing: -.065em; }
+.score { border-left: 1px solid #171b2470; padding-left: clamp(.75rem, 2vw, 1.8rem); }
+.score span { display: block; font-size: .875rem; font-weight: 800; margin-bottom: .3rem; }
+.score strong { font-size: clamp(1.75rem, 4.5vw, 4.35rem); letter-spacing: -.06em; }
+.attributes { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
+.attribute { display: flex; justify-content: space-between; align-items: center; gap: .45rem; padding: .55rem clamp(.4rem, 2vw, 1.5rem); }
+.attribute + .attribute { border-left: 1px solid var(--line); }
+.attribute dt { color: var(--muted); font-size: .875rem; white-space: nowrap; }
+.attribute dt::before { content: ""; display: inline-block; width: .65em; height: .7em; margin-right: .5em; background: var(--tone); transform: skewX(-18deg); }
+.attribute dd { margin: 0; font-size: clamp(1rem, 2.2vw, 1.5rem); font-weight: 800; font-variant-numeric: tabular-nums; }
+.vocals { --tone: #b73931; }
+.dance { --tone: #315d9e; }
+.visual { --tone: #9a6a0c; }
+.audition { margin-top: 10px; }
+.overview {
+  position: sticky; top: 0; z-index: 2; margin-top: 20px; padding: 12px 0 9px;
+  border-bottom: 1px solid var(--line); background: var(--paper);
+}
+.section-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+h2 { font-size: clamp(1.3rem, 2.65vw, 2.1rem); line-height: 1.25; font-weight: 900; letter-spacing: -.035em; }
+h2::before { content: ""; display: inline-block; width: .24em; height: .8em; margin: 0 .44em 0 .12em; transform: skewX(-17deg); background: var(--orange); }
+.flow-controls { display: flex; gap: 6px; }
+.flow-controls button { display: grid; place-items: center; width: 38px; height: 36px; border: 1px solid var(--line); background: transparent; }
+.flow-controls button::after { content: ""; width: 8px; height: 8px; border-top: 1.5px solid; border-right: 1.5px solid; transform: rotate(45deg); }
+.flow-controls .flow-prev::after { transform: rotate(-135deg); }
+.flow-controls button:disabled { opacity: .35; cursor: default; }
+.flow-controls button:not(:disabled):hover { border-color: var(--orange-text); color: var(--orange-text); }
+.flow-window { overflow-x: auto; overscroll-behavior-x: contain; padding: 5px 4px 6px; scrollbar-width: thin; scrollbar-color: #a49e96 transparent; }
+.flow-window:focus-visible { outline: 2px solid var(--orange-text); outline-offset: 2px; }
+.flow { display: grid; grid-auto-flow: column; grid-auto-columns: clamp(78px, 7.5vw, 112px); width: max-content; }
+.flow li { position: relative; }
+.flow li:not(:last-child)::after { content: ""; position: absolute; left: 50%; right: -50%; top: 43px; height: 1px; background: #a49e96; pointer-events: none; }
+.flow a {
+  position: relative; z-index: 1; display: grid; grid-template-rows: 24px 10px auto; justify-items: center; align-items: center;
+  gap: 5px; min-height: 80px; padding: 9px 2px 6px; text-decoration: none; white-space: nowrap; font-size: .875rem; font-weight: 700;
+}
+.step-icon {
+  display: block; width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+.step-dot { width: 10px; height: 10px; border: 1px solid var(--muted); border-radius: 50%; background: var(--paper); }
+.flow a:hover { color: var(--orange-text); }
+.flow a[aria-current] { color: var(--orange-text); box-shadow: inset 0 -2px var(--orange); }
+.flow a[aria-current] .step-dot { border-color: var(--orange-text); background: var(--orange); }
+#timeline { padding-top: 25px; }
+#timeline > h2 { margin-bottom: 13px; }
+.timeline-layout { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: clamp(20px, 3vw, 44px); }
+.timeline-layout.with-viewer { grid-template-columns: minmax(0, 1fr) minmax(270px, 30%); }
+.event {
+  border-bottom: 1px solid var(--line); scroll-margin-top: calc(var(--overview-height, 0px) + 12px);
+}
+.event-summary, .operation-summary {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 10px; align-items: center; gap: .8rem; padding: .85rem .9rem;
+  list-style: none; overflow-wrap: anywhere;
+}
+summary::-webkit-details-marker { display: none; }
+summary::after {
+  content: ""; justify-self: center; align-self: center; width: 7px; height: 7px;
+  border-top: 1.5px solid; border-right: 1.5px solid; transform: rotate(45deg);
+}
+details[open] > summary::after { transform: rotate(135deg); }
+.event[data-selected] > .event-summary {
+  background: var(--tint); box-shadow: inset 4px 0 var(--orange);
+}
+summary:hover:not(:focus) { background-color: #f3eee7; }
+.summary-copy { min-width: 0; }
+.category { display: block; color: var(--muted); font-size: .78rem; font-weight: 600; line-height: 1.4; }
+.event-title { font-size: clamp(1.02rem, 2vw, 1.28rem); font-weight: 800; }
+.summary-verb { margin-inline-end: .35em; }
+.game-value {
+  padding: .06em .35em; border: 1px solid #e6bd9b; border-radius: 2px;
+  color: var(--orange-text); background: var(--tint);
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+.title-arrow { color: var(--muted); font-weight: 500; }
+.summary-copy small { margin-inline-start: .7em; font-size: .75rem; color: var(--muted); font-weight: 500; }
+time { color: var(--muted); font-family: "Segoe UI", "Microsoft YaHei", sans-serif; font-size: .83rem; font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.event-body { padding: 4px .9rem 18px; }
+.operation { border-bottom: 1px solid var(--line); }
+.operation-summary { padding: .7rem; }
+.operation-kind { display: inline-block; margin-inline-end: .65rem; color: var(--muted); font-size: .82rem; font-weight: 600; }
+.operation[open] > summary { box-shadow: inset 2px 0 var(--orange); background: #f5eee5; }
+.shop-inputs { margin: .5rem .7rem 0; border-top: 1px solid var(--line); font-size: .875rem; }
+.shop-inputs summary { display: grid; grid-template-columns: 1fr 10px; gap: .8rem; padding: .6rem 0; list-style: none; }
+.shop-inputs ol { padding: 0 0 .6rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.shop-inputs li + li { margin-top: .25em; }
+.facts { display: grid; gap: 1rem; padding: 1rem .7rem; overflow-wrap: anywhere; }
+.fact h3 { margin-bottom: .48rem; color: var(--muted); font-size: .83rem; font-weight: 700; }
+.fact p { font-size: .94rem; }
+.fact-choices { display: flex; flex-wrap: wrap; gap: .48rem; }
+.fact-choices li { border: 1px solid var(--line); padding: .36rem .6rem; font-size: .92rem; background: #fffdfa; }
+.fact-choices li.chosen { border-color: var(--orange-text); background: var(--tint); }
+.fact-choices small { margin-inline-start: .45em; color: var(--orange-text); font-weight: 700; white-space: nowrap; }
+.fact-readings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+.fact-readings div { padding: .48rem .6rem; background: #f1eee9; }
+.fact-readings dt { color: var(--muted); font-size: .77rem; }
+.fact-readings dd { margin: .16em 0 0; font-size: .94rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.evidence-viewer {
+  position: sticky; top: calc(var(--overview-height, 0px) + 12px); min-width: 0;
+  max-height: calc(100dvh - var(--overview-height, 0px) - 24px); overflow: auto;
+  background: #fffdfa; border: 1px solid var(--line); border-top: 2px solid var(--ink);
+}
+.viewer-heading { display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: .7rem 1rem; border-bottom: 1px solid var(--line); }
+.viewer-heading h3 { font-size: 1rem; }
+.viewer-toggle { display: none; border: 1px solid var(--line); background: var(--paper); padding: .35rem .7rem; }
+.viewer-body { padding: .75rem 1rem 1rem; min-height: 112px; }
+.viewer-context { margin-bottom: .65rem; color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
+.viewer-context:empty { display: none; }
+.evidence-viewer figure + figure { margin-top: 1rem; }
+.evidence-viewer img { display: block; width: 100%; max-height: min(620px, 68vh); object-fit: contain; object-position: top; }
+.evidence-viewer figcaption { margin-top: .45em; color: var(--muted); text-align: center; font-size: .84rem; }
+.image-status { padding: 16px; border: 1px solid var(--line); color: var(--muted); font-size: .875rem; }
+.notes, .empty { margin-top: 24px; color: var(--muted); font-size: .875rem; }
+.notes:empty { display: none; }
+@media (max-width: 720px) {
+  .hero { grid-template-columns: minmax(0, 1fr) minmax(150px, 44%); min-height: 140px; }
+  .hero-copy { padding-left: 19px; }
+  .hero-copy::before { left: 1px; width: 5px; }
+  .hero-art { padding-inline: 18px 8px; justify-content: center; }
+  .evaluation { gap: .45rem; }
+  .score { padding-left: .45rem; }
+  .score strong { font-size: clamp(1.3rem, 5vw, 2.4rem); }
+  .score span, .session { font-size: .75rem; }
+  .event-summary { gap: .45rem; padding-inline: .45rem; }
+  .category, time { font-size: .75rem; }
+  .event-body { padding-inline: .45rem; }
+  .fact-readings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 850px) {
+  main:has(.with-viewer) { padding-bottom: 100px; }
+  .timeline-layout.with-viewer { grid-template-columns: minmax(0, 1fr); }
+  .evidence-viewer { position: fixed; z-index: 3; inset: auto 0 0; max-height: 65dvh; box-shadow: 0 -5px 18px #171b2414; }
+  .viewer-heading { position: sticky; top: 0; background: #fffdfa; }
+  .viewer-toggle { display: inline-block; }
+  .evidence-viewer:not([data-expanded]) .viewer-body { display: none; }
+  .evidence-viewer img { max-height: 49dvh; }
+}
+@media (prefers-reduced-motion: reduce) { :root { scroll-behavior: auto; } }
+@media print { .overview, .evidence-viewer { position: static; } .flow-controls, .viewer-toggle { display: none; } main { padding: 0; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">MaaGakumasu</div>
+    <div class="hero">
+      <div class="hero-copy">
+        <h1>培育回放</h1>
+        <p class="identity">$context</p>
+        <p class="session">$session</p>
+      </div>
+      <div class="hero-art">
+        <div class="evaluation"><strong class="rank" aria-label="评级 $rank">$rank</strong>
+          <div class="score"><span>最终评价</span><strong>$score</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="attributes">
+      <dl class="attribute vocals"><dt>声乐</dt><dd>$vo</dd></dl>
+      <dl class="attribute dance"><dt>舞蹈</dt><dd>$da</dd></dl>
+      <dl class="attribute visual"><dt>形象</dt><dd>$vi</dd></dl>
+    </div>
+    $audition
+  </header>
+  $overview
+  <section id="timeline" aria-labelledby="events-heading">
+    <h2 id="events-heading">事件记录</h2>
+    <div class="timeline-layout">
+      <ol>$events</ol>
+      <aside class="evidence-viewer" aria-labelledby="viewer-heading" hidden>
+        <div class="viewer-heading">
+          <h3 id="viewer-heading">截图查看</h3>
+          <button class="viewer-toggle" type="button" aria-expanded="false" aria-controls="viewer-body">展开截图</button>
+        </div>
+        <div class="viewer-body" id="viewer-body">
+          <p class="viewer-context"></p>
+          <div class="viewer-content" aria-live="polite"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+  <aside class="notes">$notes</aside>
+</main>
+<script>
+const flow = document.getElementById("flow-steps");
+const rail = document.getElementById("flow-window");
+const overview = flow?.closest(".overview");
+const controls = overview?.querySelector(".flow-controls");
+const previous = controls?.querySelector(".flow-prev");
+const next = controls?.querySelector(".flow-next");
+const eventRows = Array.from(document.querySelectorAll("#timeline .event"));
+const flowLinks = flow ? Array.from(flow.querySelectorAll("a")) : [];
+const viewer = document.querySelector(".evidence-viewer");
+const viewerToggle = viewer.querySelector(".viewer-toggle");
+const viewerContext = viewer.querySelector(".viewer-context");
+const viewerContent = viewer.querySelector(".viewer-content");
+let currentStep = null;
+let selectedEvent = null;
+let displayed = null;
+let jumpPosition = null;
+let pageScrollPending = false;
+
+function updateScrollControls() {
+  const max = rail.scrollWidth - rail.clientWidth;
+  controls.hidden = max <= 1;
+  previous.disabled = rail.scrollLeft <= 1;
+  next.disabled = rail.scrollLeft >= max - 1;
+}
+
+function followStep(index) {
+  const step = flowLinks[index];
+  if (!step) return;
+  if (currentStep !== step) {
+    currentStep?.removeAttribute("aria-current");
+    currentStep = step;
+    step.setAttribute("aria-current", "location");
+  }
+  if (flowLinks.length > 1) {
+    rail.scrollLeft = index * (rail.scrollWidth - rail.clientWidth) / (flowLinks.length - 1);
+  }
+}
+
+function alignEvent(target) {
+  scrollTo({top: scrollY + target.getBoundingClientRect().top - overview.offsetHeight - 12, behavior: "instant"});
+  jumpPosition = scrollY;
+}
+
+function syncStepFromPage() {
+  const atEnd = scrollY > 0 && scrollY + innerHeight >= document.documentElement.scrollHeight - 1;
+  const line = overview.offsetHeight + 14;
+  const index = atEnd ? eventRows.length - 1 : eventRows.findLastIndex(row => row.getBoundingClientRect().top <= line);
+  followStep(Math.max(0, index));
+}
+
+function onPageScroll() {
+  if (pageScrollPending) return;
+  pageScrollPending = true;
+  requestAnimationFrame(() => {
+    pageScrollPending = false;
+    if (scrollY === jumpPosition) return;
+    jumpPosition = null;
+    syncStepFromPage();
+  });
+}
+
+function measureOverview() {
+  document.documentElement.style.setProperty("--overview-height", overview.offsetHeight + "px");
+  updateScrollControls();
+  if (currentStep) followStep(flowLinks.indexOf(currentStep));
+}
+
+function selectEvent(target) {
+  if (selectedEvent !== target) {
+    selectedEvent?.removeAttribute("data-selected");
+    if (selectedEvent instanceof HTMLDetailsElement) selectedEvent.open = false;
+    selectedEvent = target;
+    selectedEvent?.setAttribute("data-selected", "");
+  }
+  updatePictures();
+}
+
+function openTarget(hash, jump = false) {
+  if (!/^#event-[1-9][0-9]*$$/.test(hash)) return;
+  const target = document.getElementById(hash.slice(1));
+  if (!target) return;
+  if (target instanceof HTMLDetailsElement) target.open = true;
+  selectEvent(target);
+  followStep(eventRows.indexOf(target));
+  if (jump) {
+    (target.querySelector(":scope > summary") || target).focus({preventScroll: true});
+    alignEvent(target);
+  }
+}
+
+if (flow) {
+  previous.addEventListener("click", () => rail.scrollBy({left: -rail.clientWidth * .8}));
+  next.addEventListener("click", () => rail.scrollBy({left: rail.clientWidth * .8}));
+  rail.addEventListener("scroll", updateScrollControls, {passive: true});
+  window.addEventListener("scroll", onPageScroll, {passive: true});
+  rail.addEventListener("wheel", event => {
+    const max = rail.scrollWidth - rail.clientWidth;
+    if (event.ctrlKey || max <= 1) return;
+    const horizontal = Math.abs(event.deltaX) > Math.abs(event.deltaY);
+    const delta = horizontal ? event.deltaX : event.deltaY;
+    const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rail.clientWidth : 1;
+    const position = Math.max(0, Math.min(max, rail.scrollLeft + delta * scale));
+    if (!horizontal && Math.abs(position - rail.scrollLeft) < 1) return;
+    event.preventDefault();
+    rail.scrollLeft = position;
+  }, {passive: false});
+  flow.addEventListener("click", event => {
+    const link = event.target.closest("a");
+    if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (location.hash !== link.hash) history.pushState(null, "", link.hash);
+    openTarget(link.hash, true);
+  });
+  window.addEventListener("hashchange", () => {
+    if (location.hash) openTarget(location.hash, true);
+    else selectEvent(null);
+  });
+  new ResizeObserver(measureOverview).observe(overview);
+  measureOverview();
+  syncStepFromPage();
+}
+
+function updatePictures() {
+  if (viewer.hidden) return;
+  const operation = selectedEvent?.querySelector(".operation[open]");
+  const template = operation?.querySelector(":scope > .shot-source") || selectedEvent?.querySelector(":scope > .shot-source") || null;
+  const title = selectedEvent?.querySelector(".event-title")?.textContent;
+  const action = operation?.querySelector(".summary-copy strong")?.textContent;
+  const time = operation?.querySelector("time")?.textContent || selectedEvent?.querySelector("time")?.textContent;
+  viewerContext.textContent = [title, action, time].filter(Boolean).join(" · ");
+  if (!template) {
+    displayed = null;
+    const message = !selectedEvent ? "展开事件查看截图。"
+      : (!operation && selectedEvent.querySelector(".operation")) ? "展开一条战斗操作查看截图。"
+      : "当前记录没有截图。";
+    const status = document.createElement("p");
+    status.className = "image-status";
+    status.textContent = message;
+    viewerContent.replaceChildren(status);
+    return;
+  }
+  if (displayed === template) return;
+  displayed = template;
+
+  const pictures = template.content.cloneNode(true);
+  for (const image of pictures.querySelectorAll("img[data-src]")) {
+    const link = image.parentElement;
+    const status = link.nextElementSibling;
+    image.addEventListener("load", () => {
+      status.hidden = true;
+      link.hidden = false;
+    }, {once: true});
+    image.addEventListener("error", () => {
+      link.remove();
+      status.textContent = "截图无法加载，文件可能已被框架清理。";
+    }, {once: true});
+  }
+  viewerContent.replaceChildren(pictures);
+  viewer.scrollTop = 0;
+  for (const image of viewerContent.querySelectorAll("img[data-src]")) image.src = image.dataset.src;
+}
+
+if (document.querySelector("template.shot-source")) {
+  viewer.hidden = false;
+  viewer.closest(".timeline-layout").classList.add("with-viewer");
+  viewerToggle.addEventListener("click", () => {
+    const expanded = viewer.toggleAttribute("data-expanded");
+    viewerToggle.setAttribute("aria-expanded", expanded);
+    viewerToggle.textContent = expanded ? "收起截图" : "展开截图";
+  });
+  updatePictures();
+}
+
+document.addEventListener("toggle", ({target}) => {
+  if (target.matches("details.event")) {
+    if (target.open) {
+      selectEvent(target);
+      followStep(eventRows.indexOf(target));
+      if (location.hash !== "#" + target.id) history.replaceState(null, "", "#" + target.id);
+    } else {
+      const operation = target.querySelector(".operation[open]");
+      if (operation) operation.open = false;
+      if (target === selectedEvent) {
+        selectEvent(null);
+        if (location.hash === "#" + target.id) {
+          const url = new URL(location.href);
+          url.hash = "";
+          history.replaceState(null, "", url);
+        }
+      }
+    }
+  } else if (target.matches("details.operation") && target.closest(".event") === selectedEvent) {
+    updatePictures();
+  }
+}, true);
+
+if (flow && location.hash) requestAnimationFrame(() => openTarget(location.hash, true));
+</script>
+</body>
+</html>

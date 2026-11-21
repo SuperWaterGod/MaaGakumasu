@@ -135,7 +135,7 @@ class ProduceRuleChoice(CustomRecognition):
             grade, reason = policy.evaluate_candidate(identity, "receive")
             if grade:
                 name = identity["database_name"]
-                choices.append({"operation": "buy", "attempt": ("buy", index), "catalog_id": identity["catalog_id"],
+                choices.append({"operation": "buy", "attempt": ("buy", index), "catalog_id": identity["catalog_id"], "name": name,
                                 "balance": points, "grade": grade, "price": price,
                                 "reason": "购买" + name + "，" + reason, "box": item["box"]})
         for service in shop["services"]:

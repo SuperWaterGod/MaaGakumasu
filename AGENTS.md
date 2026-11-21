@@ -10,7 +10,7 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 
 ## 当前进度
 
-最近核对日期：`2026-11-19`，`decision-capture` 同步主线至 `cc50a53`。主线更新公告记录到 `v1.5.4`，仓库 `assets/interface.json` 中仍为 `v1.5.2`。功能状态以最近提交、当前工作区和任务配置为准。
+功能状态以当前实现和任务配置为准。发布变更见[更新公告](assets/resource/announcement/01_更新公告.md)与 Git 历史。
 
 已实现的主要功能包括：
 
@@ -20,46 +20,9 @@ MaaGakumasu 是基于 MaaFramework 的《学園アイドルマスター》自动
 - 安排工作，支持领取奖励、自动或指定偶像、自动或指定时长。
 - 商店购买：金币扭蛋按各类型硬币数量判定（仅勾选且数量 ≥ 10 才购买），金币兑换与 AP 兑换支持按列表勾选，免费刷新自动识别并使用。
 - 自动培育处于测试阶段，支持初 `REGULAR/PRO/MASTER`、NIA `PRO/MASTER`、指定偶像、自动选择、自动支援卡选择、体力药、道具、卡片选择优先级、跟随老师建议、培育失败重试（初 + NIA）、试镜难度降低、试镜手动接管和中断继续。
+- 培育完整模式支持流派奖励选择、培育商店规划、过程记录与离线回放。
 - 偶像之路自动挑战，支持自动编队、自动战斗与失败重试（暂未适配汉化版，仅官服/DMM）。
 - Mirror 酱更新、插件版汉化、DMM 版适配、支援卡库存识别、i18n 繁体适配。
-
-近期自动培育重点更新：
-
-- NIA 培育流程已上线，任务配置中通过 `培育难度` 选择 `初` 或 `NIA`。
-- 新增考试失败自动重试开关 `启用培育失败重试`，覆盖初流程 `ProduceFailedFlag` 和 NIA 流程 `ProduceNIAFailedFlag`。
-- 新增 `启用试镜难度降低` 选项（NIA 模式），支持降低一档或两档，检测到锁定图标后自动降档。
-- 新增 `跟随老师的建议` 开关；事件选择逻辑引入优先级系统，提取基类 `ProduceChooseEventBase`，增加事件保底选择机制。
-- 培育行动优先级、选秀逻辑、工作类型自动选择、投票阈值、颜色识别和 `homeflag` 黑白模板识别都有近期修复。
-- 剧本选择重构为模板匹配（替代 OCR），支持 Ranking/NIA/HIF 三种剧本；饮料识别升级为多模板匹配。
-- NIA 流程入口 `ProduceEntryNIA` 与 `ProduceGuideEntry` 新增 `[JumpBack]ProduceChooseStrengthenFlag` 回跳，识别到强化选择标志时回到对应处理节点，避免流程中断。
-- 培育界面资源图片在 `assets/resource/base/image/produce/` 有最近更新。
-
-2026-11-13 从 `decision-capture` 提取至主线的独立修复与优化：
-
-- 跳过回合增加无文字按钮模板；歌曲名完整包含于归一化 OCR 文本时忽略皮肤附加文案。
-- 路线候选改为逐项识别，并按实际按钮位置定位 SP；初流程裁切后的图标需配套 `EVENT_ICON_OFFSET = (30, 20)`，NIA 保持 `(0, 0)`。初/NIA 均等待选项区域连续静止 500 毫秒后识别。
-- 战斗中体力标志短暂消失时先复核，恢复识别后清零退出计数；保留原出牌策略与 15 秒兜底。
-- 移动／复制选牌统一由 `ProduceMoveCards` 匹配确认按钮，完整模式仅为采集记录识别操作类型。
-- 更新 NIA 交谈和无属性选项模板，删除已无引用的 `choose.onnx`。
-- 普通培育与一键培育默认关闭关注租借、老师建议，奖励选卡默认活动卡优先。预设中的选项键必须使用 `跟随老师的建议`。
-
-v1.5.2 改动（已写入 v1.5.2 公告，细节以提交为准）：
-
-- `0325b87`：修正商店感性/理性/非凡笔记的声乐、舞蹈名称与红蓝图标、流水线覆盖项的对应关系；当前红色为声乐、蓝色为舞蹈、黄色为形象，修改任务配置与 `agent/custom/action/shop.py` 的显示名时保持一致。
-- `1d33b97` 曾新增出牌超时截图收集；2026-10-09 在新版 cards 模型实测效果良好后移除截图收集、任务开关、训练候选导出与临时规则对比工具。15 秒兜底、手牌区域过滤和推荐优先逻辑继续保留；已有调试图片、训练素材和历史报告保留。
-- `7fed4d0`：更新 `cards.onnx` 出牌检测模型，补充互斥类别标注与实际 MaaFramework 验证说明。
-- `20c7cc0`、`729db0f`：新增各偶像自定义歌曲入口，可配置名称、第一/第二属性与推荐效果，支持初/NIA 和中断继续，补充简体与繁体说明；推荐效果暂不影响选卡、出牌或事件选择。新增葛城莉莉娅、花海咲季、花海佑芽的 Agitato 卡片并调整其默认卡片，同步维护卡片同步脚本。
-- `b924a86`：`ProduceBackHome.next` 在 `ProduceLoop` 后追加 `ProduceComplete` 兜底节点，指定次数完成后正常结束任务。
-
-v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
-
-- 商店金币扭蛋：数量面板改为一次 OCR 全量识别并按格子中心归类到各扭蛋类型；购买循环改为 `remaining` 驱动，仅勾选且硬币 ≥ 10 的类型参与比对，识别匹配到即购买并移除候选，避免重复购买；横幅改用 OCR 识别标题文字（日文/简中双候选），活动扭蛋以「期限」定位，已删除弃用的扭蛋横幅模板。
-- 商店每日兑换：推荐物品改用 OCR 识别「おすすめ/推荐」并将点击位置下移到物品图标；免费刷新改用 OCR 识别「無料/免费」并限定刷新按钮区域；修正角色碎片商品配置错误；商店购买日志统一商品显示名并仅在命中时输出。
-- 安排工作：自动时长按迷你演唱会/直播活动拆分为 `WorkTimeAutoShowFlag`、`WorkTimeAutoLiveFlag` 两个节点，修正复用节点导致的日志与实际设置不一致；修正寻找笑脸时滑动幅度不足、最右侧角色识别不到的问题；一键日常预设的迷你演唱会/直播活动时长默认改为「自动」。
-- 社团互动：调整已请求标记的识别阈值（`0.95` → `0.93`），提高 DMM 端识别成功率。
-- 自动培育：新增篠澤広(め) 卡片数据与分支，日文/中文任务的筱泽广默认卡片由「ガラクタロード/荆棘之路」切换为「め/Me」；`ProduceNIA` 的 `next` 也加入 `[JumpBack]ProduceChooseStrengthenFlag`，进一步避免强化选择环节中断。
-- 偶像卡识别：`agent/custom/reco/produce.py` 新增 `normalize_text`，相似度比较前先做 NFKC 归一化并只保留字母、数字、假名与汉字，抹平 `℃`/`°C`、`･`/`・` 等符号差异；阈值抽为 `SIMILARITY_THRESHOLD`。
-- 启动：`agent/main.py` 读取 `interface.json` 版本改为依次尝试传入路径、`./interface.json` 与 `./assets/interface.json`，兼容仓库调试与发布包两种布局；读取失败统一捕获异常并回退 `unknown`；MaaFW 库版本日志级别由 `debug` 提升为 `info`。
 
 待实现或未完全完成的内容包括：
 
@@ -73,7 +36,8 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 
 - `agent/`：Python 自定义逻辑扩展，供 MaaFramework 的 Custom recognition/action 调用。
 - `agent/custom/action/produce.py`：MaaFramework 培育动作入口，显式导入注册事件、出牌、选项动作，并处理奖励领取的框架适配；注册名称与流水线保持一致。
-- `agent/produce/`：培育业务模块。`events.py` 管理事件选择，`battle.py` 管理出牌/饮料/15 秒兜底，`options.py` 管理工作/属性/试镜/饮料保留等选项；`catalog.py` 统一技能卡、饮料与 P 道具查库；`rewards.py` 聚合奖励预览、详情缓存和名称读取；`icons.py` 直接读取上游本体图标并执行各页面只读匹配；`capture.py` 管理同步证据保存与内存识别，`sessions.py` 管理整轮生命周期及 sinks；`state.py` 读取战斗 HUD 与共享培育状态；`reporting.py` / `audit.py` 负责单轮回放、同步收尾和审计；`analysis.py` 执行同步识别与路线分析；`console.py` 统一出牌/奖励日志及库效果文案。
+- `agent/produce/`：培育业务模块。`events.py` 管理事件选择，`battle.py` 管理出牌、饮料和 15 秒兜底，`options.py` 管理工作、属性、试镜等选项。`catalog.py` 负责查库，`rewards.py` 负责奖励候选识别，`selection.py` 按流派和持有情况评估奖励及商店候选，`icons.py` 负责本体图标匹配。`capture.py` 保存证据，`sessions.py` 管理会话生命周期及 sinks，`state.py` 读取共享状态，`analysis.py` 执行同步识别与路线分析，`console.py` 汇总用户日志。
+- 培育回放由 `reporting.py` 生成和收尾，`audit.py` 审计证据，`replay.py` 聚合事件并使用 `replay.html` 渲染离线 `report.html`。战斗按场、商店按次聚合，截图按需加载并支持缺图降级。
 - `agent/utils/`：仅放通用基础设施，当前为日志和 MaaFramework 图像接口；培育专用业务不得继续散放在此。
 - `agent/produce/settlement.py`：统一结算页的最终评价分数、评级及 Vo/Da/Vi 读取；按文字标签或核验后的属性图标定位及 OCR，不按评级各建模板；初 REGULAR/PRO/MASTER 与 NIA 的公式值、实测值分开保存并作一致性校验，控制台按段输出一条折叠结算日志；考前倒推暂不接入。翻页证据由 `sessions.py` 监听结束阶段的现有输入保存，同步识别接入 `analysis.py`。
 - `assets/resource/base/pipeline/`：MaaFramework 任务流水线。自动培育通用核心逻辑在 `Produce.json`，NIA 相关流程在 `ProduceNIA.json`，共用节点在 `ProduceUtils.json`。
@@ -81,7 +45,6 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - `assets/data/`：结构化数据，例如偶像卡片数据 `idols_cards.json`。
 - `assets/tasks/`：MFA/MaaFramework 任务入口与选项定义。培育任务入口在 `assets/tasks/produce.json`，中文任务配置在 `produce_cn.json`。
 - `assets/lang/`：界面与任务选项翻译。新增任务选项时同步 `zh-CN` 和 `zh-Hant` 等已有语言。
-- `assets/resource/announcement/01_更新公告.md`：发布给用户看的版本更新公告；当前记录至 v1.5.4。
 - `assets/resource/announcement/`：客户端资源公告与首次使用欢迎弹窗。文件按名称数字前缀排序展示（`01_更新公告.md`、`02_常见问题.md`、`03_免责声明与使用须知.md`、`04_欢迎使用.md`、`05_功能介绍.md`）；`04_欢迎使用.md` 被 `assets/interface.json` 的 `welcome` 字段引用；`05_功能介绍.md` 为功能说明.md 的简化版公告，冲突时以功能说明.md 与任务配置为准；`02_常见问题.md` / `03_免责声明与使用须知.md` 为长期静态公告。
 - `docs/zh_cn/`：中文用户与开发文档。
 - `tools/`：项目维护脚本，包括构建/CI、偶像素材与卡片数据更新、语言同步、统一数据库构建、正式技能卡与奖励库同步、资源检查。
@@ -95,7 +58,7 @@ v1.5.1 改动（已写入 v1.5.1 公告，细节以提交为准）：
 - Python 运行依赖：`maafw`、`loguru`（NumPy 随 maafw 提供）；图像编解码与缩放使用 MaaFramework。维护工具可按需使用 Pillow。
 - 可选开发依赖：`pytest>=7.0`、`ruff>=0.1.0`。
 - Node 侧仅用于工具链；JSON 排版使用 `jsonc-parser`，首次运行前执行 `npm ci`。
-- Python 包版本信息在 `pyproject.toml`，当前为 `1.3.8`；发版入口为 `assets/interface.json`。
+- Python 包版本见 `pyproject.toml`，客户端界面版本见 `assets/interface.json`。
 
 常用检查命令：
 
@@ -118,6 +81,7 @@ git diff --check
 - Python 代码遵循 `pyproject.toml` 中 Ruff 配置：目标版本 `py312`，行宽 `144`，启用 import 排序规则。
 - JSON/JSONC 使用 VS Code 内置 JSON 格式化规则，2 空格缩进；工作区已配置保存时自动排版，并关闭 JSONC 的 `editor.detectIndentation`，避免文件原有缩进覆盖设置。YAML 沿用 2 空格缩进。
 - Markdown 文档没有强制 lint 配置（`docs/.markdownlint.yaml` 已删除），保持与现有文档一致的简洁风格；根目录 `AGENTS.md` 主要服务代理协作，优先清晰准确。
+- 随 Git 维护的 `README.md`、功能说明、开发相关等文档按简明参考编写。功能说明按需记录入口、开关、默认行为及使用限制。开发相关记录模块职责、接口、关键约束及验证入口。同一信息集中维护，其余位置按需引用。省略铺垫、重复解释和逐步演示，教程按明确需求单独编写。
 - 每次修改 JSON/JSONC 后必须执行 `npm run format:json`，再执行 `npm run check:json`；脚本默认处理相对 HEAD 修改及新增的文件，也可用 `-- <文件路径>` 指定范围。保留字段顺序、注释和原有换行符，不使用默认 Prettier 重排 JSON，不格式化未修改的文件。
 - 新增用户可见文案时优先使用中文；涉及游戏内名称时保留日文原名，并在已有数据结构支持时补充中文字段。
 - 项目自有代码的说明性注释和文档字符串正文统一使用中文；`Args:`、`Returns:`、`Raises:`、`Attributes:` 等文档结构标记，以及 `:param`、`:return:` 等工具约定必须保留原文，确保 IDE 和文档生成器正常解析。接口名称、字段、类型、技术标识、工具指令和第三方许可证保留原文。
@@ -143,26 +107,33 @@ git diff --check
 - `TemplateMatch` 应明确模板路径、ROI、阈值和必要的匹配方法。新增模板时使用与现有资源一致的分辨率基准。
 - `OCR` 只在文本稳定、语言明确时使用；游戏 UI 文案变动风险较高时优先保留模板或自定义识别。
 - 商店识别已统一改为 OCR：扭蛋横幅、免费刷新、推荐物品同时配置日文与简中汉化候选，并可用 `replace` 纠正 OCR 易错字；改动文案时保持两套候选同步。
+- 兑换笔记的红、蓝、黄分别对应声乐、舞蹈、形象。修改商品时同步检查任务选项、流水线覆盖和 `agent/custom/action/shop.py` 显示名。
 - `Custom` recognition/action 名称必须与 `agent/` 中实现一致，参数结构要向后兼容。
 - 自动培育相关改动风险较高。修改 `Produce.json` 时重点验证：
   - 入口与中断继续流程：`Produce`、`ProduceLoop`、`ProduceSkipPreparation`、`ProduceEntry`。
   - 难度入口：`初` 走 `ProduceEntry`，`NIA` 走 `ProduceEntryNIA`；不要把 NIA 覆盖项误合到初流程。
   - 准备阶段：难度、偶像、支援、回忆、道具选择。
   - 培育阶段：事件选择、卡牌选择、饮料、道具、商店、强化、考试失败和结束流程。
+  - 路线识别：初/NIA 保留选项区域连续静止 500 毫秒的等待。裁切模板时同步校验 SP 定位与 `EVENT_ICON_OFFSET`。[开发相关](docs/zh_cn/开发相关.md#培育记录与识别)
+  - NIA 强化回跳：`ProduceEntryNIA` 和 `ProduceGuideEntry` 保留 `[JumpBack]ProduceChooseStrengthenFlag`。
   - 失败处理：初流程的 `ProduceFailedFlag` 和 NIA 流程的 `ProduceNIAFailedFlag` 均可根据 `启用培育失败重试` 跳转到重试或停止流程。
   - 试镜难度降低：NIA 模式通过 `ProduceMirrorFlag` 节点的 `custom_action_param` 控制降档逻辑，`启用试镜难度降低` 选项覆盖该参数。
   - NIA 事件参数：每张卡片通过 `ProduceChooseNIAEventFlag.custom_action_param` 设置 `effect`、`first`、`second`，字段顺序和语义都要保持一致。
   - 出牌逻辑：初/NIA 与偶像之路共用 `ProduceCardsAuto`；修改计时窗口时同步检查 `_reset_window` 与 `_play_a_card`，保留 15 秒兜底、有效手牌范围过滤和推荐优先逻辑。
+  - 战斗退出：体力标志短暂消失时先复核，恢复识别后清零退出计数。移动及复制选牌沿用 `ProduceMoveCards` 的确认流程。
   - 弹窗和通用按钮处理：不要扩大 ROI 到容易误触的位置。
   - 培育结束流程：保留各结束循环末尾的 `[JumpBack]Click_1` 无条件兜底；没有 Next 的页面和需要点击才能跳过的动画不得等待冻结。结算等待限于明确识别到的 Next、生成或完成按钮，不得为采集完整性替换掉原有点击兜底。
+  - 培育次数：`ProduceBackHome.next` 在 `ProduceLoop` 后保留 `ProduceComplete`，确保指定次数完成后正常结束。
 
 ## 任务配置规则
 
 - 培育任务定义在 `assets/tasks/produce.json`，中文版本在 `assets/tasks/produce_cn.json`；新增或重命名选项时两边都要同步。
+- 两套任务共用 `produce.json` 中的「快速模式」及「开启截图记录」。快速模式默认开启。关闭后启用完整记录与回放，截图保存可独立开启，默认关闭。
+- 完整模式的奖励规则使用歌曲的推荐效果判断流派，自定义歌曲沿用同一规则。
 - 当前培育选项包括 `培育难度`、`培育偶像`、`培育次数`、`使用体力药`、`使用道具`、`跳过选择偶像`、`启用自动支援卡`、`启用自动回忆`、`启用关注租借`、`启用培育失败重试`、`跳过准备阶段`、`卡片选择优先级`、`跟随老师的建议`；`NIA` 难度下另有 `启用试镜难度降低` 与 `试镜手动接管`。
 - `培育难度` 下 `初` 支持 `REGULAR/PRO/MASTER`，`NIA` 支持 `PRO/MASTER`。
 - 任务选项通过 `pipeline_override` 调整节点属性；改选项时必须检查被覆盖节点在 `Produce.json`、`ProduceNIA.json` 或 `ProduceUtils.json` 中是否存在且语义匹配。
-- `preset.json` 的一键培育默认仍以 `初` `PRO` 为主；新增默认项前先确认不会增加普通用户误触或长流程失败风险。
+- `assets/tasks/preset.json` 的一键培育默认选择初 `PRO`。普通培育与一键培育默认关闭关注租借和老师建议，奖励默认活动卡优先。预设中的选项键使用 `跟随老师的建议`。新增默认项前核对误触及长流程失败风险。
 
 ## 数据与资源规则
 
@@ -191,7 +162,8 @@ git diff --check
 - Python 自定义逻辑：至少运行 `python -m compileall -q agent`；修改工具脚本时对对应文件执行 `python -m py_compile <脚本路径>`，有测试时运行 `python -m pytest`。
 - 流水线或资源：运行 `python tools/ci/check_resource.py ./assets/resource/base/`，并在可能时进行实际 MaaFramework 调试。
 - JSON/JSONC：运行 `npm run format:json` 与 `npm run check:json`；YAML 检查语法并沿用现有缩进。
-- 自动培育：需要真实设备或模拟器长流程验证；如果无法运行，必须在交付说明中明确未做实机验证。
+- 培育回放展示：使用初和 NIA 的历史会话验证离线报告生成、流程跳转及缺图降级。
+- 自动培育运行时：需要真实设备或模拟器长流程验证。如果无法运行，在交付说明中注明未做实机验证。
 
 调试时优先查看 `debug/maa.log`。自动培育一次通常约 30 分钟，会产生大量日志；不要提交日志文件。
 

@@ -15,7 +15,7 @@ from produce.rewards import observe_reward_page
 from produce.sessions import SESSIONS
 from maa.custom_action import CustomAction
 from produce.resources import RecoveryError, UpdateCancelled, configured_updater, icon_resources_status, ensure_resources_ready
-from produce.selection import debug_choice
+from produce.selection import rules, debug_choice
 from maa.agent.agent_server import AgentServer
 
 __all__ = [
@@ -101,6 +101,11 @@ class ProduceResourcesReady(CustomAction):
         if produce_fast_mode(context):
             logger.info("快速模式：跳过培育采集、额外识别与报告")
             return not context.tasker.stopping
+        try:
+            rules()
+        except (OSError, ValueError) as exc:
+            logger.error(f"完整模式奖励规则无法加载：{exc}")
+            return False
         try:
             ensure_resources_ready(ROOT)
             icon_resources_status.cache_clear()

@@ -80,7 +80,8 @@ def source(entry, capture_root):
     result = "analysis/results.jsonl" if derived else None
     return {**location, "event_id": raw["event_id"], "time": raw.get("observed_at") or raw.get("time"),
             "frame_path": str((run / frame["path"]).resolve()) if frame.get("path") and frame.get("retention") != "temporary" else None,
-            "frame_sha256": frame.get("sha256"), "analysis_path": str((run / result).resolve()) if result else None}
+            "frame_sha256": frame.get("sha256"), "analysis_path": str((run / result).resolve()) if result else None,
+            **({"frame_missing_reason": raw["frame_missing_reason"]} if raw.get("frame_missing_reason") else {})}
 
 
 def enrich_report(report, records, directory, capture_root):
@@ -135,7 +136,12 @@ def enrich_report(report, records, directory, capture_root):
                 elif not frame.get("sha256"):
                     frame_cache[key] = "截图缺少 SHA-256，无法验证"
                 else:
-                    frame_cache[key] = None if hashlib.sha256(path.read_bytes()).hexdigest() == frame["sha256"] else "截图 SHA-256 不符"
+                    try:
+                        frame_cache[key] = None if hashlib.sha256(path.read_bytes()).hexdigest() == frame["sha256"] else "截图 SHA-256 不符"
+                    except FileNotFoundError:
+                        frame_cache[key] = "截图文件缺失"
+                    except OSError:
+                        frame_cache[key] = "无法读取截图"
             if frame_cache[key]:
                 issue("frame_integrity", frame_cache[key], [entry])
         elif event.get("frame_requested") is False:
@@ -348,7 +354,7 @@ def enrich_report(report, records, directory, capture_root):
         if kind not in kinds and not kind.startswith("reward_"):
             continue
         detail = {key: event[key] for key in ("node", "operation", "battle_id", "decision_id", "reward_page_id", "selected", "selected_candidate_id",
-                  "candidate", "candidate_id", "candidates", "policy_choice", "selection_order",
+                  "candidate", "candidate_id", "candidates", "candidate_source", "policy_choice", "selection_order", "shop_purchase",
                   "framework_action_succeeded", "actual_point", "reason", "terminal",
                   "action", "selected_box", "selection", "observations", "policy_inputs_with_fallbacks", "policy", "title", "state_changes",
                   "verified", "failure_diagnostic", "stop_reason", "candidate_previews_complete", "safe_to_receive") if key in event}
