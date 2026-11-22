@@ -225,7 +225,17 @@
       "param": {}
     }
   },
+  "ProduceRestEntry": {
+    "timeout": 4000,
+    "pre_delay": 0,
+    "post_delay": 0,
+    "next": [
+      "ProduceTakeRest",
+      "ProduceChooseRest"
+    ]
+  },
   "ProduceChooseRest": {
+    "timeout": 4000,
     "recognition": {
       "type": "TemplateMatch",
       "param": {
@@ -237,6 +247,48 @@
       "param": {}
     },
     "post_wait_freezes": 200,
+    "next": [
+      "ProduceTakeRest"
+    ],
+    "on_error": [
+      "ProduceRestRetryCheck"
+    ]
+  },
+  "ProduceRestRetryCheck": {
+    "timeout": 0,
+    "rate_limit": 0,
+    "pre_delay": 0,
+    "post_delay": 0,
+    "next": [
+      "ProduceTakeRest",
+      "ProduceChooseRestRetry"
+    ]
+  },
+  "ProduceChooseRestRetry": {
+    "timeout": 4000,
+    "recognition": {
+      "type": "And",
+      "param": {
+        "all_of": [
+          "ProduceChooseRest",
+          {
+            "recognition": "Or",
+            "any_of": [
+              "ProduceChooseEventFlag",
+              "ProduceChooseNIAEventFlag"
+            ]
+          }
+        ]
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_wait_freezes": 200,
+    "focus": {
+      "Node.Action.Succeeded": "休息 - 已补点休息按钮"
+    },
     "next": [
       "ProduceTakeRest"
     ]
@@ -355,7 +407,10 @@
           393,
           97
         ],
-        "expected": "手札のスキルカードが0枚です"
+        "expected": [
+          "手札.{0,10}カード[がは]?\\s*[0０]\\s*枚",
+          "手牌.{0,6}技能卡[为有]?\\s*[0０]\\s*张"
+        ]
       }
     },
     "action": {
@@ -491,6 +546,67 @@
       "type": "DoNothing",
       "param": {}
     }
+  },
+  "ProducePopup": {
+    "recognition": {
+      "type": "And",
+      "param": {
+        "all_of": [
+          {
+            "recognition": "OCR",
+            "roi": [
+              35,
+              980,
+              645,
+              125
+            ],
+            "expected": [
+              "体力.{0,5}最大.{0,14}(しません|しない|無効)",
+              "体力.{0,4}(已满|上限).{0,12}(不会生效|不生效|无效)"
+            ]
+          },
+          {
+            "recognition": "Or",
+            "any_of": [
+              {
+                "recognition": "TemplateMatch",
+                "roi": [
+                  350,
+                  1100,
+                  330,
+                  110
+                ],
+                "template": "produce/choose.png",
+                "threshold": 0.8
+              },
+              {
+                "recognition": "OCR",
+                "roi": [
+                  350,
+                  1100,
+                  330,
+                  110
+                ],
+                "expected": "^(选择|确定|選択する|OK)$"
+              }
+            ]
+          }
+        ],
+        "box_index": 1
+      }
+    },
+    "pre_delay": 0,
+    "post_delay": 0,
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "focus": {
+      "Node.Action.Succeeded": "培育－已确认弹窗"
+    },
+    "next": [
+      "ProduceEntryFlag"
+    ]
   },
   "ProduceRecognitionWorkOptions": {
     "recognition": {

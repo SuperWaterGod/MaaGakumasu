@@ -1,11 +1,4 @@
 {
-  "ProduceRecognitionNoCards": {
-    "recognition": {
-      "param": {
-        "expected": "手牌中的技能卡为0张"
-      }
-    }
-  },
   "ProduceLanguage": {
     "attach": {
       "language": "zh-CN"

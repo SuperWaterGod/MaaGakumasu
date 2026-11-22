@@ -47,6 +47,7 @@
       "param": {}
     },
     "next": [
+      "ProducePopup",
       "ProduceEntryFlag"
     ]
   },
@@ -143,6 +144,7 @@
       "param": {}
     },
     "next": [
+      "ProducePopup",
       "ProduceEntryFlag"
     ]
   },
@@ -936,12 +938,7 @@
     "pre_delay": 0,
     "pre_wait_freezes": {
       "time": 500,
-      "target": [
-        0,
-        880,
-        720,
-        240
-      ],
+      "target": true,
       "threshold": 0.99,
       "rate_limit": 100,
       "timeout": 20000
@@ -968,7 +965,8 @@
           200
         ],
         "expected": [
-          "受け取る(.+)を選んでください"
+          "受け取る.+を選",
+          "选择.{0,2}领取的.+"
         ]
       }
     },
@@ -1152,6 +1150,7 @@
     "post_delay": 0
   },
   "ProduceChooseStrengthenFlag": {
+    "timeout": 5000,
     "recognition": {
       "type": "TemplateMatch",
       "param": {
@@ -1166,6 +1165,23 @@
         ]
       }
     },
+    "pre_delay": 0,
+    "post_delay": 0,
+    "next": [
+      "ProduceChooseStrengthenConfirm",
+      "ProduceChooseStrengthenClick"
+    ]
+  },
+  "ProduceChooseStrengthenClick": {
+    "timeout": 5000,
+    "recognition": {
+      "type": "And",
+      "param": {
+        "all_of": [
+          "ProduceChooseStrengthenFlag"
+        ]
+      }
+    },
     "pre_delay": 200,
     "action": {
       "type": "Click",
@@ -1178,13 +1194,24 @@
         ]
       }
     },
-    "post_delay": 200,
+    "post_delay": 400,
     "next": [
-      "ProduceChooseStrengthenClick"
+      "ProduceChooseStrengthenConfirm",
+      "ProduceChooseStrengthen",
+      "ProduceChooseStrengthenRetry"
     ]
   },
-  "ProduceChooseStrengthenClick": {
-    "pre_delay": 200,
+  "ProduceChooseStrengthenRetry": {
+    "timeout": 5000,
+    "recognition": {
+      "type": "And",
+      "param": {
+        "all_of": [
+          "ProduceChooseStrengthenFlag"
+        ]
+      }
+    },
+    "pre_delay": 0,
     "action": {
       "type": "Click",
       "param": {
@@ -1198,18 +1225,24 @@
     },
     "post_wait_freezes": 200,
     "focus": {
-      "Node.Action.Succeeded": "强化选择 - 已点击选牌",
-      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]强化选择－进入选牌页面[/color]"
+      "Node.Action.Succeeded": "强化选择 - 已补点选牌"
     },
     "next": [
-      "ProduceChooseStrengthen",
-      "[JumpBack]Click_1"
+      "ProduceChooseStrengthenConfirm",
+      "ProduceChooseStrengthen"
     ]
   },
   "ProduceChooseStrengthen": {
+    "timeout": 5000,
     "recognition": {
       "type": "TemplateMatch",
       "param": {
+        "roi": [
+          225,
+          1115,
+          410,
+          83
+        ],
         "template": "produce/strengthen.png"
       }
     },
@@ -1222,16 +1255,51 @@
       "Node.Action.Succeeded": "强化选择 - 已点击强化按钮"
     },
     "next": [
-      "ProduceChooseStrengthen",
       "ProduceChooseStrengthenConfirm",
-      "[JumpBack]Click_1"
+      "ProduceChooseStrengthenDone"
     ]
   },
   "ProduceChooseStrengthenConfirm": {
+    "timeout": 5000,
     "recognition": {
-      "type": "DirectHit",
+      "type": "TemplateMatch",
+      "param": {
+        "roi": [
+          365,
+          1115,
+          275,
+          87
+        ],
+        "template": "produce/strengthen_paid_confirm.png",
+        "threshold": 0.9
+      }
+    },
+    "action": {
+      "type": "Click",
       "param": {}
     },
+    "post_wait_freezes": 200,
+    "focus": {
+      "Node.Action.Succeeded": "商店－已点击付费强化确认"
+    },
+    "next": [
+      "ProduceChooseStrengthenDone"
+    ]
+  },
+  "ProduceChooseStrengthenDone": {
+    "recognition": {
+      "type": "TemplateMatch",
+      "param": {
+        "roi": [
+          0,
+          28,
+          182,
+          58
+        ],
+        "template": "produce/strengthen_icon.png"
+      }
+    },
+    "inverse": true,
     "pre_delay": 0,
     "action": {
       "type": "DoNothing",
@@ -1737,6 +1805,7 @@
       "[JumpBack]ProduceChooseStrengthenFlag",
       "[JumpBack]ProduceShoppingDeleteConfirm",
       "[JumpBack]ProduceChooseDeleteFlag",
+      "ProduceRuleShopResumeDrinkFull",
       "ProduceRuleShopAgain",
       "[JumpBack]ProduceRuleShopDismiss"
     ],
@@ -1775,6 +1844,23 @@
       "ProduceShoppingFlag"
     ]
   },
+  "ProduceRuleShopResumeDrinkFull": {
+    "recognition": {
+      "type": "Custom",
+      "param": {
+        "custom_recognition": "ProduceRuleChoice"
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ProduceShopByRule",
+      "ProduceRuleShopDone",
+      "ProduceShoppingExit"
+    ]
+  },
   "ProduceRuleShopDismiss": {
     "recognition": {
       "type": "Custom",
@@ -1787,6 +1873,23 @@
       "param": {}
     },
     "post_delay": 400
+  },
+  "ProduceShopStrengthenedText": {
+    "recognition": {
+      "type": "OCR",
+      "param": {
+        "roi": [
+          65,
+          940,
+          585,
+          120
+        ],
+        "expected": [
+          "已[强強]化",
+          "強化(?:しました|されました)"
+        ]
+      }
+    }
   },
   "ProduceShoppingDrinkFull": {
     "recognition": {

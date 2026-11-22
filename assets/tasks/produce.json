@@ -82,7 +82,7 @@
                 }
               }
             },
-            "ProduceChooseStrengthenFlag": {
+            "ProduceChooseStrengthenClick": {
               "action": {
                 "type": "Custom",
                 "param": {
@@ -93,7 +93,7 @@
                 }
               }
             },
-            "ProduceChooseStrengthenClick": {
+            "ProduceChooseStrengthenRetry": {
               "post_wait_freezes": {
                 "time": 200,
                 "target": [
