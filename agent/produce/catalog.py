@@ -20,6 +20,14 @@ def split_variant(text):
     return base, len(normalized) - len(base)
 
 
+def translated_name(row):
+    """读取数据库确认的汉化名称，补齐强化版缺失的加号。"""
+    name = row.get("name_zh_cn")
+    if name and row.get("upgraded") and not name.endswith(("+", "＋")):
+        return name + "+"
+    return name
+
+
 def name_match_allowed(observed, candidate, confidence, similarity, margin):
     """完整名称共用容错规则；短名称、歧义名称和强化标记仍严格核验。"""
     base, plus = split_variant(observed)
@@ -30,12 +38,13 @@ def name_match_allowed(observed, candidate, confidence, similarity, margin):
 
 
 class SkillCardCatalog:
-    def __init__(self, path: Path, aliases_path=None):
+    def __init__(self, path: Path, aliases_path=None, *, localized_names=False):
         raw = path.read_bytes()
         database = json.loads(raw)
         self.sha256 = hashlib.sha256(raw).hexdigest()
         self.source = database["source"]
         self.cards = database["cards"]
+        self.localized_names = localized_names
         self.entries = []
         self.exact_names = set()
         self.literal_entries = defaultdict(set)
@@ -173,6 +182,8 @@ class SkillCardCatalog:
             reference_effect_dsl={key: card.get(key, "") for key in ("conditions", "cost", "actions", "limit", "effects")},
         )
         result["base_name"] = card["name"].rstrip("+")
+        if self.localized_names and (name := translated_name(card)):
+            result["display_name"] = name
         if plus > 1 or prefix or (allow_overlap and plus == 0):
             reason = "extra_upgrade_markers" if plus > 1 else "upgrade_not_visible_in_overlap"
             result.update(status="base_match_variant_unresolved", unknown_reason=reason, upgrade_status="unresolved", upgraded=None)
@@ -232,6 +243,10 @@ class RewardCatalog:
     @property
     def hashes(self):
         return {"skill_cards": self.skills.sha256, "reward_items": self.item_sha256}
+
+    def display_name(self, catalog_id):
+        _, row = self.ids[catalog_id]
+        return (translated_name(row) if self.skills.localized_names else None) or row["name"]
 
     def _add(self, kind, row, names):
         key = f"{kind}_{row['id']:04d}"
@@ -314,6 +329,8 @@ class RewardCatalog:
                         "database_name": row["name"], "source_id": row["id"], "database_item_id": f"{kind}_{row['id']:04d}",
                         "upgraded": row.get("upgraded", False), "plan": row.get("plan"), "mode": row.get("mode"),
                         "match_method": "exact", "customization": None}
+            if self.skills.localized_names and (name := translated_name(row)):
+                identity["display_name"] = name
         dsl = self.dsl(kind, row)
         available = bool(dsl["actions"] or dsl["effects"]) and identity["status"] == "matched"
         identity.update(**match_evidence, item_kind=kind, catalog_id=f"{kind}_{row['id']:04d}", reference_effect_dsl=dsl,

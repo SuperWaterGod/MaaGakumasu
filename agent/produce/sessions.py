@@ -35,13 +35,14 @@ ROUTE_NODES = {
     "ProduceChooseStrengthenFlag": "strengthen",
     "ProduceChooseStrengthenClick": "strengthen",
     "ProduceChooseStrengthen": "strengthen_confirm",
+    "ProduceChooseStrengthenConfirm": "shop_confirm",
     "ProduceChooseDeleteFlag": "delete_copy_exchange",
     "ProduceChooseDeleteClick": "delete_copy_exchange_confirm",
 }
 # 截图只在实际选牌／确认位置保存；奖励和商店使用各自的稳定页面入口。
 ROUTE_SCREENSHOT_NODES = {
     "ProduceChooseStrengthenClick", "ProduceChooseStrengthen", "ProduceChooseDeleteFlag", "ProduceChooseDeleteClick",
-    "ProduceShoppingDeleteConfirm",
+    "ProduceShoppingDeleteConfirm", "ProduceChooseStrengthenConfirm",
 }
 PREPARATION_NODES = {
     "ProduceChooseDifficulty",
@@ -104,6 +105,7 @@ def configured_bindings(context):
         "idol_selection_enabled": idol_node.get("enabled", True),
         "difficulty": difficulty,
         "scenario": "NIA" if "ProduceEntryNIA" in entry_names else "初",
+        "language": node("ProduceLanguage").get("attach", {}).get("language"),
         "idol_level": None,
         "player_level": None,
         "deck": {"cards": None, "complete": False, "source": "visible_observations_only"},
@@ -644,6 +646,8 @@ class ProduceContextSink(ContextEventSink):
                     if capture.shop is not None:
                         return
                 elif name == "ProduceShoppingDrinkFull":
+                    if not session.get("shop_drinks_full"):
+                        logger.info("商店 · 饮料栏已满，跳过其余饮料")
                     session["shop_drinks_full"] = True
                 elif name == "ProduceShoppingBuySale":
                     session.pop("shop_rule_active", None)
@@ -696,8 +700,11 @@ class ProduceContextSink(ContextEventSink):
             session["shop_rule_active"] = True
             session.setdefault("shop_used", set()).add(choice["attempt"])
             session["shop_pending"] = choice
+            session["shop_dismiss_clicks"] = 0
             if choice["operation"] == "buy":
-                logger.info(f"商店 · 自动 · {choice['reason']}（{choice['price']} P）")
+                logger.info(f"商店 · 自动 · 拟{choice['reason']}（{choice['price']} P）")
+        if name == "ProduceRuleShopDismiss" and noti_type == NotificationType.Succeeded:
+            session["shop_dismiss_clicks"] = session.get("shop_dismiss_clicks", 0) + 1
         if name == "ProduceCardsFlag" and noti_type == NotificationType.Succeeded:
             # 初/NIA 成功或失败都可能先显示结果，再直接进入回忆生成。
             # 旁路观察原有翻页，直到下一场战斗、路线或奖励。
@@ -707,7 +714,7 @@ class ProduceContextSink(ContextEventSink):
         if name == "ProduceShoppingExit" and noti_type == NotificationType.Succeeded:
             session["capture"].shop = None
             for field in ("shop_used", "shop_rule_active", "shop_drinks_full", "shop_choice", "shop_pending",
-                          "shop_balance", "shop_stop_reason", "shop_shelf_blocked"):
+                          "shop_balance", "shop_stop_reason", "shop_shelf_blocked", "shop_dismiss_clicks", "shop_shelf_visibility"):
                 session.pop(field, None)
         if detail.action_id in session["actions"]:
             decision = session["actions"].pop(detail.action_id)

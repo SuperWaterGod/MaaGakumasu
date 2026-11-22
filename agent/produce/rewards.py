@@ -8,8 +8,10 @@ from collections import OrderedDict
 
 import numpy as np
 from utils.image_io import bgr_image
+from utils.task_control import wait_running, click_running
 
 from .icons import icons_for_capture
+from .state import PRODUCE_FRAME_SIZE, scale_box, normalized_image
 from .catalog import RewardCatalog, clean, catalog_effects
 
 
@@ -142,14 +144,28 @@ def shop_exit_visible(context, image):
 def observe_reward_page(capture, context, image, item_kind):
     """用总览匹配奖励图标，补读未匹配候选的详情名称。"""
     started = time.monotonic()
-    layout = reward_layout(image)
+    try:
+        analysis_image = normalized_image(image)
+    except ValueError:
+        layout = {"status": "unsupported_size", "candidates": [], "selected_index": None}
+    else:
+        layout = reward_layout(analysis_image)
     if not layout["candidates"]:
-        return None
+        if capture.reward_preview_enabled:
+            capture.record("reward_layout_unavailable", image=image, context=context, save_frame=True,
+                           reward_kind=item_kind, layout=layout)
+        reason = "截图尺寸不支持" if layout["status"] == "unsupported_size" else "奖励候选位置未确认"
+        return {"group_id": None, "candidates": [], "fallback_reason": reason}
 
     reader = capture.reward_reader
     icons = reader.icons if reader else icons_for_capture(capture.directory, icon_resources=capture.icon_resources)
-    matches = [icons.lookup(image, candidate["box"], item_kind, allow_unverified_variant=True) if icons else None
+    matches = [icons.lookup(analysis_image, candidate["box"], item_kind, allow_unverified_variant=True) if icons else None
                for candidate in layout["candidates"]]
+    source_size = image.shape[1::-1]
+    if source_size != PRODUCE_FRAME_SIZE:
+        for candidate in layout["candidates"]:
+            candidate["analysis_box"] = candidate["box"]
+            candidate["box"] = scale_box(candidate["analysis_box"], PRODUCE_FRAME_SIZE, source_size)
     candidates = [{**candidate, "catalog_id": match["catalog_id"] if match else None}
                   for candidate, match in zip(layout["candidates"], matches)]
     page_id = None
@@ -161,8 +177,12 @@ def observe_reward_page(capture, context, image, item_kind):
     previews = []
     preview_clicks = 0
     for index, (candidate, match) in enumerate(zip(candidates, matches)):
+        if context is not None and context.tasker.stopping:
+            break
         if match and match.get("base_name"):
             candidate["base_name"] = match["base_name"]
+            if match.get("display_name"):
+                candidate["display_name"] = match["display_name"]
         frame = image
         evidence = {"observation_method": "upstream_icon" if match else "unmatched_icon",
                     "frame_reference": page_id, "cached_identity": match}
@@ -171,7 +191,7 @@ def observe_reward_page(capture, context, image, item_kind):
                 detail_frame = image
             else:
                 preview_clicks += 1
-                detail_frame = open_reward_detail(context, candidate["box"])
+                detail_frame = open_reward_detail(context, candidate["box"], candidate.get("analysis_box"))
             if detail_frame is not None:
                 tokens = read_reward_name(context, detail_frame)
                 confirmed = False
@@ -180,6 +200,7 @@ def observe_reward_page(capture, context, image, item_kind):
                     if identity["status"] == "matched" and item_kind in (None, identity["item_kind"]):
                         candidate["catalog_id"] = identity["catalog_id"]
                         candidate.pop("base_name", None)
+                        candidate.pop("display_name", None)
                         confirmed = True
                 if confirmed or not match:
                     frame = detail_frame
@@ -193,31 +214,34 @@ def observe_reward_page(capture, context, image, item_kind):
             if event_id:
                 previews.append(event_id)
     if page_id:
+        complete = len(previews) == len(candidates)
         capture.record(
             "reward_page_end", context=context, reward_page_id=page_id, reward_kind=item_kind, previews=previews,
-            candidate_previews_complete=len(previews) == len(candidates), safe_to_receive=True,
+            candidate_previews_complete=complete, safe_to_receive=context is None or not context.tasker.stopping,
             cache_hits=sum(bool(match and match["catalog_id"]) for match in matches), preview_clicks=preview_clicks,
             expected_count=len(candidates), elapsed_seconds=round(time.monotonic() - started, 3),
         )
     return {"group_id": page_id, "candidates": candidates}
 
 
-def open_reward_detail(context, box):
+def open_reward_detail(context, box, analysis_box=None):
     """点开一项并读取详情画面，选中括号用于关联当前候选。"""
     x, y, width, height = box
-    controller = context.tasker.controller
-    if not controller.post_click(x + width // 2, y + height // 2).wait().succeeded:
+    tasker = context.tasker
+    if not click_running(tasker, x + width // 2, y + height // 2) or not wait_running(tasker, .3):
         return None
-    time.sleep(.3)
-    frame = controller.post_screencap().wait().get()
-    array = rgb_image(frame)
-    return frame if array is not None and selection_pixels(array, box) >= 600 else None
+    frame = tasker.controller.post_screencap().wait().get()
+    try:
+        array = rgb_image(normalized_image(frame))
+    except ValueError:
+        return None
+    return frame if selection_pixels(array, analysis_box or box) >= 600 else None
 
 
 def read_reward_name(context, image):
     from maa.pipeline import JOCR, JRecognitionType
 
-    detail = context.run_recognition_direct(JRecognitionType.OCR, JOCR(roi=DETAIL_ROIS["name"]), image)
+    detail = context.run_recognition_direct(JRecognitionType.OCR, JOCR(roi=DETAIL_ROIS["name"]), normalized_image(image))
     return [{"text": row.text, "confidence": row.score, "box": list(row.box)} for row in detail.all_results] if detail else []
 
 
@@ -239,7 +263,8 @@ class RewardReader:
             return reward_preview_observation({}, self.catalog.skills, event, self.catalog, {"method": "unmatched_icon"})
         cached_icon = event.get("cached_identity")
         if event.get("observation_method") in {"icon_cache", "upstream_icon"}:
-            x, y, width, height = event["candidate"]["box"]
+            candidate = event["candidate"]
+            x, y, width, height = candidate.get("analysis_box") or candidate["box"]
             digest = hashlib.sha256(bgr_image(image[y:y + height, x:x + width]).tobytes()).hexdigest()
             match = cached_icon
             partial = match and match.get("status") == "base_match_variant_unresolved"
@@ -254,6 +279,8 @@ class RewardReader:
                 # 历史本体匹配记录仍保留版本未知；新记录按具体模板确认版本。
                 identity = {"status": "base_match_variant_unresolved", "database_name": match["database_name"],
                             "item_kind": "skill_card", "catalog_id": None, "effective_effect_dsl": None}
+                if match.get("display_name"):
+                    identity["display_name"] = match["display_name"]
             return reward_preview_observation({}, self.catalog.skills, event, self.catalog,
                                               {"method": event["observation_method"], "identity": identity, "identity_verified": True,
                                                "source_event_id": match.get("source_event_id"), "icon_path": match.get("icon_path"), "full_body_ocr": False})

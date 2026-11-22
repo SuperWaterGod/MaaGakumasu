@@ -256,7 +256,7 @@ class SelectionPolicy:
             for item, count in self.item_triggers.items():
                 event = rules()["p_item_events"][item]
                 if (not event["fire_limit"] or count < event["fire_limit"]) and self.acquisition_event(event, key):
-                    ranked.append((72, "领取可触发" + self.rows[item]["name"]))
+                    ranked.append((72, "领取可触发" + self.catalog.display_name(item)))
         if kind == "p_item" and self.snapshot_matches:
             threshold = next((r["when"] for r in rules()["p_item_thresholds"] if r["id"] == key), None)
             if threshold and self.supply.get(threshold["resource"], 0) >= threshold["min"]:

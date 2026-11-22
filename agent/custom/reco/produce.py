@@ -5,6 +5,7 @@ import unicodedata
 from typing import Tuple, Union, Optional
 from difflib import SequenceMatcher
 
+import numpy as np
 from utils import logger
 from maa.define import RectType
 from maa.context import Context
@@ -55,23 +56,46 @@ class ProduceRuleChoice(CustomRecognition):
             ):
                 return [0, 0, 1, 1]
             return None
+        if argv.node_name == "ProduceRuleShopResumeDrinkFull":
+            # 饮料满时商品仍被选中，详情会持续盖住货架提示。
+            # 用饮料满提示和退出按钮确认已回到可继续规划的货架。
+            if not session.get("shop_drinks_full") or not shop_exit_visible(context, argv.image):
+                return None
+            full = context.run_recognition("ProduceShoppingDrinkFull", argv.image)
+            return [0, 0, 1, 1] if full and full.hit else None
         if argv.node_name in {"ProduceRuleShopAgain", "ProduceRuleShopDismiss"}:
-            # 购买结果会遮住提示，强化结果会遮住退出按钮。
-            # 两处都恢复才读货架；过渡过程中只点商店的空白处。
-            title = context.run_recognition("ProduceShoppingFlag", argv.image)
-            title_visible = bool(title and title.hit)
-            exit_visible = shop_exit_visible(context, argv.image)
-            if argv.node_name == "ProduceRuleShopAgain" and title_visible and exit_visible:
-                return [0, 0, 1, 1]
-            if argv.node_name == "ProduceRuleShopDismiss" and title_visible != exit_visible:
+            cached = session.pop("shop_shelf_visibility", None)
+            can_dismiss = session.get("shop_dismiss_clicks", 0) < 4
+            if argv.node_name == "ProduceRuleShopDismiss" and not can_dismiss:
+                return None
+            if cached and np.array_equal(cached[0], argv.image):
+                _, title_visible, exit_visible = cached
+            else:
+                title = context.run_recognition("ProduceShoppingFlag", argv.image)
+                title_visible = bool(title and title.hit)
+                exit_visible = shop_exit_visible(context, argv.image)
+            if argv.node_name == "ProduceRuleShopAgain":
+                if title_visible and exit_visible:
+                    return [0, 0, 1, 1]
+                # 下一个关闭弹层节点沿用同帧结果。截图变化时重新识别。
+                if can_dismiss:
+                    session["shop_shelf_visibility"] = (argv.image, title_visible, exit_visible)
+                return None
+            if title_visible != exit_visible:
                 return [480, 150, 1, 1]
+            # 强化结果可能同时遮住两处标记，按结果文案识别，仍使用原收尾点击上限。
+            if not title_visible and (session.get("shop_pending") or {}).get("operation") == "strengthen":
+                receipt = context.run_recognition("ProduceShopStrengthenedText", argv.image)
+                if receipt and receipt.hit:
+                    return [480, 150, 1, 1]
             return None
         if argv.node_name == "ProduceShopByRule":
-            self.confirm_shop_step(context, argv.image, session)
+            choice = self.confirm_shop_step(context, argv.image, session)
             if "shop_balance" not in session and capture.shop:
                 session["shop_balance"] = capture.shop["points"]["value"]
                 policy.health = read_produce_health(context, argv.image)
-            choice = None if session.get("shop_stop_reason") else self.shop(session)
+            if not choice and not session.get("shop_stop_reason"):
+                choice = self.shop(session)
             if choice:
                 session["shop_choice"] = choice
             elif not session.get("shop_rule_active"):
@@ -85,8 +109,11 @@ class ProduceRuleChoice(CustomRecognition):
                 return None
             choice = policy.choose(page["candidates"], "receive")
             if choice:
-                name = choice.get("base_name") or policy.rows[choice["catalog_id"]]["name"]
+                name = choice.get("display_name") or choice.get("base_name") or policy.catalog.display_name(choice["catalog_id"])
                 session["rule_reward"] = {"reason": choice["reason"], "item_name": name}
+            elif not page.get("fallback_reason"):
+                has_identity = any(candidate.get("catalog_id") or candidate.get("base_name") for candidate in page["candidates"])
+                page["fallback_reason"] = "已识别候选未命中流派规则" if has_identity else "候选名称未确认"
             debug_choice(capture, context, argv.image, "receive", choice)
         if choice:
             x, y, w, h = choice["box"]
@@ -112,6 +139,14 @@ class ProduceRuleChoice(CustomRecognition):
         elif (actual == pending["balance"] and session.get("shop_drinks_full")
               and pending["operation"] == "buy" and pending["attempt"][1] >= 4):
             session["shop_balance"] = actual
+        elif (actual == pending["balance"] and session.get("shop_drinks_full")
+              and pending["operation"] == "strengthen" and not pending.get("retried_after_drink_full")
+              and shop_exit_visible(context, image)):
+            full = context.run_recognition("ProduceShoppingDrinkFull", image)
+            if full and full.hit:
+                logger.debug("商店 · 饮料栏已满，余额未变且仍在货架，补点强化入口")
+                return {**pending, "retried_after_drink_full": True}
+            session["shop_stop_reason"] = "成交余额未核实，结束购买"
         else:
             session["shop_stop_reason"] = "成交余额未核实，结束购买"
 
@@ -134,7 +169,7 @@ class ProduceRuleChoice(CustomRecognition):
                 continue
             grade, reason = policy.evaluate_candidate(identity, "receive")
             if grade:
-                name = identity["database_name"]
+                name = identity.get("display_name") or identity["database_name"]
                 choices.append({"operation": "buy", "attempt": ("buy", index), "catalog_id": identity["catalog_id"], "name": name,
                                 "balance": points, "grade": grade, "price": price,
                                 "reason": "购买" + name + "，" + reason, "box": item["box"]})

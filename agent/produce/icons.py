@@ -8,6 +8,7 @@ from functools import lru_cache
 import numpy as np
 from utils.image_io import bgr_image, read_image, resize_image
 
+from .catalog import translated_name
 from .resources import ICON_FOLDERS
 
 ICON_SIZE = 128
@@ -110,7 +111,7 @@ def load_gallery(data_directory, idol_id):
             except (OSError, ValueError, RuntimeError):
                 continue
             entries.append({"catalog_id": f"{kind}_{row['id']:04d}", "database_name": row["name"],
-                            "item_kind": kind, "icon_path": path.as_posix()})
+                            "name_zh_cn": translated_name(row), "item_kind": kind, "icon_path": path.as_posix()})
             originals.append(gray(image).astype(np.uint8))
             vectors.append(feature(image, kind))
             pixels.append(normalized(gray(image)[identity_mask(kind)]))
@@ -120,11 +121,12 @@ def load_gallery(data_directory, idol_id):
 
 
 class UpstreamIcons:
-    def __init__(self, directory, idol_id=None, hashes=None, *, icon_resources=None):
+    def __init__(self, directory, idol_id=None, hashes=None, *, icon_resources=None, localized_names=False):
         self.directory = Path(directory).resolve()
         self.idol_id = idol_id
         self.hashes = hashes
         self.icon_resources = icon_resources
+        self.localized_names = localized_names
         self.available_kinds = {kind for kind in ICON_FOLDERS
                                 if icon_resources is None or icon_resources.get(kind, {}).get("complete", False)}
         self._last_scan = None
@@ -202,9 +204,14 @@ class UpstreamIcons:
             if not allow_unverified_variant:
                 return None
             # 名称分数与分差已经通过；只保留卡名，不把初筛版本当成已确认的库条目。
+            translated_bases = {entries[i]["name_zh_cn"].rstrip("+＋") for i in variants if entries[i]["name_zh_cn"]}
             entry = {"database_name": base, "base_name": base, "item_kind": kind,
+                     "name_zh_cn": translated_bases.pop() if len(translated_bases) == 1 else None,
                      "catalog_id": None, "icon_path": None, "variant_verified": False,
                      "status": "base_match_variant_unresolved", "upgrade_status": "unresolved", "upgraded": None}
+        name_zh_cn = entry.pop("name_zh_cn", None)
+        if self.localized_names and name_zh_cn:
+            entry["display_name"] = name_zh_cn
         return {**entry, "similarity": round(score, 4), "catalog_hashes": self.hashes,
                 "query_icon_sha256": hashlib.sha256(crop.tobytes()).hexdigest(), "method": "upstream_icon_variant"}
 
@@ -296,12 +303,13 @@ def icons_for_capture(directory, hashes=None, recognize=None, *, icon_resources=
     data = root / "data" if (root / "data").is_dir() else root / "assets/data"
     try:
         manifest = json.loads((Path(directory) / "manifest.json").read_text(encoding="utf-8"))
-        name = manifest.get("metadata", {}).get("bindings", {}).get("configured_idol", {}).get("idol_name", "")
+        bindings = manifest.get("metadata", {}).get("bindings", {})
+        name = bindings.get("configured_idol", {}).get("idol_name", "")
         name = "".join(name.split())
         idol_id = IDOL_NAMES.index(name) + 1 if name in IDOL_NAMES else None
         if hashes is None:
             hashes = {"skill_cards": hashlib.sha256((data / "produce_skill_cards.json").read_bytes()).hexdigest(),
                       "reward_items": hashlib.sha256((data / "produce_reward_items.json").read_bytes()).hexdigest()}
-        return UpstreamIcons(data, idol_id, hashes, icon_resources=icon_resources)
+        return UpstreamIcons(data, idol_id, hashes, icon_resources=icon_resources, localized_names=bindings.get("language") == "zh-CN")
     except (OSError, ValueError, TypeError):
         return None
