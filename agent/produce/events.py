@@ -1,12 +1,12 @@
 """培育事件动作；流水线注册名称与原行为保持不变。"""
 
 import json
-import time
 from typing import Any, Dict, List, Optional
 
 from utils import logger
 from maa.context import Context
 from maa.custom_action import CustomAction
+from utils.task_control import wait_running, double_click_running
 from maa.agent.agent_server import AgentServer
 
 from .state import produce_observation, read_produce_health, read_produce_attributes
@@ -52,6 +52,8 @@ class ProduceChooseEventBase(CustomAction):
         self.second = "Da"
 
     def run(self, context: Context, argv: CustomAction.RunArg) -> bool:
+        if context.tasker.stopping:
+            return False
         self.health_observation = produce_observation(None, "ProduceRecognitionHealth")
         self.attribute_observations = {}
 
@@ -75,6 +77,9 @@ class ProduceChooseEventBase(CustomAction):
         best_event = self._choose_best_event(suggestion, health_data, points, score, events)
         if not best_event:
             logger.warning("路线选择 - 未识别到可用事件")
+            return True
+        if best_event["name"] == "rest" and not events:
+            # 休息转场中体力可能尚未回满，页面已没有任何路线可选。
             return True
 
         # 休息前检查：次数用完（检测到"あと0回"）时不可休息，改选其他事件
@@ -266,14 +271,18 @@ class ProduceChooseEventBase(CustomAction):
     def _execute_event(self, context: Context, event: dict) -> bool:
         """执行事件：双击坐标，等待动画后执行后续任务（如果有）。"""
         run_task = event.get("run_task")
+        tasker = context.tasker
+        if run_task == "ProduceChooseRest":
+            if tasker.stopping:
+                return False
+            task = context.run_task("ProduceRestEntry")
+            return bool(task and task.status.succeeded and not tasker.stopping)
         box = event["box"]
 
         x = box[0] + box[2] // 2
         y = box[1] + box[3] // 2
-        context.tasker.controller.post_click(x, y).wait()
-        time.sleep(self.CLICK_DELAY)
-        context.tasker.controller.post_click(x, y).wait()
-        time.sleep(self.ACTION_DELAY)
+        if not double_click_running(tasker, x, y, self.CLICK_DELAY) or not wait_running(tasker, self.ACTION_DELAY):
+            return False
         if run_task:
             logger.debug(f"执行任务{run_task}")
             context.run_task(run_task)

@@ -1,7 +1,6 @@
 """MaaFramework 培育动作入口及奖励领取适配。"""
 
 import json
-import time
 
 from utils import logger
 from maa.context import Context
@@ -16,6 +15,7 @@ from produce.sessions import SESSIONS
 from maa.custom_action import CustomAction
 from produce.resources import RecoveryError, UpdateCancelled, configured_updater, icon_resources_status, ensure_resources_ready
 from produce.selection import rules, debug_choice
+from utils.task_control import wait_running, click_running
 from maa.agent.agent_server import AgentServer
 
 __all__ = [
@@ -29,9 +29,11 @@ __all__ = [
 
 @AgentServer.custom_action("ProduceEditChoice")
 class ProduceEditChoice(CustomAction):
-    """沿用原页面两次强化点击及确认流程，只替换选牌位置。"""
+    """选择调整对象，并为强化补点复用原选牌坐标。"""
 
     def run(self, context, argv):
+        if context.tasker.stopping:
+            return False
         operation = json.loads(argv.custom_action_param)["operation"]
         session = SESSIONS.get(context)
         default = [140, 760] if operation.startswith("strengthen") else [140, 450]
@@ -70,10 +72,14 @@ class ProduceEditChoice(CustomAction):
                         pending["upgraded_id"] = policy.upgrades.get(target.get("catalog_id"))
                     policy.forget_card(target.get("catalog_id"), target.get("base_name"))
             label = {"strengthen": "强化", "delete": "删除", "exchange": "变换", "copy": "复制"}.get(operation, "卡牌调整")
-            logger.info(f"{label}选择－自动 · {choice['database_name']}，{choice['reason']}" if choice else f"{label}选择－默认 · 第一项")
+            if choice:
+                name = choice.get("display_name") or choice["database_name"]
+                logger.info(f"{label}选择－自动 · {name}，{choice['reason']}")
+            else:
+                logger.info(f"{label}选择－默认 · 第一项")
             if session and operation == "strengthen":
                 session["strengthen_point"] = point
-        return context.tasker.controller.post_click(*point).wait().succeeded
+        return click_running(context.tasker, *point)
 
 
 @AgentServer.custom_action("ProduceSettlementClick")
@@ -89,7 +95,7 @@ class ProduceSettlementClick(CustomAction):
         if not detail or not detail.hit:
             return True
         x, y, width, height = detail.box
-        clicked = controller.post_click(x + width // 2, y + height // 2).wait().succeeded
+        clicked = click_running(context.tasker, x + width // 2, y + height // 2)
         if clicked and argv.node_name == "ProduceGeneration":
             logger.info("结算 · 已点生成")
         return clicked
@@ -195,6 +201,11 @@ class ProduceRewardConfirm(CustomAction):
         task_id = context.get_task_job().job_id
         session = SESSIONS.get(context) if not produce_fast_mode(context) else None
         choice = (session or {}).get("reward_choice") or SESSIONS.reward_choices.get(task_id)
+        if session and choice and choice.get("policy_node") != "ProduceChooseByRule":
+            page = session.get("reward_page")
+            reason = (page or {}).get("fallback_reason")
+            if reason:
+                choice = {**choice, "fallback_reason": reason}
         action = context.run_action("ProduceRewardReceive", box=argv.box)
         success = bool(action and action.success)
         if success:
@@ -247,6 +258,8 @@ class ProduceSkipShowAuto(CustomAction):
 
     def run(self, context: Context, argv: CustomAction.RunArg) -> bool:
         for target_x, target_y in ((1192, 80), (1192, 80), (20, 20)):
+            if context.tasker.stopping:
+                return False
             image = context.tasker.controller.post_screencap().wait().get()
             if image is None or image.size == 0:
                 return False
@@ -257,9 +270,8 @@ class ProduceSkipShowAuto(CustomAction):
 
             x = max(0, min(width - 1, target_x))
             y = max(0, min(height - 1, target_y))
-            if not context.tasker.controller.post_click(x, y).wait().succeeded:
+            if not click_running(context.tasker, x, y) or not wait_running(context.tasker, .3):
                 return False
-            time.sleep(0.3)
 
         return True
 

@@ -1,17 +1,17 @@
 """培育选项动作；流水线注册名称与原行为保持不变。"""
 
 import json
-import time
 import random
 from typing import Any, Dict, List, Optional
 
 from utils import logger
 from maa.context import Context
 from maa.custom_action import CustomAction
+from utils.task_control import wait_running, click_running, double_click_running
 from maa.agent.agent_server import AgentServer
 
 from .icons import drink_scroll
-from .state import produce_observation, read_produce_health, read_produce_attributes
+from .state import PRODUCE_FRAME_SIZE, scale_box, normalized_image, produce_observation, read_produce_health, read_produce_attributes
 from .console import log_operation
 from .sessions import SESSIONS
 from .selection import debug_choice
@@ -58,11 +58,11 @@ class ProduceChooseWorkAuto(CustomAction):
                 box = second_roi
             else:
                 box = first_roi
-        job = context.tasker.controller.post_click(box[0], box[1]).wait()
+        clicked = click_running(context.tasker, *box)
         record_option(context, "工作选择", f"点击第{[first_roi, second_roi, third_roi].index(box) + 1}项", image,
                       {"health": self.health_observation}, {"health": current}, actual_point=box,
-                      framework_action_succeeded=bool(job.status.succeeded))
-        return True
+                      framework_action_succeeded=clicked)
+        return not context.tasker.stopping
 
     def _get_health(self, context: Context, image) -> Optional[dict]:
         value = read_produce_health(context, image)
@@ -199,7 +199,22 @@ class ProduceChooseOptionsAuto(CustomAction):
             # box 格式为 [x, y, w, h]，计算中心点
             center_x = target_box[0] + target_box[2] // 2
             center_y = target_box[1] + target_box[3] // 2
-            self._double_click(context, center_x, center_y)
+            tasker = context.tasker
+            if not click_running(tasker, center_x, center_y) or not wait_running(tasker, self.CLICK_DELAY):
+                return False
+            # 满体力弹窗会挡住原选项，此时第二次输入应落在弹窗的确认按钮上。
+            after_click = tasker.controller.post_screencap().wait().get()
+            if tasker.stopping:
+                return False
+            confirm = context.run_recognition("ProducePopup", after_click) if after_click is not None else None
+            if confirm and confirm.hit:
+                if tasker.stopping:
+                    return False
+                action = context.run_action("ProducePopup", box=confirm.box)
+                if not action or not action.success:
+                    return False
+            elif not click_running(tasker, center_x, center_y):
+                return False
             record_option(context, "属性选择", f"点击 {'无属性选项' if choice == 'null' else {'Vo': '声乐', 'Da': '舞蹈', 'Vi': '形象'}.get(choice, choice)}", image, {"attributes": self.attribute_observations},
                           {"first": first_score, "second": second_score, "third": third_score},
                           actual_point=[center_x, center_y], candidates=options)
@@ -235,13 +250,6 @@ class ProduceChooseOptionsAuto(CustomAction):
 
         logger.debug(f"可用选项: {available_options_name.rstrip(', ')}")
         return available_options
-
-    def _double_click(self, context: Context, x: int, y: int):
-        """执行双击操作"""
-        context.tasker.controller.post_click(x, y).wait()
-        time.sleep(self.CLICK_DELAY)
-        context.tasker.controller.post_click(x, y).wait()
-
 
 @AgentServer.custom_action("ProduceChooseMirrorAuto")
 class ProduceChooseMirrorAuto(CustomAction):
@@ -298,14 +306,15 @@ class ProduceChooseMirrorAuto(CustomAction):
         mirror_idx = self._get_focus_mirror_index(context, image)
 
         logger.debug(f"当前投票: {vote:,}, 目标分数: {target_threshold:,}, 点击坐标: ({x}, {y - 20})")
-        self._double_click(context, x, y - 20)
+        if not double_click_running(context.tasker, x, y - 20, self.CLICK_DELAY):
+            return False
         record_option(context, "试镜选择", f"点击门槛 {target_threshold:,}", image,
                       {"vote": produce_observation(vote, "ProduceRecognitionVote"),
                        "试镜门槛": "-".join(str(value) for value in sorted(thresholds))}, {},
                       actual_point=[x, y - 20], target_threshold=target_threshold)
 
-        if not mirror_idx:
-            return True
+        if not mirror_idx or context.tasker.stopping:
+            return not context.tasker.stopping
 
         logger.debug(f"进入手动接管模式（第{mirror_idx}镜），由原生 focus 显示弹窗")
         context.run_action(
@@ -415,13 +424,6 @@ class ProduceChooseMirrorAuto(CustomAction):
                 logger.warning("投票数据解析失败")
                 return None
 
-    def _double_click(self, context: Context, x: int, y: int):
-        """执行双击操作"""
-        context.tasker.controller.post_click(x, y).wait()
-        time.sleep(self.CLICK_DELAY)
-        context.tasker.controller.post_click(x, y).wait()
-
-
 @AgentServer.custom_action("ProduceKeepDrinkAuto")
 class ProduceKeepDrinkAuto(CustomAction):
     """
@@ -436,6 +438,9 @@ class ProduceKeepDrinkAuto(CustomAction):
         context: Context,
         argv: CustomAction.RunArg,
     ) -> bool:
+        tasker = context.tasker
+        if tasker.stopping:
+            return False
         image = context.tasker.controller.post_screencap().wait().get()
         session = SESSIONS.get(context)
         capture = session["capture"] if session else None
@@ -444,38 +449,56 @@ class ProduceKeepDrinkAuto(CustomAction):
             handled = self.keep_by_rule(context, capture, image)
             if handled is not None:
                 return handled
+            if tasker.stopping:
+                return False
             image = context.tasker.controller.post_screencap().wait().get()
         logger.info("饮料保留－默认 · 沿用勾选并补足空位")
         reco_detail = context.run_recognition("ProduceRecognitionUncheckedMark", image)
-        if reco_detail.hit:
+        if reco_detail and reco_detail.hit:
             for result in reco_detail.filtered_results:
-                box = result.box
-                context.tasker.controller.post_click(box[0] + int(box[2] / 2), box[1] + int(box[3] / 2)).wait()
-                time.sleep(0.1)
-            context.run_task("ProduceDrinkNoButton")
-        return True
+                x, y, width, height = result.box
+                if not click_running(tasker, x + width // 2, y + height // 2) or not wait_running(tasker, .1):
+                    return False
+            if not tasker.stopping:
+                context.run_task("ProduceDrinkNoButton")
+        return not tasker.stopping
 
     @staticmethod
     def keep_by_rule(context, capture, image):
         """先读全候选再改勾选。同名饮料按滚动列表中的位置区分。"""
-        if image.shape[:2] != (1280, 720):
-            return None
-        controller = context.tasker.controller
+        tasker = context.tasker
+        if tasker.stopping:
+            return False
+        controller = tasker.controller
+
+        def input_point(x, y):
+            return scale_box((x, y, 0, 0), PRODUCE_FRAME_SIZE, image.shape[1::-1])[:2]
 
         def scroll(to_bottom):
+            if image is None or tasker.stopping:
+                return None
             start, end = (975, 365) if to_bottom else (365, 975)
-            controller.post_swipe(430, start, 430, end, duration=350).wait()
-            time.sleep(.25)
+            if not controller.post_swipe(*input_point(430, start), *input_point(430, end), duration=350).wait().succeeded:
+                return None
+            if not wait_running(tasker, .25):
+                return None
             return controller.post_screencap().wait().get()
 
         def read(frame):
-            top, bottom, offset, first, last = drink_scroll(frame)
-            rows = capture.reward_reader.icons.drink_rows(frame, top, bottom)
+            try:
+                analysis_image = normalized_image(frame)
+            except ValueError:
+                return None, False, False
+            top, bottom, offset, first, last = drink_scroll(analysis_image)
+            rows = capture.reward_reader.icons.drink_rows(analysis_image, top, bottom)
             return [(y + offset, key, checked, y) for y, key, checked in rows], first, last
 
-        if not drink_scroll(image)[3]:
-            image = scroll(False)
         rows, first, last = read(image)
+        if rows is None:
+            return None
+        if not first:
+            image = scroll(False)
+            rows, first, last = read(image)
         debug_choice(capture, context, image, "keep_drink", None)
         if not rows or not first:
             return None
@@ -484,6 +507,8 @@ class ProduceKeepDrinkAuto(CustomAction):
         if not last:
             image = scroll(True)
             rows, _, last = read(image)
+            if rows is None:
+                return None
             at_bottom = True
             # 核验两页重叠的实体行，避免滚动动画或缺页造成错位。
             overlap = [(a, b) for a in bottles for b in rows if abs(a[0] - b[0]) <= 12]
@@ -498,35 +523,39 @@ class ProduceKeepDrinkAuto(CustomAction):
                 scroll(False)
             return None
         debug_choice(capture, context, image, "keep_drink", [b[1] for b in keep])
-        def visible(frame, bottle):
-            rows, _, _ = read(frame)
-            return next((b for b in rows if abs(b[0] - bottle[0]) <= 12 and b[1] == bottle[1]), None)
+
+        def visible(bottle):
+            return next((b for b in (rows or []) if abs(b[0] - bottle[0]) <= 12 and b[1] == bottle[1]), None)
 
         # 先腾出栏位，再补勾。每次点击前复读行身份和勾选状态。
         for desired in (False, True):
             for bottle in bottles:
+                if tasker.stopping:
+                    return False
                 if bottle[2] == desired or (bottle in keep) != desired:
                     continue
-                match = visible(image, bottle)
+                match = visible(bottle)
                 if match is None:
                     at_bottom = not at_bottom
                     image = scroll(at_bottom)
-                    match = visible(image, bottle)
+                    rows, _, _ = read(image)
+                    match = visible(bottle)
                 if match is None:
                     return None
                 if match[2] != desired:
-                    controller.post_click(627, match[3]).wait()
-                    time.sleep(.12)
+                    if not click_running(tasker, *input_point(627, match[3])) or not wait_running(tasker, .12):
+                        return False if tasker.stopping else None
                     image = controller.post_screencap().wait().get()
-                    updated = visible(image, bottle)
+                    rows, _, _ = read(image)
+                    updated = visible(bottle)
                     if not updated or updated[2] != desired:
                         return None
         button = context.run_recognition("ProduceDrinkNoButton", image)
         if not button or not button.hit:
             return None
-        names = "、".join(policy.rows[b[1]]["name"] for b in keep)
+        names = "、".join(policy.catalog.display_name(bottle[1]) for bottle in keep)
         logger.info(f"饮料保留－自动 · {names}（{reason}）")
-        return context.run_action("ProduceDrinkNoButton", box=button.box).success
+        return not tasker.stopping and context.run_action("ProduceDrinkNoButton", box=button.box).success
 
 
 

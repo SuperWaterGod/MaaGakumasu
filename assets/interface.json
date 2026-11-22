@@ -30,8 +30,8 @@
         "class_regex": "UnityWndClass",
         "window_regex": "gakumas",
         "screencap": "FramePool",
-        "mouse": "SendMessageWithCursorPos",
-        "keyboard": "SendMessageWithCursorPos"
+        "mouse": "PostMessageWithCursorPos",
+        "keyboard": "PostMessageWithCursorPos"
       },
       "permission_required": true
     },
