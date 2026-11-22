@@ -9,6 +9,8 @@ from collections import defaultdict
 from dataclasses import field, dataclass
 from urllib.parse import quote
 
+from .state import selected_card
+
 LABELS = {"score": "分数", "rank": "评级", "stamina": "体力", "genki": "元气", "turns_remaining": "剩余回合",
           "attribute": "属性", "attribute_multiplier_percent": "属性倍率", "health": "体力", "points": "P 点",
           "Vo": "声乐", "Da": "舞蹈", "Vi": "形象", "vote": "票数"}
@@ -20,7 +22,8 @@ ADJUSTMENTS = {"delete": "删除", "copy": "复制", "exchange": "变换", "stre
 SHOP_STEPS = {"ProduceShoppingBuySale": "选择折扣商品", "ProduceShoppingBuy": "点击购买",
               "ProduceShoppingDecide": "确认购物", "ProduceShoppingDrinkFull": "饮料已满", "ProduceShoppingExit": "离开商店",
               "ProduceChooseStrengthenFlag": "打开强化选牌", "ProduceChooseStrengthenClick": "选择强化对象",
-              "ProduceChooseStrengthen": "确认强化", "ProduceChooseDeleteFlag": "选择删除对象",
+              "ProduceChooseStrengthen": "点击强化", "ProduceChooseStrengthenConfirm": "确认付费强化",
+              "ProduceChooseDeleteFlag": "选择删除对象",
               "ProduceChooseDeleteClick": "点击删除", "ProduceShoppingDeleteConfirm": "确认付费删除"}
 EXAM_FAILURES = {"ProduceFailedFlag": "考试未通过", "ProduceNIAFailedFlag": "试镜未通过"}
 EXAM_RETRIES = {"ProduceFailedRetryConfirm": "重试考试", "ProduceNIAFailedRetryConfirm": "重试试镜"}
@@ -116,7 +119,8 @@ def battle_operation(row, following):
     operation = detail.get("operation")
     box = detail.get("selected_box")
     hand = detail.get("cards") or []
-    chosen = next((card.get("name") for card in hand if box is not None and card.get("box") == box), None)
+    selected = selected_card(hand, box)
+    chosen = selected.get("name") if selected else None
     action = BATTLE_ACTIONS.get(operation, "战斗操作")
     subjects = (chosen,) if operation == "play_card" and chosen else ()
     title = "" if subjects else "牌名未识别" if operation == "play_card" else action
@@ -124,7 +128,7 @@ def battle_operation(row, following):
     if detail.get("reason") in REASONS:
         facts.append(("选择依据", REASONS[detail["reason"]]))
     if hand:
-        facts.append(("当时手牌", [ReplayChoice(card.get("name") or "未识别", box is not None and card.get("box") == box)
+        facts.append(("当时手牌", [ReplayChoice(card.get("name") or "未识别", card is selected)
                                   for card in hand]))
     later = (following or {}).get("detail") or {}
     if later.get("framework_action_succeeded") is False:
@@ -200,7 +204,8 @@ def project_events(report):
     for row in timeline:
         if row["kind"] == "reward_candidate_preview":
             detail = row["detail"]
-            reward_names[detail.get("reward_page_id")][(detail.get("candidate") or {}).get("candidate_id")] = detail.get("observed_name")
+            name = detail.get("display_name") or detail.get("observed_name")
+            reward_names[detail.get("reward_page_id")][(detail.get("candidate") or {}).get("candidate_id")] = name
 
     last_values = {}
     events = []
@@ -271,6 +276,8 @@ def project_events(report):
             shop.input_steps.append(f"{local_clock(event_time, zone)} · {SHOP_STEPS[node]} · {status}")
             if node == "ProduceShoppingExit" and result is not False:
                 shop_exiting = True
+            elif node == "ProduceChooseStrengthenConfirm" and shop.operations and shop.operations[-1].category == "强化":
+                shop.operations[-1].pictures.append(("付费强化确认页", evidence))
         if node.startswith("ProduceShopping"):
             if node == "ProduceShoppingBuy" and routed:
                 shop.operations.append(shop_purchase(row, following))
@@ -328,7 +335,7 @@ def project_events(report):
             choices = [ReplayChoice(name or "未识别", candidate_id is not None and candidate_id == selected)
                        for candidate_id, name in reward_names[page_id].items()]
             facts.append(("奖励候选", choices or "未识别"))
-            if reason := choice.get("reason"):
+            if reason := choice.get("reason") or choice.get("fallback_reason"):
                 facts.append(("选择依据", reason))
             page = (report.get("reward_pages") or {}).get(page_id, {})
             start = (page.get("start") or {}).get("event") or {}

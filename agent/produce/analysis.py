@@ -16,21 +16,13 @@ from importlib.metadata import version
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from produce.state import STANCE_NAMES, STATE_FIELDS, ANOMALY_FIELDS, BattleStateReader
-from utils.image_io import bgr_image, read_image, resize_image
+from produce.state import STANCE_NAMES, STATE_FIELDS, ANOMALY_FIELDS, PRODUCE_FRAME_SIZE, BattleStateReader, scale_box, normalized_image
+from utils.image_io import read_image
 from produce.catalog import SkillCardCatalog, clean, normalize_name
 from produce.console import RewardConsole, OperationConsole, SettlementConsole, state_lines, hand_summary
 from produce.rewards import RewardReader
 from produce.reporting import read_json
 from produce.settlement import PARAMETER_ICONS, FinalExamTracker, settlement_observation
-
-
-def normalized_image(image):
-    image = bgr_image(image)
-    height, width = image.shape[:2]
-    if abs(width / height - 720 / 1280) > 0.005:
-        raise ValueError("Unsupported frame aspect ratio; will not rotate")
-    return resize_image(image, 720, 1280)
 
 
 def labeled_value(tokens, labels, pattern):
@@ -274,9 +266,6 @@ class BattleReadAhead:
     def prepare(self, image, catalog, candidates):
         if self.attempted:
             return None
-        if list(image.shape[:2]) != [1280, 720]:
-            return None
-        array = normalized_image(image)
         reader = getattr(self.vision, "state_reader", None)
         if reader is None:
             return None
@@ -284,9 +273,14 @@ class BattleReadAhead:
             self.previous = None
             self.regions = None
             return None
+        try:
+            array = normalized_image(image)
+        except ValueError:
+            return None
         regions = []
+        source_size = image.shape[1::-1]
         for item in self.hand(candidates):
-            x, y, w, h = map(int, item["box"])
+            x, y, w, h = scale_box(item["box"], source_size, PRODUCE_FRAME_SIZE)
             # 牌名在底部；卡面上方的预测分数属于游戏计算动画。
             top = y + int(h * .86)
             regions.append([x + 4, top, w - 8, y + h - top - 4])
@@ -441,6 +435,7 @@ class OfflineVision:
         from maa.pipeline import JRecognitionType, JNeuralNetworkDetect
 
         array = normalized_image(image)
+        source_size = image.shape[1::-1]
         if candidates is None:
             detections = self.recognize(
                 JRecognitionType.NeuralNetworkDetect,
@@ -450,28 +445,26 @@ class OfflineVision:
             candidates = [
                 {
                     "candidate_id": f"detection_{i}",
-                    "box": list(item.box),
+                    "box": scale_box(item.box, PRODUCE_FRAME_SIZE, source_size),
                     "label": item.label,
                     "detector_confidence": item.score,
                     "in_hand_region": 840 <= item.box[1] <= 1000,
                 }
                 for i, item in enumerate(detections)
             ]
+        hand = [(candidate, scale_box(candidate["box"], source_size, PRODUCE_FRAME_SIZE))
+                for candidate in candidates if candidate.get("in_hand_region")]
         cards = []
-        for candidate in candidates:
-            if not candidate.get("in_hand_region"):
-                continue
-            x, y, width, height = map(int, candidate["box"])
-            # ADB 检测框须与原图缩放一致，Agent 候选框要求图像为 720×1280。
+        for candidate, (x, y, width, height) in hand:
+            # 日志与操作保留原坐标，OCR 按归一化画面裁切。
             left, top = max(0, x), max(0, y + int(height * 0.80))
             right, bottom = min(720, x + width), min(1280, y + height)
             if right <= left or bottom <= top:
                 continue
             roi = (left, top, right - left, bottom - top)
             visible_right = right
-            for neighbor in candidates:
-                nx, ny, nw, nh = neighbor["box"]
-                if neighbor.get("in_hand_region") and nx >= x + width * 0.25 and nw >= width * 0.65 and ny <= (top + bottom) / 2 <= ny + nh:
+            for _, (nx, ny, nw, nh) in hand:
+                if nx >= x + width * 0.25 and nw >= width * 0.65 and ny <= (top + bottom) / 2 <= ny + nh:
                     visible_right = min(visible_right, int(nx))
             overlap = visible_right < right and visible_right - left >= 30
             rois = [(left, top, visible_right - left, bottom - top), roi] if overlap else [roi]
@@ -530,9 +523,10 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                    battle_reader=None, on_reward_reader=None, selection_factory=None):
     directory = directory.resolve()
     capture_manifest = read_json(directory / "manifest.json")
+    bindings = capture_manifest.get("metadata", {}).get("bindings", {})
     if icon_resources is None:
         icon_resources = capture_manifest.get("icon_resources")
-    catalog = SkillCardCatalog(database, aliases)
+    catalog = SkillCardCatalog(database, aliases, localized_names=bindings.get("language") == "zh-CN")
     reward_reader = RewardReader(catalog, database.with_name("produce_reward_items.json"), directory, icon_resources=icon_resources)
     if on_reward_reader:
         on_reward_reader(reward_reader)
@@ -590,7 +584,6 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
 
     action_console = OperationConsole()
     reward_console = RewardConsole()
-    bindings = capture_manifest.get("metadata", {}).get("bindings", {})
     settlement_console = SettlementConsole(bindings)
     exam_tracker = FinalExamTracker(bindings.get("scenario"))
     try:
@@ -767,9 +760,10 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                     try:
                         image = supplied_image
                         source_size = event["frame"].get("source_size", [image.shape[1], image.shape[0]])
-                        candidates = event.get("candidates") if source_size == [720, 1280] else None
-                        if (event["kind"] == "decision_before" and event.get("operation") == "play_card"
-                                and vision.read_ahead.result is not None):
+                        candidates = event.get("candidates") if tuple(source_size) == image.shape[1::-1] else None
+                        if (candidates and event["kind"] == "decision_before" and event.get("operation") == "play_card"
+                                and vision.read_ahead.result is not None
+                                and vision.read_ahead.same_slots(vision.read_ahead.result["cards"], candidates)):
                             result = vision.read_ahead.take(candidates)
                         else:
                             result = vision.analyze(image, catalog, candidates)

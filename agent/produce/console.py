@@ -1,6 +1,6 @@
 """统一整理并按顺序展示出牌、奖励和结算摘要。"""
 
-from .state import STANCE_NAMES, state_changes
+from .state import STANCE_NAMES, selected_card, state_changes
 from .settlement import FIELDS, evaluation_check
 
 POLICY_NAMES = {
@@ -26,7 +26,8 @@ def reward_title(success, choice, selected_name=None):
             reason = reason.removeprefix(name + "，")
         return f"{line}｜自动 · {reason}" if reason else f"{line}｜自动"
     if node in POLICY_NAMES:
-        return f"{line}｜默认 · {POLICY_NAMES[node]}"
+        fallback = choice.get("fallback_reason")
+        return f"{line}｜默认 · {POLICY_NAMES[node]}" + (f"｜{fallback}" if fallback else "")
     return line
 
 
@@ -148,7 +149,8 @@ def state_lines(state):
 
 def card_name(identity):
     if identity.get("database_card_id"):
-        name = identity.get("base_name", identity["database_name"].rstrip("+")) + "+" * identity.get("observed_plus_count", 0)
+        base = identity.get("display_name") or identity.get("base_name") or identity["database_name"]
+        name = base.rstrip("+＋") + "+" * identity.get("observed_plus_count", 0)
     else:
         name = identity.get("observed_name", "") or "牌名未识别"
     suffix = " [未知]" if identity["status"] == "unknown" else ""
@@ -159,9 +161,10 @@ def card_name(identity):
 
 def hand_summary(cards, selected_box=None):
     parts = []
+    selected = selected_card(cards, selected_box)
     for index, card in enumerate(sorted(cards, key=lambda card: card["box"][0]), 1):
         label = {"cards": "", "suggestions": "荐 ", "useless": "禁 "}.get(card.get("label"), "? ")
-        marker = "→ " if card["box"] == selected_box else ""
+        marker = "→ " if card is selected else ""
         # 避免 MFA 的 HTML 解析器将内容误当作 Markdown 有序列表。
         parts.append(f"{index}｜{marker}{label}{card_name(card['identity'])}")
     return "\n".join(parts) if parts else "未检测到手牌"
@@ -250,7 +253,7 @@ def operation_console(number, before_event, before_result, after_event=None, aft
     cards = before_result.get("cards", [])
     operation = before_event.get("operation")
     title = {"play_card": "出牌", "use_drink_task": "使用饮料", "skip_round": "跳过回合", "move_cards": "移动卡牌"}.get(operation, "操作后观察")
-    selected = next((card for card in cards if card["box"] == before_event.get("selected_box")), None)
+    selected = selected_card(cards, before_event.get("selected_box"))
     if operation == "play_card":
         title = f"出牌#{number}[" + (card_name(selected["identity"]) if selected else "牌名未识别") + "]"
     title = f"战斗 - {title}" if operation == "play_card" else f"战斗 - {title}#{number}"
@@ -330,7 +333,7 @@ def preview_name(result):
         return "牌名未确认"
     identity = result.get("identity") or {}
     canonical = identity.get("database_name") if identity.get("status") == "matched" else None
-    return canonical or result.get("observed_name") or "牌名未确认"
+    return identity.get("display_name") or canonical or result.get("observed_name") or "牌名未确认"
 
 
 class RewardConsole:
@@ -393,7 +396,7 @@ class RewardConsole:
 
 def icon_name(match):
     """卡名已确认而强化状态未知时沿用近似符号，不伪造加号。"""
-    name = match.get("database_name") or "未知商品"
+    name = match.get("display_name") or match.get("database_name") or "未知商品"
     return name.rstrip("+") + " ≈" if match.get("variant_verified") is False else name
 
 

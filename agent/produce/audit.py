@@ -6,6 +6,8 @@ from pathlib import Path
 from datetime import datetime
 from collections import Counter, defaultdict
 
+from .state import selected_card
+
 
 def timestamp(value):
     try:
@@ -50,7 +52,8 @@ def card_adjustment(event, obs):
         for key, top, bottom in (("target", 90, 200), ("upgraded_preview", 390, 500)):
             if key == "upgraded_preview" and not strengthen:
                 continue
-            names = {c.get("identity", {}).get("database_name") for c in obs.get("candidates", [])
+            names = {identity.get("display_name") or identity.get("database_name") for c in obs.get("candidates", [])
+                     for identity in [c.get("identity", {})]
                      if 170 <= c.get("name_box", [0, 0])[0] < 500 and top <= c.get("name_box", [0, 0])[1] < bottom}
             names.discard(None)
             previews[key] = next(iter(names)) if len(names) == 1 else None
@@ -362,8 +365,8 @@ def enrich_report(report, records, directory, capture_root):
         detail["state_changes"] = ((entry.get("derived") or {}).get("link") or {}).get("state_changes")
         if kind in ("decision_before", "decision_after", "battle_entry"):
             detail["battle_state"] = obs.get("battle_state")
-            detail["cards"] = [{"name": card.get("identity", {}).get("database_name"), "box": card.get("box")}
-                               for card in obs.get("cards", [])]
+            detail["cards"] = [{"name": identity.get("display_name") or identity.get("database_name"), "box": card.get("box")}
+                               for card in obs.get("cards", []) for identity in [card.get("identity", {})]]
         if kind == "produce_event_choice":
             detail["policy_inputs_with_fallbacks"] = event.get("policy_inputs_with_fallbacks")
             detail["teacher_suggestion"] = event.get("teacher_suggestion")
@@ -381,7 +384,8 @@ def enrich_report(report, records, directory, capture_root):
         if kind == "reward_page_start":
             detail["candidates"] = event.get("layout", {}).get("candidates")
         if kind == "reward_candidate_preview":
-            detail.update(observed_name=obs.get("observed_name"), identity_verified=obs.get("identity_verified"),
+            detail.update(observed_name=obs.get("observed_name"), display_name=(obs.get("identity") or {}).get("display_name"),
+                          identity_verified=obs.get("identity_verified"),
                           effects_status=(obs.get("effects") or {}).get("semantic_status"))
         if kind in ("settlement_observation", "exam_result_observation"):
             detail["settlement"] = {k: v.get("value") for k, v in (obs.get("settlement") or {}).items()}
@@ -462,7 +466,7 @@ def timeline_summary(row):
         return f"候选：{candidates or '未记录'}；选择：{(detail.get('selected') or {}).get('name', '未知')}"
     if kind == "decision_before":
         operation = {"play_card": "出牌", "use_drink_task": "使用饮料", "skip_round": "跳过回合", "move_cards": "移动卡牌"}.get(detail.get("operation"), "战斗操作")
-        card = next((c.get("name") for c in detail.get("cards", []) if c.get("box") == detail.get("selected_box")), None)
+        card = (selected_card(detail.get("cards", []), detail.get("selected_box")) or {}).get("name")
         return f"{operation}：{card or '对象未识别'}；依据：{detail.get('reason') or '未记录'}"
     if kind == "decision_after":
         return "返回可操作状态或退出后的观察；动作效果须结合后续证据"

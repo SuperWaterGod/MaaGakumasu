@@ -7,7 +7,9 @@ import unicodedata
 from pathlib import Path
 
 import numpy as np
+from utils.image_io import bgr_image, resize_image
 
+PRODUCE_FRAME_SIZE = (720, 1280)
 STATE_FIELDS = ("turns_remaining", "score", "stamina", "genki", "attribute", "attribute_multiplier_percent")
 ANOMALY_FIELDS = (
     "stance",
@@ -19,6 +21,23 @@ ANOMALY_FIELDS = (
     "held_cards_capacity",
 )
 STANCE_NAMES = {"strength": "强气", "preservation": "温存", "fullPower": "全力", "none": "通常"}
+
+
+def normalized_image(image):
+    image = bgr_image(image)
+    height, width = image.shape[:2]
+    target_width, target_height = PRODUCE_FRAME_SIZE
+    if abs(width / height - target_width / target_height) > 0.005:
+        raise ValueError("截图比例不适用于竖屏培育识别")
+    return resize_image(image, target_width, target_height)
+
+
+def scale_box(box, source_size, target_size):
+    """按矩形两端换算截图坐标，供识别与点击之间转换。"""
+    x, y, width, height = box
+    sx, sy = (target / source for source, target in zip(source_size, target_size))
+    left, top = round(x * sx), round(y * sy)
+    return [left, top, round((x + width) * sx) - left, round((y + height) * sy) - top]
 
 
 def unknown_field(reason="not_observed", roi=None, raw=None):
@@ -86,6 +105,20 @@ def overlap_ratio(left, right):
     intersection = max(0, x1 - x0) * max(0, y1 - y0)
     union = left[2] * left[3] + right[2] * right[3] - intersection
     return intersection / union if union else 0
+
+
+def selected_card(cards, box):
+    """优先使用实际选牌框，历史重检结果只在重叠明确时关联。"""
+    if not box:
+        return None
+    exact = [card for card in cards if card.get("box") == box]
+    if len(exact) == 1:
+        return exact[0]
+    matches = [(overlap_ratio(card["box"], box), card) for card in cards if card.get("box")]
+    matches.sort(key=lambda match: match[0], reverse=True)
+    if matches and matches[0][0] >= .7 and (len(matches) == 1 or matches[0][0] - matches[1][0] >= .15):
+        return matches[0][1]
+    return None
 
 
 def player_score_roi(rgb):
