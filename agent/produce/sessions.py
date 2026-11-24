@@ -304,6 +304,7 @@ class ProduceSessions:
         saved = state.get("reward_selection", {})
         if policy and saved.get("catalog") == policy.catalog.hashes:
             policy.observe(saved["owned"])
+            policy.deck_copies.update(saved.get("deck_copies", {}))
             policy.item_triggers.update(saved["item_triggers"])
             policy.full_power_seen = saved["full_power_seen"]
         state["timing_basis"] = "gameplay_loop"
@@ -345,6 +346,7 @@ class ProduceSessions:
         if policy:
             session["state"]["reward_selection"] = {
                 "catalog": policy.catalog.hashes, "owned": sorted(policy.owned),
+                "deck_copies": dict(policy.deck_copies),
                 "item_triggers": policy.item_triggers, "full_power_seen": policy.full_power_seen,
             }
         save_json(session["path"], session["state"])

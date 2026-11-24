@@ -5,7 +5,7 @@ import json
 import unicodedata
 from pathlib import Path
 from functools import lru_cache
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from .resources import REWARD_RULES_NAME, data_directory
 
@@ -103,6 +103,10 @@ class SelectionPolicy:
         costs = [dict(self.typed_cost(key)) for key in self.intrinsics]
         self.common_costs = {role: min(cost.get(role, 0) for cost in costs) for role in costs[0]} if costs else {}
         self.owned = set()
+        # 永久牌的已确认张数下限。战斗手牌可能临时生成或强化，只用来识别效果。
+        self.deck_copies = Counter()
+        order = rules()["card_edits"]["upgrade_rarity_order"]
+        self.upgrade_priority = {rarity: len(order) - index for index, rarity in enumerate(order)}
         self.supply = {}
         self.full_power_seen = False
         self.item_triggers = {}
@@ -129,15 +133,27 @@ class SelectionPolicy:
                 for role, amount in self.roles[key].items():
                     self.supply[role] = max(amount, self.supply.get(role, 0))
 
+    def observe_card_list(self, ids):
+        counts = Counter(key for key in ids if key in self.rows)
+        self.deck_copies |= counts
+        self.observe(counts)
+
+    def add_card(self, key):
+        self.deck_copies[key] += 1
+        self.observe([key])
+
     def acquired(self, key):
         """领取核验并离开原奖励页后才登记。饮料的实际保留以满栏界面为准。"""
         if key not in self.rows or self.catalog.ids[key][0] == "drink":
             return
-        if self.snapshot_matches and self.catalog.ids[key][0] == "skill_card":
-            for item in self.item_triggers:
-                event = rules()["p_item_events"][item]
-                if self.acquisition_event(event, key):
-                    self.item_triggers[item] += 1
+        if self.catalog.ids[key][0] == "skill_card":
+            self.add_card(key)
+            if self.snapshot_matches:
+                for item in self.item_triggers:
+                    event = rules()["p_item_events"][item]
+                    if self.acquisition_event(event, key):
+                        self.item_triggers[item] += 1
+            return
         self.observe([key])
         if self.snapshot_matches and rules()["p_item_events"].get(key, {}).get("event") == "skill_acquired":
             self.item_triggers.setdefault(key, 0)
@@ -154,10 +170,16 @@ class SelectionPolicy:
         return not tags or bool(self.roles[key].keys() & set(tags))
 
     def forget_card(self, removed, base_name=None):
+        if removed and self.deck_copies[removed] > 1:
+            self.deck_copies[removed] -= 1
+            return
         if removed or base_name:
             variants = {removed} if removed else set(self.skill_versions[base_name])
             retained = self.owned - variants
+            for key in variants:
+                self.deck_copies.pop(key, None)
         else:
+            self.deck_copies.clear()
             retained = {k for k in self.owned if self.catalog.ids[k][0] == "p_item"}
         self.owned.clear()
         self.supply.clear()
@@ -169,6 +191,9 @@ class SelectionPolicy:
 
     def usable(self, key):
         row = self.rows[key]
+        hp_cost = re.fullmatch(r"stamina-=(\d+)", row.get("cost", ""))
+        if hp_cost and self.health and self.health["current"] <= int(hp_cost[1]):
+            return False
         if any(self.supply.get(role, 0) < cost for role, cost in self.typed_cost(key)):
             return False
         condition = row.get("conditions", "")
@@ -198,13 +223,13 @@ class SelectionPolicy:
     def upgrade_score(self, key):
         row = self.rows[key]
         upgraded = self.upgrades.get(key)
+        if not upgraded or not self.usable(upgraded):
+            return NO_MATCH
+        after = self.rows[upgraded]
+        if all(row.get(field) == after.get(field) for field in ("cost", "conditions", "actions", "effects", "limit", "forceInitialHand")):
+            return NO_MATCH
         grade, reason = self.evaluate(upgraded, "upgrade_result")
-        if not grade:
-            return NO_MATCH
-        values = self.roles[upgraded]
-        if self.usable(key) and not any(values.get(k, 0) > self.roles[key].get(k, 0) for k in values) and row["cost"] == self.rows[upgraded]["cost"]:
-            return NO_MATCH
-        return grade, "强化后" + reason
+        return (grade, "强化后" + reason) if grade else (1, "强化可改善卡面效果")
 
     def evaluate(self, key, operation="receive"):
         if key not in self.rows:
@@ -227,9 +252,6 @@ class SelectionPolicy:
         offers = self.roles[key]
         ranked = [NO_MATCH]
         kind = self.catalog.ids[key][0]
-        health_cost = re.fullmatch(r"stamina-=(\d+)", row.get("cost", ""))
-        if health_cost and self.health and self.health["current"] <= int(health_cost[1]):
-            return NO_MATCH
         if kind == "drink":
             hp = re.search(r"fixedStamina-=(\d+)", row["actions"])
             if hp and (not self.health or self.health["current"] <= int(hp[1])):
@@ -334,13 +356,45 @@ class SelectionPolicy:
         grade, reason = min((self.evaluate(key, operation) for key in versions), default=NO_MATCH, key=lambda score: score[0])
         return (grade, f"{reason}（按牌名）") if grade else NO_MATCH
 
-    def choose(self, candidates, operation):
-        """同档保留候选顺序；只有所有候选均未命中才返回默认分支。"""
+    def family_counts(self, copies):
+        families = Counter()
+        for key, count in copies.items():
+            name = self.rows[key]["name"].rstrip("+") if key in self.rows else key
+            families[name] += count
+        return families
+
+    def choose(self, candidates, operation, *, shop_estimate=False):
+        """强化先排稀有度；删除按张数保留副本，其余操作沿用收益档位。"""
+        if operation == "delete":
+            copies = self.deck_copies
+            families = self.family_counts(copies)
+            if not shop_estimate:
+                candidates = list(candidates)
+                visible = Counter(c.get("catalog_id") or c.get("base_name") for c in candidates)
+                # 持有记录与本页可能是同一批卡，同名总数和精确版本数分别取下限的较大值。
+                copies = copies | visible
+                families |= self.family_counts(visible)
         best = None
-        best_rank = (0, 0, False)
+        best_rank = ()
         for candidate in candidates:
             grade, reason = self.evaluate_candidate(candidate, operation)
-            rank = (grade, -candidate.get("price", 0), bool(candidate.get("catalog_id")))
+            key = candidate.get("catalog_id")
+            row = self.rows.get(key, {})
+            name = row["name"].rstrip("+") if row else candidate.get("base_name")
+            priority = 0
+            tie = ()
+            if operation == "strengthen" and grade:
+                versions = [key] if key else [v for v in self.skill_versions[name] if v in self.upgrades]
+                rarity = min((self.rows[v]["rarity"] for v in versions), key=lambda r: self.upgrade_priority.get(r, 0))
+                priority = self.upgrade_priority.get(rarity, 0)
+                reason = f"{rarity} · {reason}"
+            elif operation == "delete" and name and families[name] > 1:
+                duplicate_grade = rules()["card_edits"]["duplicate_delete_grade"]
+                if duplicate_grade > grade and (not row.get("upgraded") or copies[key] > 1):
+                    grade = duplicate_grade
+                    reason = f"同名牌至少 {families[name]} 张，移除一张"
+                    tie = (not row.get("upgraded"), families[name])
+            rank = (priority, grade, tie, -candidate.get("price", 0), bool(key))
             if grade and rank > best_rank:
                 best_rank = rank
                 best = {**candidate, "grade": grade, "reason": reason}

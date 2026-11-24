@@ -1,4 +1,13 @@
 {
+  "card_edits": {
+    "upgrade_rarity_order": [
+      "SSR",
+      "SR",
+      "R",
+      "N"
+    ],
+    "duplicate_delete_grade": 65
+  },
   "profiles": {
     "感性·好调": [
       {

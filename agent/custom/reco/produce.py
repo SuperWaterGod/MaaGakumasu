@@ -135,7 +135,7 @@ class ProduceRuleChoice(CustomRecognition):
             if pending["operation"] == "buy":
                 session["capture"].selection.acquired(pending["catalog_id"])
             elif pending.get("upgraded_id"):
-                session["capture"].selection.observe([pending["upgraded_id"]])
+                session["capture"].selection.add_card(pending["upgraded_id"])
         elif (actual == pending["balance"] and session.get("shop_drinks_full")
               and pending["operation"] == "buy" and pending["attempt"][1] >= 4):
             session["shop_balance"] = actual
@@ -177,7 +177,8 @@ class ProduceRuleChoice(CustomRecognition):
             kind = service["operation"]
             if kind in used or service["price"] > points:
                 continue
-            best = policy.choose([{"catalog_id": k} for k in sorted(policy.owned)], kind)
+            cards = [{"catalog_id": k} for k in sorted(policy.owned) if policy.catalog.ids[k][0] == "skill_card"]
+            best = policy.choose(cards, kind, shop_estimate=True)
             if best:
                 action = "强化" if kind == "strengthen" else "删除"
                 choices.append({**service, "attempt": kind, "balance": points, "grade": best["grade"],

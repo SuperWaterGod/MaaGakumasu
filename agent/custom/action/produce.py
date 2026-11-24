@@ -47,7 +47,7 @@ class ProduceEditChoice(CustomAction):
                 image = context.tasker.controller.post_screencap().wait().get()
                 candidates = capture.reward_reader.icons.scan(image, operation, allow_unverified_variant=True)
                 policy = capture.selection
-                policy.observe(c["catalog_id"] for c in candidates)
+                policy.observe_card_list(c["catalog_id"] for c in candidates)
                 if operation == "delete_copy_exchange":
                     for kind in ("delete", "copy", "exchange"):
                         header = context.run_recognition("ProduceChooseDeleteFlag", image, pipeline_override={
