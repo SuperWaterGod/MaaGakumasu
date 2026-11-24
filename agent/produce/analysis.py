@@ -19,6 +19,7 @@ if __package__ in (None, ""):
 from produce.state import STANCE_NAMES, STATE_FIELDS, ANOMALY_FIELDS, PRODUCE_FRAME_SIZE, BattleStateReader, scale_box, normalized_image
 from utils.image_io import read_image
 from produce.catalog import SkillCardCatalog, clean, normalize_name
+from produce.icons import BattleDrinkReader
 from produce.console import RewardConsole, OperationConsole, SettlementConsole, state_lines, hand_summary
 from produce.rewards import RewardReader
 from produce.reporting import read_json
@@ -252,13 +253,15 @@ class BattleReadAhead:
             for a, b in zip(old, current) for axis in (0, 1)
         ))
 
-    def take(self, candidates):
+    def take(self, candidates, image):
         """沿卡槽顺序更新推荐标记和点击框，直接使用已读取的牌名与状态。"""
         started = time.perf_counter()
         result = self.result
         self.result = None
         prepared_cards = sorted(result["cards"], key=lambda item: item["box"][0])
         result["cards"] = [{**card, **current} for card, current in zip(prepared_cards, self.hand(candidates))]
+        # 喝药后的瓶位可能前移，即使手牌框相同，也使用交付帧的瓶位。
+        self.vision.read_drinks(result, normalized_image(image), image.shape[1::-1])
         result["read_ahead"] = {"event_id": self.event_id, "source_frame_sha256": result.get("source_frame_sha256"),
                                 "handoff_seconds": time.perf_counter() - started}
         return result
@@ -328,6 +331,7 @@ class OfflineVision:
         self._battle_id = None
         self._battle_layout = None
         self.read_ahead = BattleReadAhead(self)
+        self.drink_reader = None
         self.ocr_requests = 0
         self._template_frame = None
         self._template_results = {}
@@ -431,6 +435,19 @@ class OfflineVision:
             self._battle_layout = None
             self.read_ahead.clear()
 
+    def read_drinks(self, result, array, source_size):
+        """未能观察时返回未知，瓶位读取失败不影响同帧的手牌与状态。"""
+        result["drinks"] = None
+        result.pop("drinks_error", None)
+        if self.drink_reader is None:
+            return
+        try:
+            drinks = self.drink_reader.read(array, source_size)
+            if drinks or result.get("battle_state", {}).get("hud_present"):
+                result["drinks"] = drinks
+        except Exception as exc:
+            result["drinks_error"] = str(exc)
+
     def analyze(self, image, catalog, candidates=None):
         from maa.pipeline import JRecognitionType, JNeuralNetworkDetect
 
@@ -449,6 +466,7 @@ class OfflineVision:
                     "label": item.label,
                     "detector_confidence": item.score,
                     "in_hand_region": 840 <= item.box[1] <= 1000,
+                    "available": item.label in ("cards", "suggestions") and 840 <= item.box[1] <= 1000,
                 }
                 for i, item in enumerate(detections)
             ]
@@ -516,11 +534,12 @@ class OfflineVision:
                     self._battle_layout = state["layout"]
             except Exception as exc:
                 result["battle_state"] = {"hud_present": False, "error": str(exc), "fields": {}, "buffs": []}
+        self.read_drinks(result, array, source_size)
         return result
 
 
 def analyze_stream(directory, resource, database, aliases=None, *, context=None, emit=None, icon_resources=None,
-                   battle_reader=None, on_reward_reader=None, selection_factory=None, database_ready=True):
+                   battle_reader=None, on_reward_reader=None, selection_factory=None, database_ready=True, on_battle_observer=None):
     directory = directory.resolve()
     capture_manifest = read_json(directory / "manifest.json")
     bindings = capture_manifest.get("metadata", {}).get("bindings", {})
@@ -590,6 +609,9 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
     try:
         save_status()
         vision = OfflineVision(resource, context)
+        vision.drink_reader = BattleDrinkReader(vision.recognize, database.parent, reward_reader.catalog, icon_resources)
+        if on_battle_observer:
+            on_battle_observer(lambda image, candidates: vision.analyze(image, catalog, candidates))
         if reward_reader.icons:
             reward_reader.icons.recognize = vision.recognize
         vision.state_reader = BattleStateReader(state_templates, vision._read_title, vision.match_buff_templates, resource / "image")
@@ -621,6 +643,11 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                 elif event["kind"] == "battle_invocation_end":
                     vision.set_battle(None)
                 if event["kind"] == "battle_read_ahead":
+                    if vision.read_ahead.result is None:
+                        # 离线重读时没有实时预读回调，只能从保留的这一帧恢复。
+                        if supplied_image is None:
+                            continue
+                        vision.read_ahead.result = vision.analyze(supplied_image, catalog, event.get("candidates"))
                     vision.read_ahead.event_id = event["event_id"]
                     vision.read_ahead.result.update(source_frame_sha256=event["frame"]["sha256"],
                                                    catalog_sha256=catalog.sha256)
@@ -765,7 +792,7 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                         if (candidates and event["kind"] == "decision_before" and event.get("operation") == "play_card"
                                 and vision.read_ahead.result is not None
                                 and vision.read_ahead.same_slots(vision.read_ahead.result["cards"], candidates)):
-                            result = vision.read_ahead.take(candidates)
+                            result = vision.read_ahead.take(candidates, image)
                         else:
                             result = vision.analyze(image, catalog, candidates)
                         result["capture_source_size"] = source_size

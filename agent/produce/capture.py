@@ -80,6 +80,7 @@ class DecisionCapture:
         self._console_event = None
         self._analysis = None
         self._battle_reader = None
+        self._battle_observer = None
         self.reward_reader = None
         self.selection = None
         self.shop = None
@@ -173,6 +174,7 @@ class DecisionCapture:
                                             context=lambda: self.context, emit=notice, icon_resources=self.icon_resources,
                                             database_ready=database_ready,
                                             battle_reader=lambda reader: setattr(self, "_battle_reader", reader),
+                                            on_battle_observer=lambda observer: setattr(self, "_battle_observer", observer),
                                             on_reward_reader=lambda reader: setattr(self, "reward_reader", reader),
                                             selection_factory=start_selection if self.event_context else None)
             next(self._analysis)
@@ -180,20 +182,27 @@ class DecisionCapture:
             self._analysis = None
             LOGGER.exception("记录识别初始化失败，继续培育")
 
-    def prepare_battle(self, image, candidates, *, context, battle_id, frame_observed_at_ns):
-        """等待阶段只在手牌与 Buff 连续稳定后执行一次完整读取。"""
-        if self._closed or self._failed or self._analyzing or self._analysis is None or self._battle_reader is None:
-            return False
+    def _read_battle(self, reader, image, candidates, context):
+        if self._closed or self._failed or self._analyzing or self._analysis is None or reader is None:
+            return None
         self.context = context
         self._analyzing = True
         try:
-            prepared = self._battle_reader(image, candidates)
+            return reader(image, candidates)
         except Exception:
-            LOGGER.exception("出牌提前识别失败，继续当前图读取")
-            return False
+            LOGGER.exception("读取战斗画面失败，继续当前任务")
+            return None
         finally:
             self.context = None
             self._analyzing = False
+
+    def read_battle(self, image, candidates=None, *, context):
+        """同步返回当前帧的手牌、战斗状态和饮料，供决策读取。"""
+        return self._read_battle(self._battle_observer, image, candidates, context)
+
+    def prepare_battle(self, image, candidates, *, context, battle_id, frame_observed_at_ns):
+        """等待阶段只在手牌与 Buff 连续稳定后执行一次完整读取。"""
+        prepared = self._read_battle(self._battle_reader, image, candidates, context)
         if prepared is None:
             return False
         return bool(self.record("battle_read_ahead", image=image, context=context, save_frame=True, battle_id=battle_id,
@@ -331,6 +340,7 @@ class DecisionCapture:
                 LOGGER.exception("记录识别收尾失败")
             self._analysis = None
         self._battle_reader = None
+        self._battle_observer = None
         self._manifest.update(status="closed", stop_reason=reason, ended_at=datetime.now(timezone.utc).isoformat())
         self._save_manifest()
 

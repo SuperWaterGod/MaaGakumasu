@@ -80,7 +80,9 @@ class SettlementConsole:
         calculated = check["calculated"] or {}
         formula = (f"公式计算：{show(calculated.get('score'))}｜推算评级 {show(calculated.get('rank'))}" if calculated else
                    "公式校验：暂不可用，输入缺项或不适用；画面评分与评级见标题")
-        lines = [f"{scenario} {difficulty}｜{status}｜评分 {show(observed)}｜评级 {show(check['observed_rank'])}",
+        rank = check.get("rank_from_observed_score")
+        rank_label = f"按评分推算评级 {rank}" if rank else f"评级 {show(check['observed_rank'])}"
+        lines = [f"{scenario} {difficulty}｜{status}｜评分 {show(observed)}｜{rank_label}",
                  formula,
                  "最终属性：" + " / ".join(f"{key} {show(fields[key]['value'])}" for key in ("Vo", "Da", "Vi"))]
         if scenario == "初":
@@ -102,7 +104,7 @@ class SettlementConsole:
             outcome = "不合格" if result["outcome"] == "failed" else "合格"
             lines[0] = f"{scenario} {difficulty}｜最终试镜{outcome}"
             lines.insert(1, f"试镜得分：{show(result['score']['value'])} Pt｜名次 {show(result['place']['value'])}")
-            lines.insert(2, f"最终培育评价：{show(observed)}｜评级 {show(check['observed_rank'])}")
+            lines.insert(2, f"最终培育评价：{show(observed)}｜{rank_label}")
         return {"message": "\n".join(lines), "scope": "settlement", "event_id": event_id, "evaluation_check": check}
 
 
@@ -246,6 +248,15 @@ def compact_state_lines(state):
     return [*main, *extra, *buff_rows]
 
 
+def drink_names(bottles):
+    """按操作前的实际瓶位整理显示名，同名饮料保留各自的位置。"""
+    drinks = {}
+    for bottle in bottles or ():
+        identity = bottle.get("identity") or {}
+        drinks[bottle["slot"]] = identity.get("display_name") or identity.get("database_name") or "饮料名未识别"
+    return drinks
+
+
 def operation_console(number, before_event, before_result, after_event=None, after_result=None):
     before_result = before_result or {}
     after_result = after_result or {}
@@ -254,6 +265,7 @@ def operation_console(number, before_event, before_result, after_event=None, aft
     operation = before_event.get("operation")
     title = {"play_card": "出牌", "use_drink_task": "使用饮料", "skip_round": "跳过回合", "move_cards": "移动卡牌"}.get(operation, "操作后观察")
     selected = selected_card(cards, before_event.get("selected_box"))
+    drinks = drink_names(before_result.get("drinks"))
     if operation == "play_card":
         title = f"出牌#{number}[" + (card_name(selected["identity"]) if selected else "牌名未识别") + "]"
     title = f"战斗 - {title}" if operation == "play_card" else f"战斗 - {title}#{number}"
@@ -261,6 +273,12 @@ def operation_console(number, before_event, before_result, after_event=None, aft
         elapsed = (after_event or {}).get("selection_click_seconds")
         if isinstance(elapsed, (int, float)) and elapsed >= 0:
             title += f" {round(elapsed, 1):g}s"
+    elif operation == "use_drink_task":
+        # 旧动作固定点第一格。每次使用均取本次操作前的瓶位，避免喝完前移后串名。
+        slot = before_event.get("drink_slot", 1)
+        title += f"[{drinks.get(slot, '饮料名未识别')}]"
+        if (after_event or {}).get("framework_action_succeeded") is False:
+            title += "｜使用未确认"
     elif operation == "skip_round":
         title += "（无手牌）" if before_event.get("reason") == "no_cards_ocr" else "（无可用牌）"
     lines = [title]
@@ -278,6 +296,8 @@ def operation_console(number, before_event, before_result, after_event=None, aft
         lines.append("操作前识别失败：" + before_result["error"])
     elif before_event:
         lines.extend(["", "操作前：", *compact_state_lines(before)])
+        if drinks:
+            lines.append("饮料：" + "｜".join(f"第{slot}格 {name}" for slot, name in sorted(drinks.items())))
     else:
         lines.append("操作前：缺少前帧，无法比较变化")
     if operation in ("play_card", "skip_round", "move_cards"):

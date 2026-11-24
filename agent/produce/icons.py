@@ -1,6 +1,7 @@
 """只读上游图标匹配；所有缩放、遮罩与特征仅驻留内存，不生成模板文件。"""
 
 import json
+import math
 import hashlib
 from pathlib import Path
 from functools import lru_cache
@@ -10,6 +11,7 @@ from utils.image_io import bgr_image, read_image, resize_image
 
 from .catalog import translated_name
 from .resources import ICON_FOLDERS
+from .state import PRODUCE_FRAME_SIZE, scale_box
 
 ICON_SIZE = 128
 ITEM_KINDS = {"skill_card", "drink", "p_item"}
@@ -68,20 +70,11 @@ def icon_mask(item_kind="skill_card"):
 
 
 def identity_mask(item_kind="skill_card"):
-    """初筛只定位卡名；角标和加号由后续原图差异区域单独核验。"""
-    if item_kind not in ITEM_KINDS:
-        raise ValueError("Unsupported icon kind")
-    y, x = np.ogrid[:ICON_SIZE, :ICON_SIZE]
-    visible = (x >= 5) & (x < 123) & (y >= 5) & (y < 123)
-    if item_kind != "skill_card":
-        return visible
-    visible &= y < 110
-    visible &= ~((x < 52) & (y < 38))
-    visible &= ~((x >= 88) & (y < 44))
-    visible &= ~((x >= 94) & (y >= 44))
-    visible &= ~((x < 44) & (y >= 82))
-    visible &= ~((x >= 80) & (y >= 82))
-    return visible
+    """技能卡用中央插画认卡名，边缘的费用、效果标记和加号留给版本核验。"""
+    if item_kind == "skill_card":
+        y, x = np.ogrid[:ICON_SIZE, :ICON_SIZE]
+        return (x >= 40) & (x < 92) & (y >= 38) & (y < 90)
+    return icon_mask(item_kind)
 
 
 def feature(image, kind):
@@ -254,6 +247,77 @@ class UpstreamIcons:
                     hits.append({**match, "box": box})
             self._last_scan = (key, hits)
         return [dict(hit) for hit in self._last_scan[1] if allow_unverified_variant or hit["variant_verified"]]
+
+
+class BattleDrinkReader:
+    """定位战斗圆形瓶位，用圆框内的彩色瓶身与本次会话的饮料图库核对。"""
+
+    def __init__(self, recognize, directory, catalog, icon_resources):
+        self.recognize = recognize
+        self.directory = directory
+        self.catalog = catalog
+        self.ids = []
+        self.vectors = None
+        self.gallery_pending = icon_resources is None or icon_resources.get("drink", {}).get("complete", False)
+        y, x = np.ogrid[:32, :32]
+        self.mask = (x - 15.5) ** 2 + (y - 15.5) ** 2 < 14 ** 2
+
+    def _feature(self, image):
+        return normalized(resize_image(image, 32, 32)[self.mask].ravel())
+
+    def _load_gallery(self):
+        self.gallery_pending = False
+        vectors = []
+        ids = []
+        for catalog_id, (kind, row) in self.catalog.ids.items():
+            if kind != "drink":
+                continue
+            try:
+                icon = read_image(self.directory / "images" / "pDrinks" / f"{row['id']}.png")
+            except (OSError, ValueError, RuntimeError):
+                # 缺失竞争候选时，不能凭残缺图库确认身份。
+                return
+            vectors.append(self._feature(icon))
+            ids.append(catalog_id)
+        if vectors:
+            self.vectors = np.stack(vectors)
+            self.ids = ids
+
+    def _identity(self, crop):
+        if self.gallery_pending:
+            self._load_gallery()
+        if self.vectors is None:
+            return None
+        scores = self.vectors @ self._feature(crop)
+        order = np.argsort(scores)
+        best = order[-1]
+        if scores[best] < .80 or len(order) > 1 and scores[best] - scores[order[-2]] < MATCH_MARGIN:
+            return None
+        catalog_id = self.ids[best]
+        kind, row = self.catalog.ids[catalog_id]
+        return {"catalog_id": catalog_id, "database_name": row["name"], "display_name": self.catalog.display_name(catalog_id),
+                "reference_effect_dsl": self.catalog.dsl(kind, row), "similarity": round(float(scores[best]), 4)}
+
+    def read(self, array, source_size):
+        from maa.pipeline import JTemplateMatch, JRecognitionType
+
+        # 三张模板对应瓶框外观。按实际位置分槽，第四格与前三格共用模板。
+        hits = self.recognize(JRecognitionType.TemplateMatch, JTemplateMatch(
+            template=[f"produce/drink_{i}.png" for i in (1, 2, 3)], roi=[10, 1150, 350, 100],
+            threshold=[.8], green_mask=True,
+        ), array)
+        slots = {}
+        for hit in sorted(hits, key=lambda hit: hit.score, reverse=True):
+            if not math.isfinite(hit.score) or hit.score < .8:
+                continue
+            x, y, w, h = map(int, hit.box)
+            slot = round((x - 27) / 85)
+            if not 0 <= slot < 4 or abs(x - (27 + 85 * slot)) > 5 or abs(y - 1165) > 5 or slot in slots:
+                continue
+            # 去除圆框后，64 像素的内图对应图库中的完整方形图标。
+            identity = self._identity(array[y + 3:y + h - 3, x + 3:x + w - 3])
+            slots[slot] = {"slot": slot + 1, "box": scale_box(hit.box, PRODUCE_FRAME_SIZE, source_size), "identity": identity}
+        return [slots[i] for i in sorted(slots)]
 
 
 def locate_icons(image, region, sizes, operation=None):

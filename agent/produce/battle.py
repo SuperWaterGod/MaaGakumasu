@@ -123,12 +123,14 @@ class ProduceCardsAuto(CustomAction):
         except Exception as exc:
             logger.warning(f"采集候选失败，继续原任务: {exc}")
 
-    def _finish_decision(self, wait_result, *, selection_click_seconds=None):
+    def _finish_decision(self, wait_result, *, selection_click_seconds=None, framework_action_succeeded=None):
         self._pending_after = {
             "decision_id": self._active_decision, "wait_until_playable": wait_result,
             "game_action_confirmed": None, "selection_click_seconds": selection_click_seconds,
             "observation_phase": "next_decision_before",
         }
+        if framework_action_succeeded is not None:
+            self._pending_after["framework_action_succeeded"] = framework_action_succeeded
         self._active_decision = None
 
     def _flush_decision(self, frame_reference=None):
@@ -156,14 +158,14 @@ class ProduceCardsAuto(CustomAction):
         self._record("battle_entry", drink_detections=hit_count)
         logger.info(f"识别到{hit_count}瓶饮料")
         for _ in range(hit_count):
-            self._begin_decision("use_drink_task", image, reason="existing_use_all_drinks")
+            self._begin_decision("use_drink_task", image, reason="existing_use_all_drinks", drink_slot=1)
             if context.tasker.stopping:
                 return True
             task = context.run_task("ProduceUseDrink")
             if not (task and task.status.succeeded) and not context.tasker.stopping:
-                self._retry_drink(context, image)
+                task = self._retry_drink(context, image)
             playable = self._wait_until_playable(context, 2)
-            self._finish_decision(playable)
+            self._finish_decision(playable, framework_action_succeeded=bool(task and task.status.succeeded))
             image = self._last_wait_image
 
         # 开始出牌
@@ -257,15 +259,14 @@ class ProduceCardsAuto(CustomAction):
                 return True
         return True
 
-    def _retry_drink(self, context: Context, before) -> None:
+    def _retry_drink(self, context: Context, before):
         tasker = context.tasker
         image = tasker.controller.post_screencap().wait().get()
         if image is None or tasker.stopping:
             return
         confirm = context.run_recognition("ProduceUseDrinkConfirm", image)
         if confirm and confirm.hit and not tasker.stopping:
-            context.run_task("ProduceUseDrinkConfirm")
-            return
+            return context.run_task("ProduceUseDrinkConfirm")
         if before is None or not self._is_playing_card(context, image):
             return
         previous = context.run_recognition("ProduceCheckDrinkButton", before)
@@ -275,7 +276,7 @@ class ProduceCardsAuto(CustomAction):
                 and any(x <= 62 < x + w for x, _, w, _ in (result.box for result in current.filtered_results))
                 and not tasker.stopping):
             logger.debug("饮料－确认框未出现且瓶数不变，补点第一格")
-            context.run_task("ProduceUseDrink")
+            return context.run_task("ProduceUseDrink")
 
     def _reset_window(self):
         """重置出牌计时窗口"""
