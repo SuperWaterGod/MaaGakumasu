@@ -206,11 +206,11 @@ class ProduceChooseOptionsAuto(CustomAction):
             after_click = tasker.controller.post_screencap().wait().get()
             if tasker.stopping:
                 return False
-            confirm = context.run_recognition("ProducePopup", after_click) if after_click is not None else None
+            confirm = context.run_recognition("ProduceStaminaFullPopup", after_click) if after_click is not None else None
             if confirm and confirm.hit:
                 if tasker.stopping:
                     return False
-                action = context.run_action("ProducePopup", box=confirm.box)
+                action = context.run_action("ProduceStaminaFullPopup", box=confirm.box)
                 if not action or not action.success:
                     return False
             elif not click_running(tasker, center_x, center_y):

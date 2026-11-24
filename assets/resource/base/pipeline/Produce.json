@@ -47,7 +47,7 @@
       "param": {}
     },
     "next": [
-      "ProducePopup",
+      "[JumpBack]ProducePopup",
       "ProduceEntryFlag"
     ]
   },
@@ -144,7 +144,7 @@
       "param": {}
     },
     "next": [
-      "ProducePopup",
+      "[JumpBack]ProducePopup",
       "ProduceEntryFlag"
     ]
   },
@@ -846,12 +846,12 @@
       "[JumpBack]ProduceChooseEventFlag",
       "[JumpBack]ProduceCardsFlag",
       "[JumpBack]ProduceChooseGetFlag",
+      "[JumpBack]ProducePopup",
       "[JumpBack]ProduceChooseStrengthenFlag",
       "[JumpBack]ProduceChooseDeleteFlag",
       "[JumpBack]ProduceShoppingFlag",
       "[JumpBack]ProduceKeepDrinkFlag",
       "[JumpBack]ProduceRecognitionWorkOptions",
-      "[JumpBack]ProduceSkipChatFlag",
       "[JumpBack]ProduceButton",
       "[JumpBack]ProduceSkip",
       "[JumpBack]Click_1"

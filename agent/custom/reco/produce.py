@@ -91,6 +91,8 @@ class ProduceRuleChoice(CustomRecognition):
             return None
         if argv.node_name == "ProduceShopByRule":
             choice = self.confirm_shop_step(context, argv.image, session)
+            if context.tasker.stopping:
+                return None
             if "shop_balance" not in session and capture.shop:
                 session["shop_balance"] = capture.shop["points"]["value"]
                 policy.health = read_produce_health(context, argv.image)
@@ -122,20 +124,28 @@ class ProduceRuleChoice(CustomRecognition):
 
     @staticmethod
     def confirm_shop_step(context, image, session):
-        pending = session.pop("shop_pending", None)
+        pending = session.get("shop_pending")
         if not pending:
             return
         node = "ProduceRecognitionPoint"
         detail = context.run_recognition(node, image, pipeline_override={node: {"expected": r"^[0-9]+(?:,[0-9]{3})*$"}})
+        if context.tasker.stopping:
+            return
         result = detail.best_result if detail and detail.hit else None
         actual = int(result.text.replace(",", "")) if result and result.score >= .8 else None
         expected = pending["balance"] - pending["price"]
+        session.pop("shop_pending")
+        target = pending.pop("edit_target", None)
         if actual == expected:
             session["shop_balance"] = actual
+            policy = session["capture"].selection
             if pending["operation"] == "buy":
-                session["capture"].selection.acquired(pending["catalog_id"])
-            elif pending.get("upgraded_id"):
-                session["capture"].selection.add_card(pending["upgraded_id"])
+                policy.acquired(pending["catalog_id"])
+            elif target is not None:
+                card_id = target["catalog_id"]
+                policy.forget_card(card_id, target["base_name"])
+                if pending["operation"] == "strengthen" and (upgraded := policy.upgrades.get(card_id)):
+                    policy.add_card(upgraded)
         elif (actual == pending["balance"] and session.get("shop_drinks_full")
               and pending["operation"] == "buy" and pending["attempt"][1] >= 4):
             session["shop_balance"] = actual
@@ -175,7 +185,7 @@ class ProduceRuleChoice(CustomRecognition):
                                 "reason": "购买" + name + "，" + reason, "box": item["box"]})
         for service in shop["services"]:
             kind = service["operation"]
-            if kind in used or service["price"] > points:
+            if kind in used or not 0 < service["price"] <= points:
                 continue
             cards = [{"catalog_id": k} for k in sorted(policy.owned) if policy.catalog.ids[k][0] == "skill_card"]
             best = policy.choose(cards, kind, shop_estimate=True)

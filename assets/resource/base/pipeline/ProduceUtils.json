@@ -549,6 +549,90 @@
   },
   "ProducePopup": {
     "recognition": {
+      "type": "Or",
+      "param": {
+        "any_of": [
+          "ProduceSkipChatFlag",
+          "ProduceShoppingCancelEdit",
+          "ProduceStaminaFullPopup"
+        ]
+      }
+    },
+    "pre_delay": 0,
+    "post_delay": 0,
+    "next": [
+      "ProduceSkipChatFlag",
+      "ProduceShoppingCancelEdit",
+      "ProduceStaminaFullPopup"
+    ]
+  },
+  "ProduceShoppingCancelEdit": {
+    "timeout": 4000,
+    "recognition": {
+      "type": "And",
+      "param": {
+        "all_of": [
+          {
+            "recognition": "TemplateMatch",
+            "roi": [
+              80,
+              1110,
+              275,
+              100
+            ],
+            "template": "produce/cancel.png"
+          },
+          {
+            "recognition": "Or",
+            "any_of": [
+              "ProduceChooseStrengthenConfirm",
+              "ProduceShoppingDeleteConfirm",
+              {
+                "recognition": "And",
+                "all_of": [
+                  {
+                    "recognition": "TemplateMatch",
+                    "roi": [
+                      0,
+                      28,
+                      182,
+                      58
+                    ],
+                    "template": [
+                      "produce/strengthen_icon.png",
+                      "produce/delete_icon.png"
+                    ]
+                  },
+                  {
+                    "recognition": "OCR",
+                    "roi": [
+                      477,
+                      1184,
+                      87,
+                      31
+                    ],
+                    "expected": "^[1-9][0-9]*$"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "box_index": 0
+      }
+    },
+    "action": {
+      "type": "Click",
+      "param": {}
+    },
+    "post_wait_freezes": 500,
+    "next": [
+      "ProduceShoppingExit",
+      "ProduceShoppingCancelEdit"
+    ]
+  },
+  "ProduceStaminaFullPopup": {
+    "recognition": {
       "type": "And",
       "param": {
         "all_of": [
@@ -603,10 +687,7 @@
     },
     "focus": {
       "Node.Action.Succeeded": "培育－已确认弹窗"
-    },
-    "next": [
-      "ProduceEntryFlag"
-    ]
+    }
   },
   "ProduceRecognitionWorkOptions": {
     "recognition": {
