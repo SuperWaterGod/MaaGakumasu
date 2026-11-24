@@ -299,6 +299,8 @@ def locate_icons(image, region, sizes, operation=None):
 
 def icons_for_capture(directory, hashes=None, recognize=None, *, icon_resources=None):
     """从当前安装目录读取原始图；不依赖已删除的 detail 或 debug/cache。"""
+    if icon_resources is not None and not any(row.get("complete", False) for row in icon_resources.values()):
+        return None
     root = Path(__file__).resolve().parents[2]
     data = root / "data" if (root / "data").is_dir() else root / "assets/data"
     try:

@@ -13,7 +13,7 @@ from produce.options import ProduceKeepDrinkAuto, ProduceChooseWorkAuto, Produce
 from produce.rewards import observe_reward_page
 from produce.sessions import SESSIONS
 from maa.custom_action import CustomAction
-from produce.resources import RecoveryError, UpdateCancelled, configured_updater, icon_resources_status, ensure_resources_ready
+from produce.resources import RecoveryError, UpdateCancelled, configured_updater, ensure_resources_ready, produce_resources_status
 from produce.selection import rules, debug_choice
 from utils.task_control import wait_running, click_running
 from maa.agent.agent_server import AgentServer
@@ -38,6 +38,7 @@ class ProduceEditChoice(CustomAction):
         session = SESSIONS.get(context)
         default = [140, 760] if operation.startswith("strengthen") else [140, 450]
         point = default
+        target = None
         if operation == "strengthen_repeat":
             point = session.pop("strengthen_point", default) if session else default
         else:
@@ -62,15 +63,9 @@ class ProduceEditChoice(CustomAction):
                 if choice:
                     x, y, w, h = choice["box"]
                     point = [x + w // 2, y + h // 2]
-                # 调整中的卡暂时撤下；其余已确认持有的卡继续用于下一次判断。
                 if operation != "copy":
                     target = choice or next((c for c in candidates if c["box"][0] <= point[0] < c["box"][0] + c["box"][2]
-                                             and c["box"][1] <= point[1] < c["box"][1] + c["box"][3]), None)
-                    target = target or {}
-                    pending = session.get("shop_pending")
-                    if operation == "strengthen" and pending and pending["operation"] == "strengthen":
-                        pending["upgraded_id"] = policy.upgrades.get(target.get("catalog_id"))
-                    policy.forget_card(target.get("catalog_id"), target.get("base_name"))
+                                             and c["box"][1] <= point[1] < c["box"][1] + c["box"][3]), {})
             label = {"strengthen": "强化", "delete": "删除", "exchange": "变换", "copy": "复制"}.get(operation, "卡牌调整")
             if choice:
                 name = choice.get("display_name") or choice["database_name"]
@@ -79,7 +74,17 @@ class ProduceEditChoice(CustomAction):
                 logger.info(f"{label}选择－默认 · 第一项")
             if session and operation == "strengthen":
                 session["strengthen_point"] = point
-        return click_running(context.tasker, *point)
+        clicked = click_running(context.tasker, *point)
+        if clicked and operation != "strengthen_repeat":
+            pending = session.get("shop_pending") if session else None
+            shop_operation = "delete" if operation == "delete_copy_exchange" else operation
+            if pending and pending["operation"] == shop_operation:
+                # 商店选牌和付费是两步；先保存目标，回到货架核实扣款后再更新持牌。
+                target = target or {}
+                pending["edit_target"] = {key: target.get(key) for key in ("catalog_id", "base_name")}
+            elif target is not None:
+                policy.forget_card(target.get("catalog_id"), target.get("base_name"))
+        return clicked
 
 
 @AgentServer.custom_action("ProduceSettlementClick")
@@ -107,16 +112,20 @@ class ProduceResourcesReady(CustomAction):
         if produce_fast_mode(context):
             logger.info("快速模式：跳过培育采集、额外识别与报告")
             return not context.tasker.stopping
-        try:
-            rules()
-        except (OSError, ValueError) as exc:
-            logger.error(f"完整模式奖励规则无法加载：{exc}")
-            return False
-        try:
-            ensure_resources_ready(ROOT)
-            icon_resources_status.cache_clear()
-            load_gallery.cache_clear()
-            status = icon_resources_status(ROOT)
+        produce_resources_status.cache_clear()
+        load_gallery.cache_clear()
+        status, database_error = produce_resources_status(ROOT)
+        warning = None
+        if database_error is not None:
+            logger.warning("培育数据库校验未通过：{}", database_error)
+            warning = ("培育数据库不可用。将继续自动培育、OCR、记录和回放。"
+                       "奖励选择、商店、强化及其他图标辅助选牌将使用默认流程。")
+        else:
+            try:
+                rules()
+            except (OSError, ValueError) as exc:
+                logger.error(f"完整模式奖励规则无法加载：{exc}")
+                return False
             labels = {"skill_card": "技能卡", "drink": "饮料", "p_item": "P 道具"}
             missing = [f"{labels[kind]}未安装" if not row["expected"] else
                        f"{labels[kind]}缺失 {row['missing']} 张、校验失败 {row['damaged']} 张"
@@ -124,14 +133,20 @@ class ProduceResourcesReady(CustomAction):
             if missing:
                 operations = {"shop": "商店", "strengthen": "强化", "delete_copy_exchange": "删除／复制／变换", "move_cards": "移动选牌"}
                 degraded = [name for operation, name in operations.items() if not icon_operation_available(status, operation)]
-                logger.warning("完整模式图库未就绪（{}）。{}的图标专用环节按快速模式执行，继续 OCR、记录和回放。"
-                               "可通过“一键培育”的“更新数据库和素材”任务补全图库。",
-                               "，".join(missing), "、".join(degraded))
-            SESSIONS.prepare_reports()
-            return not context.tasker.stopping
-        except Exception as exc:
-            logger.error(f"培育资源不可用，请先执行“更新数据库和素材”：{exc}")
-            return False
+                warning = (f"培育图库未就绪（{'，'.join(missing)}）。"
+                           f"{'、'.join(degraded)}的图标辅助环节将使用默认流程，继续 OCR、记录和回放。")
+        if warning and not context.tasker.stopping:
+            update = "可通过「一键培育」中的「更新数据库和素材」补全资源。"
+            logger.warning("{}{}", warning, update)
+            node = "ProduceResourceWarning"
+            context.run_action(node, pipeline_override={node: {"focus": {
+                "Node.ActionNode.Succeeded": {
+                    "content": f"[color:orange]培育资源未就绪[/color]\n{warning}\n{update}",
+                    "display": ["modal"],
+                }
+            }}})
+        SESSIONS.prepare_reports()
+        return not context.tasker.stopping
 
 
 @AgentServer.custom_action("ProduceUpdateResources")
@@ -144,7 +159,7 @@ class ProduceUpdateResources(CustomAction):
             updater = configured_updater(ROOT, stopping=lambda: context.tasker.stopping, log=logger.info, debug=logger.debug)
             updater.update()
             load_gallery.cache_clear()
-            icon_resources_status.cache_clear()
+            produce_resources_status.cache_clear()
             return True
         except UpdateCancelled:
             logger.info("资源更新已取消，下载断点保留在 temp/produce_update")

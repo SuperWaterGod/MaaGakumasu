@@ -132,7 +132,7 @@ class DecisionCapture:
         """同步分析已完成，不再轮询或等待后台通知。"""
         return event_id == self._console_event
 
-    def start_analysis(self, resource: Path, database: Path, aliases=None, context=None):
+    def start_analysis(self, resource: Path, database: Path, aliases=None, context=None, *, database_ready=True):
         if context is None:
             return
         from .analysis import analyze_stream
@@ -171,6 +171,7 @@ class DecisionCapture:
         try:
             self._analysis = analyze_stream(self.directory, resource, database, aliases,
                                             context=lambda: self.context, emit=notice, icon_resources=self.icon_resources,
+                                            database_ready=database_ready,
                                             battle_reader=lambda reader: setattr(self, "_battle_reader", reader),
                                             on_reward_reader=lambda reader: setattr(self, "reward_reader", reader),
                                             selection_factory=start_selection if self.event_context else None)
@@ -228,11 +229,13 @@ class DecisionCapture:
             package_data = ROOT / "data" if (ROOT / "data").is_dir() else ROOT / "assets/data"
             resource = ROOT / "resource/base" if (ROOT / "resource/base").is_dir() else ROOT / "assets/resource/base"
             database = package_data / "produce_skill_cards.json"
-            from .resources import icon_resources_status
-            icon_resources = icon_resources_status(ROOT) if context is not None and metadata.get("entry") != "IdolRoadAuto" else None
+            from .resources import produce_resources_status
+            managed_resources = context is not None and metadata.get("entry") != "IdolRoadAuto"
+            icon_resources, database_error = produce_resources_status(ROOT) if managed_resources else (None, None)
             analysis = None
-            if (session_directory is not None or config.get("match_cards", True)) and database.exists():
-                analysis = {"resource": resource, "database": database, "aliases": package_data / "skill_card_aliases.json", "context": context}
+            if (session_directory is not None or config.get("match_cards", True)) and (managed_resources or database.exists()):
+                analysis = {"resource": resource, "database": database, "aliases": package_data / "skill_card_aliases.json",
+                            "context": context, "database_ready": database_error is None}
             def limit(name, default, minimum):
                 try:
                     return max(minimum, int(config.get(name, default)))

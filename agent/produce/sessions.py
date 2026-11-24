@@ -14,7 +14,7 @@ from maa.context import ContextEventSink
 from maa.event_sink import NotificationType
 
 from .capture import ROOT, DecisionCapture, produce_fast_mode
-from .resources import REWARD_RULES_NAME, data_directory
+from .resources import REWARD_RULES_NAME, data_directory, produce_resources_status
 
 # 记录流水线的动作和对应画面。
 ROUTE_NODES = {
@@ -191,11 +191,14 @@ class ProduceSessions:
         bindings = configured_bindings(context)
         package_data = data_directory(ROOT)
         resource = ROOT / "resource/base" if (ROOT / "resource/base").is_dir() else ROOT / "assets/resource/base"
-        version_files = [
+        database_files = [
             package_data / "produce_skill_cards.json",
             package_data / "produce_reward_items.json",
             package_data / "produce_resources_source.json",
             package_data / "produce_resources_manifest.json",
+        ] if produce_resources_status(ROOT)[1] is None else []
+        version_files = [
+            *database_files,
             package_data / "idols_cards.json",
             package_data / REWARD_RULES_NAME,
             resource / "model/detect/cards.onnx",

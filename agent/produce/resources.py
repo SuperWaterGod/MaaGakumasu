@@ -33,7 +33,7 @@ class UpdateCancelled(Exception):
 
 
 class RecoveryError(RuntimeError):
-    """无法确认正式资源完整性，禁止开始新的培育。"""
+    """无法确认数据库及图库的安装状态和完整性。"""
 
 
 def data_directory(root):
@@ -107,11 +107,14 @@ def files_valid(directory, manifest):
 
 
 @lru_cache(maxsize=2)
-def icon_resources_status(root):
-    """按已安装清单核验各类图库；入口刷新缓存，单轮内复用结果。"""
+def produce_resources_status(root):
+    """核验数据库和图库；培育入口刷新缓存，采集复用同次检查。"""
     directory = data_directory(root)
-    manifest = validate_manifest(json.loads((directory / STATE_NAME).read_text(encoding="utf-8")))
     status = {kind: {"expected": 0, "missing": 0, "damaged": 0, "complete": False} for kind in ICON_FOLDERS}
+    try:
+        manifest = ensure_resources_ready(root)
+    except (RecoveryError, OSError, ValueError) as exc:
+        return status, str(exc)
     kinds = {folder: kind for kind, folder in ICON_FOLDERS.items()}
     for entry in manifest["files"]:
         if not PNG_PATH.fullmatch(entry["path"]):
@@ -128,7 +131,7 @@ def icon_resources_status(root):
             row["damaged"] += 1
     for row in status.values():
         row["complete"] = row["expected"] > 0 and row["missing"] == 0 and row["damaged"] == 0
-    return status
+    return status, None
 
 
 def validate_catalogs(directory):
@@ -548,3 +551,4 @@ def ensure_resources_ready(root):
     core = {**manifest, "files": [row for row in manifest["files"] if row["path"] in DATABASES]}
     if not files_valid(updater.data, core):
         raise RecoveryError("培育数据库与上次安装清单不一致，请先执行资源更新")
+    return manifest

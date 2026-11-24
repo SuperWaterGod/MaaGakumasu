@@ -38,10 +38,10 @@ def name_match_allowed(observed, candidate, confidence, similarity, margin):
 
 
 class SkillCardCatalog:
-    def __init__(self, path: Path, aliases_path=None, *, localized_names=False):
-        raw = path.read_bytes()
-        database = json.loads(raw)
-        self.sha256 = hashlib.sha256(raw).hexdigest()
+    def __init__(self, path: Path | None, aliases_path=None, *, localized_names=False):
+        raw = path.read_bytes() if path is not None else None
+        database = json.loads(raw) if raw is not None else {"source": {}, "cards": []}
+        self.sha256 = hashlib.sha256(raw).hexdigest() if raw is not None else None
         self.source = database["source"]
         self.cards = database["cards"]
         self.localized_names = localized_names
@@ -49,7 +49,7 @@ class SkillCardCatalog:
         self.exact_names = set()
         self.literal_entries = defaultdict(set)
         aliases = {}
-        if aliases_path and aliases_path.exists():
+        if path is not None and aliases_path and aliases_path.exists():
             aliases = json.loads(aliases_path.read_text(encoding="utf-8-sig"))
         for card in self.cards:
             names = [card["name"], *card.get("aliases", []), *aliases.get(str(card["id"]), [])]

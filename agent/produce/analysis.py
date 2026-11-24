@@ -520,17 +520,18 @@ class OfflineVision:
 
 
 def analyze_stream(directory, resource, database, aliases=None, *, context=None, emit=None, icon_resources=None,
-                   battle_reader=None, on_reward_reader=None, selection_factory=None):
+                   battle_reader=None, on_reward_reader=None, selection_factory=None, database_ready=True):
     directory = directory.resolve()
     capture_manifest = read_json(directory / "manifest.json")
     bindings = capture_manifest.get("metadata", {}).get("bindings", {})
     if icon_resources is None:
         icon_resources = capture_manifest.get("icon_resources")
-    catalog = SkillCardCatalog(database, aliases, localized_names=bindings.get("language") == "zh-CN")
-    reward_reader = RewardReader(catalog, database.with_name("produce_reward_items.json"), directory, icon_resources=icon_resources)
+    catalog = SkillCardCatalog(database if database_ready else None, aliases, localized_names=bindings.get("language") == "zh-CN")
+    items = database.with_name("produce_reward_items.json") if database_ready else None
+    reward_reader = RewardReader(catalog, items, directory if database_ready else None, icon_resources=icon_resources)
     if on_reward_reader:
         on_reward_reader(reward_reader)
-    policy = selection_factory(reward_reader) if selection_factory else None
+    policy = selection_factory(reward_reader) if database_ready and selection_factory else None
     model_sha = hashlib.sha256((resource / "model/detect/cards.onnx").read_bytes()).hexdigest()
     state_templates = database.with_name("battle_buff_templates.json")
     signature = "current"
