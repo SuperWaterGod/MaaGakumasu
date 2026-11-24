@@ -106,7 +106,7 @@ class ProduceChooseOptionsAuto(CustomAction):
     根据当前得分自动选择属性选项：
     1. 获取第一、第二、第三属性的当前分数
     2. THIRD_ATTR_PROBABILITY 概率选择第三属性，剩余概率选择第二属性
-    3. 在可用选项中执行双击选择
+    3. 全部为无属性选项时随机选择一行，随后执行双击
     4. 若目标选项不可用，按优先级 fallback：null > 第二属性 > 第三属性 > 随机
     """
 
@@ -156,42 +156,17 @@ class ProduceChooseOptionsAuto(CustomAction):
         third_score = score.get(third, 0)
         logger.debug(f"第一属性 {self.first}={first_score}, 第二属性 {self.second}={second_score}, 第三属性 {third}={third_score}")
 
-        # 判断逻辑：根据 THIRD_ATTR_PROBABILITY 概率选择第三属性，剩余概率选择第二属性
-        if random.random() < self.THIRD_ATTR_PROBABILITY:
-            choice = third
-            logger.debug(f"随机数 < {self.THIRD_ATTR_PROBABILITY}，选择第三属性: {choice}")
-        else:
-            choice = self.second
-            logger.debug(f"随机数 >= {self.THIRD_ATTR_PROBABILITY}，选择第二属性: {choice}")
-
-        # 找到目标选项
+        # 外出的多行按钮共用无属性模板，每次进入都从本帧的实际命中行中重选。
         target_box = None
-        for opt in options:
-            if choice in opt:
-                target_box = opt[choice]
-                break
-
-        # 如果目标选项不可用，尝试 fallback（null 优先）
-        if target_box is None:
-            logger.debug(f"选项 {choice} 不可用，尝试 fallback")
-            # 按 null > 第二属性 > 第三属性 > 随机的优先级选择
-            priority = ["null", self.second, third, None]
-            for p in priority:
-                if p is None:
-                    # 最后从所有可用选项中随机选择
-                    if options:
-                        random_opt = random.choice(options)
-                        choice = next(iter(random_opt.keys()))
-                        target_box = random_opt[choice]
-                        logger.debug(f"Fallback 随机选择: {choice}")
-                    break
-                for opt in options:
-                    if p in opt:
-                        target_box = opt[p]
-                        choice = p
-                        logger.debug(f"Fallback 选择 {p}")
-                        break
-                if target_box:
+        if options and all("null" in option for option in options):
+            choice = "null"
+            target_box = random.choice(options)[choice]
+        elif options:
+            preferred = third if random.random() < self.THIRD_ATTR_PROBABILITY else self.second
+            boxes = {name: box for option in options for name, box in option.items()}
+            for choice in (preferred, "null", self.second, third, self.first):
+                if choice in boxes:
+                    target_box = boxes[choice]
                     break
 
         # 执行双击
@@ -245,7 +220,10 @@ class ProduceChooseOptionsAuto(CustomAction):
                 pipeline_override={"ProduceRecognitionWorkOptions": {"template": option_img, "focus": None}},
             )
             if reco_detail and reco_detail.hit:
-                available_options.append({option_name: reco_detail.best_result.box})
+                if option_name == "null" and not available_options:
+                    available_options.extend({"null": result.box} for result in reco_detail.filtered_results)
+                else:
+                    available_options.append({option_name: reco_detail.best_result.box})
                 available_options_name += f"{option_name}, "
 
         logger.debug(f"可用选项: {available_options_name.rstrip(', ')}")
