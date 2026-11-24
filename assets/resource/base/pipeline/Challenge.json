@@ -168,26 +168,40 @@
       "type": "DoNothing",
       "param": {}
     },
+    "timeout": 60000,
     "next": [
-      "ChallengeSkip"
+      "ChallengeSkip",
+      "ChallengeNext"
     ]
   },
   "ChallengeSkip": {
     "recognition": {
-      "type": "TemplateMatch",
+      "type": "OCR",
       "param": {
         "roi": [
-          482,
-          1020,
-          207,
-          64
+          550,
+          1027,
+          113,
+          49
         ],
-        "template": "challenge_skip.png"
+        "expected": [
+          "^スキップ$",
+          "^跳过$"
+        ],
+        "only_rec": true,
+        "threshold": 0.7
       }
     },
     "action": {
       "type": "Click",
-      "param": {}
+      "param": {
+        "target": [
+          583,
+          1052,
+          1,
+          1
+        ]
+      }
     },
     "timeout": 60000,
     "next": [
