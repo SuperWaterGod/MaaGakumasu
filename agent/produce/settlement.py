@@ -44,6 +44,11 @@ VOTE_RATING = ((140000, 5200, 30), (120000, 3800, 40), (100000, 2600, 50), (8000
                (60001, 1200, 65), (40001, 900, 70), (20001, 300, 85))
 
 
+def rank_for_score(score):
+    """按培育评价分数查评级门槛。"""
+    return next((rank for rank, bound in RANK_THRESHOLDS if score >= bound), None)
+
+
 def nia_evaluation(parameters, votes):
     """使用试镜后的最终三维和投票数计算评价，不重复增加属性奖励。"""
     if len(parameters) != 3 or any(type(value) is not int or value < 0 for value in (*parameters, votes)):
@@ -51,8 +56,7 @@ def nia_evaluation(parameters, votes):
     parameter_rating = sum(parameters) * 23 // 10
     vote_rating = next((base + votes * rate // 1000 for bound, base, rate in VOTE_RATING if votes >= bound), 0)
     score = parameter_rating + vote_rating
-    rank = next((rank for rank, threshold in RANK_THRESHOLDS if score >= threshold), None)
-    return {"score": score, "rank": rank, "parameter_rating": parameter_rating, "vote_rating": vote_rating}
+    return {"score": score, "rank": rank_for_score(score), "parameter_rating": parameter_rating, "vote_rating": vote_rating}
 
 
 def hajime_evaluation(parameters, exam_score, place, difficulty):
@@ -71,7 +75,7 @@ def hajime_evaluation(parameters, exam_score, place, difficulty):
                                                      (20000, 30000, 4), (30000, 40000, 2), (40000, exam_score, 1)))
     exam_rating = exam_hundredths // 100
     score = parameter_rating + placement_rating + exam_rating
-    return {"score": score, "rank": next((rank for rank, bound in RANK_THRESHOLDS if score >= bound), None),
+    return {"score": score, "rank": rank_for_score(score),
             "parameter_rating": parameter_rating, "placement_rating": placement_rating, "exam_rating": exam_rating}
 
 
@@ -92,6 +96,8 @@ def evaluation_check(scenario, final_settlement, fan_votes, final_exam=None, dif
         return result
     if scenario == "初":
         result["source"] = {**FORMULA_SOURCE, "path": FORMULA_SOURCE["rank_path"]}
+    if result["observed_rank"] is None and not final_settlement["rank"].get("conflict") and type(result["observed_score"]) is int:
+        result["rank_from_observed_score"] = rank_for_score(result["observed_score"])
     if any(value is None for value in inputs.values()):
         result["reason"] = "missing_formula_inputs"
         return result
@@ -419,21 +425,38 @@ class FinalExamTracker:
         ranking = observation.get("exam_ranking")
         if ranking:
             self.pending = {key: {**value, "source_event_id": event.get("event_id")} for key, value in ranking.items()}
-        tokens = eligible(observation.get("raw_ocr", []))
+        tokens = eligible(observation.get("raw_ocr") or [])
         if self.scenario == "NIA":
             heading = [t for t in tokens if re.fullmatch(r"最終オーディション|最终试镜|最終試鏡", text_value(t["text"]))
                        and 180 < t["box"][0] < 450 and 200 < t["box"][1] < 400]
             outcomes = [t for t in tokens if re.fullmatch(r"不合格|合格", text_value(t["text"]))
                         and 250 < t["box"][0] < 550 and 550 < t["box"][1] < 800]
-            if len(heading) == len(outcomes) == 1:
+            # 胜利页会以“1 位”代替“合格”。同时核对本场本人排名和终试标题，避免串入此前的试镜。
+            if len(heading) != 1:
+                return
+            if len(outcomes) == 1:
                 outcome = "failed" if text_value(outcomes[0]["text"]) == "不合格" else "passed"
-                if self.final_audition is None or self.final_audition["outcome"] != outcome:
-                    self.final_audition = {"outcome": outcome, "event_id": event.get("event_id"),
-                                           "evidence": [*heading, *outcomes],
-                                           "score": (self.pending or {}).get("score", unknown("ranking_not_observed")),
-                                           "place": (self.pending or {}).get("place", unknown("ranking_not_observed"))}
-                observation["final_audition"] = self.final_audition
-                self.pending = None
+            elif not outcomes and self.pending and (self.pending.get("place") or {}).get("value") == 1:
+                place_tokens = [t for t in tokens if inside(t, [260, 550, 210, 235])]
+                number = [t for t in place_tokens if text_value(t["text"]) == "1"]
+                unit = [t for t in place_tokens if text_value(t["text"]) == "位"]
+                first = [t for t in place_tokens if re.fullmatch(r"1\s*位", text_value(t["text"]))]
+                if len(first) == 1:
+                    outcomes = first
+                elif len(number) == len(unit) == 1 and number[0]["box"][0] < unit[0]["box"][0]:
+                    outcomes = number + unit
+                else:
+                    return
+                outcome = "passed"
+            else:
+                return
+            if self.final_audition is None or self.final_audition["outcome"] != outcome:
+                self.final_audition = {"outcome": outcome, "event_id": event.get("event_id"),
+                                       "evidence": heading + outcomes,
+                                       "score": (self.pending or {}).get("score", unknown("ranking_not_observed")),
+                                       "place": (self.pending or {}).get("place", unknown("ranking_not_observed"))}
+            observation["final_audition"] = self.final_audition
+            self.pending = None
             return
         if self.scenario != "初":
             return

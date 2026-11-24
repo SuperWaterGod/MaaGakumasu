@@ -52,6 +52,7 @@ h1 { font-size: clamp(2.35rem, 5.5vw, 5.35rem); line-height: 1.12; font-weight: 
 .evaluation { display: flex; align-items: flex-end; gap: clamp(.75rem, 2vw, 1.8rem); min-width: 0; }
 .rank, .score strong { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
 .rank { font-size: clamp(2rem, 6vw, 5.6rem); letter-spacing: -.065em; }
+.rank small { display: block; font-size: .8rem; letter-spacing: normal; }
 .score { border-left: 1px solid #171b2470; padding-left: clamp(.75rem, 2vw, 1.8rem); }
 .score span { display: block; font-size: .875rem; font-weight: 800; margin-bottom: .3rem; }
 .score strong { font-size: clamp(1.75rem, 4.5vw, 4.35rem); letter-spacing: -.06em; }
@@ -202,7 +203,7 @@ time { color: var(--muted); font-family: "Segoe UI", "Microsoft YaHei", sans-ser
         <p class="session">$session</p>
       </div>
       <div class="hero-art">
-        <div class="evaluation"><strong class="rank" aria-label="评级 $rank">$rank</strong>
+        <div class="evaluation"><strong class="rank" aria-label="评级 $rank $rank_note">$rank<small>$rank_note</small></strong>
           <div class="score"><span>最终评价</span><strong>$score</strong></div>
         </div>
       </div>

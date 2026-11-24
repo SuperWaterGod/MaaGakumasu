@@ -362,6 +362,9 @@ def enrich_report(report, records, directory, capture_root):
                   "action", "selected_box", "selection", "observations", "policy_inputs_with_fallbacks", "policy", "title", "state_changes",
                   "verified", "failure_diagnostic", "stop_reason", "candidate_previews_complete", "safe_to_receive") if key in event}
         obs = observation(entry)
+        if kind == "decision_before" and event.get("operation") == "use_drink_task":
+            detail["drink_slot"] = event.get("drink_slot", 1)
+            detail["drinks"] = obs.get("drinks")
         detail["state_changes"] = ((entry.get("derived") or {}).get("link") or {}).get("state_changes")
         if kind in ("decision_before", "decision_after", "battle_entry"):
             detail["battle_state"] = obs.get("battle_state")
@@ -432,7 +435,8 @@ def enrich_report(report, records, directory, capture_root):
                               and mode != "interrupted_resume")
     report["timing"]["active_seconds"] = active_seconds if duration_known and eligible else None
     report["timing"]["active_seconds_basis"] = "gameplay_entry_plus_resume_capture_intervals; excludes_pause; not_pure_game_time"
-    report["outcome"]["success"] = False if session.get("failure_stop_observed") else None
+    if normal and report.get("final_audition"):
+        report["outcome"]["success"] = report["final_audition"]["outcome"] == "passed"
     report["integrity"]["strategy_readiness"] = {
         "basic_comparison": "usable" if report["complete"] else "partial",
         "causal_strategy_analysis": "insufficient",

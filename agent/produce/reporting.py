@@ -16,7 +16,7 @@ if __name__ == "__main__" and __package__ is None:
 
 from produce.audit import enrich_report, analysis_records
 from produce.replay import render_replay
-from produce.settlement import evaluation_check
+from produce.settlement import FinalExamTracker, evaluation_check
 
 
 def read_json(path):
@@ -71,6 +71,7 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
     seen_events = set()
     seen_runs = set()
     run_directories = {}
+    nia_tracker = FinalExamTracker("NIA") if session["bindings"].get("scenario") == "NIA" else None
     for segment in session["segments"]:
         run_id = segment["run_id"]
         if run_id in seen_runs:
@@ -124,6 +125,8 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
             break
         segments.append({"run_id": run_id, "manifest": manifest, "analysis": status,
                          "settlement_refresh": settlement_refresh})
+        if nia_tracker:
+            nia_tracker.pending = None
         for number, line in enumerate((run / "events.jsonl").read_text(encoding="utf-8").splitlines(), 1):
             try:
                 event = json.loads(line)
@@ -145,6 +148,8 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
                 gaps.append({"event_id": event["event_id"], "reason": "analysis_frame_mismatch"})
                 entry["derived"] = None
             counts[event["kind"]] += 1
+            if nia_tracker:
+                nia_tracker.observe(event)
             observation = (entry["derived"] or {}).get("observation") or {}
             if event["kind"] == "reward_page_start":
                 reward_pages[event["event_id"]] = {
@@ -188,6 +193,14 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
                         raise ValueError("Settlement refresh event frame mismatch")
                     entry["derived"] = refreshed
                 (settlements if event["kind"] == "settlement_observation" else exam_results).append(entry)
+                observation = (entry.get("derived") or {}).get("observation") or {}
+                if nia_tracker:
+                    # 使用当时保存的 OCR 重建旧报告，无需原图；已经确认的旧读数仍可沿用。
+                    if observation.get("final_audition"):
+                        nia_tracker.final_audition = observation["final_audition"]
+                        nia_tracker.pending = None
+                    else:
+                        nia_tracker.observe(event, observation.copy())
             elif event["kind"] == "preparation_observation":
                 preparations.append(entry)
     for decision, route in routes.items():
@@ -218,11 +231,7 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
             entry = route[phase]
             if entry and "frame" not in entry["event"]:
                 missing_frames.append(entry["event"]["event_id"])
-    final_audition = None
-    for entry in (*settlements, *exam_results):
-        observation = (entry.get("derived") or {}).get("observation") or {}
-        if observation.get("final_audition"):
-            final_audition = observation["final_audition"]
+    final_audition = nia_tracker.final_audition if nia_tracker else None
     final_settlement = {}
     for field in ("score", "rank", "Vo", "Da", "Vi", "fan_votes", "exam_score", "place"):
         observations = []
