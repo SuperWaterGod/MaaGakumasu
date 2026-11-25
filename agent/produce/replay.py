@@ -126,7 +126,9 @@ def battle_operation(row, following):
     subjects = (chosen,) if operation == "play_card" and chosen else ()
     title = "" if subjects else "牌名未识别" if operation == "play_card" else action
     facts = []
-    if detail.get("reason") in REASONS:
+    if detail.get("rule_id") and detail.get("reason"):
+        facts.append(("选择依据", detail["reason"]))
+    elif detail.get("reason") in REASONS:
         facts.append(("选择依据", REASONS[detail["reason"]]))
     if hand:
         facts.append(("当时手牌", [ReplayChoice(card.get("name") or "未识别", card is selected)

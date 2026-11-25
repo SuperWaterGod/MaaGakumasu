@@ -178,6 +178,8 @@ class SkillCardCatalog:
             database_name=card["name"],
             upgraded=bool(card.get("upgraded")),
             plan=card.get("plan"),
+            type=card.get("type"),
+            rarity=card.get("rarity"),
             available_customizations=card.get("availableCustomizations"),
             reference_effect_dsl={key: card.get(key, "") for key in ("conditions", "cost", "actions", "limit", "effects")},
         )

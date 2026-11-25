@@ -102,9 +102,8 @@ class SettlementConsole:
         if self.final_audition:
             result = self.final_audition
             outcome = "不合格" if result["outcome"] == "failed" else "合格"
-            lines[0] = f"{scenario} {difficulty}｜最终试镜{outcome}"
+            lines[0] = f"{scenario} {difficulty}｜评分 {show(observed)}｜{rank_label}｜最终试镜{outcome}"
             lines.insert(1, f"试镜得分：{show(result['score']['value'])} Pt｜名次 {show(result['place']['value'])}")
-            lines.insert(2, f"最终培育评价：{show(observed)}｜{rank_label}")
         return {"message": "\n".join(lines), "scope": "settlement", "event_id": event_id, "evaluation_check": check}
 
 

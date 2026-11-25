@@ -358,7 +358,7 @@ def enrich_report(report, records, directory, capture_root):
             continue
         detail = {key: event[key] for key in ("node", "operation", "battle_id", "decision_id", "reward_page_id", "selected", "selected_candidate_id",
                   "candidate", "candidate_id", "candidates", "candidate_source", "policy_choice", "selection_order", "shop_purchase",
-                  "framework_action_succeeded", "actual_point", "reason", "terminal",
+                  "framework_action_succeeded", "actual_point", "reason", "rule_id", "terminal",
                   "action", "selected_box", "selection", "observations", "policy_inputs_with_fallbacks", "policy", "title", "state_changes",
                   "verified", "failure_diagnostic", "stop_reason", "candidate_previews_complete", "safe_to_receive") if key in event}
         obs = observation(entry)

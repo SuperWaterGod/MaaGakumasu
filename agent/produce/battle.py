@@ -9,8 +9,10 @@ from maa.custom_action import CustomAction
 from utils.task_control import wait_running, click_running
 from maa.agent.agent_server import AgentServer
 
+from .state import selected_card
 from .capture import DecisionCapture, produce_fast_mode
 from .sessions import SESSIONS
+from .battle_policy import choose_battle_action
 
 
 def card_candidates(results, y_min=840, y_max=1000):
@@ -57,6 +59,13 @@ class ProduceCardsAuto(CustomAction):
         self._last_wait_image = None
         self._frame_observed_at_ns = None
         self._read_ahead_enabled = False
+        self._profile = None
+        self._last_drink_window = None
+        self._extra_drink_turn = None
+        self._used_drink_rules = set()
+        self._retry_policy_at = 0
+        self._peak_multiplier = 0
+        self._policy_notice = None
 
     def run(
         self,
@@ -74,6 +83,16 @@ class ProduceCardsAuto(CustomAction):
                 "mode": "agent_actions", "action": "ProduceCardsAuto", "entry": entry,
                 "coverage": "single_action_invocation", "policy": "existing_auto", "game_action_confirmation": "unknown",
             }, console=logger.info, context=context)
+        self._profile = self._capture.battle_profile if session and entry != "IdolRoadAuto" else None
+        self._peak_multiplier = 0
+        self._last_drink_window = None
+        self._used_drink_rules.clear()
+        self._extra_drink_turn = None
+        if self._profile:
+            self._read_ahead_enabled = False
+            logger.info(f"战斗规则－启用「{self._profile['effect']}」")
+        elif session and entry != "IdolRoadAuto":
+            logger.info("战斗规则未启用，本场使用游戏推荐、单张及超时兜底，保留饮料")
         self._battle_id = self._record("battle_invocation_start", node=getattr(argv, "node_name", None))
         reason = "action_returned"
         try:
@@ -110,14 +129,15 @@ class ProduceCardsAuto(CustomAction):
             frame_observed_at_ns=self._frame_observed_at_ns,
         )
 
-    def _begin_decision(self, kind, image, results=(), **data):
+    def _begin_decision(self, kind, image, results=(), *, rule_id=None, **data):
         if not self._capture:
             return
         self._active_decision = None
         try:
             self._active_decision = self._record(
                 "decision_before", image, save_frame=True, operation=kind, candidates=card_candidates(results),
-                source="existing_auto", frame_observed_at_ns=self._frame_observed_at_ns, **data,
+                source="battle_rules" if rule_id else "existing_auto", frame_observed_at_ns=self._frame_observed_at_ns,
+                **({"rule_id": rule_id} if rule_id else {}), **data,
             )
             self._flush_decision(self._active_decision)
         except Exception as exc:
@@ -145,10 +165,18 @@ class ProduceCardsAuto(CustomAction):
         logger.info("战斗－退出出牌（未检测到体力标志）")
 
     def _run(self, context: Context, argv: CustomAction.RunArg) -> bool:
-        # 使用饮料
         self._wait_until_playable(context)
         if context.tasker.stopping:
             return True
+        if getattr(argv, "node_name", None) == "IdolRoadAuto":
+            self._idol_road_drinks(context)
+        else:
+            self._record("battle_entry")
+        self._reset_window()
+        return self._play_loop(context)
+
+    def _idol_road_drinks(self, context):
+        """偶像之路是独立任务，沿用该任务的用瓶流程。"""
         image = context.tasker.controller.post_screencap().wait().get()
         if context.tasker.stopping:
             return True
@@ -168,8 +196,7 @@ class ProduceCardsAuto(CustomAction):
             self._finish_decision(playable, framework_action_succeeded=bool(task and task.status.succeeded))
             image = self._last_wait_image
 
-        # 开始出牌
-        self._reset_window()
+    def _play_loop(self, context):
         while True:
             # 处理手动终止任务
             if context.tasker.stopping:
@@ -193,9 +220,11 @@ class ProduceCardsAuto(CustomAction):
 
             # 识别手牌
             reco_detail = context.run_recognition("ProduceRecognitionCards", image)
+            results = reco_detail.all_results if reco_detail and reco_detail.hit else ()
+            if (self._profile and time.time() - self.start_time < self.TIME_OUT and time.monotonic() >= self._retry_policy_at
+                    and self._try_policy_action(context, image, results)):
+                continue
             if reco_detail and reco_detail.hit:
-                # 获取全部检测结果，再按手牌区域过滤候选
-                results = reco_detail.all_results
 
                 # 获取卡牌信息
                 suggestions, useless, cards, suggestions_box, best_box = self._get_card_info(results)
@@ -238,7 +267,7 @@ class ProduceCardsAuto(CustomAction):
                         time.sleep(self.CLICK_DELAY)
                         continue
 
-                    logger.warning("检测超时")
+                    logger.warning("检测超时" + (f"｜{self._policy_notice}" if self._profile and self._policy_notice else ""))
                     self._play_a_card(context, best_box, image, results, "timeout_detector_confidence")
 
             else:
@@ -258,6 +287,99 @@ class ProduceCardsAuto(CustomAction):
             if not wait_running(context.tasker, self.CLICK_DELAY):
                 return True
         return True
+
+    def _notice_policy(self, message):
+        if self._policy_notice != message:
+            logger.info(f"战斗规则－{message}")
+            self._policy_notice = message
+
+    def _try_policy_action(self, context, image, results):
+        """同一可操作画面只执行一个规则动作，返回后重新截图。"""
+        ready = context.run_recognition("ProduceRecognitionSkipRound", image)
+        if not (ready and ready.hit):
+            self._notice_policy("未见可操作按钮，交回原选牌流程")
+            return False
+        observed = self._capture.read_battle(image, card_candidates(results), context=context) or {}
+        state = observed.get("battle_state") or {}
+        drinks = observed.get("drinks") or []
+        turns = (state.get("fields") or {}).get("turns_remaining", {}).get("value")
+        multiplier = (state.get("fields") or {}).get("attribute_multiplier_percent", {}).get("value")
+        if state.get("hud_present") and type(multiplier) is int and multiplier > 0:
+            self._peak_multiplier = max(self._peak_multiplier, multiplier)
+            observed["peak_attribute_multiplier_percent"] = self._peak_multiplier
+        window = (turns, tuple((b["slot"], (b.get("identity") or {}).get("catalog_id")) for b in drinks))
+        observed["used_drink_rules"] = sorted(self._used_drink_rules)
+        # 瓶位和回合均未变化时，避免确认失败或动画延迟导致连续点同一瓶。
+        choice = choose_battle_action(self._profile, {**observed, "drinks": [] if window == self._last_drink_window else drinks,
+                                                      "extra_drink_used": turns is not None and turns == self._extra_drink_turn})
+        action = choice["action"]
+        if context.tasker.stopping:
+            return True
+        if action == "fallback":
+            self._notice_policy(f"{choice['reason']}，保留饮料并交回原选牌流程")
+            # 下一帧用新检测结果执行推荐或单张，稍后允许再读发生变化的手牌。
+            self._retry_policy_at = time.monotonic() + 2
+            return True
+        if action == "play_card":
+            target = next(c for c in observed["cards"] if c["candidate_id"] == choice["candidate_id"])
+        else:
+            target = next(b for b in drinks if b["slot"] == choice["slot"])
+        if not self._policy_target_current(context, image, state, target):
+            self._notice_policy("回合、可操作状态或所选目标已变化，重新识别")
+            wait_running(context.tasker, self.CLICK_DELAY)
+            return True
+        if context.tasker.stopping:
+            return True
+        if action == "play_card":
+            self._play_a_card(context, target["box"], image, results, choice["reason"], rule_id=choice["rule_id"])
+        else:
+            self._last_drink_window = window
+            effect = target["identity"]["reference_effect_dsl"]["actions"]
+            if self._profile["drink_effects"][effect] == "extra":
+                self._extra_drink_turn = turns
+            if self._use_drink(context, image, results, choice, target):
+                self._used_drink_rules.add(choice["rule_id"])
+        return True
+
+    def _policy_target_current(self, context, image, state, target):
+        """核对新截图中的回合、瓶位或可用手牌，避免点击已经更换的目标。"""
+        current = context.tasker.controller.post_screencap().wait().get()
+        if current is None or current.shape != image.shape:
+            return False
+        ready = context.run_recognition("ProduceRecognitionSkipRound", current)
+        if not (ready and ready.hit):
+            return False
+        if "slot" not in target:
+            detail = context.run_recognition("ProduceRecognitionCards", current)
+            card = selected_card(card_candidates(detail.all_results), target["box"]) if detail and detail.hit else None
+            if not card or not card["available"]:
+                return False
+        return self._capture.verify_battle_target(current, state, target, context=context)
+
+    def _use_drink(self, context, image, results, choice, bottle):
+        """选择当前瓶位，确认弹窗后结束这次操作。"""
+        self._begin_decision("use_drink_task", image, results, reason=choice["reason"], rule_id=choice["rule_id"], drink_slot=bottle["slot"])
+        x, y, w, h = bottle["box"]
+        target = [x + w // 2, y + h // 2, 1, 1]
+        if context.tasker.stopping:
+            return
+        task = context.run_task("ProduceUseDrink", pipeline_override={"ProduceUseDrink": {"action": {"param": {"target": target}}}})
+        succeeded = bool(task and task.status.succeeded)
+        if not succeeded and not context.tasker.stopping:
+            popup = context.tasker.controller.post_screencap().wait().get()
+            confirm = context.run_recognition("ProduceUseDrinkConfirm", popup) if popup is not None else None
+            if confirm and confirm.hit and not context.tasker.stopping:
+                task = context.run_task("ProduceUseDrinkConfirm")
+                succeeded = bool(task and task.status.succeeded)
+        name = bottle["identity"].get("display_name") or bottle["identity"]["database_name"]
+        if not succeeded and not context.tasker.stopping:
+            logger.warning(f"饮料－第{bottle['slot']}格 {name} 使用未确认")
+        elif succeeded:
+            logger.info(f"战斗 - 第{bottle['slot']}格使用饮料[{name}]｜{choice['reason']}")
+        playable = self._wait_until_playable(context, 2)
+        self._finish_decision(playable, framework_action_succeeded=succeeded)
+        self._reset_window()
+        return succeeded
 
     def _retry_drink(self, context: Context, before):
         tasker = context.tasker
@@ -281,6 +403,8 @@ class ProduceCardsAuto(CustomAction):
     def _reset_window(self):
         """重置出牌计时窗口"""
         self.start_time = time.time()
+        self._retry_policy_at = 0
+        self._policy_notice = None
 
     @classmethod
     def _get_card_info(cls, results: list):
@@ -321,7 +445,7 @@ class ProduceCardsAuto(CustomAction):
         cards = label_counts["cards"]
         return suggestions, useless, cards, suggestions_box, best_box
 
-    def _play_a_card(self, context: Context, box: list, image=None, results=(), reason="unspecified") -> bool:
+    def _play_a_card(self, context: Context, box: list, image=None, results=(), reason="unspecified", *, rule_id=None) -> bool:
         """
         出牌并处理移动卡牌界面
 
@@ -336,7 +460,7 @@ class ProduceCardsAuto(CustomAction):
         tasker = context.tasker
         if tasker.stopping:
             return False
-        self._begin_decision("play_card", image, results, selected_box=list(box), reason=reason)
+        self._begin_decision("play_card", image, results, selected_box=list(box), reason=reason, rule_id=rule_id)
         point = [box[0] + box[2] // 2, box[1] + box[3] // 2]
         for index in (1, 2):
             if not click_running(tasker, *point):
@@ -470,6 +594,8 @@ class ProduceCardsAuto(CustomAction):
                 count_playable += 1
                 if count_playable >= confirmation_count:
                     return True
+            else:
+                count_playable = 0
 
             # 检测血条是否存在，如连续n次检查不到血条，则认为已退出出牌场景
             # 如果识别时间太长，2次就够了，主要避免CLEAR效果遮住血条的情况

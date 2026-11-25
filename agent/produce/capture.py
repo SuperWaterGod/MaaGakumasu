@@ -81,8 +81,10 @@ class DecisionCapture:
         self._analysis = None
         self._battle_reader = None
         self._battle_observer = None
+        self._battle_verifier = None
         self.reward_reader = None
         self.selection = None
+        self.battle_profile = None
         self.shop = None
         self._manifest = {
             "writer_pid": os.getpid(),
@@ -158,7 +160,9 @@ class DecisionCapture:
                 self._console_event = extra["event_id"]
 
         def start_selection(reader):
+            from .resources import BATTLE_RULES_NAME
             from .selection import SelectionPolicy, song_id
+            from .battle_policy import choose_profile, load_battle_rules
 
             bindings = self._manifest["metadata"].get("bindings", {})
             idol = bindings.get("configured_idol", {})
@@ -167,14 +171,28 @@ class DecisionCapture:
             idols_path = database.with_name("idols_cards.json")
             pid = song_id(json.loads(idols_path.read_bytes()), idol.get("idol_name", ""), idol.get("song_name", "")) if idols_path.is_file() else None
             self.selection = SelectionPolicy(reader.catalog, params.get("effect", ""), pid, bindings.get("scenario"))
+            difficulty = bindings.get("difficulty") or []
+            skip = bindings.get("node_settings", {}).get("ProduceSkipPreparation", {}).get("enabled", False)
+            if len(difficulty) == 1:
+                try:
+                    config = load_battle_rules(database.with_name(BATTLE_RULES_NAME))
+                    verified_song = pid if bindings.get("idol_selection_enabled") and not skip else None
+                    self.battle_profile = choose_profile(config, verified_song, params.get("effect"), bindings.get("scenario"), difficulty[0])
+                except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+                    from utils import logger
+                    logger.warning(f"读取战斗规则失败，保留饮料并按原逻辑选牌：{exc}")
             return self.selection
 
         try:
+            def bind_battle(observer, verifier):
+                self._battle_observer = observer
+                self._battle_verifier = verifier
+
             self._analysis = analyze_stream(self.directory, resource, database, aliases,
                                             context=lambda: self.context, emit=notice, icon_resources=self.icon_resources,
                                             database_ready=database_ready,
                                             battle_reader=lambda reader: setattr(self, "_battle_reader", reader),
-                                            on_battle_observer=lambda observer: setattr(self, "_battle_observer", observer),
+                                            on_battle_observer=bind_battle,
                                             on_reward_reader=lambda reader: setattr(self, "reward_reader", reader),
                                             selection_factory=start_selection if self.event_context else None)
             next(self._analysis)
@@ -182,13 +200,13 @@ class DecisionCapture:
             self._analysis = None
             LOGGER.exception("记录识别初始化失败，继续培育")
 
-    def _read_battle(self, reader, image, candidates, context):
+    def _read_battle(self, reader, context, *args):
         if self._closed or self._failed or self._analyzing or self._analysis is None or reader is None:
             return None
         self.context = context
         self._analyzing = True
         try:
-            return reader(image, candidates)
+            return reader(*args)
         except Exception:
             LOGGER.exception("读取战斗画面失败，继续当前任务")
             return None
@@ -198,11 +216,20 @@ class DecisionCapture:
 
     def read_battle(self, image, candidates=None, *, context):
         """同步返回当前帧的手牌、战斗状态和饮料，供决策读取。"""
-        return self._read_battle(self._battle_observer, image, candidates, context)
+        observation = self._read_battle(self._battle_observer, context, image, candidates)
+        if observation is not None and self.selection:
+            from .battle_policy import battle_item_conditions
+            observation.update(battle_item_conditions(self.selection))
+            if self.selection.health:
+                observation["max_stamina"] = self.selection.health.get("max")
+        return observation
+
+    def verify_battle_target(self, image, state, target, *, context):
+        return self._read_battle(self._battle_verifier, context, image, state, target)
 
     def prepare_battle(self, image, candidates, *, context, battle_id, frame_observed_at_ns):
         """等待阶段只在手牌与 Buff 连续稳定后执行一次完整读取。"""
-        prepared = self._read_battle(self._battle_reader, image, candidates, context)
+        prepared = self._read_battle(self._battle_reader, context, image, candidates)
         if prepared is None:
             return False
         return bool(self.record("battle_read_ahead", image=image, context=context, save_frame=True, battle_id=battle_id,
@@ -341,6 +368,7 @@ class DecisionCapture:
             self._analysis = None
         self._battle_reader = None
         self._battle_observer = None
+        self._battle_verifier = None
         self._manifest.update(status="closed", stop_reason=reason, ended_at=datetime.now(timezone.utc).isoformat())
         self._save_manifest()
 

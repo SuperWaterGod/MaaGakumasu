@@ -1,0 +1,403 @@
+{
+  "version": 2,
+  "profiles": [
+    {
+      "effect": "理性·好印象",
+      "future_conversion_percent": 250,
+      "layouts": [
+        "exam",
+        "lesson"
+      ],
+      "drink_layouts": [
+        "exam"
+      ],
+      "reserve_recovery_songs": [
+        57
+      ],
+      "drink_effects": {
+        "score+=10": "fixed_score",
+        "genki+=7": "shield_drink",
+        "goodImpressionTurns+=3": "impression",
+        "motivation+=3": "motivation_drink",
+        "exchangeHand; fixedStamina+=2": "exchange",
+        "fixedStamina+=6": "heal_drink",
+        "upgradeHand; fixedStamina+=3": "upgrade",
+        "setScoreBuff(0.3,3); halfCostTurns+=3; fixedStamina-=2": "boost",
+        "moveRandomToHand[pIdol & (deck | discarded)]; halfCostTurns+=3": "intrinsic_draw",
+        "setScoreBuff(0.1,5); drawCard(2); fixedStamina-=2; at:afterStartOfTurn { drawCard; limit:5 }": "soda_draw",
+        "score+=goodImpressionTurns; genki+=3": "impression_score",
+        "cardUsesRemaining+=1": "extra",
+        "addRandomUpgradedSSRCardToHand": "random_draw",
+        "at:endOfTurn { goodImpressionTurns+=1 }": "persistent",
+        "at:endOfTurn { motivation+=1 }": "persistent_drive",
+        "at:cardUsed[active] { if:cardRarity!=L { doubleCardEffectCards+=1 }; limit:1; ttl:1 }; fixedStamina-=2; doubleCostTurns+=1": "double_active"
+      },
+      "rules": [
+        {
+          "id": "score_boost",
+          "action": "use_drink",
+          "role": "boost",
+          "max_turns": 3,
+          "min_stamina": 6,
+          "min_impression": 10,
+          "hand": "conversion",
+          "reason": "在能打出转分牌的输出窗口使用短效增分"
+        },
+        {
+          "id": "repeat_active",
+          "action": "use_drink",
+          "role": "double_active",
+          "max_turns": 2,
+          "min_stamina": 8,
+          "min_impression": 10,
+          "hand": "active_conversion",
+          "reason": "手中有可重复发动的主动转分牌，体力足以承担附加代价",
+          "next_card": "active_conversion"
+        },
+        {
+          "id": "finish_drink",
+          "action": "use_drink",
+          "role": "impression_score",
+          "max_turns": 2,
+          "min_impression": 10,
+          "min_peak_percent": 85,
+          "reason": "收尾且当前属性倍率接近本场已见最高值，将好印象转分"
+        },
+        {
+          "id": "last_impression_drink",
+          "action": "use_drink",
+          "role": "impression_score",
+          "max_turns": 1,
+          "min_impression": 1,
+          "reason": "收尾时将已积累的好印象转分"
+        },
+        {
+          "id": "extend_hand",
+          "action": "use_drink",
+          "role": "extra",
+          "min_useful_cards": 2,
+          "hand": "needs_extra_use",
+          "reason": "至少两张成长或得分牌会消耗行动，补一次出牌机会"
+        },
+        {
+          "id": "last_score_drink",
+          "action": "use_drink",
+          "role": "fixed_score",
+          "max_turns": 1,
+          "reason": "最后一回合兑现固定分数"
+        },
+        {
+          "id": "persistent_drink",
+          "action": "use_drink",
+          "role": "persistent",
+          "min_turns": 3,
+          "reason": "前段建立每回合末的好印象增长"
+        },
+        {
+          "id": "grow_drink",
+          "action": "use_drink",
+          "role": "impression",
+          "min_turns": 3,
+          "reason": "提前补好印象，让后续回合受益"
+        },
+        {
+          "id": "drive_engine",
+          "action": "use_drink",
+          "role": "persistent_drive",
+          "once_per_battle": true,
+          "min_turns": 4,
+          "hand": "sustained_drive",
+          "reason": "手牌需要干劲或固有联动需要元气，趁剩余回合较多建立持续干劲"
+        },
+        {
+          "id": "enable_drive",
+          "action": "use_drink",
+          "role": "motivation_drink",
+          "hand": "unlock_drive",
+          "reason": "补足手中技能牌的干劲门槛"
+        },
+        {
+          "id": "boost_drive_score",
+          "action": "use_drink",
+          "role": "motivation_drink",
+          "next_card": "drive_score",
+          "reason": "下一张牌按干劲得分，先用咖啡提高本次输出"
+        },
+        {
+          "id": "upgrade_hand",
+          "action": "use_drink",
+          "role": "upgrade",
+          "hand": "upgradable",
+          "reason": "当前有可用的未强化成长或输出牌，强化后重新识别"
+        },
+        {
+          "id": "draw_soda",
+          "action": "use_drink",
+          "role": "soda_draw",
+          "min_turns": 3,
+          "min_stamina": 6,
+          "hand": "weak",
+          "reason": "缺少成长及输出牌，趁尚有后续回合补牌"
+        },
+        {
+          "id": "call_intrinsic",
+          "action": "use_drink",
+          "role": "intrinsic_draw",
+          "hand": "weak",
+          "reason": "当前手牌缺少成长及输出，尝试补入固有牌并减费"
+        },
+        {
+          "id": "generate_card",
+          "action": "use_drink",
+          "role": "random_draw",
+          "hand": "weak",
+          "reason": "当前手牌缺少成长及输出，生成新牌后重新评估"
+        },
+        {
+          "id": "exchange_weak",
+          "action": "use_drink",
+          "role": "exchange",
+          "hand": "weak",
+          "reason": "整手缺少有效成长或输出，再换牌"
+        },
+        {
+          "id": "protect_stamina",
+          "action": "use_drink",
+          "role": "shield_drink",
+          "max_stamina": 10,
+          "max_genki": 3,
+          "reason": "体力与元气均低，先补元气承担普通费用"
+        },
+        {
+          "id": "heal_low",
+          "action": "use_drink",
+          "role": "heal_drink",
+          "max_stamina": 8,
+          "reason": "体力已低，回复后再选牌"
+        },
+        {
+          "id": "extend_turn",
+          "action": "play_card",
+          "role": "extend",
+          "reason": "延长战斗并保留本回合的用牌机会"
+        },
+        {
+          "id": "finish_recovery",
+          "action": "play_card",
+          "role": "recovery",
+          "max_turns": 2,
+          "min_impression": 1,
+          "min_genki": 10,
+          "reason": "收尾时有好印象和元气，优先使用带回复与追加行动的牌"
+        },
+        {
+          "id": "finish_impression_recovery",
+          "action": "play_card",
+          "role": "recovery",
+          "max_turns": 2,
+          "min_impression": 10,
+          "reason": "好印象已足，趁收尾打出回复牌并继续行动，固有道具可按现有好印象转分"
+        },
+        {
+          "id": "cash_recovery",
+          "action": "play_card",
+          "role": "recovery",
+          "min_turns": 3,
+          "max_turns": 6,
+          "min_impression": 40,
+          "min_genki": 10,
+          "reason": "好印象和元气已积累，趁回复牌在手兑现固有联动并继续出牌"
+        },
+        {
+          "id": "free_conversion",
+          "action": "play_card",
+          "role": "extra_score",
+          "min_impression": 1,
+          "reason": "优先打出能转分并保留行动的牌"
+        },
+        {
+          "id": "build_and_extend",
+          "action": "play_card",
+          "role": "extra_impression",
+          "reason": "叠好印象并保留继续出牌的机会"
+        },
+        {
+          "id": "drive_and_extend",
+          "action": "play_card",
+          "role": "extra_drive",
+          "hand": "needs_drive",
+          "reason": "用追加行动补充后续手牌需要的干劲"
+        },
+        {
+          "id": "cycle_card",
+          "action": "play_card",
+          "role": "cycle",
+          "reason": "优先用可继续行动的补牌或强化调整当前手牌"
+        },
+        {
+          "id": "setup_impression",
+          "action": "play_card",
+          "role": "engine",
+          "min_turns": 3,
+          "reason": "前段建立持续成长、追加触发或好印象增幅"
+        },
+        {
+          "id": "set_score_buff",
+          "action": "play_card",
+          "role": "score_boost",
+          "min_turns": 3,
+          "hand": "conversion",
+          "reason": "已有转分牌时为后续输出铺设增分"
+        },
+        {
+          "id": "grow_existing",
+          "action": "play_card",
+          "role": "multiply",
+          "min_impression": 10,
+          "min_turns": 2,
+          "reason": "好印象已有积累，用乘算效果继续放大"
+        },
+        {
+          "id": "item_threshold",
+          "action": "play_card",
+          "role": "threshold",
+          "min_turns": 2,
+          "reason": "本牌可达到已持有 P 道具的回合末好印象门槛"
+        },
+        {
+          "id": "sustain",
+          "action": "play_card",
+          "role": "sustain",
+          "max_stamina": 8,
+          "min_turns": 2,
+          "reason": "体力较低时用回复或元气维持后续用牌"
+        },
+        {
+          "id": "finish_best",
+          "action": "play_card",
+          "role": "output",
+          "max_turns": 2,
+          "reason": "收尾时比较本牌可见的直接得分和本回合末好印象贡献"
+        },
+        {
+          "id": "early_convert",
+          "action": "play_card",
+          "role": "impression_score",
+          "min_impression": 15,
+          "min_multiplier": 150,
+          "min_peak_percent": 75,
+          "reason": "好印象已高，在高属性倍率回合提前转分"
+        },
+        {
+          "id": "repeat_score",
+          "action": "play_card",
+          "role": "persistent_score",
+          "min_turns": 3,
+          "reason": "元气或干劲已成形，建立后续回合的持续得分"
+        },
+        {
+          "id": "convert_before_discard",
+          "action": "play_card",
+          "role": "profitable_conversion",
+          "min_turns": 3,
+          "max_turns": 5,
+          "min_impression": 15,
+          "reason": "本回合手牌将弃置，当前转分超过继续叠层及后续转分的估计收益"
+        },
+        {
+          "id": "build_card",
+          "action": "play_card",
+          "role": "impression",
+          "min_turns": 3,
+          "reason": "回合尚多，优先积累好印象"
+        },
+        {
+          "id": "late_growth",
+          "action": "play_card",
+          "role": "impression",
+          "reason": "仍可通过回合末好印象得分"
+        },
+        {
+          "id": "repeatable",
+          "action": "play_card",
+          "role": "engine",
+          "min_impression": 1,
+          "reason": "好印象已有基础，利用当前仍能生效的增幅"
+        },
+        {
+          "id": "direct_output",
+          "action": "play_card",
+          "role": "direct_score",
+          "reason": "没有更优的成长组合，按可见元气、干劲或直接分数输出"
+        },
+        {
+          "id": "build_drive_with_extra_use",
+          "action": "play_card",
+          "role": "extra_drive",
+          "min_turns": 2,
+          "min_stamina": 9,
+          "reason": "体力充足，先补干劲并返还这次出牌机会"
+        },
+        {
+          "id": "free_setup",
+          "action": "play_card",
+          "role": "free_setup",
+          "reason": "维持行动次数，补上元气、防护或费用减免"
+        },
+        {
+          "id": "reduce_cost",
+          "action": "play_card",
+          "role": "economy",
+          "min_turns": 3,
+          "reason": "前段降低后续用牌费用"
+        },
+        {
+          "id": "gain_drive",
+          "action": "play_card",
+          "role": "drive",
+          "min_turns": 2,
+          "hand": "needs_drive",
+          "reason": "在前段为干劲费用或条件积累资源"
+        },
+        {
+          "id": "prepare_guard_trigger",
+          "action": "play_card",
+          "role": "active_guard_setup",
+          "min_turns": 3,
+          "max_genki": 9,
+          "hand": "active",
+          "reason": "手中有主动牌且元气不足，建立后续主动出牌补元气的触发"
+        },
+        {
+          "id": "guard",
+          "action": "play_card",
+          "role": "guard",
+          "max_genki": 9,
+          "min_turns": 2,
+          "reason": "元气偏低时为后续费用补元气"
+        },
+        {
+          "id": "replace_weak",
+          "action": "play_card",
+          "role": "exchange",
+          "hand": "weak",
+          "reason": "整手缺少成长和输出，换牌后再决策"
+        },
+        {
+          "id": "hand_support",
+          "action": "play_card",
+          "role": "support",
+          "hand": "weak",
+          "reason": "缺少有效成长和输出时调整手牌"
+        },
+        {
+          "id": "prepare_trigger",
+          "action": "play_card",
+          "role": "register_effect",
+          "min_turns": 3,
+          "reason": "缺少即时成长或输出，利用返还行动的牌登记后续效果"
+        }
+      ]
+    }
+  ]
+}
