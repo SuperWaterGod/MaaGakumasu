@@ -21,6 +21,12 @@
       "green_mask": true,
       "reading": {
         "format": "integer",
+        "digits_roi_offset": [
+          42,
+          33,
+          46,
+          24
+        ],
         "roi_offset": [
           36,
           29,
