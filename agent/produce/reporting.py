@@ -16,7 +16,7 @@ if __name__ == "__main__" and __package__ is None:
 
 from produce.audit import enrich_report, analysis_records
 from produce.replay import render_replay
-from produce.settlement import FinalExamTracker, evaluation_check
+from produce.settlement import FinalExamTracker, evaluation_check, ranking_observation
 
 
 def read_json(path):
@@ -196,11 +196,17 @@ def build_report(session_directory: Path, output_directory: Path | None = None, 
                 observation = (entry.get("derived") or {}).get("observation") or {}
                 if nia_tracker:
                     # 使用当时保存的 OCR 重建旧报告，无需原图；已经确认的旧读数仍可沿用。
-                    if observation.get("final_audition"):
-                        nia_tracker.final_audition = observation["final_audition"]
+                    stored = observation.get("final_audition")
+                    rebuilt = observation.copy()
+                    if not rebuilt.get("exam_ranking"):
+                        rebuilt["exam_ranking"] = ranking_observation(observation.get("raw_ocr") or [])
+                    nia_tracker.observe(event, rebuilt)
+                    if stored:
+                        current = nia_tracker.final_audition or {}
+                        if ((stored.get("score") or {}).get("value") is not None or current.get("outcome") != stored["outcome"]
+                                or (current.get("score") or {}).get("value") is None):
+                            nia_tracker.final_audition = stored
                         nia_tracker.pending = None
-                    else:
-                        nia_tracker.observe(event, observation.copy())
             elif event["kind"] == "preparation_observation":
                 preparations.append(entry)
     for decision, route in routes.items():

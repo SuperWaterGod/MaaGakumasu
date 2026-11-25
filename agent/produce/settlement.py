@@ -399,7 +399,7 @@ def ranking_observation(tokens):
         return None
     y = logs[0]["box"][1]
     scores = [t for t in tokens if 190 < t["box"][0] < 350 and abs(t["box"][1] - y) < 55
-              and re.fullmatch(r"[\d,]+Pt", text_value(t["text"]), re.IGNORECASE)]
+              and re.fullmatch(r"(?:\d+|\d{1,3}(?:,\d{3})+)\s*Pt", text_value(t["text"]), re.IGNORECASE)]
     ranks = [t for t in tokens if t["box"][0] < 150 and abs(t["box"][1] - y) < 70
              and re.fullmatch(r"[1-9](?:st|nd|rd|th)", text_value(t["text"]), re.IGNORECASE)]
     if len(scores) != 1 or len(ranks) != 1:
