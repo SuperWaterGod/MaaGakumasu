@@ -140,12 +140,9 @@ class ProduceRuleChoice(CustomRecognition):
             session["shop_balance"] = actual
             policy = session["capture"].selection
             if pending["operation"] == "buy":
-                policy.acquired(pending["catalog_id"])
+                policy.acquired(pending["catalog_id"], pending.get("base_name"))
             elif target is not None:
-                card_id = target["catalog_id"]
-                policy.forget_card(card_id, target["base_name"])
-                if pending["operation"] == "strengthen" and (upgraded := policy.upgrades.get(card_id)):
-                    policy.add_card(upgraded)
+                policy.apply_edit(pending["operation"], target["catalog_id"], target["base_name"])
         elif (actual == pending["balance"] and session.get("shop_drinks_full")
               and pending["operation"] == "buy" and pending["attempt"][1] >= 4):
             session["shop_balance"] = actual
@@ -170,29 +167,39 @@ class ProduceRuleChoice(CustomRecognition):
         used = session.get("shop_used", set())
         policy = capture.selection
         choices = []
+        shelf = []
         for index, item in enumerate(shop["candidates"]):
             price = item["price"]["value"]
-            if item["available"] is not True or price > points or ("buy", index) in used:
+            if item["available"] is not True or price is None or price > points or ("buy", index) in used:
                 continue
             identity = item["identity"] or {}
             if session.get("shop_drinks_full") and index >= 4:
                 continue
-            grade, reason = policy.evaluate_candidate(identity, "receive")
+            shelf.append(identity)
+            grade, reason = policy.evaluate_candidate(identity, "buy")
             if grade:
                 name = identity.get("display_name") or identity["database_name"]
                 choices.append({"operation": "buy", "attempt": ("buy", index), "catalog_id": identity["catalog_id"], "name": name,
-                                "balance": points, "grade": grade, "price": price,
+                                "base_name": identity.get("base_name"), "balance": points, "grade": grade, "price": price,
                                 "reason": "购买" + name + "，" + reason, "box": item["box"]})
         for service in shop["services"]:
             kind = service["operation"]
             if kind in used or not 0 < service["price"] <= points:
                 continue
-            cards = [{"catalog_id": k} for k in sorted(policy.owned) if policy.catalog.ids[k][0] == "skill_card"]
+            cards = [{"catalog_id": key} for key in sorted(policy.deck_copies) if policy.deck_copies[key] > 0]
+            known = policy.family_counts(policy.deck_copies)
+            cards.extend({"base_name": name} for name, count in policy.deck_families.items() if count > known[name])
             best = policy.choose(cards, kind, shop_estimate=True)
             if best:
                 action = "强化" if kind == "strengthen" else "删除"
                 choices.append({**service, "attempt": kind, "balance": points, "grade": best["grade"],
                                 "reason": f"拟{action}，预估收益：{best['reason']}"})
+        if not choices:
+            capped = any(policy.at_copy_target(c.get("catalog_id"), c.get("base_name")) for c in shelf)
+            if capped or (policy.build and shelf and all(c.get("catalog_id") in policy.rows for c in shelf)):
+                # 首次进店也须拦住流水线的打折商品兜底，避免重新点击已排除的商品。
+                session["shop_rule_active"] = True
+                session["shop_stop_reason"] = "同名牌已达目标张数，无其他合适商品或服务" if capped else "已识别的商品与服务均无需购买"
         return max(choices, key=lambda c: (c["grade"], -c["price"]), default=None)
 
 

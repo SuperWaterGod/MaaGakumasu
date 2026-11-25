@@ -16,10 +16,20 @@ from importlib.metadata import version
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from produce.state import STANCE_NAMES, STATE_FIELDS, ANOMALY_FIELDS, PRODUCE_FRAME_SIZE, BattleStateReader, scale_box, normalized_image
+from produce.icons import BattleDrinkReader
+from produce.state import (
+    STANCE_NAMES,
+    STATE_FIELDS,
+    ANOMALY_FIELDS,
+    PRODUCE_FRAME_SIZE,
+    BattleStateReader,
+    scale_box,
+    lesson_turns,
+    number_field,
+    normalized_image,
+)
 from utils.image_io import read_image
 from produce.catalog import SkillCardCatalog, clean, normalize_name
-from produce.icons import BattleDrinkReader
 from produce.console import RewardConsole, OperationConsole, SettlementConsole, state_lines, hand_summary
 from produce.rewards import RewardReader
 from produce.reporting import read_json
@@ -448,6 +458,22 @@ class OfflineVision:
         except Exception as exc:
             result["drinks_error"] = str(exc)
 
+    def verify_battle_target(self, image, state, target):
+        """复读本次操作的回合与目标，角色动画、预测分数和其他状态图标不参与复核。"""
+        array = normalized_image(image)
+        turns = state["fields"]["turns_remaining"]
+        roi = turns["roi"]
+        tokens = self._read_title(array, roi)
+        current = lesson_turns(tokens, roi) if state["layout"] == "lesson" else number_field(tokens, roi, maximum=99)
+        if current["value"] != turns["value"]:
+            return False
+        if "slot" in target:
+            bottles = self.drink_reader.read(array, image.shape[1::-1])
+            return any(b["slot"] == target["slot"] and (b.get("identity") or {}).get("catalog_id") == target["identity"]["catalog_id"]
+                       for b in bottles)
+        title = target["identity"]["normalized_name"]
+        return any(normalize_name(t["text"]) == title and t["confidence"] >= .70 for t in self._read_title(array, target["title_roi"]))
+
     def analyze(self, image, catalog, candidates=None):
         from maa.pipeline import JRecognitionType, JNeuralNetworkDetect
 
@@ -610,8 +636,16 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
         save_status()
         vision = OfflineVision(resource, context)
         vision.drink_reader = BattleDrinkReader(vision.recognize, database.parent, reward_reader.catalog, icon_resources)
+        decision_frame = None
+
+        def observe(image, candidates):
+            nonlocal decision_frame
+            result = vision.analyze(image, catalog, candidates)
+            decision_frame = (image, candidates, result)
+            return result
+
         if on_battle_observer:
-            on_battle_observer(lambda image, candidates: vision.analyze(image, catalog, candidates))
+            on_battle_observer(observe, vision.verify_battle_target)
         if reward_reader.icons:
             reward_reader.icons.recognize = vision.recognize
         vision.state_reader = BattleStateReader(state_templates, vision._read_title, vision.match_buff_templates, resource / "image")
@@ -642,6 +676,7 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                     vision.set_battle(event["event_id"])
                 elif event["kind"] == "battle_invocation_end":
                     vision.set_battle(None)
+                    decision_frame = None
                 if event["kind"] == "battle_read_ahead":
                     if vision.read_ahead.result is None:
                         # 离线重读时没有实时预读回调，只能从保留的这一帧恢复。
@@ -789,7 +824,11 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                         image = supplied_image
                         source_size = event["frame"].get("source_size", [image.shape[1], image.shape[0]])
                         candidates = event.get("candidates") if tuple(source_size) == image.shape[1::-1] else None
-                        if (candidates and event["kind"] == "decision_before" and event.get("operation") == "play_card"
+                        if (event["kind"] == "decision_before" and decision_frame is not None
+                                and image is decision_frame[0] and candidates == decision_frame[1]):
+                            result = decision_frame[2]
+                            decision_frame = None
+                        elif (candidates and event["kind"] == "decision_before" and event.get("operation") == "play_card"
                                 and vision.read_ahead.result is not None
                                 and vision.read_ahead.same_slots(vision.read_ahead.result["cards"], candidates)):
                             result = vision.read_ahead.take(candidates, image)
@@ -801,9 +840,6 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                             value = card["identity"]["status"]
                             status[{"matched": "matched", "base_match_variant_unresolved": "variant_unresolved"}.get(value, "unknown")] += 1
                         state = result.get("battle_state", {})
-                        if policy and event["kind"] == "decision_before":
-                            policy.observe(card["identity"].get("card_id") for card in result["cards"] if card["identity"]["status"] == "matched")
-                            policy.full_power_seen |= state.get("stance") == "fullPower"
                         status["state_errors"] += bool(state.get("error") or state.get("errors"))
                         if state.get("hud_present"):
                             status["state_frames"] += 1
@@ -826,6 +862,8 @@ def analyze_stream(directory, resource, database, aliases=None, *, context=None,
                 changes = None
                 console_operation_number = None
                 if event["kind"] == "decision_before":
+                    if policy:
+                        policy.observe_battle(result)
                     if result.get("read_ahead"):
                         reading = result["read_ahead"]
                         notice(f"出牌直接使用提前识别结果｜交付 {reading['handoff_seconds']:.3f}秒", scope="battle_read_ahead")

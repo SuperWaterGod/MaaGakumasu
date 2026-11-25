@@ -14,7 +14,7 @@ from maa.context import ContextEventSink
 from maa.event_sink import NotificationType
 
 from .capture import ROOT, DecisionCapture, produce_fast_mode
-from .resources import REWARD_RULES_NAME, data_directory, produce_resources_status
+from .resources import BATTLE_RULES_NAME, REWARD_RULES_NAME, data_directory, produce_resources_status
 
 # 记录流水线的动作和对应画面。
 ROUTE_NODES = {
@@ -201,6 +201,7 @@ class ProduceSessions:
             *database_files,
             package_data / "idols_cards.json",
             package_data / REWARD_RULES_NAME,
+            package_data / BATTLE_RULES_NAME,
             resource / "model/detect/cards.onnx",
             *sorted(Path(__file__).parent.glob("*.py")),
             Path(__file__).with_name("replay.html"),
@@ -308,6 +309,8 @@ class ProduceSessions:
         if policy and saved.get("catalog") == policy.catalog.hashes:
             policy.observe(saved["owned"])
             policy.deck_copies.update(saved.get("deck_copies", {}))
+            policy.deck_families.update(saved.get("deck_families", policy.family_counts(policy.deck_copies)))
+            policy.peak_impression = saved.get("peak_impression", 0)
             policy.item_triggers.update(saved["item_triggers"])
             policy.full_power_seen = saved["full_power_seen"]
         state["timing_basis"] = "gameplay_loop"
@@ -350,6 +353,7 @@ class ProduceSessions:
             session["state"]["reward_selection"] = {
                 "catalog": policy.catalog.hashes, "owned": sorted(policy.owned),
                 "deck_copies": dict(policy.deck_copies),
+                "deck_families": dict(policy.deck_families), "peak_impression": policy.peak_impression,
                 "item_triggers": policy.item_triggers, "full_power_seen": policy.full_power_seen,
             }
         save_json(session["path"], session["state"])
@@ -473,11 +477,15 @@ class ProduceContextSink(ContextEventSink):
                     origin["recognitions"][detail.name] = context.tasker.get_recognition_detail(detail.reco_id)
                 return
             receipt = session.get("await_reward_transition")
+            edit = session.get("confirmed_card_edit")
+            if edit and detail.name in {"ProduceChooseGetFlag", "ProduceChooseStrengthenFlag", "ProduceChooseEventFlag",
+                                        "ProduceChooseNIAEventFlag", "ProduceShoppingFlag", "ProduceCardsFlag", "ProduceKeepDrinkFlag"}:
+                session["capture"].selection.apply_edit(*session.pop("confirmed_card_edit"))
             if receipt and detail.name in {"ProduceKeepDrinkFlag", "ProduceChooseStrengthenFlag",
                                            "ProduceChooseDeleteFlag", "ProduceChooseEventFlag", "ProduceChooseNIAEventFlag",
                                            "ProduceShoppingFlag", "ProduceCardsFlag"}:
                 if session["capture"].selection:
-                    session["capture"].selection.acquired(receipt["selected"])
+                    session["capture"].selection.acquired(receipt["selected"], receipt.get("base_name"))
                 session.pop("await_reward_transition")
             if session and (detail.name in (set(ROUTE_NODES) | PREPARATION_NODES | SETTLEMENT_ENTRIES)
                             or (capture_window(session) and detail.name in SETTLEMENT_NAVIGATION)):
@@ -521,6 +529,7 @@ class ProduceContextSink(ContextEventSink):
             | SETTLEMENT_NAVIGATION
             | {
                 "ProduceShopByRule",
+                "ProduceChooseStrengthenDone",
                 "Produce",
                 "ProduceLoop",
                 "ProduceHomeFlag",
@@ -700,6 +709,12 @@ class ProduceContextSink(ContextEventSink):
         session = SESSIONS.get(context)
         if not session:
             return
+        if name in {"ProduceChooseStrengthenDone", "ProduceChooseDeleteClick"} and noti_type == NotificationType.Succeeded:
+            edit = session.pop("pending_card_edit", None)
+            if edit and name == "ProduceChooseStrengthenDone" and edit[0] == "strengthen":
+                session["capture"].selection.apply_edit(*edit)
+            elif edit and name == "ProduceChooseDeleteClick" and edit[0] != "strengthen":
+                session["confirmed_card_edit"] = edit
         if name == "ProduceShopByRule" and noti_type == NotificationType.Succeeded:
             choice = session.pop("shop_choice")
             session["shop_rule_active"] = True

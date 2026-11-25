@@ -8,6 +8,55 @@
     ],
     "duplicate_delete_grade": 65
   },
+  "deck_builds": {
+    "理性·好印象": {
+      "exam_turns": 12,
+      "repeatable_plays": 2,
+      "default_copies": 1,
+      "core_upgraded_grade": 78,
+      "cards": {
+        "ラブリーウインク": {
+          "copies": 2,
+          "upgrade": true
+        },
+        "手拍子": {
+          "copies": 2,
+          "upgrade": true
+        },
+        "幸せな時間": {
+          "copies": 2,
+          "upgrade": true
+        },
+        "思い出し笑い": {
+          "copies": 2,
+          "upgrade": true
+        },
+        "また、明日": {
+          "copies": 1,
+          "upgrade": true
+        },
+        "キセキの魔法": {
+          "copies": 1,
+          "upgrade": true
+        }
+      },
+      "drink_grades": {
+        "impression_score": 80,
+        "score_buff": 76,
+        "double_effect": 74,
+        "extra": 72,
+        "upgrade_hand": 65,
+        "retrieve_intrinsic": 62,
+        "impression": 60,
+        "drive": 53,
+        "draw": 55,
+        "exchange_hand": 45,
+        "random_ssr": 42,
+        "score": 32,
+        "guard": 12
+      }
+    }
+  },
   "profiles": {
     "感性·好调": [
       {
@@ -102,11 +151,13 @@
       {
         "role": "impression",
         "grade": 70,
+        "owned_skill_grade": 60,
         "requires_owned": []
       },
       {
         "role": "impression_score",
         "grade": 75,
+        "owned_skill_grade": 65,
         "requires_owned": [
           "impression"
         ]
@@ -114,9 +165,19 @@
       {
         "role": "drive",
         "grade": 58,
+        "target_supply": 24,
+        "under_target_grade": 61,
         "requires_owned": [
           "impression"
         ]
+      },
+      {
+        "role": "guard_score",
+        "grade": 62,
+        "requires_owned": {
+          "drive": 20,
+          "guard": 1
+        }
       },
       {
         "role": "extend",

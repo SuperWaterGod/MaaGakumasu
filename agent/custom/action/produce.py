@@ -13,9 +13,18 @@ from produce.options import ProduceKeepDrinkAuto, ProduceChooseWorkAuto, Produce
 from produce.rewards import observe_reward_page
 from produce.sessions import SESSIONS
 from maa.custom_action import CustomAction
-from produce.resources import RecoveryError, UpdateCancelled, configured_updater, ensure_resources_ready, produce_resources_status
+from produce.resources import (
+    BATTLE_RULES_NAME,
+    RecoveryError,
+    UpdateCancelled,
+    data_directory,
+    configured_updater,
+    ensure_resources_ready,
+    produce_resources_status,
+)
 from produce.selection import rules, debug_choice
 from utils.task_control import wait_running, click_running
+from produce.battle_policy import load_battle_rules
 from maa.agent.agent_server import AgentServer
 
 __all__ = [
@@ -48,7 +57,8 @@ class ProduceEditChoice(CustomAction):
                 image = context.tasker.controller.post_screencap().wait().get()
                 candidates = capture.reward_reader.icons.scan(image, operation, allow_unverified_variant=True)
                 policy = capture.selection
-                policy.observe_card_list(c["catalog_id"] for c in candidates)
+                policy.observe_card_list((c.get("catalog_id") for c in candidates),
+                                         (c.get("base_name") for c in candidates if not c.get("catalog_id")))
                 if operation == "delete_copy_exchange":
                     for kind in ("delete", "copy", "exchange"):
                         header = context.run_recognition("ProduceChooseDeleteFlag", image, pipeline_override={
@@ -63,9 +73,8 @@ class ProduceEditChoice(CustomAction):
                 if choice:
                     x, y, w, h = choice["box"]
                     point = [x + w // 2, y + h // 2]
-                if operation != "copy":
-                    target = choice or next((c for c in candidates if c["box"][0] <= point[0] < c["box"][0] + c["box"][2]
-                                             and c["box"][1] <= point[1] < c["box"][1] + c["box"][3]), {})
+                target = choice or next((c for c in candidates if c["box"][0] <= point[0] < c["box"][0] + c["box"][2]
+                                         and c["box"][1] <= point[1] < c["box"][1] + c["box"][3]), {})
             label = {"strengthen": "强化", "delete": "删除", "exchange": "变换", "copy": "复制"}.get(operation, "卡牌调整")
             if choice:
                 name = choice.get("display_name") or choice["database_name"]
@@ -83,7 +92,7 @@ class ProduceEditChoice(CustomAction):
                 target = target or {}
                 pending["edit_target"] = {key: target.get(key) for key in ("catalog_id", "base_name")}
             elif target is not None:
-                policy.forget_card(target.get("catalog_id"), target.get("base_name"))
+                session["pending_card_edit"] = (operation, target.get("catalog_id"), target.get("base_name"))
         return clicked
 
 
@@ -135,13 +144,19 @@ class ProduceResourcesReady(CustomAction):
                 degraded = [name for operation, name in operations.items() if not icon_operation_available(status, operation)]
                 warning = (f"培育图库未就绪（{'，'.join(missing)}）。"
                            f"{'、'.join(degraded)}的图标辅助环节将使用默认流程，继续 OCR、记录和回放。")
-        if warning and not context.tasker.stopping:
-            update = "可通过「一键培育」中的「更新数据库和素材」补全资源。"
-            logger.warning("{}{}", warning, update)
+        warnings = [warning + "可通过「一键培育」中的「更新数据库和素材」补全资源。"] if warning else []
+        try:
+            load_battle_rules(data_directory(ROOT) / BATTLE_RULES_NAME)
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+            logger.warning(f"完整模式战斗规则无法加载：{exc}")
+            warnings.append(f"战斗规则缺失或无效，本次培育沿用游戏推荐、单张和超时兜底，保留饮料。请从同版本客户端补全 data/{BATTLE_RULES_NAME} 后重新开始任务。")
+        if warnings and not context.tasker.stopping:
+            message = "\n".join(warnings)
+            logger.warning(message)
             node = "ProduceResourceWarning"
             context.run_action(node, pipeline_override={node: {"focus": {
                 "Node.ActionNode.Succeeded": {
-                    "content": f"[color:orange]培育资源未就绪[/color]\n{warning}\n{update}",
+                    "content": f"[color:orange]培育资源未就绪[/color]\n{message}",
                     "display": ["modal"],
                 }
             }}})
@@ -199,10 +214,10 @@ class ProduceRewardObserve(CustomAction):
             session["reward_page"] = page
             previous = session.pop("await_reward_transition", None)
             if previous and page and capture.selection:
-                ids = [c["catalog_id"] for c in page["candidates"]]
+                ids = [c.get("catalog_id") for c in page["candidates"]]
                 old = previous["candidates"]
                 if len(ids) != len(old) or any(a and b and a != b for a, b in zip(ids, old)):
-                    capture.selection.acquired(previous["selected"])
+                    capture.selection.acquired(previous["selected"], previous.get("base_name"))
         except Exception:
             logger.exception("奖励候选识别失败，继续按流水线优先级选择")
         return not context.tasker.stopping
@@ -246,9 +261,10 @@ class ProduceRewardConfirm(CustomAction):
                 if x <= px < x + width and y <= py < y + height:
                     candidate = item
                     break
-        if success and candidate and candidate["catalog_id"]:
+        if success and candidate and (candidate.get("catalog_id") or candidate.get("base_name")):
             session["await_reward_transition"] = {
-                "selected": candidate["catalog_id"], "candidates": [c["catalog_id"] for c in page["candidates"]],
+                "selected": candidate.get("catalog_id"), "base_name": candidate.get("base_name"),
+                "candidates": [c.get("catalog_id") for c in page["candidates"]],
             }
         capture = session["capture"]
         if not page["group_id"]:
