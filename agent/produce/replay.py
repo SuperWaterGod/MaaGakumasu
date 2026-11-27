@@ -10,7 +10,7 @@ from dataclasses import field, dataclass
 from urllib.parse import quote
 
 from .state import selected_card
-from .console import drink_names
+from .console import drink_names, reward_reason, final_exam_summary
 
 LABELS = {"score": "分数", "rank": "评级", "stamina": "体力", "genki": "元气", "turns_remaining": "剩余回合",
           "attribute": "属性", "attribute_multiplier_percent": "属性倍率", "health": "体力", "points": "P 点",
@@ -177,20 +177,13 @@ def shop_facts(shelf):
             ("入口可见商品", goods or "未识别")]
 
 
-def settlement_event(rows, final, inferred_rank=None):
-    """合并结算期间的重复读数，按结果页与属性页各保留一份对应的截图证据。"""
-    if not rows:
-        return None
-    facts = []
+def settlement_event(rows, final):
+    """评价与三维集中显示在页首，时间线提供对应的截图入口。"""
     pictures = []
     for title, keys in (("最终评价", ("rank", "score")), ("最终属性", ("Vo", "Da", "Vi"))):
         readings = {key: (final.get(key) or {}).get("value") for key in keys}
         if not any(value is not None for value in readings.values()):
             continue
-        details = {LABELS[key]: display(value) for key, value in readings.items()}
-        if "rank" in readings and inferred_rank:
-            details["评级（按评分推算）"] = inferred_rank
-        facts.append((title, details))
         best_match = 0
         photo = None
         for row in rows:
@@ -203,7 +196,8 @@ def settlement_event(rows, final, inferred_rank=None):
                 best_match, photo = matches, evidence
         if photo:
             pictures.append((title + "截图", photo))
-    return ReplayEvent("结算", "培育结算", rows[0]["evidence"]["time"], facts, pictures)
+    if pictures:
+        return ReplayEvent("结算", "查看截图", rows[0]["evidence"]["time"], pictures=pictures)
 
 
 def project_events(report):
@@ -343,6 +337,7 @@ def project_events(report):
             page_id = detail.get("reward_page_id")
             choice = detail.get("policy_choice") or {}
             category = "领奖"
+            name = None
             if choice.get("policy_node") == "ProduceChooseSkip":
                 title = "跳过奖励"
                 selected = None
@@ -355,7 +350,7 @@ def project_events(report):
             choices = [ReplayChoice(name or "未识别", candidate_id is not None and candidate_id == selected)
                        for candidate_id, name in reward_names[page_id].items()]
             facts.append(("奖励候选", choices or "未识别"))
-            if reason := choice.get("reason") or choice.get("fallback_reason"):
+            if reason := reward_reason(choice, name):
                 facts.append(("选择依据", reason))
             page = (report.get("reward_pages") or {}).get(page_id, {})
             start = (page.get("start") or {}).get("event") or {}
@@ -447,7 +442,7 @@ def project_events(report):
         if adjustment_identity is not None:
             last_adjustment = (adjustment_identity, event)
     finish_shop()
-    if settlement := settlement_event(settlement_rows, final, (report.get("evaluation_check") or {}).get("rank_from_observed_score")):
+    if settlement := settlement_event(settlement_rows, final):
         events.append(settlement)
     return events
 
@@ -574,25 +569,13 @@ def render_replay(report):
         value = (final.get(key) or {}).get("value")
         return escape(f"{value:,}" if isinstance(value, int) else display(value))
 
-    audition = report.get("final_audition")
-    audition_summary = ""
-    if audition:
-        outcome = "不合格" if audition["outcome"] == "failed" else "合格"
-        if audition["outcome"] == "failed" and session["status"] == "ended" and not session.get("failure_stop_observed"):
-            status = "培育结束（终试不合格）"
-        score = escape(display(audition["score"]["value"]))
-        place = escape(display(audition["place"]["value"]))
-        audition_summary = f'<p class="audition">最终试镜 {outcome} · {score} Pt · 名次 {place}</p>'
-    warnings = []
-    missing = [LABELS[key] for key, reading in final.items() if reading.get("value") is None]
-    if audition and audition["outcome"] == "failed" and (report.get("final_fan_votes") or {}).get("value") is None:
-        missing.append("最终粉丝投票数")
-    if missing:
-        warnings.append("未取得结算画面读数：" + "、".join(missing) + "。")
+    exam = report.get("final_audition") or (report.get("final_exam") if scenario == "初" else None)
+    exam_summary = final_exam_summary(exam) if exam else ""
+    audition_summary = f'<p class="audition">{escape(exam_summary)}</p>' if exam_summary else ""
+    notes = ""
     issues = (report.get("integrity") or {}).get("issues") or []
     if report.get("gaps") or any(issue.get("severity") == "error" and issue.get("code") not in {"frame_integrity", "missing_frame"} for issue in issues):
-        warnings.append("部分过程或识别结果缺失，报告展示已记录的内容。")
-    notes = "".join(f"<p>{escape(warning)}</p>" for warning in warnings)
+        notes = "<p>部分过程记录缺失。</p>"
     template = Template(Path(__file__).with_name("replay.html").read_text(encoding="utf-8"))
     inferred_rank = (report.get("evaluation_check") or {}).get("rank_from_observed_score")
     html = template.substitute(context=escape(context), session=escape(f"{scenario} / {difficulty} · {status}"),

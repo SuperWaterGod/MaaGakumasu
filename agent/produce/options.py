@@ -416,6 +416,13 @@ class ProduceKeepDrinkAuto(CustomAction):
         context: Context,
         argv: CustomAction.RunArg,
     ) -> bool:
+        try:
+            return self._keep(context)
+        except OSError as exc:
+            logger.error(f"饮料保留－控制器操作失败，无法确认勾选或提交：{exc}")
+            return False
+
+    def _keep(self, context):
         tasker = context.tasker
         if tasker.stopping:
             return False
@@ -437,9 +444,10 @@ class ProduceKeepDrinkAuto(CustomAction):
                 x, y, width, height = result.box
                 if not click_running(tasker, x + width // 2, y + height // 2) or not wait_running(tasker, .1):
                     return False
-            if not tasker.stopping:
-                context.run_task("ProduceDrinkNoButton")
-        return not tasker.stopping
+        if tasker.stopping:
+            return False
+        result = context.run_task("ProduceDrinkNoButton")
+        return bool(result and result.status.succeeded)
 
     @staticmethod
     def keep_by_rule(context, capture, image):
@@ -447,7 +455,6 @@ class ProduceKeepDrinkAuto(CustomAction):
         tasker = context.tasker
         if tasker.stopping:
             return False
-        controller = tasker.controller
 
         def input_point(x, y):
             return scale_box((x, y, 0, 0), PRODUCE_FRAME_SIZE, image.shape[1::-1])[:2]
@@ -456,11 +463,11 @@ class ProduceKeepDrinkAuto(CustomAction):
             if image is None or tasker.stopping:
                 return None
             start, end = (975, 365) if to_bottom else (365, 975)
-            if not controller.post_swipe(*input_point(430, start), *input_point(430, end), duration=350).wait().succeeded:
+            if not tasker.controller.post_swipe(*input_point(430, start), *input_point(430, end), duration=350).wait().succeeded:
                 return None
             if not wait_running(tasker, .25):
                 return None
-            return controller.post_screencap().wait().get()
+            return tasker.controller.post_screencap().wait().get()
 
         def read(frame):
             try:
@@ -523,7 +530,7 @@ class ProduceKeepDrinkAuto(CustomAction):
                 if match[2] != desired:
                     if not click_running(tasker, *input_point(627, match[3])) or not wait_running(tasker, .12):
                         return False if tasker.stopping else None
-                    image = controller.post_screencap().wait().get()
+                    image = tasker.controller.post_screencap().wait().get()
                     rows, _, _ = read(image)
                     updated = visible(bottle)
                     if not updated or updated[2] != desired:

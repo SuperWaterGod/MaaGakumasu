@@ -1,5 +1,7 @@
 """统一整理并按顺序展示出牌、奖励和结算摘要。"""
 
+import re
+
 from .state import STANCE_NAMES, selected_card, state_changes
 from .settlement import FIELDS, evaluation_check
 
@@ -7,8 +9,34 @@ POLICY_NAMES = {
     "ProduceChooseFirst": "第一项",
     "ProduceChooseRecommend": "推荐项",
     "ProduceChooseEventRecommend": "活动推荐项",
-    "ProduceChooseSkip": "跳过奖励",
 }
+
+
+def reward_reason(choice, name=None):
+    """显示主要选择依据，兼容旧记录中附带的牌名和估算。"""
+    node = choice.get("policy_node")
+    if node == "ProduceChooseSkip":
+        return ""
+    if node in POLICY_NAMES:
+        return f"按{POLICY_NAMES[node]}选择"
+    reason = choice.get("reason") or choice.get("fallback_reason") or ""
+    name = choice.get("item_name") or name
+    if name:
+        reason = reason.removeprefix(name + "，")
+    reason = re.sub(r"（预计供给 [^）]+）", "", reason).removesuffix("（按牌名）").removeprefix("饮料效果·")
+    return {
+        "补好印象转分": "把好印象转成分数",
+        "补集中转分": "把集中转成分数",
+        "补元气转分": "把元气转成分数",
+        "补已强化的流派核心牌": "已强化的核心牌",
+        "满足固有卡或道具的指定目标": "配合固有卡或道具",
+        "同名牌已够，优先补其他缺口": "同名牌已足",
+        "已有得分牌可用饮料增幅": "提高得分牌收益",
+        "追加行动可再打一张输出牌": "可多打一张得分牌",
+        "回复已损失的体力": "回复体力",
+        "增分": "提高得分",
+        "已识别候选未命中流派规则": "无适用的流派奖励",
+    }.get(reason, reason)
 
 
 def reward_title(success, choice, selected_name=None):
@@ -20,15 +48,24 @@ def reward_title(success, choice, selected_name=None):
         return "奖励 · 领取失败" if success is False else "奖励 · 领取未确认"
     name = choice.get("item_name") or selected_name
     line = f"奖励 · {name or '已点领取'}"
-    if node == "ProduceChooseByRule":
-        reason = choice.get("reason", "")
-        if name:
-            reason = reason.removeprefix(name + "，")
-        return f"{line}｜自动 · {reason}" if reason else f"{line}｜自动"
-    if node in POLICY_NAMES:
-        fallback = choice.get("fallback_reason")
-        return f"{line}｜默认 · {POLICY_NAMES[node]}" + (f"｜{fallback}" if fallback else "")
+    reason = reward_reason(choice, name)
+    if reason:
+        return f"{line}｜{reason}"
     return line
+
+
+def final_exam_summary(result):
+    """只展示读到的考试成绩和可确认的合格状态。"""
+    outcome = result.get("outcome")
+    score, place = result["score"]["value"], result["place"]["value"]
+    if not outcome and score is None and place is None:
+        return ""
+    title = {"passed": "最终试镜 合格", "failed": "最终试镜 不合格"}.get(outcome, "最终考试")
+    if score is not None:
+        title += f" {score:,} " + ("Pt" if outcome else "分")
+    if place is not None:
+        title += f" · 第 {place} 名"
+    return title
 
 
 class SettlementConsole:
@@ -71,39 +108,36 @@ class SettlementConsole:
         final_exam = {"score": fields["exam_score"], "place": fields["place"]}
         check = evaluation_check(self.bindings.get("scenario"), fields, fields["fan_votes"], final_exam,
                                  self.bindings.get("difficulty"))
-        scenario = self.bindings.get("scenario") or "模式未确认"
-        difficulty = self.bindings.get("difficulty") or []
-        difficulty = "/".join(difficulty) if isinstance(difficulty, list) else str(difficulty)
-        status = {"match": "一致", "mismatch": "不一致", "calculated_only": "仅计算", "unavailable": "待补齐"}[check["status"]]
-        show = lambda value: "未读到" if value is None else str(value)
-        observed = check["observed_score"]
-        calculated = check["calculated"] or {}
-        formula = (f"公式计算：{show(calculated.get('score'))}｜推算评级 {show(calculated.get('rank'))}" if calculated else
-                   "公式校验：暂不可用，输入缺项或不适用；画面评分与评级见标题")
-        rank = check.get("rank_from_observed_score")
-        rank_label = f"按评分推算评级 {rank}" if rank else f"评级 {show(check['observed_rank'])}"
-        lines = [f"{scenario} {difficulty}｜{status}｜评分 {show(observed)}｜{rank_label}",
-                 formula,
-                 "最终属性：" + " / ".join(f"{key} {show(fields[key]['value'])}" for key in ("Vo", "Da", "Vi"))]
-        if scenario == "初":
-            lines.append(f"最终考试：{show(fields['exam_score']['value'])} 分｜名次 {show(fields['place']['value'])}")
-        else:
-            lines.append(f"最终粉丝投票数：{show(fields['fan_votes']['value'])}")
-        if observed is not None and calculated.get("score") is not None:
-            lines.append(f"评分差值（画面－公式）：{observed - calculated['score']:+d}")
-        missing = [key for key, value in check["inputs"].items() if value is None]
-        names = {"exam_score": "考试分数", "place": "考试名次", "fan_votes": "最终投票数"}
-        if missing:
-            lines.append("待补齐：" + "、".join(names.get(key, key) for key in missing))
+        scenario = self.bindings.get("scenario")
+        difficulty = self.bindings.get("difficulty")
+        if isinstance(difficulty, list):
+            difficulty = "/".join(difficulty)
+        mode = " ".join(filter(None, (scenario, difficulty)))
+        headline = [f"结算 · {mode}" if mode else "结算"]
+        score, rank = check["observed_score"], check["observed_rank"]
+        if score is not None:
+            headline.append(f"评价 {score:,}")
+        if rank:
+            headline.append(rank)
+        elif inferred := check.get("rank_from_observed_score"):
+            headline.append(f"{inferred}（按评分推算）")
+        if len(headline) == 1:
+            headline.append("评价未读到")
+        lines = ["｜".join(headline)]
+        attributes = [f"{label} {fields[key]['value']:,}" for key, label in (("Vo", "声乐"), ("Da", "舞蹈"), ("Vi", "形象"))
+                      if fields[key]["value"] is not None]
+        if attributes:
+            lines.append("｜".join(attributes))
+        result = self.final_audition or (final_exam if scenario == "初" else None)
+        if result:
+            if exam := final_exam_summary(result):
+                lines.append(exam)
+        if scenario == "NIA" and (votes := fields["fan_votes"]["value"]) is not None:
+            lines.append(f"粉丝投票 {votes:,}")
+        if check["status"] == "mismatch":
+            lines.append("公式校验不一致")
         if any(reading["conflict"] for reading in fields.values()):
-            lines.append("部分画面读数冲突，已保留未知；不按公式覆盖原始结果")
-        lines.append("已使用最终三维，名次属性奖励不重复增加。" if scenario == "初" else
-                     "公式值与画面值分开保留，完整证据见采集记录。")
-        if self.final_audition:
-            result = self.final_audition
-            outcome = "不合格" if result["outcome"] == "failed" else "合格"
-            lines[0] = f"{scenario} {difficulty}｜评分 {show(observed)}｜{rank_label}｜最终试镜{outcome}"
-            lines.insert(1, f"试镜得分：{show(result['score']['value'])} Pt｜名次 {show(result['place']['value'])}")
+            lines.append("部分画面读数冲突")
         return {"message": "\n".join(lines), "scope": "settlement", "event_id": event_id, "evaluation_check": check}
 
 
