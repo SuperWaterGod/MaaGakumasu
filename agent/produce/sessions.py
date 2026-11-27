@@ -268,6 +268,10 @@ class ProduceSessions:
                     number += 1
                     session_directory = base / f"{directory_name}_{number}"
             directory_name = session_directory.name
+        # previous 已核对存档、歌曲、剧本与难度。续跑时沿用最初实际走过的偶像选择。
+        initial = previous["bindings"] if previous else {}
+        resumed_idol = bool(previous and previous.get("game_start_observed") and initial.get("idol_selection_enabled")
+                            and not initial.get("node_settings", {}).get("ProduceSkipPreparation", {}).get("enabled", False))
         capture = DecisionCapture.from_config(
             {
                 "mode": "agent_actions",
@@ -276,6 +280,7 @@ class ProduceSessions:
                 "policy": "existing_auto",
                 "reward_language_layout": context.get_node_data("ProduceRewardReceive"),
                 "bindings": bindings,
+                "resumed_verified_idol": resumed_idol,
                 "entry": entry,
                 "task_started_at": (self.task_origins.get(key) or {}).get("task_started_at"),
                 "version_files": version_hashes,
@@ -557,7 +562,7 @@ class ProduceContextSink(ContextEventSink):
         if name == "Produce" and noti_type == NotificationType.Starting:
             SESSIONS.begin(context)
             return
-        # 选择依据只保留轻量节点名，快速模式也需要它；不读取画面或创建会话。
+        # 选择依据只保留轻量节点名，精简模式也需要它；不读取画面或创建会话。
         if name in {"ProduceChooseFirst", "ProduceChooseRecommend", "ProduceChooseEventRecommend", "ProduceChooseSkip"}:
             if noti_type == NotificationType.Succeeded:
                 SESSIONS.reward_choices[context.get_task_job().job_id] = {"policy_node": name}
@@ -655,6 +660,9 @@ class ProduceContextSink(ContextEventSink):
                     self.capture_settlement(session, name, context, kind)
                 return
             if name in ROUTE_NODES:
+                if name in {"ProduceShoppingFlag", "ProduceChooseGetFlag", "ProduceRecognitionWorkOptions"}:
+                    # 已离开战斗并进入商店、奖励或工作页，下一场的道具次数从头计。
+                    session["battle_exit_seen"] = True
                 if name == "ProduceShoppingFlag":
                     session.pop("shop_shelf_blocked", None)
                     if capture.shop is not None:

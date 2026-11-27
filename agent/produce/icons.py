@@ -24,7 +24,7 @@ IDOL_NAMES = ("花海咲季", "月村手毬", "藤田ことね", "有村麻央",
 
 
 def icon_operation_available(status, operation):
-    """图库不完整时，图标专用环节沿用快速模式操作；其他识别继续。"""
+    """图库不完整时，图标专用环节沿用精简模式操作；其他识别继续。"""
     if status is None:
         return True
     if operation in {"shop", "shop_confirm", "shop_unavailable", "shop_exit"}:

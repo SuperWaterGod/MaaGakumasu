@@ -7,7 +7,7 @@ from maa.context import Context
 from produce.icons import load_gallery, icon_operation_available
 from produce.battle import ProduceCardsAuto
 from produce.events import ProduceChooseEventAuto, ProduceChooseEventBase, ProduceChooseNIAEventAuto
-from produce.capture import ROOT, produce_fast_mode
+from produce.capture import ROOT, produce_fast_mode, produce_battle_rules_enabled
 from produce.console import reward_title
 from produce.options import ProduceKeepDrinkAuto, ProduceChooseWorkAuto, ProduceChooseMirrorAuto, ProduceChooseOptionsAuto
 from produce.rewards import observe_reward_page
@@ -53,6 +53,7 @@ class ProduceEditChoice(CustomAction):
         else:
             capture = session["capture"] if session else None
             choice = None
+            pending = session.get("shop_pending") if session else None
             if capture and capture.selection and capture.reward_reader.icons:
                 image = context.tasker.controller.post_screencap().wait().get()
                 candidates = capture.reward_reader.icons.scan(image, operation, allow_unverified_variant=True)
@@ -75,6 +76,17 @@ class ProduceEditChoice(CustomAction):
                     point = [x + w // 2, y + h // 2]
                 target = choice or next((c for c in candidates if c["box"][0] <= point[0] < c["box"][0] + c["box"][2]
                                          and c["box"][1] <= point[1] < c["box"][1] + c["box"][3]), {})
+            if pending and pending["operation"] == "delete" and operation in {"delete", "delete_copy_exchange"} and not choice:
+                image = context.tasker.controller.post_screencap().wait().get()
+                cancel = context.run_recognition("ProduceShoppingCancelEdit", image)
+                if not cancel or not cancel.hit:
+                    return False
+                x, y, w, h = cancel.box
+                if not click_running(context.tasker, x + w // 2, y + h // 2):
+                    return False
+                session.pop("shop_pending", None)
+                logger.info("商店 · 删除列表没有可核实的目标，已点取消")
+                return True
             label = {"strengthen": "强化", "delete": "删除", "exchange": "变换", "copy": "复制"}.get(operation, "卡牌调整")
             if choice:
                 name = choice.get("display_name") or choice["database_name"]
@@ -119,7 +131,7 @@ class ProduceSettlementClick(CustomAction):
 class ProduceResourcesReady(CustomAction):
     def run(self, context, argv):
         if produce_fast_mode(context):
-            logger.info("快速模式：跳过培育采集、额外识别与报告")
+            logger.info("精简模式－采用游戏推荐，跳过培育采集、额外识别与报告")
             return not context.tasker.stopping
         produce_resources_status.cache_clear()
         load_gallery.cache_clear()
@@ -145,11 +157,12 @@ class ProduceResourcesReady(CustomAction):
                 warning = (f"培育图库未就绪（{'，'.join(missing)}）。"
                            f"{'、'.join(degraded)}的图标辅助环节将使用默认流程，继续 OCR、记录和回放。")
         warnings = [warning + "可通过「一键培育」中的「更新数据库和素材」补全资源。"] if warning else []
-        try:
-            load_battle_rules(data_directory(ROOT) / BATTLE_RULES_NAME)
-        except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
-            logger.warning(f"完整模式战斗规则无法加载：{exc}")
-            warnings.append(f"战斗规则缺失或无效，本次培育沿用游戏推荐、单张和超时兜底，保留饮料。请从同版本客户端补全 data/{BATTLE_RULES_NAME} 后重新开始任务。")
+        if produce_battle_rules_enabled(context):
+            try:
+                load_battle_rules(data_directory(ROOT) / BATTLE_RULES_NAME)
+            except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+                logger.warning(f"完整模式战斗规则无法加载：{exc}")
+                warnings.append(f"战斗规则缺失或无效，本次培育沿用游戏推荐、单张和超时兜底，保留饮料。请从同版本客户端补全 data/{BATTLE_RULES_NAME} 后重新开始任务。")
         if warnings and not context.tasker.stopping:
             message = "\n".join(warnings)
             logger.warning(message)

@@ -23,6 +23,11 @@ def produce_fast_mode(context):
     return (context.get_node_data("Produce") or {}).get("attach", {}).get("fast_mode", True) is not False
 
 
+def produce_battle_rules_enabled(context):
+    """完整模式默认使用流派策略，旧配置也沿用此默认值。"""
+    return (context.get_node_data("Produce") or {}).get("attach", {}).get("battle_strategy") != "game"
+
+
 class DecisionCapture:
     def __init__(
         self,
@@ -162,7 +167,7 @@ class DecisionCapture:
         def start_selection(reader):
             from .resources import BATTLE_RULES_NAME
             from .selection import SelectionPolicy, song_id
-            from .battle_policy import choose_profile, load_battle_rules
+            from .battle_policy import choose_profile, load_battle_rules, intrinsic_battle_items
 
             bindings = self._manifest["metadata"].get("bindings", {})
             idol = bindings.get("configured_idol", {})
@@ -173,11 +178,14 @@ class DecisionCapture:
             self.selection = SelectionPolicy(reader.catalog, params.get("effect", ""), pid, bindings.get("scenario"))
             difficulty = bindings.get("difficulty") or []
             skip = bindings.get("node_settings", {}).get("ProduceSkipPreparation", {}).get("enabled", False)
-            if len(difficulty) == 1:
+            if len(difficulty) == 1 and produce_battle_rules_enabled(context):
                 try:
                     config = load_battle_rules(database.with_name(BATTLE_RULES_NAME))
-                    verified_song = pid if bindings.get("idol_selection_enabled") and not skip else None
+                    verified = (bindings.get("idol_selection_enabled") and not skip) or self._manifest["metadata"].get("resumed_verified_idol")
+                    verified_song = pid if verified else None
                     self.battle_profile = choose_profile(config, verified_song, params.get("effect"), bindings.get("scenario"), difficulty[0])
+                    if self.battle_profile:
+                        self._intrinsic_items = intrinsic_battle_items(self.selection.rows, self.battle_profile["idol_id"])
                 except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
                     from utils import logger
                     logger.warning(f"读取战斗规则失败，保留饮料并按原逻辑选牌：{exc}")
@@ -219,7 +227,8 @@ class DecisionCapture:
         observation = self._read_battle(self._battle_observer, context, image, candidates)
         if observation is not None and self.selection:
             from .battle_policy import battle_item_conditions
-            observation.update(battle_item_conditions(self.selection))
+            observation.update(battle_item_conditions(self.selection, getattr(self, "_intrinsic_items", ())))
+            observation["catalog_sha256"] = self.selection.catalog.hashes.get("skill_cards")
             if self.selection.health:
                 observation["max_stamina"] = self.selection.health.get("max")
         return observation

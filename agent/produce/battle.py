@@ -10,9 +10,9 @@ from utils.task_control import wait_running, click_running
 from maa.agent.agent_server import AgentServer
 
 from .state import selected_card
-from .capture import DecisionCapture, produce_fast_mode
+from .capture import DecisionCapture, produce_fast_mode, produce_battle_rules_enabled
 from .sessions import SESSIONS
-from .battle_policy import choose_battle_action
+from .battle_policy import choose_battle_action, possible_item_uses
 
 
 def card_candidates(results, y_min=840, y_max=1000):
@@ -61,9 +61,13 @@ class ProduceCardsAuto(CustomAction):
         self._read_ahead_enabled = False
         self._profile = None
         self._last_drink_window = None
+        self._failed_drink_window = None
         self._extra_drink_turn = None
         self._used_drink_rules = set()
+        self._spent_item_uses = Counter()
+        self._untracked_card_uses = None
         self._retry_policy_at = 0
+        self._retried_hand_read = False
         self._peak_multiplier = 0
         self._policy_notice = None
 
@@ -86,13 +90,16 @@ class ProduceCardsAuto(CustomAction):
         self._profile = self._capture.battle_profile if session and entry != "IdolRoadAuto" else None
         self._peak_multiplier = 0
         self._last_drink_window = None
+        self._failed_drink_window = None
         self._used_drink_rules.clear()
+        self._spent_item_uses.clear()
+        self._untracked_card_uses = 0 if session and (session.get("fresh_game_started_in_segment") or session.get("battle_exit_seen")) else None
         self._extra_drink_turn = None
         if self._profile:
             self._read_ahead_enabled = False
             logger.info(f"战斗规则－启用「{self._profile['effect']}」")
         elif session and entry != "IdolRoadAuto":
-            logger.info("战斗规则未启用，本场使用游戏推荐、单张及超时兜底，保留饮料")
+            logger.info("战斗规则未启用，本场使用游戏推荐、单张及超时兜底出牌")
         self._battle_id = self._record("battle_invocation_start", node=getattr(argv, "node_name", None))
         reason = "action_returned"
         try:
@@ -168,15 +175,17 @@ class ProduceCardsAuto(CustomAction):
         self._wait_until_playable(context)
         if context.tasker.stopping:
             return True
-        if getattr(argv, "node_name", None) == "IdolRoadAuto":
-            self._idol_road_drinks(context)
+        if getattr(argv, "node_name", None) == "IdolRoadAuto" or (
+            self._profile is None and (produce_fast_mode(context) or not produce_battle_rules_enabled(context))
+        ):
+            self._use_opening_drinks(context)
         else:
             self._record("battle_entry")
         self._reset_window()
         return self._play_loop(context)
 
-    def _idol_road_drinks(self, context):
-        """偶像之路是独立任务，沿用该任务的用瓶流程。"""
+    def _use_opening_drinks(self, context):
+        """开局按瓶数连续使用第一格的饮料。"""
         image = context.tasker.controller.post_screencap().wait().get()
         if context.tasker.stopping:
             return True
@@ -215,6 +224,8 @@ class ProduceCardsAuto(CustomAction):
                 if context.tasker.stopping:
                     return True
                 self._record("battle_exit_observation", reason="health_flag_not_detected")
+                if self._profile and (session := SESSIONS.get(context)):
+                    session["battle_exit_seen"] = True
                 self._log_battle_exit(context)
                 break
 
@@ -309,6 +320,7 @@ class ProduceCardsAuto(CustomAction):
             observed["peak_attribute_multiplier_percent"] = self._peak_multiplier
         window = (turns, tuple((b["slot"], (b.get("identity") or {}).get("catalog_id")) for b in drinks))
         observed["used_drink_rules"] = sorted(self._used_drink_rules)
+        observed.update(spent_item_uses=dict(self._spent_item_uses), untracked_card_uses=self._untracked_card_uses)
         # 瓶位和回合均未变化时，避免确认失败或动画延迟导致连续点同一瓶。
         choice = choose_battle_action(self._profile, {**observed, "drinks": [] if window == self._last_drink_window else drinks,
                                                       "extra_drink_used": turns is not None and turns == self._extra_drink_turn})
@@ -316,7 +328,11 @@ class ProduceCardsAuto(CustomAction):
         if context.tasker.stopping:
             return True
         if action == "fallback":
-            self._notice_policy(f"{choice['reason']}，保留饮料并交回原选牌流程")
+            if choice.get("retry_hand_read") and not self._retried_hand_read:
+                self._retried_hand_read = True
+                wait_running(context.tasker, self.CLICK_DELAY)
+                return True
+            self._notice_policy(f"{choice['reason']}；本次转入推荐、单张或超时选牌")
             # 下一帧用新检测结果执行推荐或单张，稍后允许再读发生变化的手牌。
             self._retry_policy_at = time.monotonic() + 2
             return True
@@ -331,14 +347,19 @@ class ProduceCardsAuto(CustomAction):
         if context.tasker.stopping:
             return True
         if action == "play_card":
-            self._play_a_card(context, target["box"], image, results, choice["reason"], rule_id=choice["rule_id"])
+            self._play_a_card(context, target["box"], image, results, choice["reason"], rule_id=choice["rule_id"],
+                              item_uses=choice.get("possible_item_uses", ()))
         else:
             self._last_drink_window = window
             effect = target["identity"]["reference_effect_dsl"]["actions"]
-            if self._profile["drink_effects"][effect] == "extra":
-                self._extra_drink_turn = turns
             if self._use_drink(context, image, results, choice, target):
                 self._used_drink_rules.add(choice["rule_id"])
+                if self._profile["drink_effects"][effect] == "extra":
+                    self._extra_drink_turn = turns
+            elif self._failed_drink_window != window and all(identity for _, identity in window[1]):
+                # 下一次独立决策须重新核验回合及瓶位，同一画面只补试一次。
+                self._failed_drink_window = window
+                self._last_drink_window = None
         return True
 
     def _policy_target_current(self, context, image, state, target):
@@ -404,6 +425,7 @@ class ProduceCardsAuto(CustomAction):
         """重置出牌计时窗口"""
         self.start_time = time.time()
         self._retry_policy_at = 0
+        self._retried_hand_read = False
         self._policy_notice = None
 
     @classmethod
@@ -445,7 +467,7 @@ class ProduceCardsAuto(CustomAction):
         cards = label_counts["cards"]
         return suggestions, useless, cards, suggestions_box, best_box
 
-    def _play_a_card(self, context: Context, box: list, image=None, results=(), reason="unspecified", *, rule_id=None) -> bool:
+    def _play_a_card(self, context: Context, box: list, image=None, results=(), reason="unspecified", *, rule_id=None, item_uses=None) -> bool:
         """
         出牌并处理移动卡牌界面
 
@@ -460,11 +482,22 @@ class ProduceCardsAuto(CustomAction):
         tasker = context.tasker
         if tasker.stopping:
             return False
+        if self._profile and not rule_id and self._untracked_card_uses is not None:
+            observed = self._capture.read_battle(image, card_candidates(results), context=context) or {}
+            observed.update(spent_item_uses=dict(self._spent_item_uses), untracked_card_uses=self._untracked_card_uses)
+            target = next((c for c in observed.get("cards", ()) if c.get("box") == list(box)), None)
+            item_uses = possible_item_uses(self._profile, observed, target)
         self._begin_decision("play_card", image, results, selected_box=list(box), reason=reason, rule_id=rule_id)
         point = [box[0] + box[2] // 2, box[1] + box[3] // 2]
         for index in (1, 2):
             if not click_running(tasker, *point):
                 return False
+            if index == 1 and self._profile:
+                # 输入已发出，但画面无法证明道具一定发动。按可能消耗的上限记一次。
+                if item_uses is not None:
+                    self._spent_item_uses.update(item_uses)
+                elif self._untracked_card_uses is not None:
+                    self._untracked_card_uses += 1
             self._record("input_issued", decision_id=self._active_decision, click_index=index, point=point)
             if index == 1 and not wait_running(tasker, self.CLICK_DELAY):
                 return False

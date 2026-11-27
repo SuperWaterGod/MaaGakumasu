@@ -46,6 +46,7 @@
         {
           "name": "No",
           "option": [
+            "出牌策略",
             "开启截图记录"
           ],
           "pipeline_override": {
@@ -132,8 +133,38 @@
           }
         }
       ],
-      "label": "$快速模式",
-      "description": "$快速模式说明"
+      "label": "$精简模式",
+      "description": "$精简模式说明"
+    },
+    "出牌策略": {
+      "type": "select",
+      "default_case": "流派策略",
+      "cases": [
+        {
+          "name": "游戏推荐",
+          "label": "$游戏推荐",
+          "pipeline_override": {
+            "Produce": {
+              "attach": {
+                "battle_strategy": "game"
+              }
+            }
+          }
+        },
+        {
+          "name": "流派策略",
+          "label": "$流派策略",
+          "pipeline_override": {
+            "Produce": {
+              "attach": {
+                "battle_strategy": "rules"
+              }
+            }
+          }
+        }
+      ],
+      "label": "$出牌策略",
+      "description": "$出牌策略说明"
     },
     "开启截图记录": {
       "type": "switch",
