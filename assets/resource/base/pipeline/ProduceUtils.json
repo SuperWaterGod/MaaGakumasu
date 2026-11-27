@@ -38,6 +38,14 @@
       "param": {}
     }
   },
+  "ProduceEventPageFocus": {
+    "action": "DoNothing",
+    "pre_delay": 0,
+    "post_delay": 0,
+    "focus": {
+      "Node.ActionNode.Succeeded": "[color:DeepSkyBlue]路线选择 - 进入事件页面[/color]"
+    }
+  },
   "ProduceEventResultButton": {
     "recognition": {
       "type": "TemplateMatch",

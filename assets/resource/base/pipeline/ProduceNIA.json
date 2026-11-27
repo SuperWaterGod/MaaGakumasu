@@ -69,10 +69,7 @@
         }
       }
     },
-    "post_delay": 0,
-    "focus": {
-      "Node.Recognition.Succeeded": "[color:DeepSkyBlue]路线选择 - 进入事件页面[/color]"
-    }
+    "post_delay": 0
   },
   "ProduceNIAButton": {
     "recognition": {
