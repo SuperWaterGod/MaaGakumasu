@@ -345,24 +345,25 @@ class BattleStateReader:
                 )
                 continue
             observed_keys.add(entry["key"])
-            # 数字右侧偶尔显示状态名称。只在两个宽框均读到同一数字前缀时，用窄框独立核对。
+            # 窄框只复核两种情况：宽框数字冲突，或两框都读到同一数字后紧跟标签。
             digits_roi = entry["reading"].get("digits_roi_offset")
-            if digits_roi and not observed_values:
+            if digits_roi and len(observed_values) != 1:
                 prefixes = []
                 for view in views:
                     tokens = view["raw_ocr"]
                     if len(tokens) == 1 and tokens[0]["confidence"] >= .70:
-                        match = re.fullmatch(r"(\d+)[\u3400-\u9fff]+", unicodedata.normalize("NFKC", tokens[0]["text"]).strip())
+                        match = re.fullmatch(r"(\d+)[a-zA-Z\u3400-\u9fff]+", unicodedata.normalize("NFKC", tokens[0]["text"]).strip())
                         if match:
                             prefixes.append(int(match[1]))
-                if len(prefixes) == len(views) and len(set(prefixes)) == 1:
+                confirmed_prefix = len(prefixes) == len(views) and len(set(prefixes)) == 1
+                if len(observed_values) > 1 or confirmed_prefix:
                     digits = self._reading(array, box, {**entry["reading"], "roi_offset": digits_roi}, errors)
-                    if digits["value"] == prefixes[0] and digits["confidence"] >= .9:
-                        views.append(digits)
-                        observed_values.add(digits["value"])
+                    views.append(digits)
+                    if digits["value"] in (observed_values or set(prefixes)) and digits["confidence"] >= .9:
+                        observed_values = {digits["value"]}
             conflict = len(observed_values) > 1
             if not conflict:
-                reading = next((view for view in views if view["value"] is not None), reading)
+                reading = next((view for view in views if view["value"] in observed_values), reading)
             value = reading["value"] if not conflict else None
             duration = value if entry["unit"] == "turns" else None
             duration_evidence = None
