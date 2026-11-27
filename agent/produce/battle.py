@@ -66,7 +66,8 @@ class ProduceCardsAuto(CustomAction):
         self._used_drink_rules = set()
         self._spent_item_uses = Counter()
         self._untracked_card_uses = None
-        self._retry_policy_at = 0
+        self._wait_for_recommendation = False
+        self._rules_without_profile = False
         self._retried_hand_read = False
         self._peak_multiplier = 0
         self._policy_notice = None
@@ -88,6 +89,7 @@ class ProduceCardsAuto(CustomAction):
                 "coverage": "single_action_invocation", "policy": "existing_auto", "game_action_confirmation": "unknown",
             }, console=logger.info, context=context)
         self._profile = self._capture.battle_profile if session and entry != "IdolRoadAuto" else None
+        self._rules_without_profile = bool(not self._profile and session and entry != "IdolRoadAuto" and produce_battle_rules_enabled(context))
         self._peak_multiplier = 0
         self._last_drink_window = None
         self._failed_drink_window = None
@@ -98,6 +100,8 @@ class ProduceCardsAuto(CustomAction):
         if self._profile:
             self._read_ahead_enabled = False
             logger.info(f"战斗规则－启用「{self._profile['effect']}」")
+        elif self._rules_without_profile:
+            logger.info("战斗规则未匹配，本场等待游戏推荐牌")
         elif session and entry != "IdolRoadAuto":
             logger.info("战斗规则未启用，本场使用游戏推荐、单张及超时兜底出牌")
         self._battle_id = self._record("battle_invocation_start", node=getattr(argv, "node_name", None))
@@ -232,9 +236,12 @@ class ProduceCardsAuto(CustomAction):
             # 识别手牌
             reco_detail = context.run_recognition("ProduceRecognitionCards", image)
             results = reco_detail.all_results if reco_detail and reco_detail.hit else ()
-            if (self._profile and time.time() - self.start_time < self.TIME_OUT and time.monotonic() >= self._retry_policy_at
-                    and self._try_policy_action(context, image, results)):
-                continue
+            if self._profile and not self._wait_for_recommendation:
+                if time.time() - self.start_time >= self.TIME_OUT:
+                    self._notice_policy("决策超时，本次等待游戏推荐牌")
+                    self._wait_for_recommendation = True
+                elif self._try_policy_action(context, image, results):
+                    continue
             if reco_detail and reco_detail.hit:
 
                 # 获取卡牌信息
@@ -251,7 +258,7 @@ class ProduceCardsAuto(CustomAction):
                         continue
                     self._play_a_card(context, suggestions_box, image, results, "game_recommendation")
                 # 只有一张可用牌时，直接打出该牌
-                elif cards == 1:
+                elif cards == 1 and not self._wait_for_recommendation:
                     if best_box[1] < self.CARD_Y_MIN or best_box[1] > self.CARD_Y_MAX:
                         time.sleep(self.CLICK_DELAY)
                         continue
@@ -273,7 +280,7 @@ class ProduceCardsAuto(CustomAction):
                 end_time = time.time()
                 if context.tasker.stopping:
                     return True
-                if end_time - self.start_time > self.TIME_OUT:
+                if not self._wait_for_recommendation and end_time - self.start_time > self.TIME_OUT:
                     if best_box[1] < self.CARD_Y_MIN or best_box[1] > self.CARD_Y_MAX:
                         time.sleep(self.CLICK_DELAY)
                         continue
@@ -308,8 +315,10 @@ class ProduceCardsAuto(CustomAction):
         """同一可操作画面只执行一个规则动作，返回后重新截图。"""
         ready = context.run_recognition("ProduceRecognitionSkipRound", image)
         if not (ready and ready.hit):
-            self._notice_policy("未见可操作按钮，交回原选牌流程")
-            return False
+            self._notice_policy("等待可操作画面")
+            if results:
+                wait_running(context.tasker, self.CLICK_DELAY)
+            return bool(results)
         observed = self._capture.read_battle(image, card_candidates(results), context=context) or {}
         state = observed.get("battle_state") or {}
         drinks = observed.get("drinks") or []
@@ -332,9 +341,8 @@ class ProduceCardsAuto(CustomAction):
                 self._retried_hand_read = True
                 wait_running(context.tasker, self.CLICK_DELAY)
                 return True
-            self._notice_policy(f"{choice['reason']}；本次转入推荐、单张或超时选牌")
-            # 下一帧用新检测结果执行推荐或单张，稍后允许再读发生变化的手牌。
-            self._retry_policy_at = time.monotonic() + 2
+            self._notice_policy(f"{choice['reason']}，本次等待游戏推荐牌")
+            self._wait_for_recommendation = True
             return True
         if action == "play_card":
             target = next(c for c in observed["cards"] if c["candidate_id"] == choice["candidate_id"])
@@ -424,7 +432,7 @@ class ProduceCardsAuto(CustomAction):
     def _reset_window(self):
         """重置出牌计时窗口"""
         self.start_time = time.time()
-        self._retry_policy_at = 0
+        self._wait_for_recommendation = self._rules_without_profile
         self._retried_hand_read = False
         self._policy_notice = None
 

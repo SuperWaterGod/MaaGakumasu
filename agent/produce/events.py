@@ -73,6 +73,8 @@ class ProduceChooseEventBase(CustomAction):
         points = observed_points or 0
         score = self._get_current_score(context, image) or {"Vo": 0, "Da": 0, "Vi": 0, "max": 1}
         events = self._get_available_events(context, image)
+        if events:
+            context.run_action("ProduceEventPageFocus")
 
         best_event = self._choose_best_event(suggestion, health_data, points, score, events)
         if not best_event:

@@ -44,9 +44,8 @@
           "role": "boost",
           "max_turns": 3,
           "min_stamina": 6,
-          "min_impression": 10,
-          "hand": "conversion",
-          "reason": "在能打出转分牌的输出窗口使用短效增分"
+          "next_card": "direct_score",
+          "reason": "增分覆盖剩余回合，先提高下一张牌的得分并减费"
         },
         {
           "id": "repeat_active",
@@ -58,6 +57,15 @@
           "hand": "active_conversion",
           "reason": "手中有可重复发动的主动转分牌，体力足以承担附加代价",
           "next_card": "active_conversion"
+        },
+        {
+          "id": "last_repeat_score",
+          "action": "use_drink",
+          "role": "double_active",
+          "max_turns": 1,
+          "min_stamina": 8,
+          "next_card": "repeatable_score",
+          "reason": "最后一回合用特效重复发动下一张可得分的主动牌"
         },
         {
           "id": "boost_item_score",
@@ -293,7 +301,7 @@
           "min_turns": 3,
           "max_turns": 5,
           "min_impression": 15,
-          "reason": "本回合手牌将弃置，当前转分超过继续叠层及后续转分的估计收益"
+          "reason": "本回合手牌将弃置，当前得分超过继续叠层及后续转分的估计收益"
         },
         {
           "id": "build_card",

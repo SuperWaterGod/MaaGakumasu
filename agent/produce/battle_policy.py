@@ -38,7 +38,7 @@ def load_battle_rules(path):
                     or rule.keys() - {"id", "action", "role", "reason", "hand", "next_card", "once_per_battle"} - LIMITS
                     or "once_per_battle" in rule and (rule["action"] != "use_drink" or type(rule["once_per_battle"]) is not bool)
                     or ("hand" in rule and rule["hand"] not in HAND_TESTS)
-                    or ("next_card" in rule and (rule["action"] != "use_drink" or rule["next_card"] not in {"active_conversion", "drive_score"}))
+                    or ("next_card" in rule and (rule["action"] != "use_drink" or rule["next_card"] not in {"active_conversion", "drive_score", "direct_score", "repeatable_score"}))
                     or any(type(rule[k]) is not int or rule[k] < 0 for k in rule.keys() & LIMITS)
                     or rule.get("max_turns", float("inf")) < rule.get("min_turns", 1)):
                 raise ValueError(f"无效战斗规则 {rule}")
@@ -258,6 +258,7 @@ def _card_roles(identity, state_values, profile, item_thresholds, item_triggers=
     _evaluate(_statements(face.get("actions", "")), values, facts)
     growth_cost = re.search(r"goodImpressionTurns-=(\d+)", cost)
     card_conversion = facts["conversion"]
+    card_score = facts["score"]
     spent = []
     projected = False
     # 先结算卡牌的回复，再结算出牌后发动的道具。
@@ -304,8 +305,10 @@ def _card_roles(identity, state_values, profile, item_thresholds, item_triggers=
         roles["threshold"] = growth
     if roles["output"] > 0 and (identity.get("upgraded") is False or face.get("upgraded") is False):
         roles["upgradable"] = 1
-    if card_conversion and identity.get("type", face.get("type")) == "active" and identity.get("rarity", face.get("rarity")) in ("N", "R", "SR", "SSR"):
-        roles["active_conversion"] = 1
+    if roles["active"] and identity.get("rarity", face.get("rarity")) in ("N", "R", "SR", "SSR"):
+        roles["repeatable_score"] = card_score
+        if card_conversion:
+            roles["active_conversion"] = 1
     if item_triggers:
         roles["affinity"] = _item_affinity(item_triggers, identity, face, values, facts)
     return roles
@@ -449,7 +452,7 @@ def _compare_conversion(hand, turns, multiplier, peak, reserve_percent):
     for roles in paid:
         if roles.get("single_use") and value(roles) < best_growth:
             roles["peak_conversion"] = 0
-        if roles.get("impression_score", 0) > 0 and roles.get("direct_score", 0) > 0 and value(roles) > best_growth:
+        if roles.get("direct_score", 0) > 0 and value(roles) > best_growth:
             advantage = value(roles) - best_growth
             if reusable_output and roles.get("single_use"):
                 advantage -= roles["direct_score"] * (peak - multiplier)
@@ -653,8 +656,16 @@ def choose_battle_action(profile, observation):
             target = _boosting_drink(observation["drinks"], profile, values, items, identities[next_candidate], next_card)
             if target is None:
                 continue
-        if rule.get("next_card") and not (next_card or {}).get(rule["next_card"]):
+        if rule.get("next_card") and (next_card or {}).get(rule["next_card"], 0) <= 0:
             continue
+        if next_card and rule["action"] == "use_drink" and rule["role"] in {"boost", "double_active"}:
+            # 两种饮料都固定扣二体力；按用瓶后的费用复算，避免把计划中的得分牌卡成不可用。
+            if values["stamina"] is None:
+                continue
+            cost_buff = "halfCostTurns" if rule["role"] == "boost" else "doubleCostTurns"
+            after_drink = {**values, "stamina": values["stamina"] - 2, "genki": values.get("genki") or 0, cost_buff: 1}
+            if not _card_roles(identities[next_candidate], after_drink, profile, (), items=items):
+                continue
         if rule["action"] == "use_drink" and rule["role"] == "impression_score" and (next_card or {}).get("extra_impression", 0) > 0:
             # 先打叠层且返还行动的牌。用瓶窗口仍在，操作后重新读数。
             continue
