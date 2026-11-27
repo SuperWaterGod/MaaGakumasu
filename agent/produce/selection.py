@@ -497,7 +497,8 @@ class SelectionPolicy:
                 if self.build.get("cards", {}).get(name, {}).get("upgrade"):
                     priority += len(self.upgrade_priority)
                 reason = f"{rarity} · {reason}"
-            elif operation == "delete" and name and families[name] > self.copy_target(name):
+            elif (operation == "delete" and name and families[name] > self.copy_target(name)
+                  and not any(self.rows[v].get("unique") for v in self.skill_versions.get(name, ()))):
                 duplicate_grade = rules()["card_edits"]["duplicate_delete_grade"]
                 if duplicate_grade > grade and (not row.get("upgraded") or copies[key] > 1):
                     grade = duplicate_grade

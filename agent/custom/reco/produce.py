@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import time
 import unicodedata
@@ -83,9 +84,20 @@ class ProduceRuleChoice(CustomRecognition):
                 return None
             if title_visible != exit_visible:
                 return [480, 150, 1, 1]
-            # 强化结果可能同时遮住两处标记，按结果文案识别，仍使用原收尾点击上限。
-            if not title_visible and (session.get("shop_pending") or {}).get("operation") == "strengthen":
-                receipt = context.run_recognition("ProduceShopStrengthenedText", argv.image)
+            pending = session.get("shop_pending") or {}
+            if not title_visible and pending.get("operation") == "buy" and pending.get("name"):
+                # 成交浮层同时盖住货架提示和退出按钮，下方标题显示刚买的商品名。
+                node = "ProduceShopStrengthenedText"
+                receipt = context.run_recognition(node, argv.image, pipeline_override={
+                    node: {"roi": [75, 842, 570, 60], "expected": [re.escape(pending["name"])]},
+                })
+                if receipt and receipt.hit:
+                    return [480, 150, 1, 1]
+            # 强化、删除的完成提示都可能遮住货架标记，只按当前服务的结果文案收尾。
+            if not title_visible and pending.get("operation") in {"strengthen", "delete"}:
+                node = "ProduceShopStrengthenedText"
+                override = {node: {"expected": ["を削除しました", "已[删刪]除"]}} if pending["operation"] == "delete" else {}
+                receipt = context.run_recognition(node, argv.image, pipeline_override=override)
                 if receipt and receipt.hit:
                     return [480, 150, 1, 1]
             return None

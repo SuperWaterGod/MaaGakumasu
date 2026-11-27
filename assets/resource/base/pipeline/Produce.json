@@ -998,7 +998,26 @@
       "param": {}
     },
     "next": [
+      "ProduceChooseFullDrink",
       "ProduceChooseConfirm"
+    ]
+  },
+  "ProduceChooseFullDrink": {
+    "recognition": {
+      "type": "And",
+      "param": {
+        "all_of": [
+          "ProduceShoppingDrinkFull",
+          "ProduceChooseSkip"
+        ]
+      }
+    },
+    "action": {
+      "type": "DoNothing",
+      "param": {}
+    },
+    "next": [
+      "ProduceChooseSkip"
     ]
   },
   "ProduceChooseFirst": {
@@ -1342,7 +1361,8 @@
       "Node.Recognition.Succeeded": "[color:DeepSkyBlue]卡牌调整－进入删除/复制/变换页面[/color]"
     },
     "next": [
-      "ProduceChooseDeleteClick"
+      "ProduceChooseDeleteClick",
+      "ProduceRuleShopAgain"
     ]
   },
   "ProduceChooseDeleteClick": {
@@ -1368,30 +1388,43 @@
   },
   "ProduceShoppingDeleteConfirm": {
     "recognition": {
-      "type": "OCR",
+      "type": "And",
       "param": {
-        "roi": [
-          38,
-          726,
-          646,
-          68
+        "all_of": [
+          {
+            "recognition": "OCR",
+            "roi": [
+              38,
+              345,
+              646,
+              465
+            ],
+            "expected": [
+              "[PＰ]\\s*ポイント.*スキルカード.*削除",
+              "(?=.*[PＰ])(?=.*(?:删除|刪除))(?=.*技能卡).+"
+            ]
+          },
+          {
+            "recognition": "OCR",
+            "roi": [
+              372,
+              1010,
+              275,
+              210
+            ],
+            "expected": [
+              "^削除$",
+              "^删除$",
+              "^刪除$"
+            ]
+          }
         ],
-        "expected": [
-          "[PＰ]\\s*ポイント.*スキルカード.*削除",
-          "(?=.*[PＰ])(?=.*(?:删除|刪除))(?=.*技能卡).+"
-        ]
+        "box_index": 1
       }
     },
     "action": {
       "type": "Click",
-      "param": {
-        "target": [
-          480,
-          1130,
-          84,
-          65
-        ]
-      }
+      "param": {}
     },
     "post_wait_freezes": 500
   },
